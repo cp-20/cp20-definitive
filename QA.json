@@ -1,0 +1,394 @@
+{
+  "pages": [
+    {
+      "label": "/",
+      "violations": []
+    },
+    {
+      "label": "/articles",
+      "violations": []
+    },
+    {
+      "label": "/works",
+      "violations": []
+    },
+    {
+      "label": "/works/minna-no-monosashi",
+      "violations": []
+    },
+    {
+      "label": "/about",
+      "violations": []
+    },
+    {
+      "label": "/colophon",
+      "violations": []
+    },
+    {
+      "label": "/#project-2",
+      "violations": []
+    },
+    {
+      "label": "/?dark",
+      "violations": []
+    },
+    {
+      "label": "/#stamp-tools",
+      "violations": []
+    },
+    {
+      "label": "/?mobile",
+      "violations": []
+    },
+    {
+      "label": "/articles?mobile",
+      "violations": []
+    },
+    {
+      "label": "/about?mobile",
+      "violations": []
+    }
+  ],
+  "viewports": [
+    {
+      "width": 320,
+      "path": "/",
+      "actual": 305
+    },
+    {
+      "width": 320,
+      "path": "/articles",
+      "actual": 305
+    },
+    {
+      "width": 320,
+      "path": "/works",
+      "actual": 305
+    },
+    {
+      "width": 320,
+      "path": "/works/dice-spec-v2",
+      "actual": 305
+    },
+    {
+      "width": 320,
+      "path": "/about",
+      "actual": 305
+    },
+    {
+      "width": 390,
+      "path": "/",
+      "actual": 375
+    },
+    {
+      "width": 390,
+      "path": "/articles",
+      "actual": 375
+    },
+    {
+      "width": 390,
+      "path": "/works",
+      "actual": 375
+    },
+    {
+      "width": 390,
+      "path": "/works/dice-spec-v2",
+      "actual": 375
+    },
+    {
+      "width": 390,
+      "path": "/about",
+      "actual": 375
+    },
+    {
+      "width": 768,
+      "path": "/",
+      "actual": 753
+    },
+    {
+      "width": 768,
+      "path": "/articles",
+      "actual": 753
+    },
+    {
+      "width": 768,
+      "path": "/works",
+      "actual": 753
+    },
+    {
+      "width": 768,
+      "path": "/works/dice-spec-v2",
+      "actual": 753
+    },
+    {
+      "width": 768,
+      "path": "/about",
+      "actual": 753
+    },
+    {
+      "width": 1440,
+      "path": "/",
+      "actual": 1425
+    },
+    {
+      "width": 1440,
+      "path": "/articles",
+      "actual": 1425
+    },
+    {
+      "width": 1440,
+      "path": "/works",
+      "actual": 1425
+    },
+    {
+      "width": 1440,
+      "path": "/works/dice-spec-v2",
+      "actual": 1425
+    },
+    {
+      "width": 1440,
+      "path": "/about",
+      "actual": 1425
+    }
+  ],
+  "layout": [
+    {
+      "label": "theme dark 390",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "theme light 390",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "project 1 390",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "project 2 390",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "project 0 390",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "theme dark 1440",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "theme light 1440",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "project 1 1440",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "project 2 1440",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "project 0 1440",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "stamp tools open",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "optimistic stamp placement before network response",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    },
+    {
+      "label": "optimistic undo",
+      "maxMovementPx": 0,
+      "rawLayoutShift": 0
+    }
+  ],
+  "interactions": [
+    "search and editorial filler removed; originals served from local /media assets",
+    "zero document reloads across navigation, persistent header, back/forward, scroll and filters restored, cross-page anchor, one active Firebase stream",
+    "native select bounds and vertical alignment at four widths; consistent 16:9 article frames; sidebar icons stay within bounds",
+    "two-click stamp placement; immediate optimistic render and undo; cross-visitor live sync; touch placement; responsive anchors; test stamps removed",
+    "failed saves roll back and expose retry; keyboard placement; reduced motion; complete static content without JS"
+  ],
+  "errors": [],
+  "externalImageRequests": [],
+  "temporaryDataCleanup": "passed",
+  "finalCorrection": "Selected filter count contrast corrected and article pages rechecked at 390 and 1440px",
+  "firefox": {
+    "checks": [
+      {
+        "width": 320,
+        "overflow": 0,
+        "selectHeight": 42
+      },
+      {
+        "width": 390,
+        "overflow": 0,
+        "selectHeight": 42
+      },
+      {
+        "width": 1440,
+        "overflow": 0,
+        "selectHeight": 42
+      }
+    ],
+    "errors": []
+  },
+  "polish": {
+    "viewports": [
+      {
+        "width": 320,
+        "frames": [
+          {
+            "width": 127,
+            "height": 79,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 127,
+            "height": 79,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 127,
+            "height": 79,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 127,
+            "height": 79,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 127,
+            "height": 79,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 127,
+            "height": 79,
+            "fit": "contain",
+            "position": "50% 50%"
+          }
+        ]
+      },
+      {
+        "width": 390,
+        "frames": [
+          {
+            "width": 154,
+            "height": 96,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 154,
+            "height": 96,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 154,
+            "height": 96,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 154,
+            "height": 96,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 154,
+            "height": 96,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 154,
+            "height": 96,
+            "fit": "contain",
+            "position": "50% 50%"
+          }
+        ]
+      },
+      {
+        "width": 1440,
+        "frames": [
+          {
+            "width": 360,
+            "height": 224,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 360,
+            "height": 224,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 360,
+            "height": 224,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 360,
+            "height": 224,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 360,
+            "height": 224,
+            "fit": "contain",
+            "position": "50% 50%"
+          },
+          {
+            "width": 360,
+            "height": 224,
+            "fit": "contain",
+            "position": "50% 50%"
+          }
+        ]
+      }
+    ],
+    "errors": [],
+    "accessibility": [],
+    "hover": {
+      "before": {
+        "outer": "none",
+        "rotate": "0.7deg",
+        "inner": "none"
+      },
+      "after": {
+        "outer": "none",
+        "rotate": "0.7deg",
+        "inner": "none"
+      }
+    },
+    "deletion": "passed: persisted stamps, selected deletion, optimistic removal, no accidental placement, keyboard deletion"
+  }
+}

@@ -1,0 +1,1199 @@
+{
+  "updatedAt": "2026-09-27T09:24:25.778Z",
+  "articles": [
+    {
+      "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
+      "url": "https://trap.jp/post/2984/",
+      "date": "2026-07-20T09:00:49.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "「ギャンギャンギャンブル」 ー 26年度春ハッカソン3班",
+      "url": "https://trap.jp/post/2949/",
+      "date": "2026-07-05T09:00:48.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "anke-to v3 をリリースしました！！🎉",
+      "url": "https://trap.jp/post/2930/",
+      "date": "2026-04-30T09:00:46.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "Road to 函館【RubyKaigi 2026】",
+      "url": "https://note.com/cp20/n/n596a27e0d458",
+      "date": "2026-04-28T00:25:01.000Z",
+      "source": "note.com"
+    },
+    {
+      "title": "信頼を得る方法",
+      "url": "https://sizu.me/cp20/posts/x9hd6795sfiz",
+      "date": "2026-04-09T04:06:56.000Z",
+      "source": "sizu.me"
+    },
+    {
+      "title": "Cloudflare Workers 上で 'firebase/firestore' を import すると EvalError になる",
+      "url": "https://zenn.dev/cp20/articles/firestore-in-workers",
+      "date": "2026-04-02T11:41:16.131Z",
+      "source": "zenn.dev"
+    },
+    {
+      "title": "Web Speed Hackathon 2026 参加記",
+      "url": "https://trap.jp/post/2864/",
+      "date": "2026-03-21T15:09:03.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "祭りのあとで【2025まとめ & 2026抱負】",
+      "url": "https://sizu.me/cp20/posts/uuo635tes2wc",
+      "date": "2025-12-31T15:00:00.000Z",
+      "source": "sizu.me"
+    },
+    {
+      "title": "CORS (SOP) がない世界で起こること",
+      "url": "https://qiita.com/cp20/items/75017fe21f9d1e19ad3a",
+      "date": "2025-12-02T17:33:11.000Z",
+      "source": "qiita.com"
+    },
+    {
+      "title": "traP10周年記念イベント「traPavilion」を開催しました！",
+      "url": "https://trap.jp/post/2717/",
+      "date": "2025-11-30T09:00:09.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "福岡グルメを巡る旅【YAPC::Fukuoka 2025】",
+      "url": "https://note.com/cp20/n/n8201385d8284",
+      "date": "2025-11-25T17:16:51.000Z",
+      "source": "note.com"
+    },
+    {
+      "title": "Vue Fes Japan 2025 に参加してきたぞ！！！ #vuefes",
+      "url": "https://note.com/cp20/n/nbaf3d44086ba",
+      "date": "2025-10-27T04:45:05.000Z",
+      "source": "note.com"
+    },
+    {
+      "title": "Vercel の Middleware 課金対策",
+      "url": "https://zenn.dev/cp20/articles/vercel-middleware-cost-optimization",
+      "date": "2025-08-31T03:00:02.235Z",
+      "source": "zenn.dev"
+    },
+    {
+      "title": "命題論理から考えるデバッグ手法",
+      "url": "https://zenn.dev/cp20/articles/debugging-with-propositional-logic-method",
+      "date": "2025-08-25T09:30:01.166Z",
+      "source": "zenn.dev"
+    },
+    {
+      "title": "春ハッカソン2025 3班 traQuji",
+      "url": "https://trap.jp/post/2528/",
+      "date": "2025-07-05T03:00:54.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "フィードバックを得る",
+      "url": "https://sizu.me/cp20/posts/i525ztm7h4ia",
+      "date": "2025-06-05T10:37:50.000Z",
+      "source": "sizu.me"
+    },
+    {
+      "title": "【traP部員に聞いた！】学割が効くもの集",
+      "url": "https://trap.jp/post/2516/",
+      "date": "2025-03-17T03:00:47.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "isuc: A driver-level SQL caching tool",
+      "url": "https://trap.jp/post/2486/",
+      "date": "2025-02-23T03:00:38.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "冬ハッカソンでISUCON用 database driver 作りました",
+      "url": "https://trap.jp/post/2491/",
+      "date": "2025-02-22T00:00:42.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "Node.jsプロジェクトでDenoのスクリプトを使うテクニック",
+      "url": "https://zenn.dev/trap/articles/throwaway-scripts-technique-with-deno",
+      "date": "2025-02-19T03:00:02.190Z",
+      "source": "zenn.dev"
+    },
+    {
+      "title": "悠々自適【2024まとめ & 2025抱負】",
+      "url": "https://sizu.me/cp20/posts/xmxfwixh3adh",
+      "date": "2024-12-31T15:00:00.000Z",
+      "source": "sizu.me"
+    },
+    {
+      "title": "Kubernetes は難しい",
+      "url": "https://trap.jp/post/2457/",
+      "date": "2024-12-23T11:00:17.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "Foodmoji でコミットメッセージを彩ろう",
+      "url": "https://trap.jp/post/2403/",
+      "date": "2024-12-16T03:00:46.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "【 #ISUCON 】最近の若者は RPC するらしいですよ",
+      "url": "https://trap.jp/post/2428/",
+      "date": "2024-12-12T03:00:57.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "インターネットコミュニケーション",
+      "url": "https://sizu.me/cp20/posts/x1v4t9f1v0vv",
+      "date": "2024-12-11T14:51:36.000Z",
+      "source": "sizu.me"
+    },
+    {
+      "title": "統計学的なモノの見方",
+      "url": "https://sizu.me/cp20/posts/02uff8h25r6b",
+      "date": "2024-12-11T09:32:32.000Z",
+      "source": "sizu.me"
+    },
+    {
+      "title": "文字を書く",
+      "url": "https://sizu.me/cp20/posts/sau1b8bizks1",
+      "date": "2024-12-10T16:48:44.000Z",
+      "source": "sizu.me"
+    },
+    {
+      "title": "心が疲れてるときの症状",
+      "url": "https://sizu.me/cp20/posts/73dd0z20tf44",
+      "date": "2024-12-10T16:48:27.000Z",
+      "source": "sizu.me"
+    },
+    {
+      "title": "自然科学批判に立ち向かう",
+      "url": "https://sizu.me/cp20/posts/md714nuzsoeh",
+      "date": "2024-12-10T15:49:21.000Z",
+      "source": "sizu.me"
+    },
+    {
+      "title": "「いわゆる」という言葉",
+      "url": "https://sizu.me/cp20/posts/moro60sxs0n9",
+      "date": "2024-12-09T12:18:34.000Z",
+      "source": "sizu.me"
+    },
+    {
+      "title": "ポートフォリオサイトのすすめ",
+      "url": "https://zenn.dev/cp20/articles/develop-your-portfolio",
+      "date": "2024-12-04T11:30:05.256Z",
+      "source": "zenn.dev"
+    },
+    {
+      "title": "WebUI をサッと作るツールとしての htmx",
+      "url": "https://zenn.dev/cp20/articles/htmx-as-a-tool-for-webui",
+      "date": "2024-12-02T12:30:00.000Z",
+      "source": "zenn.dev"
+    },
+    {
+      "title": "MIXI Bug Shooting Challenge で優勝しました #MIXI_BSC",
+      "url": "https://trap.jp/post/2228/",
+      "date": "2024-12-02T03:37:25.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "ノリと勢いで Vue Fes Japan 2024 に参加してきました #vuefes",
+      "url": "https://note.com/cp20/n/n452d4bbad7cc",
+      "date": "2024-10-26T12:11:56.000Z",
+      "source": "note.com"
+    },
+    {
+      "title": "初めてYAPCに参加したら最高過ぎた【YAPC::Hakodate 2024】",
+      "url": "https://note.com/cp20/n/nfca54fa7b00b",
+      "date": "2024-10-10T08:53:46.000Z",
+      "source": "note.com"
+    },
+    {
+      "title": "部内 Web Speed Hackathon を開催しました！",
+      "url": "https://trap.jp/post/2388/",
+      "date": "2024-09-23T15:08:07.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "Ansibleは難しくない",
+      "url": "https://trap.jp/post/2375/",
+      "date": "2024-09-18T09:00:42.000Z",
+      "source": "trap.jp"
+    },
+    {
+      "title": "行動すれば人は変われる【2023まとめ & 2024抱負】",
+      "url": "https://sizu.me/cp20/posts/otkeh9ivc9mu",
+      "date": "2024-01-05T03:01:13.000Z",
+      "source": "sizu.me"
+    },
+    {
+      "title": "Webフロントエンドエンジニアってどんな人？何をしてるの？年収は？彼女はいるの？調べてみました！",
+      "url": "https://zenn.dev/cp20/articles/what-is-web-frontend-engineer",
+      "date": "2023-12-20T11:30:00.984Z",
+      "source": "zenn.dev"
+    },
+    {
+      "title": "LINEのインターンで好き勝手やって成長した話",
+      "url": "https://zenn.dev/trap/articles/line-summer-intern-2023",
+      "date": "2023-09-26T11:30:00.226Z",
+      "source": "zenn.dev"
+    },
+    {
+      "title": "学生エンジニアが圧倒的に成長する方法",
+      "url": "https://qiita.com/cp20/items/295d90273a9f17ea4148",
+      "date": "2023-07-21T14:00:33.000Z",
+      "source": "qiita.com"
+    },
+    {
+      "title": "東京工業大学 情報理工学院 一般選抜 合格体験記",
+      "url": "https://note.com/cp20/n/n3be2d294a6f3",
+      "date": "2023-03-24T03:12:52.000Z",
+      "source": "note.com"
+    },
+    {
+      "title": "東京工業大学 情報理工学院 総合型選抜 ”不”合格体験記",
+      "url": "https://note.com/cp20/n/n84d2de414f5e",
+      "date": "2023-03-24T03:10:22.000Z",
+      "source": "note.com"
+    },
+    {
+      "title": "【無料】GPUがなくてもStable Diffusionで遊びたい！",
+      "url": "https://zenn.dev/cp20/articles/stable-diffusion-webui-with-modal",
+      "date": "2023-02-06T11:30:00.372Z",
+      "source": "zenn.dev"
+    },
+    {
+      "title": "【受験生が作る】リアルタイム性を重視した新感覚チャットアプリ「のーろぐちゃっと」 | Next.js + WebSocket",
+      "url": "https://zenn.dev/cp20/articles/no-log-chat-app",
+      "date": "2023-01-11T00:07:40.960Z",
+      "source": "zenn.dev"
+    },
+    {
+      "title": "Vonage Video APIを爆速で始める",
+      "url": "https://qiita.com/cp20/items/78f99c6185e720d5881a",
+      "date": "2022-12-21T07:54:56.000Z",
+      "source": "qiita.com"
+    },
+    {
+      "title": "StylelintでCSS-in-JSをlintする時にハマったこと",
+      "url": "https://zenn.dev/cp20/articles/2844af357345cf",
+      "date": "2022-09-19T12:07:11.377Z",
+      "source": "zenn.dev"
+    },
+    {
+      "title": "Twitterの特定のユーザーの画像を全てDLするだけ",
+      "url": "https://qiita.com/cp20/items/3eb5764f91350551b35f",
+      "date": "2022-08-21T05:32:49.000Z",
+      "source": "qiita.com"
+    },
+    {
+      "title": "唐突にダイスの期待値を計算するツールが欲しくなったから1週間で作ってリリースした part3",
+      "url": "https://qiita.com/cp20/items/89aa69111d631e8ac00f",
+      "date": "2022-08-16T07:34:13.000Z",
+      "source": "qiita.com"
+    },
+    {
+      "title": "「それ1メソッドでできますよ」",
+      "url": "https://qiita.com/cp20/items/217b3e18be86ff7a9e38",
+      "date": "2022-07-31T02:18:30.000Z",
+      "source": "qiita.com"
+    },
+    {
+      "title": "唐突にダイスの期待値を計算するツールが欲しくなったから1週間で作ってリリースした part2",
+      "url": "https://qiita.com/cp20/items/577665b3cc0da857e961",
+      "date": "2022-06-29T12:46:32.000Z",
+      "source": "qiita.com"
+    },
+    {
+      "title": "唐突にダイスの期待値を計算するツールが欲しくなったから1週間で作ってリリースした part1",
+      "url": "https://qiita.com/cp20/items/b475b6f6757be814846f",
+      "date": "2022-06-13T12:11:06.000Z",
+      "source": "qiita.com"
+    },
+    {
+      "title": "自作プログラミング言語Lazeで超級積分を解いてみた話",
+      "url": "https://qiita.com/cp20/items/65d473ecc1318544300a",
+      "date": "2021-12-23T14:54:32.000Z",
+      "source": "qiita.com"
+    }
+  ],
+  "repos": [
+    {
+      "name": "traq-bot-ts",
+      "url": "https://github.com/cp-20/traq-bot-ts",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 4,
+      "updatedAt": "2026-09-26T17:50:43Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "dice-spec-v2",
+      "url": "https://github.com/cp-20/dice-spec-v2",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 2,
+      "updatedAt": "2026-09-19T07:36:41Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "KotonohaCollector",
+      "url": "https://github.com/cp-20/KotonohaCollector",
+      "description": "Android IME for collecting personal Japanese input events with offline Mozc conversion",
+      "language": "Kotlin",
+      "stars": 1,
+      "updatedAt": "2026-09-01T00:20:20Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "veryl_cpu",
+      "url": "https://github.com/cp-20/veryl_cpu",
+      "description": "Veryl CPU development starter project",
+      "language": "Makefile",
+      "stars": 0,
+      "updatedAt": "2026-08-24T03:16:57Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "asterion-manifest",
+      "url": "https://github.com/cp-20/asterion-manifest",
+      "description": "",
+      "language": "Shell",
+      "stars": 2,
+      "updatedAt": "2026-08-23T13:21:39Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "web-comic-library",
+      "url": "https://github.com/cp-20/web-comic-library",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 1,
+      "updatedAt": "2026-07-29T09:54:05Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "faster-llm",
+      "url": "https://github.com/cp-20/faster-llm",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2026-07-29T09:15:04Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "1brc-trap",
+      "url": "https://github.com/cp-20/1brc-trap",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 1,
+      "updatedAt": "2026-07-20T07:26:17Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "email-worker",
+      "url": "https://github.com/cp-20/email-worker",
+      "description": "",
+      "language": "JavaScript",
+      "stars": 0,
+      "updatedAt": "2026-07-16T15:39:12Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "free-lecuture-room-explorer",
+      "url": "https://github.com/cp-20/free-lecuture-room-explorer",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-07-08T03:30:59Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "trap-api-playground",
+      "url": "https://github.com/cp-20/trap-api-playground",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-07-02T17:57:35Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traQing",
+      "url": "https://github.com/cp-20/traQing",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 8,
+      "updatedAt": "2026-06-15T16:39:12Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "flutter-test",
+      "url": "https://github.com/cp-20/flutter-test",
+      "description": "",
+      "language": "Dart",
+      "stars": 1,
+      "updatedAt": "2026-05-25T06:20:00Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cp-20",
+      "url": "https://github.com/cp-20/cp-20",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2026-05-24T09:00:12Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "v8-bytecode-inspector",
+      "url": "https://github.com/cp-20/v8-bytecode-inspector",
+      "description": "",
+      "language": "JavaScript",
+      "stars": 0,
+      "updatedAt": "2026-05-24T07:42:17Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "firebase-rules-lsp",
+      "url": "https://github.com/cp-20/firebase-rules-lsp",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2026-04-18T09:35:02Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "web-mini-template",
+      "url": "https://github.com/cp-20/web-mini-template",
+      "description": "",
+      "language": "Go",
+      "stars": 0,
+      "updatedAt": "2026-04-07T12:20:41Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "zenn-contents",
+      "url": "https://github.com/cp-20/zenn-contents",
+      "description": "",
+      "language": "",
+      "stars": 2,
+      "updatedAt": "2026-04-02T12:20:54Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "2026.cp20.dev",
+      "url": "https://github.com/cp-20/2026.cp20.dev",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-04-01T10:35:50Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "lhtrpg-ccfolia-exporter",
+      "url": "https://github.com/cp-20/lhtrpg-ccfolia-exporter",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-02-22T03:22:51Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "ccfolia-log-anonimizer",
+      "url": "https://github.com/cp-20/ccfolia-log-anonimizer",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-02-15T12:28:09Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "multi-worker-benchmark",
+      "url": "https://github.com/cp-20/multi-worker-benchmark",
+      "description": "",
+      "language": "Go",
+      "stars": 0,
+      "updatedAt": "2026-01-27T10:54:07Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "zig-tsdb-practice",
+      "url": "https://github.com/cp-20/zig-tsdb-practice",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2026-01-16T10:35:51Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "jotai-effect-nextjs-repro",
+      "url": "https://github.com/cp-20/jotai-effect-nextjs-repro",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-01-08T11:04:39Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "ruby-regex-practice",
+      "url": "https://github.com/cp-20/ruby-regex-practice",
+      "description": "",
+      "language": "Ruby",
+      "stars": 0,
+      "updatedAt": "2026-01-05T11:51:24Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "awoo",
+      "url": "https://github.com/cp-20/awoo",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2025-11-22T16:45:02Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "2025.cp20.dev",
+      "url": "https://github.com/cp-20/2025.cp20.dev",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 3,
+      "updatedAt": "2025-11-01T08:47:51Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cf-image-worker",
+      "url": "https://github.com/cp-20/cf-image-worker",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2025-10-08T07:36:51Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "pocc",
+      "url": "https://github.com/cp-20/pocc",
+      "description": "",
+      "language": "Rust",
+      "stars": 3,
+      "updatedAt": "2025-10-02T14:26:13Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "jira-to-traq",
+      "url": "https://github.com/cp-20/jira-to-traq",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2025-09-29T10:52:26Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "twitter-ego-searching",
+      "url": "https://github.com/cp-20/twitter-ego-searching",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2025-09-21T15:44:18Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "c-compiler",
+      "url": "https://github.com/cp-20/c-compiler",
+      "description": "",
+      "language": "C",
+      "stars": 7,
+      "updatedAt": "2025-07-22T14:42:43Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "ns-workerd-test",
+      "url": "https://github.com/cp-20/ns-workerd-test",
+      "description": "",
+      "language": "Go",
+      "stars": 0,
+      "updatedAt": "2025-07-18T08:31:23Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "vue-language-tools-test",
+      "url": "https://github.com/cp-20/vue-language-tools-test",
+      "description": "",
+      "language": "Vue",
+      "stars": 0,
+      "updatedAt": "2025-07-10T13:57:18Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "fast-http-server-practice",
+      "url": "https://github.com/cp-20/fast-http-server-practice",
+      "description": "",
+      "language": "Go",
+      "stars": 0,
+      "updatedAt": "2025-06-09T05:09:09Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "marp-sysad-theme",
+      "url": "https://github.com/cp-20/marp-sysad-theme",
+      "description": "",
+      "language": "CSS",
+      "stars": 0,
+      "updatedAt": "2025-06-06T07:33:50Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "veryl-cpu",
+      "url": "https://github.com/cp-20/veryl-cpu",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2025-05-31T09:34:21Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "rust-json-parser",
+      "url": "https://github.com/cp-20/rust-json-parser",
+      "description": "",
+      "language": "Rust",
+      "stars": 0,
+      "updatedAt": "2025-05-02T15:39:33Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "marp-trap-theme",
+      "url": "https://github.com/cp-20/marp-trap-theme",
+      "description": "",
+      "language": "CSS",
+      "stars": 6,
+      "updatedAt": "2025-04-14T05:23:39Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "canvas-jsx",
+      "url": "https://github.com/cp-20/canvas-jsx",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2025-02-25T12:47:26Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "test-expo-app",
+      "url": "https://github.com/cp-20/test-expo-app",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2025-02-16T07:21:40Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "test-react-native-app",
+      "url": "https://github.com/cp-20/test-react-native-app",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2025-02-01T11:47:54Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "passkey-test",
+      "url": "https://github.com/cp-20/passkey-test",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2025-01-11T03:50:15Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "login-automation",
+      "url": "https://github.com/cp-20/login-automation",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2024-12-26T06:58:22Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "test-vite-dependency-chunk",
+      "url": "https://github.com/cp-20/test-vite-dependency-chunk",
+      "description": "",
+      "language": "CSS",
+      "stars": 0,
+      "updatedAt": "2024-12-20T04:48:14Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "sysad-progress-viewer",
+      "url": "https://github.com/cp-20/sysad-progress-viewer",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2024-12-13T11:47:12Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "remote-provisioning-controller",
+      "url": "https://github.com/cp-20/remote-provisioning-controller",
+      "description": "",
+      "language": "Shell",
+      "stars": 0,
+      "updatedAt": "2024-12-12T03:20:05Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "tokyo-tech-syllabus-api",
+      "url": "https://github.com/cp-20/tokyo-tech-syllabus-api",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2024-12-06T05:10:31Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traq-ogp-cache-purger",
+      "url": "https://github.com/cp-20/traq-ogp-cache-purger",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 1,
+      "updatedAt": "2024-12-05T17:09:40Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "2024.cp20.dev",
+      "url": "https://github.com/cp-20/2024.cp20.dev",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-12-01T13:10:30Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "easy-openapi",
+      "url": "https://github.com/cp-20/easy-openapi",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-11-23T05:43:27Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "wsh-scoring-tool",
+      "url": "https://github.com/cp-20/wsh-scoring-tool",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 3,
+      "updatedAt": "2024-11-08T16:20:12Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "wsh-re-2024",
+      "url": "https://github.com/cp-20/wsh-re-2024",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-11-08T13:31:24Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "animal-shogi",
+      "url": "https://github.com/cp-20/animal-shogi",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-10-23T12:11:06Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "tokyo-tech-syllabus",
+      "url": "https://github.com/cp-20/tokyo-tech-syllabus",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-10-02T08:42:24Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "ai-omikuzi",
+      "url": "https://github.com/cp-20/ai-omikuzi",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2024-09-27T13:14:12Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "atcoder-typescript",
+      "url": "https://github.com/cp-20/atcoder-typescript",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-09-23T15:54:36Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "wsh-2024-cf",
+      "url": "https://github.com/cp-20/wsh-2024-cf",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-09-22T13:16:33Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "asterion-ansible",
+      "url": "https://github.com/cp-20/asterion-ansible",
+      "description": "",
+      "language": "Jinja",
+      "stars": 1,
+      "updatedAt": "2024-09-18T02:21:48Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "maze-search",
+      "url": "https://github.com/cp-20/maze-search",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-06-26T04:47:48Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traQ-comic-viewer",
+      "url": "https://github.com/cp-20/traQ-comic-viewer",
+      "description": "",
+      "language": "Vue",
+      "stars": 0,
+      "updatedAt": "2024-06-24T14:51:56Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "simple-server",
+      "url": "https://github.com/cp-20/simple-server",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-05-25T11:35:08Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "dotfiles",
+      "url": "https://github.com/cp-20/dotfiles",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 4,
+      "updatedAt": "2024-05-18T15:29:33Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "vite-react-with-hono-monorepo-template",
+      "url": "https://github.com/cp-20/vite-react-with-hono-monorepo-template",
+      "description": "",
+      "language": "CSS",
+      "stars": 0,
+      "updatedAt": "2024-05-17T01:30:54Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "probability-theory-and-statistics",
+      "url": "https://github.com/cp-20/probability-theory-and-statistics",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-05-08T16:04:03Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cpctf-2024",
+      "url": "https://github.com/cp-20/cpctf-2024",
+      "description": "",
+      "language": "C",
+      "stars": 0,
+      "updatedAt": "2024-05-05T03:30:27Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traQ-tutorial",
+      "url": "https://github.com/cp-20/traQ-tutorial",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 1,
+      "updatedAt": "2024-04-26T03:32:29Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "qidenticon-server",
+      "url": "https://github.com/cp-20/qidenticon-server",
+      "description": "",
+      "language": "Go",
+      "stars": 0,
+      "updatedAt": "2024-04-26T03:31:34Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traq-ping-bot-node",
+      "url": "https://github.com/cp-20/traq-ping-bot-node",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2024-04-20T04:58:13Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traq-ping-bot-deno",
+      "url": "https://github.com/cp-20/traq-ping-bot-deno",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-04-20T04:57:03Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "turing-machine",
+      "url": "https://github.com/cp-20/turing-machine",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-04-12T03:41:35Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "simple-ocw-clone",
+      "url": "https://github.com/cp-20/simple-ocw-clone",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-04-04T13:40:09Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traq-ping-bot",
+      "url": "https://github.com/cp-20/traq-ping-bot",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-04-02T15:00:36Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traQ-clickup-notifier",
+      "url": "https://github.com/cp-20/traQ-clickup-notifier",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 1,
+      "updatedAt": "2024-03-21T15:18:10Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "read-stack",
+      "url": "https://github.com/cp-20/read-stack",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 11,
+      "updatedAt": "2024-03-09T06:51:36Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "bot-yumi",
+      "url": "https://github.com/cp-20/bot-yumi",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2024-03-08T10:59:06Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "simple-collaborative-wiki-poc",
+      "url": "https://github.com/cp-20/simple-collaborative-wiki-poc",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "updatedAt": "2024-02-19T12:39:23Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "read-stack-extension",
+      "url": "https://github.com/cp-20/read-stack-extension",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 2,
+      "updatedAt": "2024-01-28T08:44:18Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traQ-analyis-platform",
+      "url": "https://github.com/cp-20/traQ-analyis-platform",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2023-12-22T14:39:11Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "nuxt3-template",
+      "url": "https://github.com/cp-20/nuxt3-template",
+      "description": "",
+      "language": "JavaScript",
+      "stars": 0,
+      "updatedAt": "2023-12-05T08:31:23Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "app-router-with-shadcn-template",
+      "url": "https://github.com/cp-20/app-router-with-shadcn-template",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 2,
+      "updatedAt": "2023-09-27T01:14:03Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "2023.cp20.dev",
+      "url": "https://github.com/cp-20/2023.cp20.dev",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2023-06-29T07:28:28Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "no-log-chat",
+      "url": "https://github.com/cp-20/no-log-chat",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 3,
+      "updatedAt": "2023-03-19T05:24:55Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "no-log-chat-server",
+      "url": "https://github.com/cp-20/no-log-chat-server",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2023-01-11T10:05:19Z",
+      "fork": false,
+      "archived": false
+    }
+  ],
+  "sources": {
+    "zenn.dev": {
+      "status": "ok",
+      "lastSuccess": "2026-09-27T11:55:57.664Z",
+      "count": 11
+    },
+    "qiita.com": {
+      "status": "ok",
+      "lastSuccess": "2026-09-27T11:55:57.664Z",
+      "count": 9
+    },
+    "note.com": {
+      "status": "ok",
+      "lastSuccess": "2026-09-27T11:55:57.664Z",
+      "count": 7
+    },
+    "trap.jp": {
+      "status": "stale",
+      "lastSuccess": "2026-09-27T09:24:25.778Z",
+      "count": 15,
+      "reason": "sso_required"
+    },
+    "sizu.me": {
+      "status": "ok",
+      "lastSuccess": "2026-09-27T11:55:57.664Z",
+      "count": 11
+    },
+    "github.com": {
+      "status": "ok",
+      "lastSuccess": "2026-09-27T11:55:57.664Z",
+      "count": 122
+    }
+  },
+  "checkedAt": "2026-09-27T11:55:57.664Z"
+}

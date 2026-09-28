@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+.env*
+!.env.example
+
+.qa/
+
+firebase-debug.log*
+ui-debug.log*
+database-debug.log*
+
+# Local delivery bundles and preview exports
+/*.zip
+/preview-*.png

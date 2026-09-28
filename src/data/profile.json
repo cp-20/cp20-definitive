@@ -1,0 +1,20 @@
+{
+  "name": "しーぴー🍀",
+  "description": "世の中にはね、無駄なことなんかひとつだってないのよ、きっと",
+  "links": [
+    { "name": "Twitter", "url": "https://twitter.com/__cp20__" },
+    { "name": "mixi2", "url": "https://mixi.social/@cp20" },
+    { "name": "GitHub", "url": "https://github.com/cp-20" },
+    { "name": "Zenn", "url": "https://zenn.dev/cp20" },
+    { "name": "Qiita", "url": "https://qiita.com/cp20" }
+  ],
+  "affiliations": [
+    {
+      "name": "東京科学大学 情報工学系 学士4年",
+      "url": "https://www.isct.ac.jp",
+      "sub": [{ "name": "権藤研", "url": "https://gondowlab.jimdofree.com" }]
+    },
+    { "name": "デジタル創作同好会traP", "url": "https://trap.jp" },
+    { "name": "CA Tech Lounge", "url": "https://www.cyberagent.co.jp/careers/special/students/tech_lounge" }
+  ]
+}

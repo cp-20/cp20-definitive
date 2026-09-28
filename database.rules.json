@@ -1,0 +1,53 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "pages": {
+      "$page": {
+        ".validate": "$page.matches(/^(home|about|articles|works|works--minna-no-monosashi|works--2026-portfolio|works--2025-portfolio|works--isuc|works--foodmoji|works--trap-conference|works--wsh-scoring-tool|works--c-compiler|works--traq-ing|works--2024-portfolio|works--tokyo-tech-syllabus|works--read-stack|works--dice-spec-v2|works--trap-mission|works--2023-portfolio|works--titech-lecture-list|works--no-log-chat|works--dice-spec-v1)$/)",
+        ".indexOn": [
+          "updatedAt"
+        ],
+        ".read": "query.orderByChild == 'updatedAt' && query.limitToLast != null && query.limitToLast <= 100",
+        "$uid": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": "auth != null && auth.uid == $uid && (!newData.exists() || !data.exists() || now >= data.child('updatedAt').val() + 1000)",
+          ".validate": "newData.hasChildren(['updatedAt','stamps'])",
+          "updatedAt": {
+            ".validate": "newData.val() == now"
+          },
+          "stamps": {
+            ".validate": "newData.hasChildren()",
+            "$slot": {
+              ".validate": "$slot.matches(/^[0-4]$/) && newData.hasChildren(['anchor','x','y','kind','angle','createdAt'])",
+              "anchor": {
+                ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9-]{1,96}$/)"
+              },
+              "x": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1"
+              },
+              "y": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1"
+              },
+              "kind": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5 && newData.val() % 1 == 0"
+              },
+              "angle": {
+                ".validate": "newData.isNumber() && newData.val() >= -20 && newData.val() <= 20"
+              },
+              "createdAt": {
+                ".validate": "newData.isNumber() && (newData.val() == now || (data.exists() && newData.val() == data.val()))"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "projects": { "default": "cp20-platform" },
+  "targets": { "cp20-platform": { "database": { "portfolio-stamps": ["cp20-platform-portfolio-stamps"] } } }
+}
