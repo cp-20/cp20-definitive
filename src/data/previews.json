@@ -22,17 +22,17 @@
   },
   "https://wsh.trap.show": {
     "image": null,
-    "icon": "https://wsh.trap.show/favicon.ico",
+    "icon": null,
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-09-27T13:09:15.498Z"
+    "checkedAt": "2026-09-28T14:16:42.289Z"
   },
   "https://2025.cp20.dev": {
     "image": null,
     "icon": "https://2025.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-09-27T13:09:15.908Z"
+    "checkedAt": "2026-09-28T14:16:43.997Z"
   },
   "https://traqing.cp20.dev": {
     "image": "https://traqing.cp20.dev/og.png",
@@ -42,11 +42,11 @@
     "checkedAt": "2026-09-27T12:59:57.514Z"
   },
   "https://github.com/traP-jp/isuc": {
-    "image": null,
+    "image": "https://opengraph.githubassets.com/5b015bb344dffbaee22c005a34c31dbe0517f463773a07cd80304268c6e80fba/traP-jp/isuc",
     "icon": "https://github.githubassets.com/favicons/favicon.png",
     "width": 1200,
     "height": 600,
-    "checkedAt": "2026-09-27T13:09:15.492Z"
+    "checkedAt": "2026-09-28T14:16:43.096Z"
   },
   "https://read-stack.cp20.dev": {
     "image": "https://read-stack.cp20.dev/ogp.png",
@@ -88,7 +88,7 @@
     "icon": "https://2023.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-09-27T13:09:15.199Z"
+    "checkedAt": "2026-09-28T14:16:42.322Z"
   },
   "https://minna-no-monosashi.lolipop-now.app/": {
     "image": "https://minna-no-monosashi.lolipop-now.app/og/default?v=4",
@@ -495,5 +495,12 @@
     "width": 1200,
     "height": 630,
     "checkedAt": "2026-09-27T13:09:16.546Z"
+  },
+  "https://2024.cp20.dev": {
+    "image": null,
+    "icon": "https://2024.cp20.dev/apple-touch-icon.png",
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-09-28T14:16:44.518Z"
   }
 }
