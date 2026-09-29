@@ -474,7 +474,7 @@ export function Works() {
               <span class="work-number">{String(i() + 1).padStart(2, '0')}</span>
               <div>
                 <Show when={featuredIds.includes(w.id)}>
-                  <span class="work-featured-label">SELECTED</span>
+                  <span class="work-featured-label">おすすめ</span>
                 </Show>
                 <h2>
                   <a href={`/works/${w.id}`}>

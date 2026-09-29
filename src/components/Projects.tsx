@@ -72,9 +72,11 @@ export default function Projects() {
               onClick={() => choose(i())}
               data-project-tab={i()}
             >
-              <span class="project-order">0{i() + 1}</span>
-              <OriginalIcon url={p.url} name={p.title} />
-              <span>{p.title}</span>
+              <span class="project-spot">
+                <OriginalIcon url={p.url} name={p.title} />
+                <span class="project-order">0{i() + 1}</span>
+              </span>
+              <span class="project-name">{p.title}</span>
               {p.id === 'minna-no-monosashi' && <small>NEW</small>}
             </button>
           )}
@@ -134,11 +136,6 @@ export default function Projects() {
         </For>
       </div>
       <div class="featured-bottom">
-        <div class="deck-dots" aria-hidden="true">
-          <For each={projects}>
-            {(_, i) => <span data-active={selected() === i() ? 'true' : undefined} />}
-          </For>
-        </div>
         <span class="project-page">
           0{selected() + 1} <span>/ 03</span>
         </span>

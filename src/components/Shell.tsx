@@ -1,4 +1,4 @@
-import { createSignal, onSettled, For, Show } from 'solid-js';
+import { createSignal, onSettled, For } from 'solid-js';
 import type { JSX } from '@solidjs/web';
 import Icon, { type IconName } from './Icon';
 import { StampButton } from './Stamps';
@@ -22,50 +22,49 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
       localStorage.setItem('cp20-theme', next);
     } catch {}
   }
+  const section = () =>
+    props.path === '/' ? 'home' : props.path.startsWith('/works') ? 'works' : props.path.slice(1) || 'home';
   return (
     <>
       <a class="skip-link" href="#main">
         本文へスキップ
       </a>
-      <aside class="rail">
-        <a href="/" class="rail-logo" aria-label="cp20.dev ホーム">
-          <Icon name="Clover" size={28} />
-        </a>
-        <nav aria-label="メインナビゲーション">
-          <For each={navigation}>
-            {(n) => {
-              const current = () => (n.href === '/' ? props.path === '/' : props.path.startsWith(n.href));
-              return (
-                <a href={n.href} aria-current={current() ? 'page' : undefined}>
-                  <Show when={current()}>
-                    <span class="nav-pill" aria-hidden="true" />
-                  </Show>
-                  <Icon name={n.icon} />
+      <div class="site-body" data-stamp-anchor="page" data-section={section()}>
+        <aside class="rail">
+          <nav aria-label="メインナビゲーション">
+            <For each={navigation}>
+              {(n) => (
+                <a
+                  href={n.href}
+                  data-tab={n.href === '/' ? 'home' : n.href.slice(1)}
+                  aria-current={
+                    (n.href === '/' ? props.path === '/' : props.path.startsWith(n.href)) ? 'page' : undefined
+                  }
+                >
+                  <Icon name={n.icon} size={18} />
                   <span>{n.label}</span>
                 </a>
-              );
-            }}
-          </For>
-        </nav>
-        <div class="rail-bottom">
-          <button
-            class="icon-button theme-toggle"
-            aria-label="配色を切り替える"
-            aria-pressed={theme() === 'dark' ? 'true' : 'false'}
-            onClick={toggleTheme}
-          >
-            <Icon name="Sun" class="theme-sun" />
-            <Icon name="Moon" class="theme-moon" />
-          </button>
-        </div>
-      </aside>
-      <div class="site-body" data-stamp-anchor="page">
+              )}
+            </For>
+          </nav>
+        </aside>
         <header class="site-header wrap" data-stamp-anchor="header">
           <a class="brand" href="/">
             <img src="/stamps/clover.svg" alt="" width="22" height="22" />
             cp20.dev<span class="edition-label">definitive</span>
           </a>
-          <StampButton />
+          <div class="header-tools">
+            <button
+              class="icon-button theme-toggle"
+              aria-label="配色を切り替える"
+              aria-pressed={theme() === 'dark' ? 'true' : 'false'}
+              onClick={toggleTheme}
+            >
+              <Icon name="Sun" class="theme-sun" />
+              <Icon name="Moon" class="theme-moon" />
+            </button>
+            <StampButton />
+          </div>
         </header>
         <main id="main">{props.children}</main>
         <footer class="site-footer wrap" data-stamp-anchor="footer">

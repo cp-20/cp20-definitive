@@ -1,3 +1,5 @@
+import '@fontsource/zen-maru-gothic/500.css';
+import '@fontsource/zen-maru-gothic/700.css';
 import './styles/app.css';
 import { For, createMemo } from 'solid-js';
 import Shell from './components/Shell';

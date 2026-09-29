@@ -116,3 +116,17 @@ ABOUT MEの写真を基準に、作品画像には白い縁とテープ、記事
 
 - [MDN History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API)
 - [MDN Same-document view transitions](https://developer.mozilla.org/en-US/docs/Web/API/View_Transition_API/Using#basic_spa_view_transition)
+
+## スタンプ帳への再設計（2026-09-29）
+
+一般的なカード並びのUIから離れ、本人の歴代サイトの要素を引き継いで独自の見た目にした。
+
+| 出典 | 引き継いだ要素 |
+| --- | --- |
+| 2024版（ソース） | エメラルドの名前、「しーぴーくんのお手製サイト」の手作り感、趣味の並び |
+| 2025版（ソース） | ゆるい雰囲気、アニメ調の背景イラスト、見出しの点線下線、ポップインの動き |
+| 2026版（ソース） | 1つの道具（ターミナル）でサイト全体を表す一貫した世界観 |
+| definitive | 訪問者のスタンプ、🍀、アイコン |
+
+テーマは「スタンプ帳」。訪問者がスタンプを押す機能を中心に据え、ページ全体をルーズリーフ、ナビをインデックスタブ、主な作品と経歴をスタンプラリー、歴代サイトを切手として表現した。
+外部サイト（yui540、Lynn Fisher、Poolsuite など）は今回の実行環境のネットワーク制限で閲覧できなかったため、前回の調査記録を参照した。
