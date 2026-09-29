@@ -25,14 +25,14 @@
     "icon": null,
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-09-28T14:16:42.289Z"
+    "checkedAt": "2026-09-29T05:48:02.075Z"
   },
   "https://2025.cp20.dev": {
     "image": null,
     "icon": "https://2025.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-09-28T23:19:28.310Z"
+    "checkedAt": "2026-09-29T05:48:01.704Z"
   },
   "https://traqing.cp20.dev": {
     "image": "https://traqing.cp20.dev/og.png",
@@ -88,7 +88,7 @@
     "icon": "https://2023.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-09-28T23:19:25.346Z"
+    "checkedAt": "2026-09-29T05:47:59.621Z"
   },
   "https://minna-no-monosashi.lolipop-now.app/": {
     "image": "https://minna-no-monosashi.lolipop-now.app/og/default?v=4",
@@ -501,6 +501,6 @@
     "icon": "https://2024.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-09-28T23:19:27.750Z"
+    "checkedAt": "2026-09-29T05:48:01.481Z"
   }
 }
