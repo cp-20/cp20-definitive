@@ -6,9 +6,12 @@ import { featuredIds } from '../data/editorial';
 export const projects = featuredIds.map((id) => works.find((w) => w.id === id)!);
 export default function Projects() {
   const [selected, setSelected] = createSignal(0);
+  const [direction, setDirection] = createSignal<'next' | 'prev'>('next');
   let tabs!: HTMLDivElement;
   function choose(i: number, focus = false) {
     const next = (i + 3) % 3;
+    if (next === selected()) return focus && (tabs.children[next] as HTMLButtonElement).focus();
+    setDirection(i > selected() ? 'next' : 'prev');
     setSelected(next);
     if (focus) (tabs.children[next] as HTMLButtonElement).focus();
   }
@@ -20,6 +23,18 @@ export default function Projects() {
         true,
       );
     }
+  };
+  // Horizontal swipe on touch screens; vertical scrolling stays native (touch-action: pan-y).
+  let swipe = { x: 0, y: 0, id: -1 };
+  const swipeStart = (e: PointerEvent) => {
+    if (e.pointerType !== 'mouse' && e.isPrimary) swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
+  };
+  const swipeEnd = (e: PointerEvent) => {
+    if (e.pointerId !== swipe.id) return;
+    swipe.id = -1;
+    const dx = e.clientX - swipe.x,
+      dy = e.clientY - swipe.y;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4) choose(selected() + (dx < 0 ? 1 : -1));
   };
   return (
     <section
@@ -37,7 +52,14 @@ export default function Projects() {
           <Icon name="ArrowRight" size={16} />
         </a>
       </div>
-      <div class="featured-selector" ref={tabs} role="tablist" aria-label="主な3作品" onKeyDown={keyboard}>
+      <div
+        class="featured-selector"
+        ref={tabs}
+        role="tablist"
+        aria-label="主な3作品"
+        onKeyDown={keyboard}
+        style={{ '--selected': selected() }}
+      >
         <For each={projects}>
           {(p, i) => (
             <button
@@ -58,7 +80,13 @@ export default function Projects() {
           )}
         </For>
       </div>
-      <div class="project-deck">
+      <div
+        class="project-deck"
+        data-direction={direction()}
+        onPointerDown={swipeStart}
+        onPointerUp={swipeEnd}
+        onPointerCancel={() => (swipe.id = -1)}
+      >
         <For each={projects}>
           {(p, i) => (
             <article
@@ -106,6 +134,11 @@ export default function Projects() {
         </For>
       </div>
       <div class="featured-bottom">
+        <div class="deck-dots" aria-hidden="true">
+          <For each={projects}>
+            {(_, i) => <span data-active={selected() === i() ? 'true' : undefined} />}
+          </For>
+        </div>
         <span class="project-page">
           0{selected() + 1} <span>/ 03</span>
         </span>

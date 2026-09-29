@@ -31,6 +31,25 @@ const StampContext = createContext<{
   enabled: () => boolean;
   active: () => boolean;
 }>();
+const visualKey = (s: Pick<PlacedStamp, 'anchor' | 'x' | 'y' | 'kind' | 'angle'>) =>
+  `${s.anchor}|${s.x}|${s.y}|${s.kind}|${s.angle}`;
+function withoutKey(set: ReadonlySet<string>, key: string) {
+  const next = new Set(set);
+  next.delete(key);
+  return next;
+}
+// Layout position relative to <body>, ignoring transforms and scroll.
+function layoutBox(el: HTMLElement) {
+  let x = 0,
+    y = 0,
+    node: HTMLElement | null = el;
+  while (node && node !== document.body) {
+    x += node.offsetLeft;
+    y += node.offsetTop;
+    node = node.offsetParent as HTMLElement | null;
+  }
+  return { x, y, w: el.offsetWidth, h: el.offsetHeight };
+}
 function StampFace(props: { kind: number }) {
   return (
     <img
@@ -51,11 +70,15 @@ export function StampButton() {
         aria-label="ページにスタンプを置く"
         aria-pressed={stamp.active() ? 'true' : 'false'}
       >
-        <img src="/stamps/clover.svg" alt="" width="18" height="18" />
-        <span>スタンプ</span>
-        <span class="stamp-count" aria-hidden="true">
-          {stamp.count() || '+'}
-        </span>
+        <img src="/stamps/clover.svg" alt="" width="20" height="20" />
+        <span class="stamp-trigger-label">{stamp.active() ? '閉じる' : 'スタンプ'}</span>
+        <For each={[stamp.count()]}>
+          {(count) => (
+            <span class="stamp-count" aria-hidden="true">
+              {count || '+'}
+            </span>
+          )}
+        </For>
       </button>
     </Show>
   );
@@ -71,7 +94,10 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     [failed, setFailed] = createSignal<Operation | null>(null),
     [revision, setRevision] = createSignal(0),
     [owner, setOwner] = createSignal(''),
-    [pointer, setPointer] = createSignal({ x: 200, y: 200 });
+    [pointer, setPointer] = createSignal({ x: 200, y: 200 }),
+    [pressing, setPressing] = createSignal(false),
+    [fresh, setFresh] = createSignal<ReadonlySet<string>>(new Set()),
+    [leaving, setLeaving] = createSignal<ReadonlySet<string>>(new Set());
   const cache = new Map<string, PlacedStamp[]>(),
     resolved = new Map<string, PlacedStamp>();
   let clientPromise: Promise<typeof import('../stamps-client')> | undefined;
@@ -102,9 +128,9 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     return projected().flatMap((stamp) => {
       const anchor = document.querySelector<HTMLElement>(`[data-stamp-anchor="${CSS.escape(stamp.anchor)}"]`);
       if (!anchor || anchor.closest('[inert]') || getComputedStyle(anchor).visibility === 'hidden') return [];
-      const r = anchor.getBoundingClientRect();
-      return r.width && r.height
-        ? [{ ...stamp, left: r.left + r.width * stamp.x, top: r.top + r.height * stamp.y }]
+      const box = layoutBox(anchor);
+      return box.w && box.h
+        ? [{ ...stamp, key: visualKey(stamp), left: box.x + box.w * stamp.x, top: box.y + box.h * stamp.y }]
         : [];
     });
   });
@@ -158,7 +184,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       setOwner(localStorage.getItem('cp20-stamp-owner') || '');
       setKind(Number(localStorage.getItem('cp20-stamp-kind')) || 0);
     } catch {}
-    window.addEventListener('scroll', reposition, { passive: true });
     window.addEventListener('resize', reposition);
     const resize = new ResizeObserver(reposition);
     resize.observe(document.querySelector('.site-body')!);
@@ -177,7 +202,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       resize.disconnect();
       mutations.disconnect();
       cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', reposition);
       window.removeEventListener('resize', reposition);
       document.removeEventListener('keydown', key);
     };
@@ -250,7 +274,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         setMessage('保存できませんでした。表示を元に戻しました。');
       });
   }
-  function put(x: number, y: number) {
+  function put(x: number, y: number, touch = false) {
     const below = document
       .elementsFromPoint(x, y)
       .find((el) => !el.closest('.stamp-ui,.stamp-overlay,.stamp-layer'));
@@ -258,36 +282,51 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       below?.closest<HTMLElement>('[data-stamp-anchor]') ||
       document.querySelector<HTMLElement>('[data-stamp-anchor="page"]');
     if (!anchor || below?.closest('.rail') || anchor.closest('[inert]')) return;
-    let r = anchor.getBoundingClientRect();
-    while (x < r.left || x > r.right || y < r.top || y > r.bottom) {
+    // Page coordinates follow the document, so stamps scroll natively with the content.
+    const page = document.body.getBoundingClientRect(),
+      px = x - page.left,
+      py = y - page.top;
+    let box = layoutBox(anchor);
+    while (px < box.x || px > box.x + box.w || py < box.y || py > box.y + box.h) {
       anchor = anchor.parentElement?.closest<HTMLElement>('[data-stamp-anchor]') || null;
       if (!anchor) return;
-      r = anchor.getBoundingClientRect();
+      box = layoutBox(anchor);
     }
     const id = crypto.randomUUID();
-    enqueue({
-      type: 'add',
+    const stamp: PlacedStamp = {
       id,
-      path: props.path,
-      stamp: {
-        id,
-        owner: 'local',
-        slot: '',
-        anchor: anchor.dataset.stampAnchor!,
-        x: (x - r.left) / r.width,
-        y: (y - r.top) / r.height,
-        kind: kind(),
-        angle: Math.round(Math.random() * 24 - 12),
-        createdAt: Date.now(),
-      },
-    });
+      owner: 'local',
+      slot: '',
+      anchor: anchor.dataset.stampAnchor!,
+      x: (px - box.x) / box.w,
+      y: (py - box.y) / box.h,
+      kind: kind(),
+      angle: Math.round(Math.random() * 24 - 12),
+      createdAt: Date.now(),
+    };
+    const key = visualKey(stamp);
+    setFresh((set) => new Set(set).add(key));
+    setTimeout(() => setFresh((set) => withoutKey(set, key)), 900);
+    if (touch) navigator.vibrate?.(12);
+    enqueue({ type: 'add', id, path: props.path, stamp });
   }
-  function erase(target: PlacedStamp) {
+  function erase(target: PlacedStamp, done?: () => void) {
     if (target.owner !== owner() && target.owner !== 'local') return;
-    enqueue({ type: 'remove', id: crypto.randomUUID(), path: props.path, target });
+    const key = visualKey(target);
+    if (leaving().has(key)) return;
+    const commit = () => {
+      setLeaving((set) => withoutKey(set, key));
+      enqueue({ type: 'remove', id: crypto.randomUUID(), path: props.path, target });
+      flush();
+      done?.();
+    };
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return commit();
+    // Let the stamp lift off before the optimistic removal takes it out of the layer.
+    setLeaving((set) => new Set(set).add(key));
+    setTimeout(commit, 170);
   }
   function undo() {
-    const target = own()[0];
+    const target = own().find((s) => !leaving().has(visualKey(s)));
     if (target) erase(target);
   }
   function keyboard(e: KeyboardEvent) {
@@ -319,28 +358,48 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         data-erasing={active() && erasing() ? 'true' : undefined}
         aria-hidden={active() && erasing() ? undefined : 'true'}
       >
-        <For each={visible()} keyed={(s) => s.id}>
-          {(s) => (
+        <For each={visible()} keyed={(s) => s.key}>
+          {(s, i) => (
             <span
               class="placed-stamp"
               data-stamp-id={s().id}
               data-owned={s().owner === owner() || s().owner === 'local' ? 'true' : undefined}
               data-pending={s().owner === 'local' ? 'true' : undefined}
-              style={{ translate: `${s().left}px ${s().top}px`, '--angle': `${s().angle}deg` }}
+              data-fresh={fresh().has(s().key) ? 'true' : undefined}
+              data-leaving={leaving().has(s().key) ? 'true' : undefined}
+              style={{
+                translate: `${s().left}px ${s().top}px`,
+                '--angle': `${s().angle}deg`,
+                '--delay': `${(i() % 8) * 35}ms`,
+              }}
             >
-              <StampFace kind={s().kind} />
-              <Show when={active() && erasing() && (s().owner === owner() || s().owner === 'local')}>
+              <span class="stamp-face">
+                <StampFace kind={s().kind} />
+              </span>
+              <Show when={fresh().has(s().key)}>
+                <span class="stamp-burst" aria-hidden="true">
+                  <For each={[0, 1, 2, 3, 4, 5, 6, 7]}>{(n) => <i style={{ '--n': n }} />}</For>
+                </span>
+              </Show>
+              <Show
+                when={
+                  active() &&
+                  erasing() &&
+                  !leaving().has(s().key) &&
+                  (s().owner === owner() || s().owner === 'local')
+                }
+              >
                 <button
                   class="stamp-delete"
                   aria-label={`${kinds[s().kind]?.name || 'しーぴー'}のスタンプを削除`}
-                  onClick={() => {
-                    erase(s());
-                    flush();
-                    (
-                      document.querySelector<HTMLButtonElement>('.stamp-delete') ||
-                      document.querySelector<HTMLButtonElement>(".stamp-modes button[aria-pressed='true']")
-                    )?.focus({ preventScroll: true });
-                  }}
+                  onClick={() =>
+                    erase(s(), () =>
+                      (
+                        document.querySelector<HTMLButtonElement>('.stamp-delete') ||
+                        document.querySelector<HTMLButtonElement>(".stamp-modes button[aria-pressed='true']")
+                      )?.focus({ preventScroll: true }),
+                    )
+                  }
                 >
                   <span aria-hidden="true">
                     <Icon name="X" size={12} />
@@ -367,27 +426,35 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
             if (e.pointerType === 'mouse') setPointer({ x: e.clientX, y: e.clientY });
           }}
           onPointerDown={(e) => {
-            if (e.isPrimary && e.button === 0) down = { x: e.clientX, y: e.clientY, id: e.pointerId };
+            if (!e.isPrimary || e.button !== 0) return;
+            down = { x: e.clientX, y: e.clientY, id: e.pointerId };
+            if (e.pointerType === 'mouse') setPressing(true);
           }}
           onPointerUp={(e) => {
+            setPressing(false);
             if (
               !erasing() &&
               e.pointerId === down.id &&
               Math.hypot(e.clientX - down.x, e.clientY - down.y) < 8
             )
-              put(e.clientX, e.clientY);
+              put(e.clientX, e.clientY, e.pointerType !== 'mouse');
             down.id = -1;
           }}
           onPointerCancel={() => {
+            setPressing(false);
             down.id = -1;
           }}
+          onPointerLeave={() => setPressing(false)}
         >
           <span
             class="stamp-cursor"
+            data-pressing={pressing() ? 'true' : undefined}
             style={{ translate: `${pointer().x}px ${pointer().y}px` }}
             aria-hidden="true"
           >
-            <StampFace kind={kind()} />
+            <span class="stamp-face">
+              <StampFace kind={kind()} />
+            </span>
           </span>
         </div>
         <section class="stamp-ui stamp-tools" aria-label="スタンプの道具">
@@ -408,7 +475,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           </div>
           <div class="stamp-modes" role="group" aria-label="スタンプの操作">
             <button aria-pressed={erasing() ? 'false' : 'true'} onClick={() => setErasing(false)}>
-              <Icon name="Plus" size={15} />
+              <Icon name="Stamp" size={16} />
               置く
             </button>
             <button
@@ -421,7 +488,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
                 } catch {}
               }}
             >
-              <Icon name="Eraser" size={15} />
+              <Icon name="Eraser" size={16} />
               消す
             </button>
           </div>

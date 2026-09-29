@@ -13,10 +13,11 @@ export function ArticleRows(props: { items: Article[] }) {
   return (
     <div class="article-list">
       <For each={props.items}>
-        {(a) => (
+        {(a, i) => (
           <a
             href={a.url}
             class="article-row"
+            style={{ '--i': Math.min(i(), 10) }}
             data-stamp-anchor={articleAnchor(a.url)}
             data-article
             data-date={a.date}
@@ -49,7 +50,7 @@ export function Home() {
             fetchpriority="high"
           />
           <div>
-            <p class="eyebrow">WEB ENGINEER / TOKYO</p>
+            <p class="eyebrow">Web Engineer / Tokyo</p>
             <h1 id="hero-title">
               しーぴー<span>cp20</span>
             </h1>
@@ -261,7 +262,7 @@ export function About() {
                     referrerpolicy="no-referrer"
                   />
                   <span class="play-symbol" aria-hidden="true">
-                    ▶
+                    <Icon name="Play" size={18} />
                   </span>
                 </div>
                 <div>
@@ -412,7 +413,10 @@ export function Articles() {
               </p>
             }
           >
-            <ArticleRows items={filtered()} />
+            {/* Remount on filter change so the new list settles in with a short stagger. */}
+            <For each={[`${filters.source}|${filters.order}`]}>
+              {() => <ArticleRows items={filtered()} />}
+            </For>
           </Show>
         </div>
         <details class="source-details">
@@ -463,7 +467,7 @@ export function Works() {
         </h1>
         <p class="intro">個人開発・チーム開発の制作物。</p>
       </header>
-      <section aria-label="制作した作品">
+      <section class="work-grid" aria-label="制作した作品">
         <For each={projects}>
           {(w, i) => (
             <article class="work-index-item" data-stamp-anchor={`work-${w.id}`}>

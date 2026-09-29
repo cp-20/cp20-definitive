@@ -1,5 +1,4 @@
-import './styles/global.css';
-import './styles/refinements.css';
+import './styles/app.css';
 import { For, createMemo } from 'solid-js';
 import Shell from './components/Shell';
 import { StampProvider } from './components/Stamps';

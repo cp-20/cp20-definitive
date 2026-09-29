@@ -21,6 +21,12 @@ import {
   Plus,
   RotateCcw,
   Eraser,
+  Stamp,
+  Sun,
+  Moon,
+  Play,
+  ArrowUp,
+  Star,
 } from 'lucide';
 const icons = {
   ArrowUpRight,
@@ -44,9 +50,15 @@ const icons = {
   Plus,
   RotateCcw,
   Eraser,
+  Stamp,
+  Sun,
+  Moon,
+  Play,
+  ArrowUp,
+  Star,
 };
 export type IconName = keyof typeof icons;
-export default function Icon(props: { name: IconName; size?: number; class?: string }) {
+export default function Icon(props: { name: IconName; size?: number; class?: string; stroke?: number }) {
   // Official Lucide node data; no Solid 1 runtime from a framework wrapper.
   return (
     <svg
@@ -55,7 +67,7 @@ export default function Icon(props: { name: IconName; size?: number; class?: str
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      stroke-width="1.7"
+      stroke-width={props.stroke ?? 1.8}
       stroke-linecap="round"
       stroke-linejoin="round"
       aria-hidden="true"

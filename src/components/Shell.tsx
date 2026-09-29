@@ -1,4 +1,4 @@
-import { createSignal, onSettled, For } from 'solid-js';
+import { createSignal, onSettled, For, Show } from 'solid-js';
 import type { JSX } from '@solidjs/web';
 import Icon, { type IconName } from './Icon';
 import { StampButton } from './Stamps';
@@ -33,17 +33,18 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
         </a>
         <nav aria-label="メインナビゲーション">
           <For each={navigation}>
-            {(n) => (
-              <a
-                href={n.href}
-                aria-current={
-                  (n.href === '/' ? props.path === '/' : props.path.startsWith(n.href)) ? 'page' : undefined
-                }
-              >
-                <Icon name={n.icon} />
-                <span>{n.label}</span>
-              </a>
-            )}
+            {(n) => {
+              const current = () => (n.href === '/' ? props.path === '/' : props.path.startsWith(n.href));
+              return (
+                <a href={n.href} aria-current={current() ? 'page' : undefined}>
+                  <Show when={current()}>
+                    <span class="nav-pill" aria-hidden="true" />
+                  </Show>
+                  <Icon name={n.icon} />
+                  <span>{n.label}</span>
+                </a>
+              );
+            }}
           </For>
         </nav>
         <div class="rail-bottom">
@@ -53,14 +54,16 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
             aria-pressed={theme() === 'dark' ? 'true' : 'false'}
             onClick={toggleTheme}
           >
-            <Icon name="SunMoon" />
+            <Icon name="Sun" class="theme-sun" />
+            <Icon name="Moon" class="theme-moon" />
           </button>
         </div>
       </aside>
       <div class="site-body" data-stamp-anchor="page">
         <header class="site-header wrap" data-stamp-anchor="header">
           <a class="brand" href="/">
-            cp20.dev<span class="edition-label">DEFINITIVE EDITION</span>
+            <img src="/stamps/clover.svg" alt="" width="22" height="22" />
+            cp20.dev<span class="edition-label">definitive</span>
           </a>
           <StampButton />
         </header>
@@ -91,7 +94,10 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
               <a href="https://lucide.dev">Lucide</a> ·{' '}
               <a href="https://github.com/jdecked/twemoji">Twemoji</a>
             </span>
-            <a href="#main">先頭へ ↑</a>
+            <a href="#main" class="to-top">
+              先頭へ
+              <Icon name="ArrowUp" size={14} />
+            </a>
           </div>
         </footer>
       </div>
