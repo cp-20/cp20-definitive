@@ -1,7 +1,7 @@
 import { createSignal, createStore, createMemo, createEffect, onSettled, For, Show } from 'solid-js';
 import { httpStatus } from '@solidjs/web';
 import Icon from './components/Icon';
-import { OGImage, OriginalIcon, articleAnchor } from './components/Preview';
+import { OGImage, OriginalIcon, Postmark, articleAnchor, postmarkDate } from './components/Preview';
 import Projects from './components/Projects';
 import { articles, works, repos, sources, updatedAt, formatDate, type Article } from './data/content';
 import { featuredIds, milestones, editions } from './data/editorial';
@@ -23,6 +23,7 @@ export function ArticleRows(props: { items: Article[] }) {
             data-date={a.date}
           >
             <OGImage url={a.url} alt="" />
+            <Postmark date={postmarkDate(a.date)} top={a.source} bottom="POST" />
             <div class="article-text">
               <div class="article-meta">
                 <time datetime={a.date}>{formatDate(a.date)}</time>
@@ -42,13 +43,15 @@ export function Home() {
     <div class="wrap">
       <section data-stamp-anchor="intro" class="home-intro" aria-labelledby="hero-title">
         <div class="identity">
-          <img
-            src="/images/avatar.png"
-            alt="しーぴーのアイコン"
-            width="88"
-            height="88"
-            fetchpriority="high"
-          />
+          <span class="avatar-stamp">
+            <img
+              src="/images/avatar.png"
+              alt="しーぴーのアイコン"
+              width="88"
+              height="88"
+              fetchpriority="high"
+            />
+          </span>
           <div>
             <p class="eyebrow">Web Engineer / Tokyo</p>
             <h1 id="hero-title">
@@ -142,13 +145,15 @@ export function About() {
     <div class="wrap about-page">
       <header class="profile-header" data-stamp-anchor="profile">
         <div class="profile-avatar">
-          <img
-            src="/images/avatar.png"
-            width="208"
-            height="208"
-            alt="しーぴーのアイコン"
-            fetchpriority="high"
-          />
+          <span class="avatar-stamp">
+            <img
+              src="/images/avatar.png"
+              width="208"
+              height="208"
+              alt="しーぴーのアイコン"
+              fetchpriority="high"
+            />
+          </span>
           <a href="https://twitter.com/sora_douhu" class="avatar-credit">
             icon by @sora_douhu
           </a>
@@ -496,6 +501,11 @@ export function Works() {
               <Show when={true}>
                 <a class="work-thumbnail" href={`/works/${w.id}`} tabindex="-1" aria-hidden="true">
                   <OGImage url={w.url} alt="" />
+                  <Postmark
+                    date={postmarkDate(w.productionTime)}
+                    top="CP20.DEV"
+                    bottom={`No.${String(i() + 1).padStart(2, '0')}`}
+                  />
                 </a>
               </Show>
             </article>
@@ -555,6 +565,7 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
       </header>
       <div class="work-detail-hero" data-stamp-anchor="work-image">
         <OGImage url={w.url} alt={`${w.title}のOG画像`} priority />
+        <Postmark date={postmarkDate(w.productionTime)} top="CP20.DEV" bottom="WORKS" />
       </div>
       <div class="work-detail-layout">
         <aside>

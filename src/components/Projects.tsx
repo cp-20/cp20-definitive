@@ -1,6 +1,6 @@
 import { createSignal, For } from 'solid-js';
 import Icon from './Icon';
-import { OGImage, OriginalIcon } from './Preview';
+import { OGImage, OriginalIcon, Postmark, postmarkDate } from './Preview';
 import { works } from '../data/content';
 import { featuredIds } from '../data/editorial';
 export const projects = featuredIds.map((id) => works.find((w) => w.id === id)!);
@@ -102,6 +102,7 @@ export default function Projects() {
             >
               <a class="featured-image" href={p.url} aria-label={`${p.title}を開く`}>
                 <OGImage url={p.url} alt={`${p.title}のOG画像`} priority={i() === 0} />
+                <Postmark date={postmarkDate(p.productionTime)} top="CP20.DEV" bottom={`No.0${i() + 1}`} />
                 <span class="image-open">
                   <Icon name="ArrowUpRight" size={21} />
                 </span>

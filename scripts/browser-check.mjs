@@ -222,14 +222,6 @@ try {
   );
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
-    await page.goto(origin + '/about');
-    await settle();
-    for (const theme of ['dark', 'light']) {
-      await beginLayout('main h1,main h2,main p,.site-header,.site-footer');
-      await page.locator('.theme-toggle').click();
-      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-      await endLayout(`theme ${theme} ${width}`);
-    }
     await page.goto(origin + '/');
     await settle();
     for (const tab of [1, 2, 0]) {
@@ -241,11 +233,6 @@ try {
   await page.keyboard.press('End');
   await expect(page.locator('[data-project-tab="2"]')).toHaveAttribute('aria-selected', 'true');
   await axe('/#project-2');
-  await page.locator('.theme-toggle').click();
-  await axe('/?dark');
-  await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await page.locator('.theme-toggle').click();
   const icon = page.locator('.rail nav a').first().locator('svg');
   const before = await icon.boundingBox();
   await page.locator('.rail nav a').first().hover();

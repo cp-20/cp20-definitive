@@ -1,4 +1,4 @@
-import { createSignal, onSettled, For } from 'solid-js';
+import { createSignal, createEffect, onSettled, For, Show } from 'solid-js';
 import type { JSX } from '@solidjs/web';
 import Icon, { type IconName } from './Icon';
 import { StampButton } from './Stamps';
@@ -9,21 +9,31 @@ const navigation: { href: string; label: string; icon: IconName }[] = [
   { href: '/about', label: 'プロフィール', icon: 'UserRound' },
 ];
 export default function Shell(props: { path: string; children: JSX.Element }) {
-  const [theme, setTheme] = createSignal('light');
-  onSettled(() => {
-    setTheme(document.documentElement.dataset.theme || 'light');
-  });
-  function toggleTheme() {
-    const next = theme() === 'light' ? 'dark' : 'light';
-    setTheme(next);
-    // Color-only update: no View Transition, root transform, reflow or font changes.
-    document.documentElement.dataset.theme = next;
-    try {
-      localStorage.setItem('cp20-theme', next);
-    } catch {}
-  }
   const section = () =>
     props.path === '/' ? 'home' : props.path.startsWith('/works') ? 'works' : props.path.slice(1) || 'home';
+  // Stamp rally: each section's tab gets a seal once it has been visited in this browser.
+  const [visited, setVisited] = createSignal<string[]>([]);
+  const [ready, setReady] = createSignal(false);
+  onSettled(() => {
+    let stored: string[] = [];
+    try {
+      stored = JSON.parse(localStorage.getItem('cp20-visited') || '[]');
+    } catch {}
+    setVisited(Array.isArray(stored) ? stored : []);
+    setReady(true);
+  });
+  createEffect(
+    () => ({ ready: ready(), section: section() }),
+    ({ ready, section }) => {
+      if (!ready || !navigation.some((n) => (n.href === '/' ? 'home' : n.href.slice(1)) === section)) return;
+      if (visited().includes(section)) return;
+      const next = [...visited(), section];
+      setVisited(next);
+      try {
+        localStorage.setItem('cp20-visited', JSON.stringify(next));
+      } catch {}
+    },
+  );
   return (
     <>
       <a class="skip-link" href="#main">
@@ -33,18 +43,28 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
         <aside class="rail">
           <nav aria-label="メインナビゲーション">
             <For each={navigation}>
-              {(n) => (
-                <a
-                  href={n.href}
-                  data-tab={n.href === '/' ? 'home' : n.href.slice(1)}
-                  aria-current={
-                    (n.href === '/' ? props.path === '/' : props.path.startsWith(n.href)) ? 'page' : undefined
-                  }
-                >
-                  <Icon name={n.icon} size={18} />
-                  <span>{n.label}</span>
-                </a>
-              )}
+              {(n) => {
+                const tab = n.href === '/' ? 'home' : n.href.slice(1);
+                return (
+                  <a
+                    href={n.href}
+                    data-tab={tab}
+                    aria-current={
+                      (n.href === '/' ? props.path === '/' : props.path.startsWith(n.href))
+                        ? 'page'
+                        : undefined
+                    }
+                  >
+                    <Icon name={n.icon} size={18} />
+                    <span>{n.label}</span>
+                    <Show when={visited().includes(tab)}>
+                      <span class="tab-seal" aria-hidden="true">
+                        済
+                      </span>
+                    </Show>
+                  </a>
+                );
+              }}
             </For>
           </nav>
         </aside>
@@ -54,15 +74,6 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
             cp20.dev<span class="edition-label">definitive</span>
           </a>
           <div class="header-tools">
-            <button
-              class="icon-button theme-toggle"
-              aria-label="配色を切り替える"
-              aria-pressed={theme() === 'dark' ? 'true' : 'false'}
-              onClick={toggleTheme}
-            >
-              <Icon name="Sun" class="theme-sun" />
-              <Icon name="Moon" class="theme-moon" />
-            </button>
             <StampButton />
           </div>
         </header>

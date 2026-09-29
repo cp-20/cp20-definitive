@@ -373,7 +373,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
                 '--delay': `${(i() % 8) * 35}ms`,
               }}
             >
-              <span class="stamp-face">
+              <span class="stamp-face" data-kind={s().kind}>
                 <StampFace kind={s().kind} />
               </span>
               <Show when={fresh().has(s().key)}>
@@ -452,7 +452,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
             style={{ translate: `${pointer().x}px ${pointer().y}px` }}
             aria-hidden="true"
           >
-            <span class="stamp-face">
+            <span class="stamp-face" data-kind={kind()}>
               <StampFace kind={kind()} />
             </span>
           </span>

@@ -63,3 +63,18 @@ export const articleAnchor = (url: string) => {
   for (const c of url) hash = Math.imul(hash ^ c.charCodeAt(0), 16777619);
   return `article-${(hash >>> 0).toString(36)}`;
 };
+// "2023/09/25 ～ 2023/10/13" → "2023.09.25", ISO dates → "2026.07.20".
+export const postmarkDate = (value: string) => {
+  const m = value.match(/(\d{4})[/-](\d{2})(?:[/-](\d{2}))?/);
+  return m ? [m[1], m[2], m[3]].filter(Boolean).join('.') : '';
+};
+// A cancellation mark stamped across a postage-stamp image.
+export function Postmark(props: { date: string; top: string; bottom: string }) {
+  return (
+    <span class="postmark" aria-hidden="true">
+      <span class="postmark-top">{props.top}</span>
+      <span class="postmark-date">{props.date}</span>
+      <span class="postmark-bottom">{props.bottom}</span>
+    </span>
+  );
+}
