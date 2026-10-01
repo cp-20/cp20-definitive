@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-01T06:01:12.266Z",
+  "updatedAt": "2026-10-01T13:22:58.946Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -322,22 +322,22 @@
   ],
   "repos": [
     {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "CSS",
+      "stars": 0,
+      "updatedAt": "2026-10-01T06:01:26Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "dice-spec-v2",
       "url": "https://github.com/cp-20/dice-spec-v2",
       "description": "",
       "language": "TypeScript",
       "stars": 2,
       "updatedAt": "2026-10-01T01:32:47Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "CSS",
-      "stars": 0,
-      "updatedAt": "2026-09-30T22:19:42Z",
       "fork": false,
       "archived": false
     },
@@ -1175,17 +1175,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-01T06:01:12.266Z",
+      "lastSuccess": "2026-10-01T13:22:58.946Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-01T06:01:12.266Z",
+      "lastSuccess": "2026-10-01T13:22:58.946Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-01T06:01:12.266Z",
+      "lastSuccess": "2026-10-01T13:22:58.946Z",
       "count": 7
     },
     "trap.jp": {
@@ -1196,14 +1196,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-01T06:01:12.266Z",
+      "lastSuccess": "2026-10-01T13:22:58.946Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-01T06:01:12.266Z",
+      "lastSuccess": "2026-10-01T13:22:58.946Z",
       "count": 123
     }
   },
-  "checkedAt": "2026-10-01T06:01:12.266Z"
+  "checkedAt": "2026-10-01T13:22:58.946Z"
 }
