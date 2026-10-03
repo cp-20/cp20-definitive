@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-03T11:43:39.567Z",
+  "updatedAt": "2026-10-03T16:20:49.769Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -327,7 +327,7 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "CSS",
       "stars": 0,
-      "updatedAt": "2026-10-03T05:23:44Z",
+      "updatedAt": "2026-10-03T11:43:49Z",
       "fork": false,
       "archived": false
     },
@@ -1175,17 +1175,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-03T11:43:39.567Z",
+      "lastSuccess": "2026-10-03T16:20:49.769Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-03T11:43:39.567Z",
+      "lastSuccess": "2026-10-03T16:20:49.769Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-03T11:43:39.567Z",
+      "lastSuccess": "2026-10-03T16:20:49.769Z",
       "count": 7
     },
     "trap.jp": {
@@ -1196,14 +1196,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-03T11:43:39.567Z",
+      "lastSuccess": "2026-10-03T16:20:49.769Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-03T11:43:39.567Z",
+      "lastSuccess": "2026-10-03T16:20:49.769Z",
       "count": 123
     }
   },
-  "checkedAt": "2026-10-03T11:43:39.567Z"
+  "checkedAt": "2026-10-03T16:20:49.769Z"
 }
