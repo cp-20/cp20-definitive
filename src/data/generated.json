@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-03T21:22:31.855Z",
+  "updatedAt": "2026-10-04T05:58:50.571Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -322,12 +322,22 @@
   ],
   "repos": [
     {
+      "name": "asterion-manifest",
+      "url": "https://github.com/cp-20/asterion-manifest",
+      "description": "",
+      "language": "Shell",
+      "stars": 2,
+      "updatedAt": "2026-10-04T00:43:24Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "cp20-definitive",
       "url": "https://github.com/cp-20/cp20-definitive",
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "CSS",
       "stars": 0,
-      "updatedAt": "2026-10-03T16:21:01Z",
+      "updatedAt": "2026-10-03T21:22:43Z",
       "fork": false,
       "archived": false
     },
@@ -368,16 +378,6 @@
       "language": "Makefile",
       "stars": 0,
       "updatedAt": "2026-08-24T03:16:57Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "asterion-manifest",
-      "url": "https://github.com/cp-20/asterion-manifest",
-      "description": "",
-      "language": "Shell",
-      "stars": 2,
-      "updatedAt": "2026-08-23T13:21:39Z",
       "fork": false,
       "archived": false
     },
@@ -1175,17 +1175,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-03T21:22:31.855Z",
+      "lastSuccess": "2026-10-04T05:58:50.571Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-03T21:22:31.855Z",
+      "lastSuccess": "2026-10-04T05:58:50.571Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-03T21:22:31.855Z",
+      "lastSuccess": "2026-10-04T05:58:50.571Z",
       "count": 7
     },
     "trap.jp": {
@@ -1196,14 +1196,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-03T21:22:31.855Z",
+      "lastSuccess": "2026-10-04T05:58:50.571Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-03T21:22:31.855Z",
+      "lastSuccess": "2026-10-04T05:58:50.571Z",
       "count": 123
     }
   },
-  "checkedAt": "2026-10-03T21:22:31.855Z"
+  "checkedAt": "2026-10-04T05:58:50.571Z"
 }
