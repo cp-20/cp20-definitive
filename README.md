@@ -28,6 +28,8 @@ npm run build
 
 **公開はCloudflare Workers Builds（CloudflareのGit連携）で行います。`main` へのpushごとにCloudflare上でビルドしてデプロイします。GitHub Actionsは記事などの定期収集とスナップショットのコミットだけを担当し、Cloudflareの認証情報は持ちません。**
 
+2026-10-06に `cp-20/cp20-definitive` の `main` とWorkerの接続を設定済みです。公開URLは [cp20-definitive.cp20.workers.dev](https://cp20-definitive.cp20.workers.dev/)。ルートディレクトリは `/`、ビルド・デプロイコマンドは下記のとおりです。非本番ブランチの自動ビルドは無効です。
+
 1. このフォルダをGitHubリポジトリの `main` に配置。
 2. GitHub Actions Secretsに `TRAP_GHOST_ADMIN_KEY` を登録（収集用）。
 3. Actionsにスナップショットを書き戻す権限を許可。ブランチ保護を使う場合も更新経路を確保。
