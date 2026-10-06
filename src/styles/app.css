@@ -126,6 +126,8 @@
     --tab: 50px;
     --perf: 12px;
     --perf-hole: 3.6px;
+    --stamp-shadow: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(2px 3px 0 rgb(45 42 51 / 0.14));
+    --stamp-lift: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(5px 8px 4px rgb(45 42 51 / 0.18));
     color-scheme: light;
   }
   body {
@@ -204,15 +206,11 @@
     font-weight: 700;
     line-height: 1.6;
     white-space: nowrap;
-    text-decoration: underline;
-    text-decoration-color: transparent;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 6px;
-    transition: text-decoration-color 160ms var(--ease);
+    background: linear-gradient(var(--hi), var(--hi)) no-repeat 0 100% / 0% 2px;
+    transition: background-size 320ms var(--ease);
   }
   .under-link:hover {
-    text-decoration-color: var(--hi);
-    text-decoration-style: wavy;
+    background-size: 100% 2px;
   }
   .under-link svg {
     transition: transform 280ms var(--spring);
@@ -314,22 +312,26 @@
 
 /* ───────────────────────── layout ───────────────────────── */
 @layer layout {
-  /* Each notebook section has its own tab color. */
+  /* Each notebook section is its own page: the paper takes the color of its index tab. */
   [data-section='home'] {
     --hi: var(--green);
     --hi-soft: var(--green-soft);
+    --page: color-mix(in srgb, var(--green-soft) 42%, var(--paper));
   }
   [data-section='works'] {
     --hi: var(--pink);
     --hi-soft: var(--pink-soft);
+    --page: color-mix(in srgb, var(--pink-soft) 42%, var(--paper));
   }
   [data-section='articles'] {
     --hi: var(--blue);
     --hi-soft: var(--blue-soft);
+    --page: color-mix(in srgb, var(--blue-soft) 42%, var(--paper));
   }
   [data-section='about'] {
     --hi: var(--yellow);
     --hi-soft: var(--yellow-soft);
+    --page: color-mix(in srgb, var(--yellow-soft) 42%, var(--paper));
   }
 
   /* The loose-leaf sheet. */
@@ -340,7 +342,7 @@
     padding: 0 0 8px 56px;
     border: 2px solid var(--edge);
     border-radius: 26px;
-    background-color: var(--paper);
+    background-color: var(--page, var(--paper));
     background-image:
       linear-gradient(
         90deg,
@@ -383,15 +385,15 @@
     padding-inline: 40px;
   }
 
-  /* Index tabs sticking out of the sheet's right edge. */
+  /* Index tabs on the sheet's right edge. Each tab belongs to the page of the same color:
+     the current page's tab is cut from the sheet itself (no seam), the others peek out from behind it. */
   .rail {
     position: absolute;
     z-index: 20;
     top: 64px;
     bottom: 64px;
     left: 100%;
-    width: calc(var(--tab) + 8px);
-    margin-left: -2px;
+    width: calc(var(--tab) + 10px);
   }
   .rail nav {
     position: sticky;
@@ -407,52 +409,50 @@
     align-items: center;
     gap: 8px;
     width: var(--tab);
+    margin-left: 2px;
     padding: 14px 0 16px;
     border: 2px solid var(--edge);
     border-left: 0;
     border-radius: 0 16px 16px 0;
-    background: var(--tab-soft);
+    background: color-mix(in srgb, var(--tab-soft) 78%, var(--paper));
     color: var(--ink);
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.12em;
     line-height: 1;
     writing-mode: vertical-rl;
-    translate: -6px 0;
+    translate: 0 0;
     box-shadow: 3px 3px 0 var(--drop);
     transition:
-      translate 320ms var(--spring),
-      background 200ms var(--ease),
-      box-shadow 200ms var(--ease);
+      translate 360ms var(--ease),
+      background-color 360ms var(--ease),
+      margin 360ms var(--ease),
+      width 360ms var(--ease);
   }
   .rail nav a > svg {
     writing-mode: horizontal-tb;
-    transition: transform 360ms var(--spring);
   }
-  .rail nav a:hover {
-    translate: 0 0;
-  }
-  .rail nav a:active {
-    translate: -4px 0;
-    transition-duration: 80ms;
+  .rail nav a:not([aria-current]):hover {
+    translate: 4px 0;
   }
   .rail nav a[aria-current='page'] {
-    translate: 4px 0;
-    background: var(--tab-color);
-    color: var(--on-color);
+    width: calc(var(--tab) + 2px);
+    margin-left: 0;
+    translate: 0 0;
+    background: color-mix(in srgb, var(--tab-soft) 42%, var(--paper));
   }
   /* Stamp rally: a 済 seal on tabs already visited. */
   .tab-seal {
     position: absolute;
-    right: -10px;
-    bottom: -8px;
+    right: -9px;
+    bottom: 10px;
     display: grid;
     place-items: center;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     border: 2px solid var(--seal);
     border-radius: 50%;
-    background: color-mix(in srgb, var(--paper) 70%, transparent);
+    background: var(--paper);
     color: var(--seal);
     font-size: 11px;
     font-weight: 700;
@@ -499,9 +499,6 @@
     box-shadow: 2px 2px 0 var(--drop);
     rotate: -1.5deg;
     transition: rotate 360ms var(--spring);
-  }
-  .brand:hover {
-    rotate: 1deg;
   }
   .brand img {
     width: 22px;
@@ -663,7 +660,8 @@
     position: relative;
     isolation: isolate;
     padding: calc(var(--perf) * 0.9);
-    filter: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(2px 3px 0 rgb(45 42 51 / 0.14));
+    filter: var(--stamp-shadow);
+    transition: filter 320ms var(--ease);
   }
   .og-image::before,
   .music-image::before,
@@ -743,6 +741,7 @@
     white-space: nowrap;
     rotate: -14deg;
     pointer-events: none;
+    transition: rotate 420ms var(--ease);
     --postmark: rgb(45 42 51 / 0.62);
   }
   /* Wavy machine-cancel lines trailing from the circle. */
@@ -833,13 +832,7 @@
     transition-duration: 60ms;
   }
   .stamp-trigger[aria-pressed='true'] {
-    background: var(--green);
-    color: var(--on-color);
-    transform: translate(3px, 3px);
-    box-shadow: 0 0 0 var(--drop);
-  }
-  .stamp-trigger[aria-pressed='true'] > img {
-    transform: rotate(180deg);
+    background: var(--green-soft);
   }
   .stamp-count {
     display: grid;
@@ -853,7 +846,7 @@
     font-size: 14px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    animation: count-bump 460ms var(--bounce) both;
+    transition: background-color 300ms var(--ease);
   }
 
   /* ── Home: intro ── */
@@ -970,7 +963,7 @@
     line-height: 1.8;
     rotate: 2.5deg;
     box-shadow: 2px 5px 0 -1px color-mix(in srgb, var(--drop) 20%, transparent);
-    transition: rotate 420ms var(--bounce);
+    transition: box-shadow 320ms var(--ease);
   }
   .intro-profile::before {
     content: '';
@@ -989,7 +982,7 @@
     transition: transform 360ms var(--spring);
   }
   .intro-profile:hover {
-    rotate: -1deg;
+    box-shadow: 4px 9px 0 -1px color-mix(in srgb, var(--drop) 20%, transparent);
   }
   .intro-profile:hover svg {
     transform: rotate(45deg);
@@ -1037,10 +1030,10 @@
     border-radius: 50%;
     background: var(--paper);
     transition:
-      transform 420ms var(--bounce),
-      border-color 200ms var(--ease),
-      background 200ms var(--ease),
-      box-shadow 200ms var(--ease);
+      transform 420ms var(--ease),
+      border-color 300ms var(--ease),
+      background-color 300ms var(--ease),
+      box-shadow 300ms var(--ease);
   }
   .project-spot .original-icon {
     width: 38px;
@@ -1071,7 +1064,6 @@
     color: var(--ink);
   }
   .featured-tab:hover .project-spot {
-    transform: rotate(-8deg) scale(1.05);
     border-color: var(--edge);
   }
   .featured-tab:hover .original-icon {
@@ -1079,7 +1071,7 @@
     opacity: 1;
   }
   .featured-tab:active .project-spot {
-    transform: scale(0.9);
+    transform: rotate(-6deg) scale(0.92);
   }
   .featured-tab[aria-selected='true'] {
     color: var(--ink);
@@ -1089,7 +1081,6 @@
     background: var(--green-soft);
     box-shadow: 3px 3px 0 var(--drop);
     transform: rotate(-6deg);
-    animation: checkpoint 520ms var(--bounce);
   }
   .featured-tab[aria-selected='true'] .original-icon {
     filter: none;
@@ -1119,7 +1110,10 @@
     margin-top: 36px;
     touch-action: pan-y;
   }
+  /* Panels share one grid cell. Each sits left or right of the selected work, so switching is one
+     continuous crossfade-and-slide in either direction, and it can be interrupted midway. */
   .featured-project {
+    --shift: 0px;
     grid-area: 1 / 1;
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -1127,14 +1121,28 @@
     align-items: center;
     visibility: hidden;
     opacity: 0;
+    translate: var(--shift) 0;
     transition:
-      opacity 160ms var(--ease),
-      visibility 0s 160ms;
+      opacity 420ms var(--ease),
+      translate 520ms var(--ease),
+      visibility 0s 520ms;
   }
-  .featured-project.active {
+  .featured-project[data-pos='prev'] {
+    --shift: -48px;
+  }
+  .featured-project[data-pos='next'] {
+    --shift: 48px;
+  }
+  .featured-project[data-pos='active'] {
+    --shift: var(--drag, 0px);
     visibility: visible;
     opacity: 1;
-    transition: opacity 200ms var(--ease);
+    transition:
+      opacity 420ms var(--ease) 80ms,
+      translate 520ms var(--ease);
+  }
+  .project-deck[data-dragging] .featured-project {
+    transition: none;
   }
   .featured-image {
     --perf: 16px;
@@ -1142,9 +1150,6 @@
     position: relative;
     display: block;
     rotate: -1.5deg;
-    transition:
-      rotate 420ms var(--spring),
-      transform 220ms var(--ease);
   }
   .featured-image .og-image {
     aspect-ratio: 1200 / 630;
@@ -1154,42 +1159,6 @@
     right: -30px;
     top: auto;
     bottom: -26px;
-  }
-  .featured-image:hover {
-    rotate: 0.5deg;
-    transform: translateY(-4px);
-  }
-  .featured-image:hover .postmark {
-    animation: postmark-hit 520ms cubic-bezier(0.2, 0.9, 0.3, 1);
-  }
-  .featured-image:active {
-    transform: translateY(1px) scale(0.99);
-    transition-duration: 70ms;
-  }
-  .image-open {
-    position: absolute;
-    z-index: 3;
-    right: -12px;
-    top: -12px;
-    display: grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    border: 2px solid var(--edge);
-    border-radius: 50%;
-    background: var(--yellow);
-    color: var(--on-color);
-    box-shadow: 2px 2px 0 var(--drop);
-    opacity: 0;
-    transform: scale(0.4) rotate(-90deg);
-    transition:
-      opacity 160ms var(--ease),
-      transform 420ms var(--bounce);
-  }
-  .featured-image:hover .image-open,
-  .featured-image:focus-visible .image-open {
-    opacity: 1;
-    transform: none;
   }
   .project-kind {
     display: inline-block;
@@ -1350,10 +1319,11 @@
     background-size: 100% 100%;
   }
   .article-row:hover > .og-image {
-    rotate: -4deg;
+    rotate: -3deg;
+    filter: var(--stamp-lift);
   }
   .article-row:hover > .postmark {
-    animation: postmark-hit 480ms cubic-bezier(0.2, 0.9, 0.3, 1);
+    rotate: -22deg;
   }
   .article-row:hover .article-arrow {
     border-color: var(--edge);
@@ -1474,7 +1444,8 @@
     isolation: isolate;
     display: block;
     padding: 12px;
-    filter: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(2px 3px 0 rgb(45 42 51 / 0.14));
+    filter: var(--stamp-shadow);
+    transition: filter 320ms var(--ease);
     rotate: -2deg;
     transition:
       rotate 420ms var(--bounce),
@@ -1517,8 +1488,7 @@
     background: var(--tint);
   }
   .edition-list > a:hover {
-    rotate: 0deg;
-    transform: translateY(-6px) scale(1.04);
+    filter: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(5px 8px 4px rgb(45 42 51 / 0.18));
   }
   .edition-list strong {
     display: block;
@@ -1766,15 +1736,14 @@
   .work-index-item:nth-child(3n) {
     rotate: -0.4deg;
   }
-  .work-index-item:hover {
-    transform: translateY(-5px) rotate(-1deg);
-  }
   .work-index-item:hover .postmark {
-    animation: postmark-hit 500ms cubic-bezier(0.2, 0.9, 0.3, 1);
+    rotate: -22deg;
   }
-  .work-index-item:active {
-    transform: translateY(0) scale(0.98);
-    transition-duration: 80ms;
+  .work-index-item:hover .og-image {
+    filter: var(--stamp-lift);
+  }
+  .work-index-item:hover h2 a {
+    background-size: 100% 100%;
   }
   .work-number {
     position: absolute;
@@ -1818,6 +1787,9 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
+      no-repeat 0 0 / 0% 100%;
+    transition: background-size 380ms var(--ease);
   }
   .work-index-item h2 a::after {
     content: '';
@@ -1934,7 +1906,7 @@
     right: -24px;
     top: auto;
     bottom: -40px;
-    animation: postmark-hit 640ms cubic-bezier(0.2, 0.9, 0.3, 1) 300ms both;
+    animation: postmark-in 700ms var(--ease) 300ms both;
   }
   .work-detail-layout {
     display: grid;
@@ -2014,9 +1986,13 @@
     text-decoration-color: var(--hi);
     text-decoration-thickness: 3px;
     text-underline-offset: 6px;
+    transition:
+      text-decoration-thickness 260ms var(--ease),
+      text-underline-offset 260ms var(--ease);
   }
   .work-detail-copy > p > a:hover {
-    text-decoration-style: wavy;
+    text-decoration-thickness: 6px;
+    text-underline-offset: 2px;
   }
 
   /* ── About ── */
@@ -2145,6 +2121,10 @@
     height: 14px;
     background: url('/stamps/clover.svg') center / contain no-repeat;
   }
+  .profile-affiliations a {
+    background: linear-gradient(var(--hi), var(--hi)) no-repeat 0 100% / 0% 2px;
+    transition: background-size 300ms var(--ease);
+  }
   .profile-affiliations small a {
     display: inline-flex;
     align-items: center;
@@ -2152,8 +2132,7 @@
     font-weight: 500;
   }
   .profile-affiliations a:hover {
-    text-decoration: underline wavy var(--hi);
-    text-underline-offset: 4px;
+    background-size: 100% 2px;
   }
   .profile-related {
     display: grid;
@@ -2216,7 +2195,7 @@
       transform 420ms var(--bounce),
       background 200ms var(--ease);
   }
-  .timeline-item:hover::before {
+  a.timeline-item:hover::before {
     background: var(--hi);
     transform: scale(1.3) rotate(20deg);
   }
@@ -2235,7 +2214,7 @@
     font-size: 12px;
     color: var(--muted);
   }
-  .timeline-item:hover h3 {
+  a.timeline-item:hover h3 {
     background-size: 100% 100%;
   }
   .timeline-item p {
@@ -2248,7 +2227,7 @@
     color: var(--faint);
     transition: transform 360ms var(--spring);
   }
-  .timeline-item:hover > svg {
+  a.timeline-item:hover > svg {
     color: var(--ink);
     transform: rotate(45deg);
   }
@@ -2303,10 +2282,10 @@
     color: var(--on-color);
     box-shadow: 3px 3px 0 var(--drop);
     opacity: 0;
-    transform: scale(0.4) rotate(-40deg);
+    transform: scale(0.7);
     transition:
-      opacity 160ms var(--ease),
-      transform 420ms var(--bounce);
+      opacity 260ms var(--ease),
+      transform 360ms var(--ease);
   }
   .play-symbol svg {
     fill: currentColor;
@@ -2318,19 +2297,16 @@
   .music-item:nth-child(even) {
     rotate: 0.8deg;
   }
-  .music-item:hover {
-    transform: translateY(-5px);
-  }
   .music-item:hover .music-image {
-    rotate: -2deg;
+    filter: var(--stamp-lift);
   }
   .music-item:hover .play-symbol {
     opacity: 1;
     transform: none;
   }
-  .music-item:active {
-    transform: scale(0.97);
-    transition-duration: 80ms;
+  .music-item:hover h4,
+  .book-item:hover h4 {
+    background-size: 100% 100%;
   }
   .track-number {
     position: absolute;
@@ -2346,6 +2322,13 @@
     color: var(--ink);
     font-size: 12px;
     font-weight: 700;
+  }
+  .music-item h4,
+  .book-item h4 {
+    width: fit-content;
+    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
+      no-repeat 0 0 / 0% 100%;
+    transition: background-size 380ms var(--ease);
   }
   .music-item h4 {
     font-size: 15px;
@@ -2399,19 +2382,10 @@
     background: var(--paper-2);
     transition: transform 460ms var(--spring);
   }
-  .book-item:hover {
-    transform: translateY(-5px);
-  }
   .book-item:hover .book-cover {
-    rotate: 2deg;
+    filter: var(--stamp-lift);
   }
-  .book-item:hover .book-cover img {
-    transform: scale(1.05) rotate(-1.5deg);
-  }
-  .book-item:active {
-    transform: scale(0.97);
-    transition-duration: 80ms;
-  }
+
   .book-item h4 {
     display: flex;
     align-items: center;
@@ -2433,7 +2407,25 @@
     font-size: 11px;
   }
 
-  /* ── Stamps ── */
+  /* ── Stickers ──
+     Visitors' stickers are die-cut: a white outline that follows the motif and a soft shadow.
+     The sheet stays on screen; stickers peel off it by dragging and stick where they are dropped. */
+  .sticker {
+    display: block;
+    filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
+      drop-shadow(0 -1.6px 0 #fff) drop-shadow(1px 2px 1.2px rgb(45 42 51 / 0.3));
+  }
+  .sticker img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+  .sticker[data-kind='5'] img {
+    border-radius: 50%;
+    background: #fff;
+  }
   .stamp-layer {
     position: absolute;
     z-index: 25;
@@ -2445,94 +2437,111 @@
     position: absolute;
     left: 0;
     top: 0;
+    display: grid;
+    place-items: center;
     width: 46px;
     height: 46px;
     margin: -23px 0 0 -23px;
+  }
+  .placed-stamp > .sticker {
+    rotate: var(--angle, 0deg);
+    transition:
+      transform 260ms var(--ease),
+      filter 260ms var(--ease),
+      opacity 200ms var(--ease);
+    animation: sticker-pop 420ms var(--ease) var(--delay, 0ms) both;
+  }
+  .placed-stamp[data-owned] {
+    pointer-events: auto;
+    cursor: grab;
+    touch-action: none;
+  }
+  .stamp-layer[data-holding] .placed-stamp {
+    pointer-events: none;
+  }
+  .placed-stamp[data-owned]:hover > .sticker,
+  .placed-stamp[data-selected] > .sticker {
+    transform: translateY(-2px) scale(1.06);
+    filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
+      drop-shadow(0 -1.6px 0 #fff) drop-shadow(3px 6px 3px rgb(45 42 51 / 0.28));
+  }
+  .placed-stamp[data-pending] > .sticker {
+    opacity: 0.9;
+  }
+  /* Settles from where it was let go: a short glide down onto the paper. */
+  .placed-stamp[data-fresh] > .sticker {
+    animation: stick 460ms var(--ease) both;
+  }
+  .placed-stamp[data-lifted] {
+    visibility: hidden;
+  }
+  .placed-stamp[data-leaving] > .sticker {
+    animation: peel 220ms var(--ease) both;
+  }
+  .stamp-delete {
+    position: absolute;
+    top: -12px;
+    right: -12px;
     display: grid;
     place-items: center;
+    width: 28px;
+    height: 28px;
+    opacity: 0;
+    scale: 0.6;
+    pointer-events: none;
+    transition:
+      opacity 200ms var(--ease),
+      scale 260ms var(--ease);
   }
-  .stamp-face {
-    display: block;
-    rotate: var(--angle, 0deg);
-    filter: drop-shadow(1.5px 2px 0 rgb(0 0 0 / 0.18));
-    animation: stamp-pop 460ms var(--bounce) var(--delay, 0ms) both;
-  }
-  /* Visitor stamps read as rubber-stamp impressions: the motif inside an inked double ring. */
-  .stamp-face[data-kind] {
-    padding: 4px;
-    border: 2.5px solid var(--ink-color);
+  .stamp-delete > span {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--edge);
     border-radius: 50%;
-    outline: 1.5px solid var(--ink-color);
-    outline-offset: 2px;
-    background: color-mix(in srgb, var(--ink-color) 12%, transparent);
+    background: var(--seal);
+    color: #fff;
   }
-  .stamp-face[data-kind='0'] {
-    --ink-color: var(--green);
+  /* On touch screens the × appears only after tapping the sticker, so a tap is never
+     redirected onto it by touch adjustment. */
+  .placed-stamp[data-selected] .stamp-delete,
+  .stamp-delete:focus-visible {
+    opacity: 1;
+    scale: 1;
+    pointer-events: auto;
   }
-  .stamp-face[data-kind='1'] {
-    --ink-color: var(--blue);
+  @media (hover: hover) {
+    .placed-stamp[data-owned]:hover .stamp-delete {
+      opacity: 1;
+      scale: 1;
+      pointer-events: auto;
+      transition-delay: 350ms;
+    }
   }
-  .stamp-face[data-kind='2'] {
-    --ink-color: #f0b400;
+  /* The sticker in hand. Its transform is driven by a spring in Stamps.tsx. */
+  .sticker-ghost {
+    position: fixed;
+    z-index: 70;
+    left: 0;
+    top: 0;
+    display: none;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    margin: -23px 0 0 -23px;
+    pointer-events: none;
+    will-change: transform;
   }
-  .stamp-face[data-kind='3'] {
-    --ink-color: #8a7bd6;
+  .sticker-ghost[data-active] {
+    display: grid;
   }
-  .stamp-face[data-kind='4'] {
-    --ink-color: var(--pink);
+  .sticker-ghost .sticker {
+    transition: filter 200ms var(--ease);
   }
-  .stamp-face[data-kind='5'] {
-    --ink-color: var(--seal);
-  }
-  .placed-stamp img,
-  .stamp-cursor img {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    object-fit: contain;
-  }
-  .placed-stamp img[src^='/images'],
-  .stamp-cursor img[src^='/images'],
-  .stamp-choices img[src^='/images'] {
-    background: #fff;
-  }
-  .placed-stamp[data-fresh] .stamp-face {
-    animation: stamp-slam 540ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
-  }
-  .placed-stamp[data-fresh]::before {
-    content: '';
-    position: absolute;
-    inset: -8px;
-    border-radius: 50%;
-    border: 3px solid var(--seal);
-    animation: stamp-ring 560ms var(--ease) 140ms both;
-  }
-  .placed-stamp[data-pending] .stamp-face {
-    opacity: 0.88;
-  }
-  .placed-stamp[data-leaving] .stamp-face {
-    animation: stamp-leave 170ms var(--ease) both;
-  }
-  .stamp-burst {
-    position: absolute;
-    inset: 50% auto auto 50%;
-  }
-  .stamp-burst i {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    margin: -4px;
-    border: 1.5px solid var(--edge);
-    border-radius: 50%;
-    background: var(--yellow);
-    rotate: calc(var(--n) * 45deg);
-    animation: stamp-spark 540ms var(--ease) 130ms both;
-  }
-  .stamp-burst i:nth-child(3n + 1) {
-    background: var(--pink);
-  }
-  .stamp-burst i:nth-child(3n + 2) {
-    background: var(--blue);
+  .sticker-ghost[data-dragging] .sticker {
+    filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
+      drop-shadow(0 -1.6px 0 #fff) drop-shadow(8px 16px 6px rgb(45 42 51 / 0.22));
   }
   .stamp-overlay {
     position: fixed;
@@ -2541,251 +2550,117 @@
     cursor: none;
     outline: none;
     touch-action: pan-y;
-    box-shadow: inset 0 0 0 4px var(--green);
-    animation: overlay-in 240ms var(--ease) both;
-  }
-  .stamp-overlay.is-erasing {
-    cursor: default;
-    box-shadow: inset 0 0 0 4px var(--seal);
-  }
-  .stamp-overlay.is-erasing .stamp-cursor {
-    display: none;
-  }
-  .stamp-cursor {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 46px;
-    height: 46px;
-    margin: -23px 0 0 -23px;
-    pointer-events: none;
-  }
-  .stamp-cursor .stamp-face {
-    rotate: -10deg;
-    opacity: 0.92;
-    filter: drop-shadow(4px 10px 0 rgb(0 0 0 / 0.14));
-    animation: none;
-    transform: translateY(-8px) scale(1.1);
-    transition:
-      transform 160ms var(--spring),
-      filter 160ms var(--ease);
-  }
-  .stamp-cursor[data-pressing] .stamp-face {
-    transform: scale(0.84);
-    filter: drop-shadow(1px 1px 0 rgb(0 0 0 / 0.2));
-    transition-duration: 70ms;
-  }
-  .stamp-cursor::after {
-    content: '';
-    position: absolute;
-    inset: -9px;
-    border-radius: 50%;
-    border: 2.5px dashed var(--edge);
-    opacity: 0.55;
-    animation: cursor-spin 6s linear infinite;
   }
   @media (hover: none) {
-    .stamp-overlay:not(:focus-visible) .stamp-cursor {
-      display: none;
+    .stamp-overlay {
+      cursor: default;
     }
   }
-  .placed-stamp .stamp-delete {
-    position: absolute;
-    inset: -9px;
-    display: grid;
-    place-items: start end;
-    border-radius: 50%;
-    pointer-events: auto;
-    cursor: pointer;
-  }
-  .stamp-delete > span {
-    display: grid;
-    place-items: center;
-    width: 24px;
-    height: 24px;
-    border: 2px solid var(--edge);
-    border-radius: 50%;
-    background: var(--seal);
-    color: #fff;
-    transition: transform 260ms var(--bounce);
-  }
-  .stamp-delete:hover > span,
-  .stamp-delete:focus-visible > span {
-    transform: scale(1.25) rotate(90deg);
-  }
-  .stamp-layer[data-erasing] {
-    z-index: 50;
-  }
-  .stamp-layer[data-erasing] .placed-stamp[data-owned] .stamp-face {
-    animation: stamp-wiggle 900ms ease-in-out infinite;
-  }
-  .stamp-layer[data-erasing] .placed-stamp:not([data-owned]) {
-    opacity: 0.35;
-  }
-  /* Tool tray. */
-  .stamp-ui {
+  /* The sticker sheet: a glossy backing with die-cut slots. */
+  .sticker-sheet {
     position: fixed;
     z-index: 60;
-    left: 50%;
+    right: 20px;
     bottom: 20px;
-    width: min(440px, calc(100vw - 24px));
-    translate: -50% 0;
-    padding: 16px 18px 12px;
+    width: 248px;
+    padding: 10px 12px 10px;
     border: 2px solid var(--edge);
-    border-radius: 24px;
-    background: var(--paper);
-    box-shadow: 6px 6px 0 var(--drop);
-    animation: tools-in 440ms var(--bounce) both;
-  }
-  .stamp-ui-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  .stamp-ui-heading h2 {
-    font-size: 17px;
-    line-height: 1.4;
-  }
-  .stamp-ui-heading p {
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.5;
-  }
-  .stamp-ui-heading > .icon-button {
-    width: 38px;
-    height: 38px;
-  }
-  .stamp-modes {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 12px;
-  }
-  .stamp-modes button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    height: 38px;
-    border: 2px solid var(--edge);
-    border-radius: 999px;
-    background: var(--paper);
-    font-size: 13px;
-    font-weight: 700;
-    box-shadow: 2px 2px 0 var(--drop);
+    border-radius: 18px;
+    background:
+      linear-gradient(135deg, rgb(255 255 255 / 0.7), transparent 45%),
+      repeating-linear-gradient(-45deg, transparent 0 9px, rgb(255 255 255 / 0.35) 9px 11px), #e9f1fb;
+    box-shadow: 4px 4px 0 var(--drop);
+    rotate: -1.5deg;
+    view-transition-name: stickers;
     transition:
-      transform 140ms var(--ease),
-      box-shadow 140ms var(--ease),
-      background 160ms var(--ease);
+      translate 460ms var(--ease),
+      opacity 300ms var(--ease);
   }
-  .stamp-modes button[aria-pressed='true'] {
-    background: var(--green);
-    color: var(--on-color);
-    transform: translate(2px, 2px);
-    box-shadow: 0 0 0 var(--drop);
+  .sticker-sheet:not([data-open]) {
+    translate: 0 calc(100% + 48px);
+    opacity: 0;
   }
-  .stamp-modes button:last-child[aria-pressed='true'] {
-    background: var(--seal);
-    color: #fff;
+  .sticker-sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .sticker-sheet-head h2 {
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .sticker-left {
+    margin-left: 6px;
+    margin-right: auto;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.8;
+    white-space: nowrap;
+  }
+  .sheet-tool {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    color: var(--ink);
+    transition: background-color 200ms var(--ease);
+  }
+  .sheet-tool:hover:not(:disabled),
+  .sheet-tool[aria-pressed='true'] {
+    background: #fff;
   }
   .stamp-choices {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 8px;
-    margin-top: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    margin-top: 6px;
   }
-  .stamp-choices button {
+  .sheet-sticker {
     display: grid;
     place-items: center;
     aspect-ratio: 1;
-    border: 2px dashed var(--faint);
+    border: 1.5px dashed rgb(45 42 51 / 0.22);
     border-radius: 50%;
+    cursor: grab;
+    touch-action: none;
+  }
+  .sheet-sticker .sticker {
     transition:
-      transform 360ms var(--bounce),
-      border-color 160ms var(--ease),
-      background 160ms var(--ease);
+      transform 300ms var(--ease),
+      opacity 240ms var(--ease);
   }
-  .stamp-choices img {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    object-fit: contain;
-    transition: transform 380ms var(--bounce);
+  .sheet-sticker:hover .sticker {
+    transform: translateY(-3px) rotate(-6deg);
   }
-  .stamp-choices button:hover {
-    transform: translateY(-4px) rotate(-10deg);
-    border-color: var(--edge);
+  .sheet-sticker[data-taken] .sticker {
+    opacity: 0.25;
+    transform: scale(0.85);
   }
-  .stamp-choices button:active {
-    transform: scale(0.88);
-    transition-duration: 80ms;
-  }
-  .stamp-choices button[aria-pressed='true'] {
-    border: 2.5px solid var(--edge);
-    background: var(--yellow-soft);
-  }
-  .stamp-choices button[aria-pressed='true'] img {
-    animation: choice-pick 460ms var(--bounce);
-  }
-  .stamp-toolbar-bottom {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 12px;
-  }
-  .stamp-undo {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 34px;
-    padding: 0 14px;
-    border: 2px solid var(--edge);
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 700;
-    transition: background 160ms var(--ease);
-  }
-  .stamp-undo svg {
-    transition: transform 380ms var(--spring);
-  }
-  .stamp-undo:not(:disabled):hover {
-    background: var(--yellow-soft);
-  }
-  .stamp-undo:not(:disabled):hover svg {
-    transform: rotate(-70deg);
-  }
-  .stamp-hide {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--muted);
-    cursor: pointer;
-  }
-  .stamp-hide input {
-    accent-color: var(--green);
-    width: 16px;
-    height: 16px;
-  }
-  .stamp-policy {
-    margin-top: 10px;
-    font-size: 11px;
-    color: var(--muted);
+  .sheet-sticker img {
+    width: 38px;
+    height: 38px;
   }
   .stamp-status {
-    min-height: 20px;
-    font-size: 12px;
+    min-height: 18px;
+    margin-top: 6px;
+    font-size: 11px;
     font-weight: 700;
-    line-height: 20px;
+    line-height: 1.6;
     color: var(--muted);
   }
-  .stamp-retry,
-  .stamp-toast button {
-    margin-top: 8px;
-    padding: 4px 14px;
+  .stamp-policy {
+    font-size: 10px;
+    color: var(--faint);
+    line-height: 1.6;
+  }
+  .stamp-retry {
+    margin-top: 6px;
+    padding: 2px 12px;
     border: 2px solid var(--edge);
     border-radius: 999px;
     background: var(--yellow);
@@ -2793,48 +2668,75 @@
     font-size: 12px;
     font-weight: 700;
   }
-  .stamp-toast {
-    position: fixed;
-    z-index: 60;
-    left: 50%;
-    bottom: 24px;
-    translate: -50% 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 10px 8px 18px;
-    border: 2px solid var(--edge);
-    border-radius: 999px;
-    background: var(--paper);
-    font-size: 13px;
-    font-weight: 700;
-    box-shadow: 4px 4px 0 var(--drop);
-    animation: tools-in 380ms var(--bounce) both;
-  }
-  .stamp-toast button {
-    margin: 0;
-  }
 }
 
 /* ───────────────────────── motion ───────────────────────── */
 @layer motion {
-  :root {
-    view-transition-name: none;
-  }
-  .route-frame {
-    view-transition-name: page;
+  /* Page turns: the screen image of the old page turns over the binding (forward), or the new
+     page turns back onto the stack (back). Both are clipped to the sheet so the desk stays still.
+     The tabs and the sticker sheet sit outside the turning page and update live. */
+  .rail {
+    view-transition-name: tabs;
   }
   ::view-transition {
     pointer-events: none;
   }
-  ::view-transition-group(page) {
+  ::view-transition-group(tabs),
+  ::view-transition-new(tabs),
+  ::view-transition-group(stickers),
+  ::view-transition-new(stickers) {
     animation: none;
   }
-  ::view-transition-old(page) {
-    animation: page-out 130ms var(--ease) both;
+  ::view-transition-old(tabs),
+  ::view-transition-old(stickers) {
+    display: none;
   }
-  ::view-transition-new(page) {
-    animation: page-in 240ms var(--ease) 40ms both;
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    backface-visibility: hidden;
+  }
+  :root[data-flip='fade']::view-transition-old(root) {
+    animation: page-out 160ms var(--ease) both;
+  }
+  :root[data-flip='fade']::view-transition-new(root) {
+    animation: page-in 240ms var(--ease) both;
+  }
+  :root[data-flip='forward']::view-transition-old(root) {
+    z-index: 1;
+    clip-path: inset(
+      var(--flip-old-top) var(--flip-old-right) var(--flip-old-bottom) var(--flip-old-left) round 26px
+    );
+    transform-origin: var(--flip-old-left) 50%;
+    animation: turn-away 640ms cubic-bezier(0.55, 0, 0.3, 1) both;
+  }
+  /* The new image already paints above the old one; a z-index here hides the old image in Chromium. */
+  :root[data-flip='back']::view-transition-new(root) {
+    clip-path: inset(
+      var(--flip-new-top) var(--flip-new-right) var(--flip-new-bottom) var(--flip-new-left) round 26px
+    );
+    transform-origin: var(--flip-new-left) 50%;
+    animation: turn-back 640ms cubic-bezier(0.55, 0, 0.3, 1) both;
+  }
+  :root[data-flip='back']::view-transition-old(root) {
+    animation: covered 640ms var(--ease) both;
+  }
+  @keyframes turn-away {
+    to {
+      transform: perspective(3200px) rotateY(-96deg);
+      filter: brightness(0.86);
+    }
+  }
+  @keyframes turn-back {
+    from {
+      transform: perspective(3200px) rotateY(-96deg);
+      filter: brightness(0.86);
+    }
+  }
+  @keyframes covered {
+    to {
+      filter: brightness(0.94);
+    }
   }
   /* Each route settles onto the paper with a short stagger. */
   .route-frame > .wrap > :nth-child(-n + 3) {
@@ -2856,26 +2758,27 @@
   .article-results .article-row {
     animation: rise 420ms var(--ease) calc(var(--i, 0) * 28ms) both;
   }
-  .featured-project.active .featured-image {
-    animation: deck-in-next 560ms var(--spring) both;
+  /* The copy of the newly selected work settles in line by line. */
+  .featured-copy > * {
+    transition: translate 520ms var(--ease);
   }
-  .project-deck[data-direction='prev'] .featured-project.active .featured-image {
-    animation-name: deck-in-prev;
+  .featured-project[data-pos='prev'] .featured-copy > * {
+    translate: -12px 0;
   }
-  .featured-project.active .featured-copy > * {
-    animation: rise-small 460ms var(--ease) both;
+  .featured-project[data-pos='next'] .featured-copy > * {
+    translate: 12px 0;
   }
-  .featured-project.active .featured-copy > :nth-child(2) {
-    animation-delay: 40ms;
+  .featured-project[data-pos='active'] .featured-copy > :nth-child(2) {
+    transition-delay: 30ms;
   }
-  .featured-project.active .featured-copy > :nth-child(3) {
-    animation-delay: 80ms;
+  .featured-project[data-pos='active'] .featured-copy > :nth-child(3) {
+    transition-delay: 60ms;
   }
-  .featured-project.active .featured-copy > :nth-child(4) {
-    animation-delay: 110ms;
+  .featured-project[data-pos='active'] .featured-copy > :nth-child(4) {
+    transition-delay: 90ms;
   }
-  .featured-project.active .featured-copy > :nth-child(5) {
-    animation-delay: 140ms;
+  .featured-project[data-pos='active'] .featured-copy > :nth-child(5) {
+    transition-delay: 120ms;
   }
   @supports (animation-timeline: view()) {
     .work-index-item,
@@ -2894,12 +2797,6 @@
     from {
       opacity: 0;
       transform: translateY(18px);
-    }
-  }
-  @keyframes rise-small {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
     }
   }
   @keyframes reveal {
@@ -2927,24 +2824,6 @@
       transform: scale(1.06);
     }
   }
-  @keyframes postmark-hit {
-    0% {
-      transform: scale(1.5);
-      opacity: 0.2;
-    }
-    45% {
-      transform: scale(0.92);
-      opacity: 1;
-    }
-  }
-  @keyframes checkpoint {
-    0% {
-      transform: scale(1.35) rotate(-20deg);
-    }
-    50% {
-      transform: scale(0.9) rotate(-2deg);
-    }
-  }
   @keyframes page-out {
     to {
       opacity: 0;
@@ -2955,104 +2834,29 @@
       opacity: 0;
     }
   }
-  @keyframes deck-in-next {
+  @keyframes sticker-pop {
     from {
       opacity: 0;
-      transform: translateX(40px) rotate(4deg);
+      transform: scale(0.6);
     }
   }
-  @keyframes deck-in-prev {
+  @keyframes stick {
     from {
-      opacity: 0;
-      transform: translateX(-40px) rotate(-4deg);
+      transform: translate(var(--from-x), var(--from-y)) scale(1.18);
+      filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
+        drop-shadow(0 -1.6px 0 #fff) drop-shadow(8px 16px 6px rgb(45 42 51 / 0.22));
     }
   }
-  @keyframes count-bump {
-    0% {
-      transform: scale(0.5);
-    }
-    60% {
-      transform: scale(1.2);
-    }
-  }
-  @keyframes stamp-pop {
-    from {
-      opacity: 0;
-      transform: scale(0.4);
-    }
-  }
-  @keyframes stamp-slam {
-    0% {
-      opacity: 0;
-      transform: translateY(-28px) scale(1.9) rotate(-14deg);
-      filter: drop-shadow(8px 22px 0 rgb(0 0 0 / 0.12));
-    }
-    40% {
-      opacity: 1;
-      transform: scale(0.8);
-      filter: drop-shadow(0 0 0 rgb(0 0 0 / 0.2));
-    }
-    65% {
-      transform: scale(1.1);
-    }
-    100% {
-      transform: none;
-    }
-  }
-  @keyframes stamp-ring {
-    from {
-      opacity: 0.9;
-      transform: scale(0.5);
-    }
+  @keyframes peel {
     to {
       opacity: 0;
-      transform: scale(1.8);
+      transform: translateY(-14px) rotate(16deg) scale(1.12);
     }
   }
-  @keyframes stamp-spark {
-    from {
-      opacity: 1;
-      transform: translateY(-12px) scale(1);
-    }
-    to {
-      opacity: 0;
-      transform: translateY(-44px) scale(0.3);
-    }
-  }
-  @keyframes stamp-leave {
-    to {
-      opacity: 0;
-      transform: translateY(-14px) scale(1.4) rotate(14deg);
-    }
-  }
-  @keyframes stamp-wiggle {
-    0%,
-    100% {
-      transform: rotate(-6deg);
-    }
-    50% {
-      transform: rotate(6deg);
-    }
-  }
-  @keyframes cursor-spin {
-    to {
-      rotate: 360deg;
-    }
-  }
-  @keyframes choice-pick {
-    40% {
-      transform: scale(1.35) rotate(-16deg);
-    }
-  }
-  @keyframes overlay-in {
-    from {
-      box-shadow: inset 0 0 0 0 var(--green);
-    }
-  }
-  @keyframes tools-in {
+  @keyframes postmark-in {
     from {
       opacity: 0;
-      transform: translateY(30px) rotate(3deg);
+      transform: scale(1.35);
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -3150,6 +2954,11 @@
     .site-body::before {
       display: none;
     }
+    /* Off-stage deck panels and postmarks must not widen the layout viewport on phones.
+       The tabs and the sticker sheet are fixed, so they are not clipped. */
+    .site-body {
+      overflow-x: clip;
+    }
     .wrap {
       padding-inline: 18px;
     }
@@ -3181,17 +2990,16 @@
       border-radius: 16px 16px 0 0;
       font-size: 12px;
       letter-spacing: 0.02em;
+      margin: 0;
       writing-mode: horizontal-tb;
       translate: 0 10px;
       box-shadow: none;
     }
-    .rail nav a:hover {
+    .rail nav a:not([aria-current]):hover {
       translate: 0 6px;
     }
-    .rail nav a:active {
-      translate: 0 12px;
-    }
     .rail nav a[aria-current='page'] {
+      width: auto;
       translate: 0 0;
     }
     .tab-seal {
@@ -3275,18 +3083,10 @@
     .project-deck {
       margin-top: 28px;
     }
-    .featured-image {
-      padding: 5px;
-      border-radius: 14px;
-      box-shadow: 5px 5px 0 var(--hi);
-    }
-    .image-open {
-      opacity: 1;
-      transform: none;
-      width: 42px;
-      height: 42px;
-      right: -8px;
-      top: -10px;
+    .featured-image .postmark {
+      --size: 84px;
+      right: -14px;
+      bottom: -22px;
     }
     .home-middle {
       margin-top: 90px;
@@ -3438,13 +3238,23 @@
     .site-footer {
       margin-top: 80px;
     }
-    .stamp-ui {
-      bottom: max(10px, env(safe-area-inset-bottom));
-      padding: 14px;
+    .sticker-sheet {
+      left: 10px;
+      right: 10px;
+      bottom: 64px;
+      width: auto;
+      padding: 8px 10px;
+      rotate: 0deg;
     }
-    .stamp-toast {
-      bottom: 80px;
-      max-width: calc(100vw - 24px);
+    .stamp-choices {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      margin-top: 2px;
+    }
+    .stamp-status[data-idle] {
+      display: none;
+    }
+    .stamp-policy {
+      display: none;
     }
   }
   @media (max-width: 380px) {

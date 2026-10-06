@@ -98,15 +98,14 @@ try {
   report.hover = { before, after };
   await page.screenshot({ path: '.qa/works-hover.png' });
   await page.goto('http://localhost:4321/');
-  await page.locator('.stamp-trigger').click();
+  await page.getByRole('button', { name: 'クローバー', exact: true }).click();
   await page.mouse.click(500, 195);
   await expect(page.locator('.stamp-status')).toContainText('保存しました', { timeout: 20000 });
+  await page.getByRole('button', { name: 'クローバー', exact: true }).click();
   await page.mouse.click(650, 205);
   await expect(page.locator('[data-pending=true]')).toHaveCount(0, { timeout: 20000 });
   await expect(page.locator('.stamp-count')).not.toHaveText('+');
   await page.reload();
-  await page.locator('.stamp-trigger').click();
-  await page.getByRole('button', { name: '消す', exact: true }).click();
   await expect(page.locator('.stamp-delete')).toHaveCount(2, { timeout: 10000 });
   const first = await page.locator('.stamp-delete').first().locator('..').getAttribute('data-stamp-id');
   await page.screenshot({ path: '.qa/stamp-delete-desktop.png' });
@@ -139,7 +138,7 @@ try {
   await page.keyboard.press('Enter');
   await expect(page.locator('.stamp-delete')).toHaveCount(0);
   await expect(page.locator('.stamp-status')).toContainText('取り消しました', { timeout: 20000 });
-  await expect(page.locator('.stamp-ui-heading p')).toContainText('消せるスタンプはありません');
+  await expect(page.locator('.sticker-left')).toContainText('あと5枚');
   if (errors.length || report.accessibility.length)
     throw Error(JSON.stringify({ errors, violations: report.accessibility }));
   report.deletion =

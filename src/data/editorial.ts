@@ -1,5 +1,11 @@
 export const featuredIds = ['dice-spec-v2', 'c-compiler', 'minna-no-monosashi'];
-export const milestones = [
+export const milestones: { year: string; grade: string; title: string; text: string; url?: string }[] = [
+  {
+    year: '2026.03',
+    grade: '大学3年',
+    title: 'フィックスターズ インターン',
+    text: '株式会社フィックスターズでのインターンシップ。',
+  },
   {
     year: '2025.09',
     grade: '大学3年',
@@ -12,14 +18,13 @@ export const milestones = [
     grade: '大学2年',
     title: 'MIXI Bug Shooting Challenge 優勝',
     text: 'バグ修正を競うハッカソン。',
-    url: 'https://mixi-recruit.snar.jp/jobboard/detail.aspx?id=-fwHdaAAwGZ-bG-AvP9r2A',
+    url: 'https://trap.jp/post/2228/',
   },
   {
     year: '2024.04',
     grade: '大学2年',
     title: 'Flatt Security インターン開始',
     text: 'Shisho Cloud Team / Software Engineering',
-    url: 'https://2024.cp20.dev',
   },
   {
     year: '2024.03',
@@ -33,7 +38,7 @@ export const milestones = [
     grade: '大学1年',
     title: 'LINE インターン',
     text: 'チームでのアプリケーション開発。',
-    url: 'https://2024.cp20.dev',
+    url: 'https://zenn.dev/trap/articles/line-summer-intern-2023',
   },
   {
     year: '2023.05',
@@ -47,7 +52,7 @@ export const milestones = [
     grade: '大学1年',
     title: '東京工業大学 入学',
     text: '情報理工学院（現在の東京科学大学）。',
-    url: 'https://2024.cp20.dev',
+    url: 'https://note.com/cp20/n/n3be2d294a6f3',
   },
   {
     year: '2022.03',

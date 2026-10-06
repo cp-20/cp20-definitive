@@ -21,23 +21,29 @@ const kinds = [
   { symbol: 'heart', name: 'ハート' },
   { symbol: '', name: 'しーぴー' },
 ];
+const LIMIT = 5;
 type Operation = { id: string; path: string } & (
   | { type: 'add'; stamp: PlacedStamp }
   | { type: 'remove'; target: PlacedStamp }
 );
+// A sticker in hand: pressed (not moved yet), dragged, or aimed (click-to-place / keyboard).
+type Held = {
+  kind: number;
+  from: 'sheet' | 'page';
+  target?: PlacedStamp;
+  mode: 'press' | 'drag' | 'aim';
+  pointer: string;
+};
 const StampContext = createContext<{
   toggle: () => void;
   count: () => number;
   enabled: () => boolean;
-  active: () => boolean;
+  open: () => boolean;
 }>();
 const visualKey = (s: Pick<PlacedStamp, 'anchor' | 'x' | 'y' | 'kind' | 'angle'>) =>
   `${s.anchor}|${s.x}|${s.y}|${s.kind}|${s.angle}`;
-function withoutKey(set: ReadonlySet<string>, key: string) {
-  const next = new Set(set);
-  next.delete(key);
-  return next;
-}
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Layout position relative to <body>, ignoring transforms and scroll.
 function layoutBox(el: HTMLElement) {
   let x = 0,
@@ -50,13 +56,14 @@ function layoutBox(el: HTMLElement) {
   }
   return { x, y, w: el.offsetWidth, h: el.offsetHeight };
 }
-function StampFace(props: { kind: number }) {
+function StickerFace(props: { kind: number }) {
   return (
     <img
       src={props.kind === 5 ? '/images/avatar.png' : `/stamps/${kinds[props.kind]?.symbol || 'clover'}.svg`}
       alt=""
       width="40"
       height="40"
+      draggable={false}
     />
   );
 }
@@ -67,18 +74,14 @@ export function StampButton() {
       <button
         class="stamp-trigger"
         onClick={stamp.toggle}
-        aria-label="ページにスタンプを置く"
-        aria-pressed={stamp.active() ? 'true' : 'false'}
+        aria-label="シール帳を開く"
+        aria-pressed={stamp.open() ? 'true' : 'false'}
       >
         <img src="/stamps/clover.svg" alt="" width="20" height="20" />
-        <span class="stamp-trigger-label">{stamp.active() ? '閉じる' : 'スタンプ'}</span>
-        <For each={[stamp.count()]}>
-          {(count) => (
-            <span class="stamp-count" aria-hidden="true">
-              {count || '+'}
-            </span>
-          )}
-        </For>
+        <span class="stamp-trigger-label">シール</span>
+        <span class="stamp-count" aria-hidden="true">
+          {stamp.count() || '+'}
+        </span>
       </button>
     </Show>
   );
@@ -86,17 +89,18 @@ export function StampButton() {
 export function StampProvider(props: { path: string; enabled: boolean; children: JSX.Element }) {
   const [remote, setRemote] = createSignal<PlacedStamp[]>([]),
     [operations, setOperations] = createSignal<Operation[]>([]),
-    [active, setActive] = createSignal(false),
-    [erasing, setErasing] = createSignal(false),
+    [open, setOpen] = createSignal(true),
     [kind, setKind] = createSignal(0),
     [hidden, setHidden] = createSignal(false),
     [message, setMessage] = createSignal(''),
     [failed, setFailed] = createSignal<Operation | null>(null),
     [revision, setRevision] = createSignal(0),
     [owner, setOwner] = createSignal(''),
-    [pointer, setPointer] = createSignal({ x: 200, y: 200 }),
-    [pressing, setPressing] = createSignal(false),
-    [fresh, setFresh] = createSignal<ReadonlySet<string>>(new Set()),
+    [held, setHeld] = createSignal<Held | null>(null),
+    [ghostKind, setGhostKind] = createSignal(-1),
+    [selected, setSelected] = createSignal(''),
+    [lifted, setLifted] = createSignal(''),
+    [fresh, setFresh] = createSignal<ReadonlyMap<string, { x: number; y: number; r: number }>>(new Map()),
     [leaving, setLeaving] = createSignal<ReadonlySet<string>>(new Set());
   const cache = new Map<string, PlacedStamp[]>(),
     resolved = new Map<string, PlacedStamp>();
@@ -107,7 +111,9 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       throw e;
     }));
   let frame = 0,
-    overlay!: HTMLDivElement,
+    overlay: HTMLDivElement | undefined,
+    sheet: HTMLElement | undefined,
+    ghost: HTMLDivElement | undefined,
     writes = Promise.resolve(),
     lastWrite = 0;
   const projected = createMemo<PlacedStamp[]>(() =>
@@ -117,9 +123,10 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       owner(),
     ),
   );
+  const isOwn = (s: PlacedStamp) => s.owner === owner() || s.owner === 'local';
   const own = createMemo(() =>
     projected()
-      .filter((s) => s.owner === owner() || s.owner === 'local')
+      .filter(isOwn)
       .sort((a, b) => b.createdAt - a.createdAt),
   );
   const visible = createMemo(() => {
@@ -143,7 +150,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   };
   const receive = (path: string, stamps: PlacedStamp[]) => {
     cache.set(path, stamps);
-    if (message().startsWith('スタンプに接続')) setMessage('');
+    if (message().startsWith('シールに接続')) setMessage('');
     if (props.path === path) {
       setRemote(stamps);
       reposition();
@@ -152,7 +159,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   createEffect(
     () => ({ path: props.path, enabled: props.enabled }),
     ({ path, enabled }) => {
-      setActive(false);
+      cancelHeld(false);
+      setSelected('');
       setRemote(cache.get(path) || []);
       reposition();
       let stop: (() => void) | undefined,
@@ -165,10 +173,10 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           stop = api.subscribe(
             path,
             (stamps) => receive(path, stamps),
-            () => setMessage('スタンプに接続できません。'),
+            () => setMessage('シールに接続できません。'),
           );
         } catch {
-          setMessage('スタンプに接続できません。');
+          setMessage('シールに接続できません。');
         }
       }, 200);
       return () => {
@@ -181,6 +189,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   onSettled(() => {
     try {
       setHidden(localStorage.getItem('cp20-hide-stamps') === 'true');
+      setOpen(localStorage.getItem('cp20-sticker-sheet') !== 'closed');
       setOwner(localStorage.getItem('cp20-stamp-owner') || '');
       setKind(Number(localStorage.getItem('cp20-stamp-kind')) || 0);
     } catch {}
@@ -195,39 +204,39 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       subtree: true,
     });
     const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && active()) close();
+      if (e.key === 'Escape') {
+        if (held()) cancelHeld(true);
+        else setSelected('');
+      }
+    };
+    const outside = (e: PointerEvent) => {
+      if (!(e.target as Element).closest?.('.placed-stamp')) setSelected('');
     };
     document.addEventListener('keydown', key);
+    document.addEventListener('pointerdown', outside);
     return () => {
       resize.disconnect();
       mutations.disconnect();
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(motion.raf);
       window.removeEventListener('resize', reposition);
       document.removeEventListener('keydown', key);
+      document.removeEventListener('pointerdown', outside);
     };
   });
-  function close() {
-    setActive(false);
-    document.querySelector<HTMLButtonElement>('.stamp-trigger')?.focus();
-  }
   function toggle() {
-    if (active()) {
-      close();
-      return;
-    }
-    setActive(true);
-    setErasing(false);
-    setHidden(false);
-    setPointer({ x: innerWidth / 2, y: innerHeight / 2 });
+    const next = !open();
+    setOpen(next);
+    if (!next) cancelHeld(false);
     try {
-      localStorage.setItem('cp20-hide-stamps', 'false');
+      localStorage.setItem('cp20-sticker-sheet', next ? 'open' : 'closed');
     } catch {}
-    flush();
-    overlay?.focus();
-    void client()
-      .then((api) => api.identify())
-      .then(setOwner)
-      .catch(() => {});
+  }
+  function setHide(value: boolean) {
+    setHidden(value);
+    try {
+      localStorage.setItem('cp20-hide-stamps', String(value));
+    } catch {}
   }
   function enqueue(op: Operation) {
     setOperations((list) => [...list, op]);
@@ -274,132 +283,322 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         setMessage('保存できませんでした。表示を元に戻しました。');
       });
   }
-  function put(x: number, y: number, touch = false) {
+  // Where a point on screen lands on the page: the innermost anchor that contains it.
+  function locate(x: number, y: number) {
     const below = document
       .elementsFromPoint(x, y)
-      .find((el) => !el.closest('.stamp-ui,.stamp-overlay,.stamp-layer'));
+      .find((el) => !el.closest('.sticker-sheet,.stamp-overlay,.stamp-layer,.sticker-ghost'));
     let anchor =
       below?.closest<HTMLElement>('[data-stamp-anchor]') ||
       document.querySelector<HTMLElement>('[data-stamp-anchor="page"]');
-    if (!anchor || below?.closest('.rail') || anchor.closest('[inert]')) return;
-    // Page coordinates follow the document, so stamps scroll natively with the content.
+    if (!anchor || below?.closest('.rail') || anchor.closest('[inert]')) return null;
+    // Page coordinates follow the document, so stickers scroll natively with the content.
     const page = document.body.getBoundingClientRect(),
       px = x - page.left,
       py = y - page.top;
     let box = layoutBox(anchor);
     while (px < box.x || px > box.x + box.w || py < box.y || py > box.y + box.h) {
       anchor = anchor.parentElement?.closest<HTMLElement>('[data-stamp-anchor]') || null;
-      if (!anchor) return;
+      if (!anchor) return null;
       box = layoutBox(anchor);
     }
+    return { anchor: anchor.dataset.stampAnchor!, x: (px - box.x) / box.w, y: (py - box.y) / box.h };
+  }
+  function put(x: number, y: number, stickerKind: number, angle: number, from?: { x: number; y: number }) {
+    const spot = locate(x, y);
+    if (!spot) return false;
     const id = crypto.randomUUID();
     const stamp: PlacedStamp = {
       id,
       owner: 'local',
       slot: '',
-      anchor: anchor.dataset.stampAnchor!,
-      x: (px - box.x) / box.w,
-      y: (py - box.y) / box.h,
-      kind: kind(),
-      angle: Math.round(Math.random() * 24 - 12),
+      ...spot,
+      kind: stickerKind,
+      angle,
       createdAt: Date.now(),
     };
+    // The new sticker starts where the one in hand was, then settles onto the paper.
     const key = visualKey(stamp);
-    setFresh((set) => new Set(set).add(key));
-    setTimeout(() => setFresh((set) => withoutKey(set, key)), 900);
-    if (touch) navigator.vibrate?.(12);
+    setFresh((map) => new Map(map).set(key, { x: (from?.x ?? x) - x, y: (from?.y ?? y) - y, r: 0 }));
+    setTimeout(
+      () =>
+        setFresh((map) => {
+          const next = new Map(map);
+          next.delete(key);
+          return next;
+        }),
+      700,
+    );
     enqueue({ type: 'add', id, path: props.path, stamp });
+    return true;
   }
-  function erase(target: PlacedStamp, done?: () => void) {
-    if (target.owner !== owner() && target.owner !== 'local') return;
+  function erase(target: PlacedStamp, animate = true) {
+    if (!isOwn(target)) return;
     const key = visualKey(target);
     if (leaving().has(key)) return;
     const commit = () => {
-      setLeaving((set) => withoutKey(set, key));
+      setLeaving((set) => {
+        const next = new Set(set);
+        next.delete(key);
+        return next;
+      });
       enqueue({ type: 'remove', id: crypto.randomUUID(), path: props.path, target });
       flush();
-      done?.();
     };
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return commit();
-    // Let the stamp lift off before the optimistic removal takes it out of the layer.
+    if (!animate || reducedMotion()) return commit();
+    // The sticker peels off before the optimistic removal takes it out of the layer.
     setLeaving((set) => new Set(set).add(key));
-    setTimeout(commit, 170);
+    setTimeout(commit, 220);
   }
   function undo() {
     const target = own().find((s) => !leaving().has(visualKey(s)));
     if (target) erase(target);
   }
+
+  // ── The sticker in hand ──
+  // Its position follows the pointer with a spring and leans into the direction of travel.
+  // Updated outside Solid on every frame so dragging stays smooth.
+  const motion = {
+    x: 0,
+    y: 0,
+    tx: 0,
+    ty: 0,
+    tilt: 0,
+    scale: 1,
+    ts: 1,
+    raf: 0,
+    home: null as null | (() => void),
+  };
+  let press = { x: 0, y: 0 };
+  function paint() {
+    if (!ghost) return;
+    ghost.style.transform = `translate(${motion.x}px, ${motion.y}px) rotate(${motion.tilt}deg) scale(${motion.scale})`;
+  }
+  function animate() {
+    cancelAnimationFrame(motion.raf);
+    const step = () => {
+      const dx = motion.tx - motion.x,
+        dy = motion.ty - motion.y;
+      motion.x += dx * 0.32;
+      motion.y += dy * 0.32;
+      motion.tilt += (clamp(dx * 0.5, -22, 22) - motion.tilt) * 0.2;
+      motion.scale += (motion.ts - motion.scale) * 0.25;
+      paint();
+      const settled = Math.abs(dx) < 0.4 && Math.abs(dy) < 0.4 && Math.abs(motion.tilt) < 0.3;
+      if (motion.home && settled) {
+        const done = motion.home;
+        motion.home = null;
+        done();
+        return;
+      }
+      if (held() || motion.home) motion.raf = requestAnimationFrame(step);
+    };
+    motion.raf = requestAnimationFrame(step);
+  }
+  function slotCenter(stickerKind: number) {
+    const slot = sheet
+      ?.querySelector<HTMLElement>(`[data-sticker-kind="${stickerKind}"]`)
+      ?.getBoundingClientRect();
+    return slot
+      ? { x: slot.left + slot.width / 2, y: slot.top + slot.height / 2 }
+      : { x: innerWidth - 80, y: innerHeight - 80 };
+  }
+  function begin(next: Held, start: { x: number; y: number }, pointer: { x: number; y: number }) {
+    setSelected('');
+    setHeld(next);
+    setGhostKind(next.kind);
+    motion.home = null;
+    motion.x = start.x;
+    motion.y = start.y;
+    motion.tx = pointer.x;
+    motion.ty = pointer.y;
+    motion.tilt = next.target?.angle ?? 0;
+    motion.scale = 1;
+    motion.ts = next.mode === 'press' ? 1.08 : 1.18;
+    press = pointer;
+    if (next.from === 'sheet') {
+      setKind(next.kind);
+      try {
+        localStorage.setItem('cp20-stamp-kind', String(next.kind));
+      } catch {}
+    }
+    flush();
+    paint();
+    animate();
+    void client()
+      .then((api) => api.identify())
+      .then(setOwner)
+      .catch(() => {});
+  }
+  function track(x: number, y: number) {
+    const h = held();
+    if (!h) return;
+    if (h.mode === 'press' && Math.hypot(x - press.x, y - press.y) > 6) {
+      setHeld({ ...h, mode: 'drag' });
+      motion.ts = 1.18;
+      if (h.from === 'page' && h.target) setLifted(visualKey(h.target));
+    }
+    motion.tx = x;
+    motion.ty = y;
+  }
+  // Let go of the sticker: it flies back to the sheet (or to where it was) and disappears.
+  function returnHeld(h: Held) {
+    const home =
+      h.from === 'page' && h.target
+        ? (document.querySelector(`[data-stamp-id="${CSS.escape(h.target.id)}"]`)?.getBoundingClientRect() ??
+          null)
+        : null;
+    const point = home
+      ? { x: home.left + home.width / 2, y: home.top + home.height / 2 }
+      : slotCenter(h.kind);
+    setHeld(null);
+    if (reducedMotion()) return finish();
+    motion.tx = point.x;
+    motion.ty = point.y;
+    motion.ts = 1;
+    motion.home = finish;
+    animate();
+  }
+  function finish() {
+    setGhostKind(-1);
+    setLifted('');
+  }
+  function cancelHeld(animate: boolean) {
+    const h = held();
+    if (!h) return;
+    if (animate) returnHeld(h);
+    else {
+      setHeld(null);
+      finish();
+    }
+  }
+  function drop(x: number, y: number) {
+    const h = held();
+    if (!h) return;
+    const overSheet = document.elementsFromPoint(x, y).some((el) => el.closest('.sticker-sheet'));
+    if (overSheet) {
+      // Dropping one of your stickers on the sheet peels it off the page.
+      if (h.from === 'page' && h.target) erase(h.target, false);
+      setHeld(null);
+      motion.tx = slotCenter(h.kind).x;
+      motion.ty = slotCenter(h.kind).y;
+      motion.ts = 0.6;
+      motion.home = finish;
+      return animate();
+    }
+    const lean = Math.round(clamp(motion.tilt, -14, 14));
+    const angle = Math.abs(lean) > 2 ? lean : Math.round(Math.random() * 16 - 8);
+    const from = { x: motion.x, y: motion.y };
+    if (!put(x, y, h.kind, angle, from)) return returnHeld(h);
+    if (h.from === 'page' && h.target) erase(h.target, false);
+    if (h.pointer === 'touch') navigator.vibrate?.(10);
+    setHeld(null);
+    finish();
+    cancelAnimationFrame(motion.raf);
+  }
+  function aimWithKeys(stickerKind: number) {
+    const center = { x: innerWidth / 2, y: innerHeight / 2 };
+    begin(
+      { kind: stickerKind, from: 'sheet', mode: 'aim', pointer: 'keys' },
+      slotCenter(stickerKind),
+      center,
+    );
+    overlay?.focus();
+  }
   function keyboard(e: KeyboardEvent) {
-    if (e.target !== e.currentTarget || erasing()) return;
+    const h = held();
+    if (!h || h.mode !== 'aim') return;
     const deltas: Record<string, [number, number]> = {
-      ArrowLeft: [-12, 0],
-      ArrowRight: [12, 0],
-      ArrowUp: [0, -12],
-      ArrowDown: [0, 12],
+      ArrowLeft: [-16, 0],
+      ArrowRight: [16, 0],
+      ArrowUp: [0, -16],
+      ArrowDown: [0, 16],
     };
     if (deltas[e.key]) {
       e.preventDefault();
       const [dx, dy] = deltas[e.key];
-      setPointer((p) => ({
-        x: Math.max(25, Math.min(innerWidth - 25, p.x + dx)),
-        y: Math.max(25, Math.min(innerHeight - 25, p.y + dy)),
-      }));
+      motion.tx = clamp(motion.tx + dx, 25, innerWidth - 25);
+      motion.ty = clamp(motion.ty + dy, 25, innerHeight - 25);
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      put(pointer().x, pointer().y);
+      drop(motion.tx, motion.ty);
     }
   }
-  let down = { x: 0, y: 0, id: -1 };
+  // Pointer handlers shared by sheet stickers and your own stickers on the page.
+  const center = (el: Element) => {
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  };
+  function grab(e: PointerEvent, next: Omit<Held, 'mode' | 'pointer'>) {
+    if (e.button !== 0 || !e.isPrimary) return;
+    // A sticker already aimed with a click: picking another one swaps it.
+    if (held()?.mode === 'aim') setHeld(null);
+    const el = e.currentTarget as Element;
+    el.setPointerCapture(e.pointerId);
+    begin({ ...next, mode: 'press', pointer: e.pointerType }, center(el), { x: e.clientX, y: e.clientY });
+  }
+  const follow = (e: PointerEvent) => track(e.clientX, e.clientY);
+  const release = (e: PointerEvent) => {
+    const h = held();
+    if (!h) return;
+    if (h.mode === 'drag') return drop(e.clientX, e.clientY);
+    if (h.mode !== 'press') return;
+    if (h.from === 'page' && h.target) {
+      // A tap on your own sticker shows its remove button.
+      setSelected(h.target.id);
+      setHeld(null);
+      finish();
+      cancelAnimationFrame(motion.raf);
+      return;
+    }
+    // A click on a sheet sticker keeps it in hand; the next click on the page sticks it.
+    setHeld({ ...h, mode: 'aim' });
+    motion.ts = 1.18;
+    if (h.pointer !== 'mouse') {
+      motion.tx = motion.x;
+      motion.ty = motion.y - 70;
+    }
+  };
+  let aimDown = { x: 0, y: 0, id: -1 };
   return (
-    <StampContext value={{ toggle, enabled: () => props.enabled, active, count: () => projected().length }}>
+    <StampContext value={{ toggle, enabled: () => props.enabled, open, count: () => projected().length }}>
       {props.children}
-      <div
-        class="stamp-layer"
-        data-erasing={active() && erasing() ? 'true' : undefined}
-        aria-hidden={active() && erasing() ? undefined : 'true'}
-      >
+      <div class="stamp-layer" data-holding={held() ? 'true' : undefined}>
         <For each={visible()} keyed={(s) => s.key}>
           {(s, i) => (
             <span
               class="placed-stamp"
               data-stamp-id={s().id}
-              data-owned={s().owner === owner() || s().owner === 'local' ? 'true' : undefined}
+              data-owned={isOwn(s()) ? 'true' : undefined}
               data-pending={s().owner === 'local' ? 'true' : undefined}
               data-fresh={fresh().has(s().key) ? 'true' : undefined}
               data-leaving={leaving().has(s().key) ? 'true' : undefined}
+              data-lifted={lifted() === s().key ? 'true' : undefined}
+              data-selected={selected() === s().id ? 'true' : undefined}
+              aria-hidden={isOwn(s()) ? undefined : 'true'}
               style={{
                 translate: `${s().left}px ${s().top}px`,
                 '--angle': `${s().angle}deg`,
                 '--delay': `${(i() % 8) * 35}ms`,
+                '--from-x': `${fresh().get(s().key)?.x ?? 0}px`,
+                '--from-y': `${fresh().get(s().key)?.y ?? 0}px`,
               }}
+              onPointerDown={(e) => {
+                if (isOwn(s())) grab(e, { kind: s().kind, from: 'page', target: s() });
+              }}
+              onPointerMove={follow}
+              onPointerUp={release}
+              onPointerCancel={() => cancelHeld(true)}
             >
-              <span class="stamp-face" data-kind={s().kind}>
-                <StampFace kind={s().kind} />
+              <span class="sticker" data-kind={s().kind}>
+                <StickerFace kind={s().kind} />
               </span>
-              <Show when={fresh().has(s().key)}>
-                <span class="stamp-burst" aria-hidden="true">
-                  <For each={[0, 1, 2, 3, 4, 5, 6, 7]}>{(n) => <i style={{ '--n': n }} />}</For>
-                </span>
-              </Show>
-              <Show
-                when={
-                  active() &&
-                  erasing() &&
-                  !leaving().has(s().key) &&
-                  (s().owner === owner() || s().owner === 'local')
-                }
-              >
+              <Show when={isOwn(s()) && !leaving().has(s().key)}>
                 <button
                   class="stamp-delete"
-                  aria-label={`${kinds[s().kind]?.name || 'しーぴー'}のスタンプを削除`}
-                  onClick={() =>
-                    erase(s(), () =>
-                      (
-                        document.querySelector<HTMLButtonElement>('.stamp-delete') ||
-                        document.querySelector<HTMLButtonElement>(".stamp-modes button[aria-pressed='true']")
-                      )?.focus({ preventScroll: true }),
-                    )
-                  }
+                  aria-label={`${kinds[s().kind]?.name || 'しーぴー'}のシールをはがす`}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => erase(s())}
                 >
                   <span aria-hidden="true">
                     <Icon name="X" size={12} />
@@ -410,131 +609,114 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           )}
         </For>
       </div>
-      <Show when={active()}>
+      <Show when={held()?.mode === 'aim'}>
         <div
           ref={overlay}
-          class={['stamp-overlay', { 'is-erasing': erasing() }]}
+          class="stamp-overlay"
           tabindex="0"
           role="group"
-          aria-label={
-            erasing()
-              ? '自分のスタンプを選んで削除。Escapeで終了'
-              : 'スタンプ配置。矢印キーで移動、Enterで配置、Escapeで終了'
-          }
+          aria-label="シールを貼る場所を選択。矢印キーで移動、Enterで貼る、Escapeでやめる"
           onKeyDown={keyboard}
           onPointerMove={(e) => {
-            if (e.pointerType === 'mouse') setPointer({ x: e.clientX, y: e.clientY });
+            if (e.pointerType === 'mouse') track(e.clientX, e.clientY);
           }}
           onPointerDown={(e) => {
-            if (!e.isPrimary || e.button !== 0) return;
-            down = { x: e.clientX, y: e.clientY, id: e.pointerId };
-            if (e.pointerType === 'mouse') setPressing(true);
+            if (e.isPrimary && e.button === 0) aimDown = { x: e.clientX, y: e.clientY, id: e.pointerId };
           }}
           onPointerUp={(e) => {
-            setPressing(false);
-            if (
-              !erasing() &&
-              e.pointerId === down.id &&
-              Math.hypot(e.clientX - down.x, e.clientY - down.y) < 8
-            )
-              put(e.clientX, e.clientY, e.pointerType !== 'mouse');
-            down.id = -1;
+            if (e.pointerId === aimDown.id && Math.hypot(e.clientX - aimDown.x, e.clientY - aimDown.y) < 8) {
+              motion.tx = e.clientX;
+              motion.ty = e.clientY;
+              drop(e.clientX, e.clientY);
+            }
+            aimDown.id = -1;
           }}
-          onPointerCancel={() => {
-            setPressing(false);
-            down.id = -1;
-          }}
-          onPointerLeave={() => setPressing(false)}
-        >
-          <span
-            class="stamp-cursor"
-            data-pressing={pressing() ? 'true' : undefined}
-            style={{ translate: `${pointer().x}px ${pointer().y}px` }}
-            aria-hidden="true"
-          >
-            <span class="stamp-face" data-kind={kind()}>
-              <StampFace kind={kind()} />
-            </span>
+          onPointerCancel={() => (aimDown.id = -1)}
+        />
+      </Show>
+      <div
+        ref={ghost}
+        class="sticker-ghost"
+        data-active={ghostKind() >= 0 ? 'true' : undefined}
+        data-dragging={held()?.mode === 'drag' || held()?.mode === 'aim' ? 'true' : undefined}
+        aria-hidden="true"
+      >
+        <Show when={ghostKind() >= 0}>
+          <span class="sticker" data-kind={ghostKind()}>
+            <StickerFace kind={ghostKind()} />
           </span>
-        </div>
-        <section class="stamp-ui stamp-tools" aria-label="スタンプの道具">
-          <div class="stamp-ui-heading">
-            <div>
-              <h2>スタンプ</h2>
-              <p>
-                {erasing()
-                  ? own().length
-                    ? '自分のスタンプをタップして削除'
-                    : '消せるスタンプはありません'
-                  : 'クリック・タップで配置'}
-              </p>
-            </div>
-            <button class="icon-button" aria-label="スタンプを閉じる" onClick={close}>
-              <Icon name="X" size={18} />
-            </button>
-          </div>
-          <div class="stamp-modes" role="group" aria-label="スタンプの操作">
-            <button aria-pressed={erasing() ? 'false' : 'true'} onClick={() => setErasing(false)}>
-              <Icon name="Stamp" size={16} />
-              置く
+        </Show>
+      </div>
+      <Show when={props.enabled}>
+        <section
+          ref={sheet}
+          class="sticker-sheet stamp-ui"
+          data-open={open() ? 'true' : undefined}
+          inert={!open()}
+          aria-label="シール帳"
+        >
+          <header class="sticker-sheet-head">
+            <h2>シール</h2>
+            <span class="sticker-left">
+              {own().length < LIMIT ? `あと${LIMIT - own().length}枚` : '古い順に入れ替え'}
+            </span>
+            <button
+              class="sheet-tool stamp-undo"
+              disabled={!own().length}
+              onClick={undo}
+              aria-label="取り消す"
+            >
+              <Icon name="RotateCcw" size={15} />
             </button>
             <button
-              aria-pressed={erasing() ? 'true' : 'false'}
-              onClick={() => {
-                setErasing(true);
-                setHidden(false);
-                try {
-                  localStorage.setItem('cp20-hide-stamps', 'false');
-                } catch {}
-              }}
+              class="sheet-tool stamp-hide"
+              aria-pressed={hidden() ? 'true' : 'false'}
+              aria-label="シールを隠す"
+              onClick={() => setHide(!hidden())}
             >
-              <Icon name="Eraser" size={16} />
-              消す
+              <Icon name={hidden() ? 'EyeOff' : 'Eye'} size={15} />
             </button>
-          </div>
-          <div class="stamp-choices" role="group" aria-label="スタンプの種類">
+            <button class="sheet-tool" aria-label="シール帳を閉じる" onClick={toggle}>
+              <Icon name="ChevronDown" size={16} />
+            </button>
+          </header>
+          <div class="stamp-choices" role="group" aria-label="シールの種類">
             <For each={kinds}>
               {(item, i) => (
                 <button
+                  class="sheet-sticker"
+                  data-sticker-kind={i()}
                   aria-label={item.name}
                   aria-pressed={kind() === i() ? 'true' : 'false'}
-                  onClick={() => {
-                    setKind(i());
-                    setErasing(false);
-                    try {
-                      localStorage.setItem('cp20-stamp-kind', String(i()));
-                    } catch {}
-                    overlay?.focus();
+                  data-taken={held()?.from === 'sheet' && ghostKind() === i() ? 'true' : undefined}
+                  onPointerDown={(e) => grab(e, { kind: i(), from: 'sheet' })}
+                  onPointerMove={follow}
+                  onPointerUp={release}
+                  onPointerCancel={() => cancelHeld(true)}
+                  onClick={(e) => {
+                    if (e.detail === 0) aimWithKeys(i());
                   }}
                 >
-                  <StampFace kind={i()} />
+                  <span class="sticker" data-kind={i()}>
+                    <StickerFace kind={i()} />
+                  </span>
                 </button>
               )}
             </For>
           </div>
-          <div class="stamp-toolbar-bottom">
-            <button class="stamp-undo" disabled={!own().length} onClick={undo}>
-              <Icon name="RotateCcw" size={16} />
-              取り消す
-            </button>
-            <label class="stamp-hide">
-              <input
-                type="checkbox"
-                checked={hidden()}
-                onChange={(e) => {
-                  setHidden(e.currentTarget.checked);
-                  try {
-                    localStorage.setItem('cp20-hide-stamps', String(e.currentTarget.checked));
-                  } catch {}
-                }}
-              />
-              スタンプを隠す
-            </label>
-          </div>
-          <p class="stamp-policy">1ページ5個まで · みんなに公開されます</p>
-          <p class="stamp-status" role="status">
-            {operations().length ? `保存中… ${operations().length}件` : message() || 'Escで終了'}
+          <p
+            class="stamp-status"
+            role="status"
+            data-idle={!operations().length && !message() && held()?.mode !== 'aim' ? 'true' : undefined}
+          >
+            {operations().length
+              ? `保存中… ${operations().length}件`
+              : message() ||
+                (held()?.mode === 'aim'
+                  ? '貼りたい場所をクリック・タップ'
+                  : 'ドラッグして好きな場所に貼れます')}
           </p>
+          <p class="stamp-policy">1ページ5枚まで · みんなに公開されます</p>
           <Show when={failed()}>
             <button
               class="stamp-retry"
@@ -547,21 +729,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
             </button>
           </Show>
         </section>
-      </Show>
-      <Show when={!active() && (operations().length || failed())}>
-        <div class="stamp-toast" role="status">
-          {operations().length ? 'スタンプを保存中…' : message()}
-          <Show when={failed()}>
-            <button
-              onClick={() => {
-                const op = failed();
-                if (op) enqueue({ ...op, id: crypto.randomUUID() });
-              }}
-            >
-              再試行
-            </button>
-          </Show>
-        </div>
       </Show>
     </StampContext>
   );

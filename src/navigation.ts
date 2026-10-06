@@ -2,6 +2,28 @@ import { createSignal, onSettled, flush } from 'solid-js';
 import { currentUrl, pageInfo } from './route';
 import { works } from './data/content';
 const paths = new Set(['/', '/about', '/articles', '/works', ...works.map((w) => `/works/${w.id}`)]);
+// The order of the index tabs. Moving down the tabs turns the page forward.
+const sections = ['/', '/works', '/articles', '/about'];
+const sectionIndex = (path: string) =>
+  path === '/' ? 0 : sections.findIndex((s, i) => i > 0 && path.startsWith(s));
+function flipDirection(from: string, to: string) {
+  const a = sectionIndex(from),
+    b = sectionIndex(to);
+  if (a < 0 || b < 0 || from === to) return 'fade';
+  if (a !== b) return b > a ? 'forward' : 'back';
+  // Within a section, the deeper page (a work's detail) is the next page.
+  return to.length > from.length ? 'forward' : 'back';
+}
+// The page flips around the sheet's binding, so the animation is clipped to the sheet's rect.
+function markSheet(prefix: string) {
+  const sheet = document.querySelector('.site-body')?.getBoundingClientRect();
+  if (!sheet) return;
+  const root = document.documentElement.style;
+  root.setProperty(`--${prefix}-left`, `${Math.max(0, sheet.left)}px`);
+  root.setProperty(`--${prefix}-right`, `${Math.max(0, innerWidth - sheet.right)}px`);
+  root.setProperty(`--${prefix}-top`, `${Math.max(0, sheet.top)}px`);
+  root.setProperty(`--${prefix}-bottom`, `${Math.max(0, innerHeight - sheet.bottom)}px`);
+}
 export function createNavigation() {
   const [path, setPath] = createSignal(currentUrl().pathname.replace(/\/$/, '') || '/');
   onSettled(() => {
@@ -39,15 +61,24 @@ export function createNavigation() {
           heading.tabIndex = -1;
           heading.focus({ preventScroll: true });
         }
+        markSheet('flip-new');
       };
       if (
         animate &&
         document.startViewTransition &&
         !matchMedia('(prefers-reduced-motion: reduce)').matches
       ) {
+        const root = document.documentElement;
+        root.dataset.flip = flipDirection(path(), url.pathname.replace(/\/$/, '') || '/');
+        markSheet('flip-old');
         transition = document.startViewTransition(update);
         void transition.ready.catch(() => {});
-        void transition.finished.catch(() => {});
+        const current = transition;
+        void transition.finished
+          .catch(() => {})
+          .finally(() => {
+            if (transition === current) delete root.dataset.flip;
+          });
       } else update();
     };
     const click = (e: MouseEvent) => {

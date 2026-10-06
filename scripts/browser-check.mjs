@@ -279,10 +279,10 @@ try {
   visitor = await visitorContext.newPage();
   await visitor.goto(origin + '/');
   await beginLayout('main,.site-header,.site-footer');
-  await page.locator('.stamp-trigger').click();
-  await expect(page.locator('.stamp-overlay')).toBeVisible();
-  await endLayout('stamp tools open');
-  await axe('/#stamp-tools');
+  // The sticker sheet is open by default.
+  await expect(page.locator('.sticker-sheet')).toBeVisible();
+  await endLayout('sticker sheet shown');
+  await axe('/#sticker-sheet');
   let unblock;
   const gate = new Promise((resolve) => (unblock = resolve));
   releaseWrite = unblock;
@@ -295,7 +295,9 @@ try {
     await route.continue();
   };
   await page.route('https://**.firebasedatabase.app/**', hold);
+  // Click a sticker to hold it, then click the page to stick it.
   await page.getByRole('button', { name: 'しーぴー', exact: true }).click();
+  await expect(page.locator('.stamp-overlay')).toBeVisible();
   const anchor = await page.locator('[data-stamp-anchor=intro]').boundingBox();
   await beginLayout('main,.site-header,.site-footer');
   await page.mouse.click(anchor.x + anchor.width * 0.6, anchor.y + anchor.height * 0.45);
@@ -326,20 +328,18 @@ try {
   await endLayout('optimistic undo');
   await expect(page.locator('.stamp-status')).toContainText('取り消しました', { timeout: 20000 });
   await expect(visitor.locator(`[data-stamp-id="${stampId}"]`)).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  await expect(page.locator('.stamp-trigger')).toBeFocused();
   await page.unroute('https://**.firebasedatabase.app/**', hold);
   // A second visitor places and removes a stamp using actual touch events.
-  await visitor.locator('.stamp-trigger').tap();
   await visitor.getByRole('button', { name: 'ハート', exact: true }).tap();
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('[data-pending=true]')).toHaveCount(1);
   await expect(visitor.locator('.stamp-status')).toContainText('保存しました', { timeout: 20000 });
   await visitor.getByRole('button', { name: '取り消す', exact: true }).tap();
   await expect(visitor.locator('.stamp-status')).toContainText('取り消しました', { timeout: 20000 });
-  await visitor.getByRole('button', { name: 'スタンプを閉じる' }).tap();
+  await visitor.getByRole('button', { name: 'シール帳を閉じる' }).tap();
+  await expect(visitor.locator('.sticker-sheet')).toBeHidden();
   report.interactions.push(
-    'two-click stamp placement; immediate optimistic render and undo; cross-visitor live sync; touch placement; responsive anchors; test stamps removed',
+    'click-to-stick placement; immediate optimistic render and undo; cross-visitor live sync; touch placement; responsive anchors; test stickers removed',
   );
   for (const [width, height] of [
     [390, 844],
@@ -378,7 +378,8 @@ try {
       await route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Test outage"}' });
     } else await route.continue();
   });
-  await page.locator('.stamp-trigger').click();
+  await page.getByRole('button', { name: 'クローバー', exact: true }).focus();
+  await page.keyboard.press('Enter');
   await page.keyboard.press('ArrowUp');
   await page.keyboard.press('Enter');
   await expect(page.locator('[data-pending=true]')).toHaveCount(1);

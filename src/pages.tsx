@@ -225,19 +225,29 @@ export function About() {
           </div>
           <div class="timeline">
             <For each={milestones}>
-              {(m) => (
-                <a class="timeline-item" href={m.url}>
-                  <div class="timeline-date">
-                    <time datetime={m.year.replace('.', '-')}>{m.year}</time>
-                    <span>{m.grade}</span>
-                  </div>
-                  <div>
-                    <h3>{m.title}</h3>
-                    <p>{m.text}</p>
-                  </div>
-                  <Icon name="ArrowUpRight" size={16} />
-                </a>
-              )}
+              {(m) => {
+                const body = (
+                  <>
+                    <div class="timeline-date">
+                      <time datetime={m.year.replace('.', '-')}>{m.year}</time>
+                      <span>{m.grade}</span>
+                    </div>
+                    <div>
+                      <h3>{m.title}</h3>
+                      <p>{m.text}</p>
+                    </div>
+                  </>
+                );
+                // Link only when there is a write-up or an official result page.
+                return m.url ? (
+                  <a class="timeline-item" href={m.url}>
+                    {body}
+                    <Icon name="ArrowUpRight" size={16} />
+                  </a>
+                ) : (
+                  <div class="timeline-item">{body}</div>
+                );
+              }}
             </For>
           </div>
         </section>

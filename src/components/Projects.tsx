@@ -6,12 +6,10 @@ import { featuredIds } from '../data/editorial';
 export const projects = featuredIds.map((id) => works.find((w) => w.id === id)!);
 export default function Projects() {
   const [selected, setSelected] = createSignal(0);
-  const [direction, setDirection] = createSignal<'next' | 'prev'>('next');
   let tabs!: HTMLDivElement;
   function choose(i: number, focus = false) {
     const next = (i + 3) % 3;
     if (next === selected()) return focus && (tabs.children[next] as HTMLButtonElement).focus();
-    setDirection(i > selected() ? 'next' : 'prev');
     setSelected(next);
     if (focus) (tabs.children[next] as HTMLButtonElement).focus();
   }
@@ -24,16 +22,24 @@ export default function Projects() {
       );
     }
   };
-  // Horizontal swipe on touch screens; vertical scrolling stays native (touch-action: pan-y).
+  // Touch swipe: the card follows the finger, then settles on the next work or springs back.
+  // Vertical scrolling stays native (touch-action: pan-y).
+  const [drag, setDrag] = createSignal(0);
   let swipe = { x: 0, y: 0, id: -1 };
   const swipeStart = (e: PointerEvent) => {
     if (e.pointerType !== 'mouse' && e.isPrimary) swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
+  };
+  const swipeMove = (e: PointerEvent) => {
+    if (e.pointerId !== swipe.id) return;
+    const dx = e.clientX - swipe.x;
+    if (Math.abs(dx) > Math.abs(e.clientY - swipe.y)) setDrag(dx * 0.7);
   };
   const swipeEnd = (e: PointerEvent) => {
     if (e.pointerId !== swipe.id) return;
     swipe.id = -1;
     const dx = e.clientX - swipe.x,
       dy = e.clientY - swipe.y;
+    setDrag(0);
     if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4) choose(selected() + (dx < 0 ? 1 : -1));
   };
   return (
@@ -84,29 +90,32 @@ export default function Projects() {
       </div>
       <div
         class="project-deck"
-        data-direction={direction()}
+        data-dragging={drag() ? 'true' : undefined}
+        style={{ '--drag': `${drag()}px` }}
         onPointerDown={swipeStart}
+        onPointerMove={swipeMove}
         onPointerUp={swipeEnd}
-        onPointerCancel={() => (swipe.id = -1)}
+        onPointerCancel={() => {
+          swipe.id = -1;
+          setDrag(0);
+        }}
       >
         <For each={projects}>
           {(p, i) => (
             <article
               id={`project-${i()}`}
               class={['featured-project', { active: selected() === i() }]}
+              data-pos={i() < selected() ? 'prev' : i() > selected() ? 'next' : 'active'}
               data-stamp-anchor={`work-${p.id}`}
               role="tabpanel"
               aria-labelledby={`project-tab-${i()}`}
               aria-hidden={selected() === i() ? 'false' : 'true'}
               inert={selected() !== i()}
             >
-              <a class="featured-image" href={p.url} aria-label={`${p.title}を開く`}>
+              <div class="featured-image">
                 <OGImage url={p.url} alt={`${p.title}のOG画像`} priority={i() === 0} />
                 <Postmark date={postmarkDate(p.productionTime)} top="CP20.DEV" bottom={`No.0${i() + 1}`} />
-                <span class="image-open">
-                  <Icon name="ArrowUpRight" size={21} />
-                </span>
-              </a>
+              </div>
               <div class="featured-copy">
                 <p class="project-kind">{p.tags.join(' / ')}</p>
                 <h3>
