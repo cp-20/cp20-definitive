@@ -11,7 +11,7 @@
         ".read": "query.orderByChild == 'updatedAt' && query.limitToLast != null && query.limitToLast <= 100",
         "$uid": {
           ".read": "auth != null && auth.uid == $uid",
-          ".write": "auth != null && auth.uid == $uid && (!newData.exists() || !data.exists() || now >= data.child('updatedAt').val() + 1000)",
+          ".write": "auth != null && auth.uid == $uid && auth.token.firebase.sign_in_provider == 'google.com' && (!newData.exists() || !data.exists() || now >= data.child('updatedAt').val() + 1000)",
           ".validate": "newData.hasChildren(['updatedAt','stamps'])",
           "updatedAt": {
             ".validate": "newData.val() == now"
@@ -42,6 +42,9 @@
                 ".validate": false
               }
             }
+          },
+          "avatar": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/)"
           },
           "$other": {
             ".validate": false

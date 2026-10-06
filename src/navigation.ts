@@ -35,8 +35,21 @@ export function createNavigation() {
     let transition: ViewTransition | undefined,
       version = 0;
     const remember = () => positions.set(key, [scrollX, scrollY]);
+    let aim: HTMLElement | undefined;
+    const settleAim = () => {
+      const target = aim;
+      aim = undefined;
+      if (
+        target?.isConnected &&
+        Math.abs(
+          target.getBoundingClientRect().top - (parseFloat(getComputedStyle(target).scrollMarginTop) || 0),
+        ) > 1
+      )
+        target.scrollIntoView({ behavior: 'instant' });
+    };
     const move = (url: URL, restore?: [number, number], animate = true) => {
       const ticket = ++version;
+      aim = undefined;
       transition?.skipTransition();
       const update = () => {
         if (ticket !== version) return;
@@ -54,8 +67,11 @@ export function createNavigation() {
         document.dispatchEvent(new Event('cp20:navigation'));
         const target = url.hash ? document.getElementById(decodeURIComponent(url.hash.slice(1))) : null;
         if (restore) window.scrollTo({ left: restore[0], top: restore[1], behavior: 'instant' });
-        else if (target) target.scrollIntoView({ behavior: 'instant' });
-        else window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        else if (target) {
+          target.scrollIntoView({ behavior: 'instant' });
+          // A smooth scroll still running when the link was clicked can leave the jump short.
+          aim = target;
+        } else window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         const heading = document.querySelector<HTMLElement>('main h1');
         if (heading) {
           heading.tabIndex = -1;
@@ -77,9 +93,14 @@ export function createNavigation() {
         void transition.finished
           .catch(() => {})
           .finally(() => {
-            if (transition === current) delete root.dataset.flip;
+            if (transition !== current) return;
+            delete root.dataset.flip;
+            settleAim();
           });
-      } else update();
+      } else {
+        update();
+        requestAnimationFrame(settleAim);
+      }
     };
     const click = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;

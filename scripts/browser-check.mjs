@@ -1,12 +1,15 @@
 import { chromium, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { mockFirebase, signInAs } from './firebase-mock.mjs';
 const origin = process.env.CHECK_ORIGIN || 'http://127.0.0.1:8787';
 const outputDir = process.env.CHECK_OUTPUT_DIR || '.qa';
 await mkdir(outputDir, { recursive: true });
-const config = JSON.parse(await readFile(new URL('../src/data/firebase.json', import.meta.url)));
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+// Stickers run against an in-memory database with a seeded Google sign-in (see firebase-mock.mjs).
+const db = await mockFirebase(context);
+const user = await signInAs(context);
 await context.addInitScript(() => {
   window.__streams = new Set();
   const Base = window.EventSource;
@@ -27,7 +30,9 @@ const page = await context.newPage(),
   documents = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('request', (r) => {
-  if (r.resourceType() === 'image' && new URL(r.url()).origin !== origin) externalImages.push(r.url());
+  const url = new URL(r.url());
+  if (r.resourceType() === 'image' && url.origin !== origin && url.hostname !== 'www.gravatar.com')
+    externalImages.push(r.url());
   if (r.isNavigationRequest() && r.frame() === page.mainFrame()) documents.push(r.url());
 });
 const report = {
@@ -39,6 +44,7 @@ const report = {
   externalImageRequests: externalImages,
 };
 let visitorContext,
+  guestContext,
   visitor,
   releaseWrite = () => {};
 const settle = async () => {
@@ -97,46 +103,6 @@ async function endLayout(label) {
   report.layout.push({ label, ...result });
   if (result.maxMovementPx > 0.1 || result.rawLayoutShift > 0)
     throw Error(`Layout moved: ${label}: ${JSON.stringify(result)}`);
-}
-async function cleanupTestUser(p) {
-  if (!p || p.isClosed()) return;
-  const user = await p.evaluate(async () => {
-    if (!localStorage.getItem('cp20-stamp-owner')) return null;
-    return new Promise((resolve) => {
-      const request = indexedDB.open('firebaseLocalStorageDb');
-      request.onerror = () => resolve(null);
-      request.onsuccess = () => {
-        const db = request.result;
-        if (!db.objectStoreNames.contains('firebaseLocalStorage')) {
-          db.close();
-          resolve(null);
-          return;
-        }
-        const get = db.transaction('firebaseLocalStorage').objectStore('firebaseLocalStorage').getAll();
-        get.onsuccess = () => {
-          const row = get.result.find((x) => x.fbase_key?.endsWith(':cp20-portfolio'));
-          db.close();
-          resolve(row?.value ? { uid: row.value.uid, token: row.value.stsTokenManager.accessToken } : null);
-        };
-      };
-    });
-  });
-  if (!user) return;
-  for (const path of ['home', 'about']) {
-    const u = new URL(`${config.databaseURL}/pages/${path}/${user.uid}.json`);
-    u.searchParams.set('auth', user.token);
-    const response = await fetch(u, { method: 'DELETE' });
-    if (!response.ok) throw Error('Temporary test stamp cleanup failed');
-  }
-  const removed = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${config.apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken: user.token }),
-    },
-  );
-  if (!removed.ok) throw Error('Temporary test account cleanup failed');
 }
 try {
   for (const path of ['/', '/articles', '/works', '/works/minna-no-monosashi', '/about', '/colophon']) {
@@ -225,6 +191,7 @@ try {
     await page.goto(origin + '/');
     await settle();
     for (const tab of [1, 2, 0]) {
+      await page.locator(`[data-project-tab="${tab}"]`).scrollIntoViewIfNeeded();
       await beginLayout('.featured,.project-deck,.home-middle,.site-header');
       await page.locator(`[data-project-tab="${tab}"]`).click();
       await endLayout(`project ${tab} ${width}`);
@@ -276,11 +243,23 @@ try {
     isMobile: true,
     hasTouch: true,
   });
+  await mockFirebase(visitorContext, { db });
+  await signInAs(visitorContext, { uid: 'mock-visitor', email: 'visitor2@example.com' });
   visitor = await visitorContext.newPage();
   await visitor.goto(origin + '/');
+  // Without a Google sign-in, stickers can be seen but not placed.
+  guestContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  await mockFirebase(guestContext, { db });
+  const guest = await guestContext.newPage();
+  await guest.goto(origin + '/');
+  await expect(guest.getByRole('button', { name: 'Google でログインして貼る' })).toBeVisible();
+  await guest.getByRole('button', { name: /^クローバー/ }).click();
+  await expect(guest.locator('.stamp-overlay')).toHaveCount(0);
+  await expect(guest.locator('.sticker-login')).toHaveAttribute('data-nudge', 'a');
   await beginLayout('main,.site-header,.site-footer');
-  // The sticker sheet is open by default.
+  // The sticker sheet is open by default on wide screens.
   await expect(page.locator('.sticker-sheet')).toBeVisible();
+  await expect(page.locator('.sticker-account')).toContainText('このアイコンで貼ります');
   await endLayout('sticker sheet shown');
   await axe('/#sticker-sheet');
   let unblock;
@@ -292,7 +271,7 @@ try {
       held = true;
       await gate;
     }
-    await route.continue();
+    await route.fallback();
   };
   await page.route('https://**.firebasedatabase.app/**', hold);
   // Click a sticker to hold it, then click the page to stick it.
@@ -306,9 +285,9 @@ try {
   unblock();
   await expect(page.locator('.stamp-status')).toContainText('保存しました', { timeout: 20000 });
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
-  const uid = await page.evaluate(() => localStorage.getItem('cp20-stamp-owner'));
-  const own = page.locator(`[data-stamp-id^="${uid}-"]`);
+  const own = page.locator(`[data-stamp-id^="${user.uid}-"]`);
   await expect(own).toHaveCount(1);
+  if (!/^[0-9a-f]{64}$/.test(db.pages.get('home')[user.uid].avatar)) throw Error('Gravatar hash not saved');
   const stampId = await own.getAttribute('data-stamp-id');
   await expect(visitor.locator(`[data-stamp-id="${stampId}"]`)).toBeVisible();
   for (const width of [390, 1440]) {
@@ -322,24 +301,52 @@ try {
     )
       throw Error('Responsive stamp anchor');
   }
+  // Hovering shows who placed it; a click lifts it and the next click puts it down elsewhere.
+  const placed = await own.boundingBox();
+  const spot = { x: placed.x + placed.width / 2, y: placed.y + placed.height / 2 };
+  await page.mouse.move(spot.x + 120, spot.y + 120);
+  await page.mouse.move(spot.x, spot.y, { steps: 4 });
+  await expect(page.locator('.sticker-avatar')).toHaveAttribute('src', /gravatar\.com\/avatar\/[0-9a-f]{64}/);
+  await page.mouse.click(spot.x, spot.y);
+  await expect(page.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
+  await page.mouse.move(spot.x - 120, spot.y + 40, { steps: 6 });
+  await page.mouse.click(spot.x - 120, spot.y + 40);
+  await expect(page.locator('.stamp-status')).toContainText('はがしました', { timeout: 20000 });
+  const moved = page.locator(`[data-stamp-id^="${user.uid}-"]`);
+  await expect(moved).toHaveCount(1);
+  const landed = await moved.boundingBox();
+  if (
+    Math.abs(landed.x + landed.width / 2 - spot.x + 120) > 1 ||
+    Math.abs(landed.y + landed.height / 2 - spot.y - 40) > 1
+  )
+    throw Error('Lifted sticker placement');
+  const movedId = await moved.getAttribute('data-stamp-id');
+  await expect(visitor.locator(`[data-stamp-id="${movedId}"]`)).toBeVisible();
   await beginLayout('main,.site-header,.site-footer');
-  await page.getByRole('button', { name: '取り消す', exact: true }).click();
-  await expect(own).toHaveCount(0);
+  await page.getByRole('button', { name: '最後に貼ったシールをはがす', exact: true }).click();
+  await expect(moved).toHaveCount(0);
   await endLayout('optimistic undo');
-  await expect(page.locator('.stamp-status')).toContainText('取り消しました', { timeout: 20000 });
-  await expect(visitor.locator(`[data-stamp-id="${stampId}"]`)).toHaveCount(0);
+  await expect(page.locator('.stamp-status')).toContainText('はがしました', { timeout: 20000 });
+  await expect(visitor.locator(`[data-stamp-id="${movedId}"]`)).toHaveCount(0);
   await page.unroute('https://**.firebasedatabase.app/**', hold);
-  // A second visitor places and removes a stamp using actual touch events.
+  // A second visitor places, lifts and peels a sticker using actual touch events.
+  await visitor.locator('.sticker-tab').tap();
+  await expect(visitor.locator('.sticker-sheet')).toBeVisible();
   await visitor.getByRole('button', { name: 'ハート', exact: true }).tap();
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('[data-pending=true]')).toHaveCount(1);
   await expect(visitor.locator('.stamp-status')).toContainText('保存しました', { timeout: 20000 });
-  await visitor.getByRole('button', { name: '取り消す', exact: true }).tap();
-  await expect(visitor.locator('.stamp-status')).toContainText('取り消しました', { timeout: 20000 });
+  await visitor.touchscreen.tap(160, 190);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
+  await visitor.locator('.sticker-sheet h2').tap();
+  await expect(visitor.locator('.stamp-status')).toContainText('はがしました', { timeout: 20000 });
+  await expect(visitor.locator('.placed-stamp')).toHaveCount(0);
   await visitor.getByRole('button', { name: 'シール帳を閉じる' }).tap();
   await expect(visitor.locator('.sticker-sheet')).toBeHidden();
+  await expect(visitor.locator('.sticker-tab')).toBeVisible();
+  if (Object.keys(db.pages.get('home') || {}).length) throw Error('Test stickers left in the mock database');
   report.interactions.push(
-    'click-to-stick placement; immediate optimistic render and undo; cross-visitor live sync; touch placement; responsive anchors; test stickers removed',
+    'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift and peel; responsive anchors',
   );
   for (const [width, height] of [
     [390, 844],
@@ -376,7 +383,7 @@ try {
     if (route.request().method() === 'PUT') {
       await new Promise((r) => setTimeout(r, 800));
       await route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Test outage"}' });
-    } else await route.continue();
+    } else await route.fallback();
   });
   await page.getByRole('button', { name: 'クローバー', exact: true }).focus();
   await page.keyboard.press('Enter');
@@ -409,13 +416,8 @@ try {
   );
 } finally {
   releaseWrite();
-  try {
-    await cleanupTestUser(page);
-    await cleanupTestUser(visitor);
-    report.temporaryDataCleanup = 'passed';
-  } finally {
-    await writeFile(`${outputDir}/browser-check.json`, JSON.stringify(report, null, 2));
-    await visitorContext?.close();
-    await browser.close();
-  }
+  await writeFile(`${outputDir}/browser-check.json`, JSON.stringify(report, null, 2));
+  await visitorContext?.close();
+  await guestContext?.close();
+  await browser.close();
 }

@@ -94,7 +94,8 @@
 
 - [Realtime Database: Webでの読み書き](https://firebase.google.com/docs/database/web/read-and-write)
 - [複数DBの作成](https://firebase.google.com/docs/database/usage/sharding)
-- [Anonymous Auth](https://firebase.google.com/docs/auth/web/anonymous-auth)
+- [Google ログイン（Web）](https://firebase.google.com/docs/auth/web/google-signin)
+- [Gravatar: SHA-256 ハッシュでのアバター取得](https://docs.gravatar.com/general/hash/)
 - [Realtime Database security rules](https://firebase.google.com/docs/database/security)
 - [ルールの条件とクエリ](https://firebase.google.com/docs/database/security/rules-conditions)
 - [Twemoji / graphics license](https://github.com/jdecked/twemoji)

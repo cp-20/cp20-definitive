@@ -1,9 +1,12 @@
 import { chromium, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { readFile, writeFile } from 'node:fs/promises';
-const config = JSON.parse(await readFile('src/data/firebase.json'));
+import { writeFile } from 'node:fs/promises';
+import { mockFirebase, signInAs } from './firebase-mock.mjs';
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+// Stickers run against an in-memory database with a seeded Google sign-in (see firebase-mock.mjs).
+await mockFirebase(context);
+await signInAs(context);
 const page = await context.newPage();
 page.on('response', (r) => {
   if (r.url().includes('firebasedatabase.app') && r.status() >= 400)
@@ -13,65 +16,24 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 const report = { viewports: [], errors, accessibility: [] };
 let release = () => {};
-async function cleanupTestUser(p) {
-  if (!p || p.isClosed()) return;
-  const user = await p.evaluate(async () => {
-    if (!localStorage.getItem('cp20-stamp-owner')) return null;
-    return new Promise((resolve) => {
-      const request = indexedDB.open('firebaseLocalStorageDb');
-      request.onerror = () => resolve(null);
-      request.onsuccess = () => {
-        const db = request.result;
-        if (!db.objectStoreNames.contains('firebaseLocalStorage')) {
-          db.close();
-          resolve(null);
-          return;
-        }
-        const get = db.transaction('firebaseLocalStorage').objectStore('firebaseLocalStorage').getAll();
-        get.onsuccess = () => {
-          const row = get.result.find((x) => x.fbase_key?.endsWith(':cp20-portfolio'));
-          db.close();
-          resolve(row?.value ? { uid: row.value.uid, token: row.value.stsTokenManager.accessToken } : null);
-        };
-      };
-    });
-  });
-  if (!user) return;
-  for (const path of ['home', 'about']) {
-    const u = new URL(`${config.databaseURL}/pages/${path}/${user.uid}.json`);
-    u.searchParams.set('auth', user.token);
-    const response = await fetch(u, { method: 'DELETE' });
-    if (!response.ok) throw Error('Temporary test stamp cleanup failed');
-  }
-  const removed = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${config.apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken: user.token }),
-    },
-  );
-  if (!removed.ok) throw Error('Temporary test account cleanup failed');
-}
 try {
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('http://localhost:4321/about#manga');
     await page.locator('#manga').scrollIntoViewIfNeeded();
     await page.waitForTimeout(400);
-    const frames = await page
-      .locator('.book-cover')
-      .evaluateAll((xs) =>
-        xs.map((el) => ({
-          width: el.clientWidth,
-          height: el.clientHeight,
-          fit: getComputedStyle(el.querySelector('img')).objectFit,
-          position: getComputedStyle(el.querySelector('img')).objectPosition,
-        })),
-      );
+    const frames = await page.locator('.book-cover').evaluateAll((xs) =>
+      xs.map((el) => ({
+        width: el.clientWidth,
+        height: el.clientHeight,
+        fit: getComputedStyle(el).objectFit,
+        position: getComputedStyle(el).objectPosition,
+      })),
+    );
     if (
       frames.some(
-        (f) => Math.abs(f.width / f.height - 1.6) > 0.04 || f.fit !== 'contain' || f.position !== '50% 50%',
+        (f) =>
+          Math.abs(f.width / f.height - 480 / 682) > 0.04 || f.fit !== 'cover' || f.position !== '50% 50%',
       )
     )
       throw Error('Manga frame alignment ' + JSON.stringify(frames));
@@ -104,7 +66,7 @@ try {
   await page.getByRole('button', { name: 'クローバー', exact: true }).click();
   await page.mouse.click(650, 205);
   await expect(page.locator('[data-pending=true]')).toHaveCount(0, { timeout: 20000 });
-  await expect(page.locator('.stamp-count')).not.toHaveText('+');
+  await expect(page.locator('.sticker-count')).toHaveText('2');
   await page.reload();
   await expect(page.locator('.stamp-delete')).toHaveCount(2, { timeout: 10000 });
   const first = await page.locator('.stamp-delete').first().locator('..').getAttribute('data-stamp-id');
@@ -116,14 +78,16 @@ try {
       held = true;
       await gate;
     }
-    await route.continue();
+    await route.fallback();
   };
   await page.route('https://**.firebasedatabase.app/**', handler);
+  // The × appears while the pointer is over your own sticker.
+  await page.locator(`[data-stamp-id="${first}"]`).hover();
   await page.locator('.stamp-delete').first().click();
   await expect(page.locator('.stamp-delete')).toHaveCount(1);
   await expect(page.locator(`[data-stamp-id="${first}"]`)).toHaveCount(0);
   release();
-  await expect(page.locator('.stamp-status')).toContainText('取り消しました', { timeout: 20000 });
+  await expect(page.locator('.stamp-status')).toContainText('はがしました', { timeout: 20000 });
   await page.mouse.click(500, 250);
   await expect(page.locator('.stamp-delete')).toHaveCount(1);
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
@@ -137,7 +101,7 @@ try {
   await page.locator('.stamp-delete').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.stamp-delete')).toHaveCount(0);
-  await expect(page.locator('.stamp-status')).toContainText('取り消しました', { timeout: 20000 });
+  await expect(page.locator('.stamp-status')).toContainText('はがしました', { timeout: 20000 });
   await expect(page.locator('.sticker-left')).toContainText('あと5枚');
   if (errors.length || report.accessibility.length)
     throw Error(JSON.stringify({ errors, violations: report.accessibility }));
@@ -146,7 +110,6 @@ try {
   console.log(JSON.stringify(report));
 } finally {
   release();
-  await cleanupTestUser(page);
   await writeFile('.qa/polish-check.json', JSON.stringify(report, null, 2));
   await browser.close();
 }

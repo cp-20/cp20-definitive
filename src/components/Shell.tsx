@@ -1,7 +1,6 @@
 import { createSignal, createEffect, onSettled, For, Show } from 'solid-js';
 import type { JSX } from '@solidjs/web';
 import Icon, { type IconName } from './Icon';
-import { StampButton } from './Stamps';
 const navigation: { href: string; label: string; icon: IconName }[] = [
   { href: '/', label: 'ホーム', icon: 'Grid2x2' },
   { href: '/works', label: '作品', icon: 'Folder' },
@@ -73,9 +72,6 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
             <img src="/stamps/clover.svg" alt="" width="22" height="22" />
             cp20.dev<span class="edition-label">definitive</span>
           </a>
-          <div class="header-tools">
-            <StampButton />
-          </div>
         </header>
         <main id="main">{props.children}</main>
         <footer class="site-footer wrap" data-stamp-anchor="footer">
@@ -99,11 +95,7 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
           </div>
           <div class="footer-bottom">
             <span>© 2026 cp20</span>
-            <span>
-              icon by <a href="https://twitter.com/sora_douhu">@sora_douhu</a> ·{' '}
-              <a href="https://lucide.dev">Lucide</a> ·{' '}
-              <a href="https://github.com/jdecked/twemoji">Twemoji</a>
-            </span>
+            <a href="/about#credits">クレジット・出典</a>
             <a href="#main" class="to-top">
               先頭へ
               <Icon name="ArrowUp" size={14} />

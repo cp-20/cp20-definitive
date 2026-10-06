@@ -75,3 +75,37 @@ export const editions = [
   { year: '2025', tech: 'SolidJS', image: '2025-portfolio' },
   { year: '2026', tech: 'Hono + xterm.js', image: null },
 ];
+// Volume 1 covers of the featured manga, saved under public/images/covers.
+// The series list itself comes from the 2026 edition; titles without a cover fall back to its thumbnail.
+export const mangaCovers: Record<string, { image: string; source: string; url: string }> = {
+  放課後帰宅びより: {
+    image: '/images/covers/houkago-kitaku-biyori.jpg',
+    source: 'webアクション（双葉社）',
+    url: 'https://comic-action.com/episode/4856001361584756651',
+  },
+  やめろ好きになってしまう: {
+    image: '/images/covers/yamesuki.jpg',
+    source: '集英社',
+    url: 'https://www.shueisha.co.jp/books/items/contents.html?isbn=978-4-08-893745-8',
+  },
+  妹は知っている: {
+    image: '/images/covers/imouto-wa-shitteiru.jpg',
+    source: 'BOOK☆WALKER',
+    url: 'https://bookwalker.jp/de2b0a8fbc-ca4b-46cc-b482-5287aedb0079/',
+  },
+  没落令嬢の悪党賛歌: {
+    image: '/images/covers/botsuraku-reijou.jpg',
+    source: 'BOOK☆WALKER',
+    url: 'https://bookwalker.jp/de6a461693-6f23-466a-8db4-99ade8de468f/',
+  },
+  寿司ガキ: {
+    image: '/images/covers/sushi-gaki.jpg',
+    source: 'カドコミ（KADOKAWA）',
+    url: 'https://comic-walker.com/detail/KC_000933_S',
+  },
+  ざこのみなさんお大事に: {
+    image: '/images/covers/zako-no-minasan.jpg',
+    source: 'BOOK☆WALKER',
+    url: 'https://bookwalker.jp/de29709146-f9fd-4e74-979a-8c178c167f77/',
+  },
+};

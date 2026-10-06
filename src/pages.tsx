@@ -4,11 +4,12 @@ import Icon from './components/Icon';
 import { OGImage, OriginalIcon, Postmark, articleAnchor, postmarkDate } from './components/Preview';
 import Projects from './components/Projects';
 import { articles, works, repos, sources, updatedAt, formatDate, type Article } from './data/content';
-import { featuredIds, milestones, editions } from './data/editorial';
+import { featuredIds, milestones, editions, mangaCovers } from './data/editorial';
 import profile from './data/profile.json';
 import { localImage } from './data/images';
 import tracks from './data/tracks.json';
 import series from './data/series.json';
+const coverOf = (s: (typeof series)[number]) => mangaCovers[s.title]?.image ?? localImage(s.thumbnail);
 export function ArticleRows(props: { items: Article[] }) {
   return (
     <div class="article-list">
@@ -23,7 +24,6 @@ export function ArticleRows(props: { items: Article[] }) {
             data-date={a.date}
           >
             <OGImage url={a.url} alt="" />
-            <Postmark date={postmarkDate(a.date)} top={a.source} bottom="POST" />
             <div class="article-text">
               <div class="article-meta">
                 <time datetime={a.date}>{formatDate(a.date)}</time>
@@ -100,13 +100,7 @@ export function Home() {
               <Icon name="Music" size={16} />
             </a>
             <a href="/about#manga">
-              <img
-                src={localImage(series[0].thumbnail)}
-                alt={series[0].title}
-                width="100"
-                height="120"
-                loading="lazy"
-              />
+              <img src={coverOf(series[0])} alt={series[0].title} width="96" height="136" loading="lazy" />
               <Icon name="BookOpen" size={16} />
             </a>
           </div>
@@ -114,11 +108,6 @@ export function Home() {
             プロフィールを見る
             <Icon name="ArrowRight" size={16} />
           </a>
-          <p class="thumbnail-credit">
-            画像：YouTube / {series[0].credit}
-            <br />
-            作者・出典はプロフィールに記載
-          </p>
         </aside>
       </div>
       <section class="editions-section" aria-labelledby="editions-title">
@@ -154,9 +143,6 @@ export function About() {
               fetchpriority="high"
             />
           </span>
-          <a href="https://twitter.com/sora_douhu" class="avatar-credit">
-            icon by @sora_douhu
-          </a>
         </div>
         <div class="profile-intro">
           <p class="eyebrow">PROFILE / WEB ENGINEER</p>
@@ -293,10 +279,6 @@ export function About() {
             )}
           </For>
         </div>
-        <p class="media-caption">
-          <a href="https://2026.cp20.dev/featured-tracks">2026版のおすすめ曲</a>
-          から。サムネイル提供：YouTube。画像・楽曲の権利は各権利者に帰属します。
-        </p>
       </section>
       <section data-stamp-anchor="manga" id="manga" class="media-section" aria-labelledby="manga-title">
         <div class="section-heading">
@@ -305,18 +287,19 @@ export function About() {
             漫画<span class="meta">{series.length}</span>
           </h3>
         </div>
+        {/* Volume 1 covers standing on a shelf. */}
         <div class="bookshelf">
           <For each={series}>
             {(s) => (
               <a class="book-item" href={s.link}>
-                <div class="book-cover">
+                <div class="book">
                   <img
-                    src={localImage(s.thumbnail)}
-                    alt={`${s.title}の公式紹介画像`}
-                    width="400"
-                    height="400"
+                    class="book-cover"
+                    src={coverOf(s)}
+                    alt={`${s.title} 1巻の表紙`}
+                    width="480"
+                    height="682"
                     loading="lazy"
-                    referrerpolicy="no-referrer"
                   />
                 </div>
                 <h4>
@@ -324,12 +307,44 @@ export function About() {
                   <Icon name="ArrowUpRight" size={14} />
                 </h4>
                 <p>{s.author}</p>
-                <small>画像：{s.credit}</small>
               </a>
             )}
           </For>
         </div>
-        <p class="media-caption">画像は各作品の公式掲載ページより。リンク先で作品を読めます。</p>
+      </section>
+      <section id="credits" class="credits" data-stamp-anchor="credits" aria-labelledby="credits-title">
+        <h2 id="credits-title">クレジット・出典</h2>
+        <dl>
+          <dt>アイコン</dt>
+          <dd>
+            <a href="https://twitter.com/sora_douhu">空どうふ（@sora_douhu）</a>
+          </dd>
+          <dt>音楽</dt>
+          <dd>
+            <a href="https://2026.cp20.dev/featured-tracks">2026版のおすすめ曲</a>
+            から。サムネイルは YouTube（各動画の投稿者）
+          </dd>
+          <dt>漫画の表紙</dt>
+          <dd>
+            <For each={series}>
+              {(s) => (
+                <span>
+                  {s.title}：
+                  <a href={mangaCovers[s.title]?.url ?? s.link}>{mangaCovers[s.title]?.source ?? s.credit}</a>
+                </span>
+              )}
+            </For>
+          </dd>
+          <dt>作品・記事の画像</dt>
+          <dd>各作品・記事の公開ページの OG 画像</dd>
+          <dt>素材</dt>
+          <dd>
+            <a href="https://lucide.dev">Lucide</a>（ISC）、シールの絵柄は{' '}
+            <a href="https://github.com/jdecked/twemoji">Twemoji</a>（CC BY 4.0）、フォントは Zen Maru Gothic
+            / IBM Plex Mono（SIL OFL）
+          </dd>
+        </dl>
+        <p class="meta">画像・楽曲の権利は各権利者に帰属します。</p>
       </section>
     </div>
   );

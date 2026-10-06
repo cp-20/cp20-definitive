@@ -112,7 +112,7 @@
     --yellow-soft: #fff0b8;
     --blue: #7cc0ff;
     --blue-soft: #dcefff;
-    --seal: #e5533d;
+    --seal: #d1402c;
     --on-color: #2d2a33;
     --hi: var(--green);
     --hi-soft: var(--green-soft);
@@ -516,11 +516,6 @@
     color: var(--muted);
     letter-spacing: 0.06em;
   }
-  .header-tools {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
   .site-footer {
     margin-top: 110px;
     padding-bottom: 28px;
@@ -655,7 +650,6 @@
   /* Every image is a postage stamp: white perforated paper with a soft paper shadow. */
   .og-image,
   .music-image,
-  .book-cover,
   .home-favorites a {
     position: relative;
     isolation: isolate;
@@ -665,7 +659,6 @@
   }
   .og-image::before,
   .music-image::before,
-  .book-cover::before,
   .home-favorites a::before {
     content: '';
     position: absolute;
@@ -791,62 +784,6 @@
   }
   .postmark-bottom {
     align-self: start;
-  }
-
-  /* Stamp trigger: a rubber stamp handle. */
-  .stamp-trigger {
-    position: relative;
-    z-index: 45;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    height: 46px;
-    padding: 0 6px 0 12px;
-    border: 2px solid var(--edge);
-    border-radius: 999px;
-    background: var(--paper);
-    font-size: 14px;
-    font-weight: 700;
-    white-space: nowrap;
-    box-shadow: 3px 3px 0 var(--drop);
-    transition:
-      transform 160ms var(--ease),
-      box-shadow 160ms var(--ease),
-      background 200ms var(--ease);
-  }
-  .stamp-trigger > img {
-    width: 24px;
-    height: 24px;
-    transition: transform 520ms var(--spring);
-  }
-  .stamp-trigger:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0 var(--drop);
-  }
-  .stamp-trigger:hover > img {
-    transform: rotate(-25deg) scale(1.18);
-  }
-  .stamp-trigger:active {
-    transform: translate(3px, 3px);
-    box-shadow: 0 0 0 var(--drop);
-    transition-duration: 60ms;
-  }
-  .stamp-trigger[aria-pressed='true'] {
-    background: var(--green-soft);
-  }
-  .stamp-count {
-    display: grid;
-    place-items: center;
-    min-width: 32px;
-    height: 32px;
-    padding: 0 7px;
-    border-radius: 999px;
-    background: var(--seal);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    transition: background-color 300ms var(--ease);
   }
 
   /* ── Home: intro ── */
@@ -1257,16 +1194,9 @@
   .article-row > .og-image {
     aspect-ratio: 16 / 9;
     rotate: -1.5deg;
-    transition: rotate 380ms var(--spring);
   }
   .article-row:nth-child(even) > .og-image {
     rotate: 1.5deg;
-  }
-  .article-row > .postmark {
-    --size: 56px;
-    right: auto;
-    top: calc(50% - 28px);
-    left: calc(var(--thumb) - 24px);
   }
   .article-text {
     min-width: 0;
@@ -1319,11 +1249,7 @@
     background-size: 100% 100%;
   }
   .article-row:hover > .og-image {
-    rotate: -3deg;
     filter: var(--stamp-lift);
-  }
-  .article-row:hover > .postmark {
-    rotate: -22deg;
   }
   .article-row:hover .article-arrow {
     border-color: var(--edge);
@@ -1403,9 +1329,8 @@
     object-fit: cover;
   }
   .home-favorites a:last-child img {
-    height: 92px;
-    object-fit: contain;
-    background: var(--paper-2);
+    height: 112px;
+    object-fit: cover;
   }
   .home-favorites svg {
     position: absolute;
@@ -1417,12 +1342,6 @@
     border-radius: 50%;
     background: var(--pink);
     color: var(--on-color);
-  }
-  .thumbnail-credit {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.7;
-    margin-top: 14px;
   }
 
   /* ── Home: editions as postage stamps ── */
@@ -1736,9 +1655,6 @@
   .work-index-item:nth-child(3n) {
     rotate: -0.4deg;
   }
-  .work-index-item:hover .postmark {
-    rotate: -22deg;
-  }
   .work-index-item:hover .og-image {
     filter: var(--stamp-lift);
   }
@@ -2010,10 +1926,6 @@
   }
   .profile-avatar .avatar-stamp {
     width: 220px;
-  }
-  .avatar-credit {
-    font-size: 11px;
-    color: var(--muted);
   }
   .profile-intro h1 {
     display: flex;
@@ -2344,69 +2256,128 @@
     gap: 3px;
     font-size: 11px;
   }
-  .media-caption {
-    margin-top: 24px;
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .media-caption a {
-    text-decoration: underline wavy var(--hi);
-    text-underline-offset: 4px;
-  }
+  /* Volume 1 covers standing on a shelf: a spine, page edges and a board under each row. */
   .bookshelf {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 40px 28px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 34px 26px;
   }
   .book-item {
     display: block;
-    transition: transform 380ms var(--spring);
   }
-  .book-item:nth-child(odd) {
-    rotate: 0.8deg;
+  .book {
+    position: relative;
+    aspect-ratio: 480 / 682;
+    border-radius: 2px 5px 5px 2px;
+    box-shadow:
+      3px 0 0 #f7f4ec,
+      4px 0 0 rgb(45 42 51 / 0.18),
+      6px 1px 0 #f7f4ec,
+      7px 1px 0 rgb(45 42 51 / 0.28),
+      3px 8px 10px -2px rgb(45 42 51 / 0.28);
+    transition:
+      translate 360ms var(--ease),
+      box-shadow 360ms var(--ease);
   }
-  .book-item:nth-child(even) {
-    rotate: -0.8deg;
+  /* The shelf board the book stands on. */
+  .book::after {
+    content: '';
+    position: absolute;
+    left: -14px;
+    right: -18px;
+    bottom: -9px;
+    height: 7px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--yellow) 45%, #c79a5e);
+    box-shadow: 0 2px 0 rgb(45 42 51 / 0.25);
+  }
+  .book::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: 0 auto 0 0;
+    width: 8%;
+    border-radius: 2px 0 0 2px;
+    background: linear-gradient(90deg, rgb(0 0 0 / 0.28), rgb(255 255 255 / 0.28) 45%, rgb(0 0 0 / 0.12));
+    pointer-events: none;
   }
   .book-cover {
-    --perf: 12px;
-    --perf-hole: 3.6px;
-    aspect-ratio: 1.6;
-    transition: rotate 380ms var(--spring);
-  }
-  .book-cover img {
+    display: block;
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    object-position: 50% 50%;
-    background: var(--paper-2);
-    transition: transform 460ms var(--spring);
+    object-fit: cover;
+    border-radius: inherit;
   }
-  .book-item:hover .book-cover {
-    filter: var(--stamp-lift);
+  .book-item:hover .book {
+    translate: 0 -8px;
+    box-shadow:
+      3px 0 0 #f7f4ec,
+      4px 0 0 rgb(45 42 51 / 0.18),
+      6px 1px 0 #f7f4ec,
+      7px 1px 0 rgb(45 42 51 / 0.28),
+      6px 18px 16px -4px rgb(45 42 51 / 0.3);
   }
-
+  .book-item:hover .book::after {
+    translate: 0 8px;
+  }
   .book-item h4 {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    margin: 14px 4px 0;
+    gap: 6px;
+    margin-top: 22px;
+    font-size: 14px;
+    line-height: 1.5;
   }
   .book-item h4 svg {
     color: var(--faint);
+    flex-shrink: 0;
   }
   .book-item p {
-    margin: 0 4px;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  /* All image and material sources in one place. */
+  .credits {
+    margin-top: 110px;
+    padding-top: 28px;
+    border-top: 2px dashed var(--rule);
+  }
+  .credits h2 {
+    font-size: 18px;
+  }
+  .credits dl {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 8px 24px;
+    margin-top: 14px;
     font-size: 13px;
+    line-height: 1.8;
+  }
+  .credits dt {
+    font-weight: 700;
     color: var(--muted);
   }
-  .book-item small {
-    display: block;
-    margin: 2px 4px 0;
-    font-size: 11px;
+  .credits dd {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 14px;
   }
-
+  .credits a {
+    text-decoration: underline;
+    text-decoration-color: var(--hi);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+  .credits .meta {
+    margin-top: 14px;
+  }
   /* ── Stickers ──
      Visitors' stickers are die-cut: a white outline that follows the motif and a soft shadow.
      The sheet stays on screen; stickers peel off it by dragging and stick where they are dropped. */
@@ -2442,6 +2413,7 @@
     width: 46px;
     height: 46px;
     margin: -23px 0 0 -23px;
+    pointer-events: auto;
   }
   .placed-stamp > .sticker {
     rotate: var(--angle, 0deg);
@@ -2459,8 +2431,7 @@
   .stamp-layer[data-holding] .placed-stamp {
     pointer-events: none;
   }
-  .placed-stamp[data-owned]:hover > .sticker,
-  .placed-stamp[data-selected] > .sticker {
+  .placed-stamp[data-owned]:hover > .sticker {
     transform: translateY(-2px) scale(1.06);
     filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
       drop-shadow(0 -1.6px 0 #fff) drop-shadow(3px 6px 3px rgb(45 42 51 / 0.28));
@@ -2503,9 +2474,8 @@
     background: var(--seal);
     color: #fff;
   }
-  /* On touch screens the × appears only after tapping the sticker, so a tap is never
-     redirected onto it by touch adjustment. */
-  .placed-stamp[data-selected] .stamp-delete,
+  /* Touch screens never show the ×, so a tap is never redirected onto it by touch adjustment.
+     A tapped sticker is lifted instead, and goes back to the sheet to come off. */
   .stamp-delete:focus-visible {
     opacity: 1;
     scale: 1;
@@ -2562,7 +2532,7 @@
     z-index: 60;
     right: 20px;
     bottom: 20px;
-    width: 248px;
+    width: 300px;
     padding: 10px 12px 10px;
     border: 2px solid var(--edge);
     border-radius: 18px;
@@ -2574,11 +2544,18 @@
     view-transition-name: stickers;
     transition:
       translate 460ms var(--ease),
-      opacity 300ms var(--ease);
+      opacity 300ms var(--ease),
+      visibility 0s;
   }
+  /* Closed: slides off, then leaves the accessibility tree and hit testing once it is gone. */
   .sticker-sheet:not([data-open]) {
-    translate: 0 calc(100% + 48px);
+    translate: 0 calc(100% + 96px);
     opacity: 0;
+    visibility: hidden;
+    transition:
+      translate 460ms var(--ease),
+      opacity 300ms var(--ease),
+      visibility 0s 460ms;
   }
   .sticker-sheet-head {
     display: flex;
@@ -2616,7 +2593,7 @@
   }
   .stamp-choices {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 4px;
     margin-top: 6px;
   }
@@ -2642,8 +2619,8 @@
     transform: scale(0.85);
   }
   .sheet-sticker img {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
   }
   .stamp-status {
     min-height: 18px;
@@ -2668,6 +2645,188 @@
     font-size: 12px;
     font-weight: 700;
   }
+  /* Signed out: the stickers stay on the backing until you sign in. */
+  .sticker-sheet[data-locked] .sheet-sticker {
+    cursor: pointer;
+  }
+  .sticker-sheet[data-locked] .sheet-sticker .sticker {
+    opacity: 0.55;
+    filter: grayscale(0.35) drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff)
+      drop-shadow(0 1.6px 0 #fff) drop-shadow(0 -1.6px 0 #fff);
+  }
+  .sticker-sheet[data-locked] .sheet-sticker:hover .sticker {
+    opacity: 0.8;
+    transform: translateY(-2px);
+  }
+  .sticker-head-space {
+    margin-right: auto;
+  }
+  .sticker-signin {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1.5px dashed rgb(45 42 51 / 0.2);
+  }
+  .sticker-login {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 36px;
+    border: 2px solid var(--edge);
+    border-radius: 999px;
+    background: var(--paper);
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 2px 2px 0 var(--drop);
+    transition:
+      transform 160ms var(--ease),
+      box-shadow 160ms var(--ease),
+      background-color 200ms var(--ease);
+  }
+  .sticker-login:hover:not(:disabled) {
+    background: #fff;
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--drop);
+  }
+  .sticker-login:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--drop);
+    transition-duration: 60ms;
+  }
+  .sticker-login:disabled {
+    color: var(--muted);
+  }
+  /* Two names so every nudge restarts the animation. */
+  .sticker-login[data-nudge='a'] {
+    animation: nudge-a 520ms var(--ease);
+  }
+  .sticker-login[data-nudge='b'] {
+    animation: nudge-b 520ms var(--ease);
+  }
+  .sticker-note {
+    margin-top: 7px;
+    font-size: 10.5px;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  .sticker-note a,
+  .sticker-account a {
+    text-decoration: underline;
+    text-decoration-color: var(--hi);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+  }
+  .sticker-account {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1.5px dashed rgb(45 42 51 / 0.2);
+  }
+  .account-avatar {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--paper);
+    box-shadow: 0 0 0 1.5px var(--edge);
+  }
+  .sticker-account p {
+    display: grid;
+    min-width: 0;
+    margin-right: auto;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+  .sticker-account p a {
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+    width: fit-content;
+    font-size: 10.5px;
+    color: var(--muted);
+  }
+  /* Who put it there: the placer's Gravatar peeks out from behind the sticker. */
+  .sticker-avatar {
+    position: absolute;
+    right: -10px;
+    bottom: -8px;
+    width: 24px;
+    height: 24px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--paper);
+    box-shadow: 1px 2px 3px rgb(45 42 51 / 0.3);
+    pointer-events: none;
+    animation: avatar-peek 280ms var(--spring) both;
+  }
+  /* Closed sheet: a small tab at the bottom right. */
+  .sticker-tab {
+    position: fixed;
+    z-index: 60;
+    right: 20px;
+    bottom: 20px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    height: 46px;
+    padding: 0 14px 0 10px;
+    border: 2px solid var(--edge);
+    border-radius: 999px;
+    background:
+      linear-gradient(135deg, rgb(255 255 255 / 0.7), transparent 45%),
+      repeating-linear-gradient(-45deg, transparent 0 9px, rgb(255 255 255 / 0.35) 9px 11px), #e9f1fb;
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 3px 3px 0 var(--drop);
+    view-transition-name: sticker-tab;
+    transition:
+      translate 420ms var(--ease) 160ms,
+      scale 420ms var(--spring) 160ms,
+      opacity 240ms var(--ease) 160ms,
+      box-shadow 160ms var(--ease),
+      visibility 0s;
+  }
+  .sticker-tab:not([data-open]) {
+    translate: 0 16px;
+    scale: 0.8;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      translate 200ms var(--ease),
+      scale 200ms var(--ease),
+      opacity 200ms var(--ease),
+      visibility 0s 200ms;
+  }
+  .sticker-tab > img {
+    width: 24px;
+    height: 24px;
+    transition: transform 520ms var(--spring);
+  }
+  .sticker-tab:hover > img {
+    transform: rotate(-25deg) scale(1.15);
+  }
+  .sticker-tab:active {
+    box-shadow: 0 0 0 var(--drop);
+  }
+  .sticker-count {
+    margin-right: -8px;
+    display: grid;
+    place-items: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: var(--seal);
+    color: #fff;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 /* ───────────────────────── motion ───────────────────────── */
@@ -2684,11 +2843,14 @@
   ::view-transition-group(tabs),
   ::view-transition-new(tabs),
   ::view-transition-group(stickers),
-  ::view-transition-new(stickers) {
+  ::view-transition-new(stickers),
+  ::view-transition-group(sticker-tab),
+  ::view-transition-new(sticker-tab) {
     animation: none;
   }
   ::view-transition-old(tabs),
-  ::view-transition-old(stickers) {
+  ::view-transition-old(stickers),
+  ::view-transition-old(sticker-tab) {
     display: none;
   }
   ::view-transition-old(root),
@@ -2834,6 +2996,34 @@
       opacity: 0;
     }
   }
+  @keyframes avatar-peek {
+    from {
+      opacity: 0;
+      transform: translate(-6px, -6px) scale(0.4);
+    }
+  }
+  @keyframes nudge-a {
+    25% {
+      transform: translateX(-5px) rotate(-2deg);
+    }
+    50% {
+      transform: translateX(4px) rotate(1.5deg);
+    }
+    75% {
+      transform: translateX(-2px);
+    }
+  }
+  @keyframes nudge-b {
+    25% {
+      transform: translateX(-5px) rotate(-2deg);
+    }
+    50% {
+      transform: translateX(4px) rotate(1.5deg);
+    }
+    75% {
+      transform: translateX(-2px);
+    }
+  }
   @keyframes sticker-pop {
     from {
       opacity: 0;
@@ -2894,9 +3084,12 @@
       gap: 34px;
     }
     .work-grid,
-    .music-list,
-    .bookshelf {
+    .music-list {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .bookshelf {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 34px 30px;
     }
     .profile-history-layout {
       grid-template-columns: 250px minmax(0, 1fr);
@@ -3017,17 +3210,6 @@
     .edition-label {
       display: none;
     }
-    .header-tools {
-      gap: 8px;
-    }
-    .stamp-trigger {
-      height: 42px;
-      font-size: 13px;
-    }
-    .stamp-count {
-      height: 28px;
-      min-width: 28px;
-    }
     .section-heading {
       flex-wrap: wrap;
       align-items: center;
@@ -3101,11 +3283,6 @@
     .article-row .article-arrow {
       display: none;
     }
-    .article-row > .postmark {
-      --size: 46px;
-      top: calc(50% - 23px);
-      left: calc(var(--thumb) - 22px);
-    }
     .article-row h3 {
       font-size: 15px;
     }
@@ -3153,15 +3330,30 @@
       height: 24px;
     }
     .work-grid,
-    .music-list,
-    .bookshelf {
+    .music-list {
       grid-template-columns: minmax(0, 1fr);
       gap: 44px;
+    }
+    .bookshelf {
+      gap: 30px 20px;
+    }
+    .credits dl {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
+    .credits dd {
+      margin-bottom: 8px;
     }
     .work-index-item,
     .music-item,
     .book-item {
       margin-inline: 6px;
+    }
+    .book-item h4 {
+      font-size: 13px;
+    }
+    .book-item h4 svg {
+      display: none;
     }
     .repo-list > a {
       grid-template-columns: minmax(0, 1fr);
@@ -3239,12 +3431,17 @@
       margin-top: 80px;
     }
     .sticker-sheet {
-      left: 10px;
       right: 10px;
-      bottom: 64px;
-      width: auto;
+      bottom: 66px;
+      width: min(300px, calc(100vw - 20px));
       padding: 8px 10px;
       rotate: 0deg;
+    }
+    .sticker-tab {
+      right: 10px;
+      bottom: 66px;
+      height: 42px;
+      font-size: 13px;
     }
     .stamp-choices {
       grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -3268,9 +3465,6 @@
     .home-writing .article-row {
       --thumb: 84px;
       grid-template-columns: var(--thumb) minmax(0, 1fr);
-    }
-    .stamp-trigger-label {
-      display: none;
     }
     .identity h1 {
       font-size: 44px;
