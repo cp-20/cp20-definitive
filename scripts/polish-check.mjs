@@ -22,21 +22,29 @@ try {
     await page.goto('http://localhost:4321/about#manga');
     await page.locator('#manga').scrollIntoViewIfNeeded();
     await page.waitForTimeout(400);
-    const frames = await page.locator('.book-cover').evaluateAll((xs) =>
-      xs.map((el) => ({
-        width: el.clientWidth,
-        height: el.clientHeight,
-        fit: getComputedStyle(el).objectFit,
-        position: getComputedStyle(el).objectPosition,
-      })),
-    );
+    // Choosing a spine pulls that book out; on wide screens its cover keeps the book's proportions.
+    const frames = [];
+    for (let i = 0; i < 6; i++) {
+      await page.locator('.book').nth(i).click();
+      await page.waitForTimeout(700);
+      frames.push(
+        await page.locator('.book[aria-expanded=true]').evaluate((el) => ({
+          width: el.clientWidth,
+          height: el.clientHeight,
+          fit: getComputedStyle(el.querySelector('img')).objectFit,
+          opacity: getComputedStyle(el.querySelector('img')).opacity,
+        })),
+      );
+    }
     if (
       frames.some(
         (f) =>
-          Math.abs(f.width / f.height - 480 / 682) > 0.04 || f.fit !== 'cover' || f.position !== '50% 50%',
+          (width > 760 && Math.abs(f.width / f.height - 480 / 682) > 0.04) ||
+          f.fit !== 'cover' ||
+          f.opacity !== '1',
       )
     )
-      throw Error('Manga frame alignment ' + JSON.stringify(frames));
+      throw Error('Manga shelf ' + JSON.stringify(frames));
     if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) throw Error('Overflow');
     await page.locator('#manga').screenshot({ path: '.qa/manga-' + width + '.png' });
     report.viewports.push({ width, frames });
@@ -62,7 +70,7 @@ try {
   await page.goto('http://localhost:4321/');
   await page.getByRole('button', { name: 'クローバー', exact: true }).click();
   await page.mouse.click(500, 195);
-  await expect(page.locator('.stamp-status')).toContainText('保存しました', { timeout: 20000 });
+  await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
   await page.getByRole('button', { name: 'クローバー', exact: true }).click();
   await page.mouse.click(650, 205);
   await expect(page.locator('[data-pending=true]')).toHaveCount(0, { timeout: 20000 });
@@ -87,7 +95,7 @@ try {
   await expect(page.locator('.stamp-delete')).toHaveCount(1);
   await expect(page.locator(`[data-stamp-id="${first}"]`)).toHaveCount(0);
   release();
-  await expect(page.locator('.stamp-status')).toContainText('はがしました', { timeout: 20000 });
+  await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
   await page.mouse.click(500, 250);
   await expect(page.locator('.stamp-delete')).toHaveCount(1);
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
@@ -101,8 +109,8 @@ try {
   await page.locator('.stamp-delete').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.stamp-delete')).toHaveCount(0);
-  await expect(page.locator('.stamp-status')).toContainText('はがしました', { timeout: 20000 });
-  await expect(page.locator('.sticker-left')).toContainText('あと5枚');
+  await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
+  await expect(page.locator('.sticker-pips > [data-used]')).toHaveCount(0);
   if (errors.length || report.accessibility.length)
     throw Error(JSON.stringify({ errors, violations: report.accessibility }));
   report.deletion =

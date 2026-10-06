@@ -3,13 +3,82 @@ import { httpStatus } from '@solidjs/web';
 import Icon from './components/Icon';
 import { OGImage, OriginalIcon, Postmark, articleAnchor, postmarkDate } from './components/Preview';
 import Projects from './components/Projects';
-import { articles, works, repos, sources, updatedAt, formatDate, type Article } from './data/content';
+import { articles, works, repos, formatDate, type Article } from './data/content';
 import { featuredIds, milestones, editions, mangaCovers } from './data/editorial';
 import profile from './data/profile.json';
 import { localImage } from './data/images';
 import tracks from './data/tracks.json';
 import series from './data/series.json';
+// GitHub's language colours, for the dot beside each repository.
+const languageColors: Record<string, string> = {
+  TypeScript: '#3178c6',
+  JavaScript: '#f1e05a',
+  Kotlin: '#a97bff',
+  Shell: '#89e051',
+  Makefile: '#427819',
+  Dart: '#00b4ab',
+  Go: '#00add8',
+  Ruby: '#701516',
+  Rust: '#dea584',
+  C: '#555555',
+  Vue: '#41b883',
+  CSS: '#663399',
+  Jinja: '#a52a22',
+};
+const languageColor = (language: string) => languageColors[language] || 'transparent';
 const coverOf = (s: (typeof series)[number]) => mangaCovers[s.title]?.image ?? localImage(s.thumbnail);
+// Spines on a shelf; choosing one pulls that book out so its cover faces you.
+function Bookshelf() {
+  const [open, setOpen] = createSignal(0);
+  const author = (s: (typeof series)[number]) => s.author.replace(/\s*[（(].*$/, '');
+  let shelf!: HTMLDivElement;
+  const keyboard = (e: KeyboardEvent) => {
+    const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const next = (open() + step + series.length) % series.length;
+    setOpen(next);
+    (shelf.children[next] as HTMLElement).focus();
+  };
+  return (
+    <>
+      <div class="bookshelf" ref={shelf} role="group" aria-label="本棚" onKeyDown={keyboard}>
+        <For each={series}>
+          {(s, i) => (
+            <button
+              class="book"
+              aria-label={s.title}
+              aria-expanded={open() === i() ? 'true' : 'false'}
+              aria-controls="book-caption"
+              tabindex={open() === i() ? 0 : -1}
+              style={{ '--spine': mangaCovers[s.title]?.spine, '--spine-ink': mangaCovers[s.title]?.ink }}
+              onClick={() => setOpen(i())}
+            >
+              <img class="book-cover" src={coverOf(s)} alt="" width="480" height="682" loading="lazy" />
+              <span class="book-spine" aria-hidden="true">
+                <strong>{s.title}</strong>
+                <small>{author(s)}</small>
+              </span>
+            </button>
+          )}
+        </For>
+      </div>
+      <p id="book-caption" class="book-caption" aria-live="polite">
+        <For each={[series[open()]]}>
+          {(s) => (
+            <>
+              <a href={s.link}>
+                {s.title}
+                <Icon name="ArrowUpRight" size={15} />
+              </a>
+              <span>{author(s)}</span>
+            </>
+          )}
+        </For>
+      </p>
+    </>
+  );
+}
 export function ArticleRows(props: { items: Article[] }) {
   return (
     <div class="article-list">
@@ -188,18 +257,6 @@ export function About() {
               )}
             </For>
           </ul>
-          <div class="profile-related">
-            <a href="/works">
-              <Icon name="Folder" size={18} />
-              つくったもの
-              <Icon name="ArrowRight" size={15} />
-            </a>
-            <a href="/articles">
-              <Icon name="FileText" size={18} />
-              書いた記事
-              <Icon name="ArrowRight" size={15} />
-            </a>
-          </div>
         </aside>
         <section data-stamp-anchor="history" class="history" aria-labelledby="history-title">
           <div class="section-heading">
@@ -246,12 +303,12 @@ export function About() {
         <div class="section-heading">
           <h3 id="music-title">
             <Icon name="Music" />
-            音楽<span class="meta">{tracks.length}</span>
+            音楽
           </h3>
         </div>
         <div class="music-list">
           <For each={tracks}>
-            {(t, i) => (
+            {(t) => (
               <a class="music-item" href={t.link}>
                 <div class="music-image">
                   <img
@@ -267,13 +324,8 @@ export function About() {
                   </span>
                 </div>
                 <div>
-                  <small class="track-number">{String(i() + 1).padStart(2, '0')}</small>
                   <h4>{t.title}</h4>
                   <p>{t.composer}</p>
-                  <small>
-                    YouTube
-                    <Icon name="ArrowUpRight" size={11} />
-                  </small>
                 </div>
               </a>
             )}
@@ -284,33 +336,10 @@ export function About() {
         <div class="section-heading">
           <h3 id="manga-title">
             <Icon name="BookOpen" />
-            漫画<span class="meta">{series.length}</span>
+            漫画
           </h3>
         </div>
-        {/* Volume 1 covers standing on a shelf. */}
-        <div class="bookshelf">
-          <For each={series}>
-            {(s) => (
-              <a class="book-item" href={s.link}>
-                <div class="book">
-                  <img
-                    class="book-cover"
-                    src={coverOf(s)}
-                    alt={`${s.title} 1巻の表紙`}
-                    width="480"
-                    height="682"
-                    loading="lazy"
-                  />
-                </div>
-                <h4>
-                  {s.title}
-                  <Icon name="ArrowUpRight" size={14} />
-                </h4>
-                <p>{s.author}</p>
-              </a>
-            )}
-          </For>
-        </div>
+        <Bookshelf />
       </section>
       <section id="credits" class="credits" data-stamp-anchor="credits" aria-labelledby="credits-title">
         <h2 id="credits-title">クレジット・出典</h2>
@@ -384,9 +413,7 @@ export function Articles() {
     <div class="wrap">
       <header data-stamp-anchor="heading" class="page-heading">
         <p class="eyebrow">WRITING</p>
-        <h1>
-          記事<span>{articles.length}</span>
-        </h1>
+        <h1>記事</h1>
       </header>
       <section aria-label="記事一覧">
         <div class="article-toolbar">
@@ -449,35 +476,6 @@ export function Articles() {
             </For>
           </Show>
         </div>
-        <details class="source-details">
-          <summary>
-            掲載先と取得状況<span>更新 {formatDate(updatedAt)}</span>
-          </summary>
-          <ul>
-            <For each={Object.entries(sources)}>
-              {([source, status]) => (
-                <li>
-                  <strong>{source}</strong>
-                  <span>
-                    {status.reason === 'sso_required'
-                      ? '認証待ち・前回のデータを表示'
-                      : status.status === 'ok'
-                        ? '取得済み'
-                        : '前回のデータを保持'}
-                    {status.lastSuccess ? ` / ${formatDate(status.lastSuccess)}` : ''}
-                  </span>
-                </li>
-              )}
-            </For>
-          </ul>
-          <p class="meta">
-            取得できなかった掲載先は、直前のデータを残します。
-            <a href="/feed.xml">
-              RSSで購読
-              <Icon name="ArrowUpRight" size={13} />
-            </a>
-          </p>
-        </details>
       </section>
     </div>
   );
@@ -492,16 +490,13 @@ export function Works() {
     <div class="wrap">
       <header data-stamp-anchor="heading" class="page-heading">
         <p class="eyebrow">PROJECT ARCHIVE</p>
-        <h1>
-          作品一覧<span>{works.length}</span>
-        </h1>
+        <h1>作品一覧</h1>
         <p class="intro">個人開発・チーム開発の制作物。</p>
       </header>
       <section class="work-grid" aria-label="制作した作品">
         <For each={projects}>
-          {(w, i) => (
+          {(w) => (
             <article class="work-index-item" data-stamp-anchor={`work-${w.id}`}>
-              <span class="work-number">{String(i() + 1).padStart(2, '0')}</span>
               <div>
                 <Show when={featuredIds.includes(w.id)}>
                   <span class="work-featured-label">おすすめ</span>
@@ -526,11 +521,7 @@ export function Works() {
               <Show when={true}>
                 <a class="work-thumbnail" href={`/works/${w.id}`} tabindex="-1" aria-hidden="true">
                   <OGImage url={w.url} alt="" />
-                  <Postmark
-                    date={postmarkDate(w.productionTime)}
-                    top="CP20.DEV"
-                    bottom={`No.${String(i() + 1).padStart(2, '0')}`}
-                  />
+                  <Postmark date={postmarkDate(w.productionTime)} top="CP20.DEV" bottom="WORKS" />
                 </a>
               </Show>
             </article>
@@ -548,23 +539,30 @@ export function Works() {
             <Icon name="ArrowUpRight" size={16} />
           </a>
         </div>
-        <div class="repo-list">
+        {/* A ledger: one line per repository, columns aligned for scanning. */}
+        <ol class="repo-list">
           <For each={repos.slice(0, 12)}>
             {(r) => (
-              <a href={r.url}>
-                <h3>
-                  {r.name}
-                  <Icon name="ArrowUpRight" size={15} />
-                </h3>
-                <p>{r.description}</p>
-                <small>
-                  {r.language || 'Repository'} · {formatDate(r.updatedAt)}
-                  {r.stars > 0 && ` · ☆ ${r.stars}`}
-                </small>
-              </a>
+              <li>
+                <a href={r.url}>
+                  <span class="repo-name">
+                    {r.name}
+                    <Show when={r.stars > 0}>
+                      <small aria-label={`スター ${r.stars}`}>☆{r.stars}</small>
+                    </Show>
+                  </span>
+                  <span class="repo-description">{r.description}</span>
+                  <span class="repo-language" style={{ '--lang': languageColor(r.language) }}>
+                    {r.language}
+                  </span>
+                  <time class="repo-date" datetime={r.updatedAt}>
+                    {formatDate(r.updatedAt)}
+                  </time>
+                </a>
+              </li>
             )}
           </For>
-        </div>
+        </ol>
       </section>
     </div>
   );

@@ -50,11 +50,11 @@ export default function Projects() {
     >
       <div class="section-heading">
         <div>
-          <p class="eyebrow">SELECTED WORKS · 3 / {works.length}</p>
+          <p class="eyebrow">SELECTED WORKS</p>
           <h2 id="featured-title">主な3作品</h2>
         </div>
         <a href="/works" class="under-link">
-          すべての作品<span class="meta">{works.length}</span>
+          すべての作品
           <Icon name="ArrowRight" size={16} />
         </a>
       </div>

@@ -252,14 +252,17 @@ try {
   await mockFirebase(guestContext, { db });
   const guest = await guestContext.newPage();
   await guest.goto(origin + '/');
-  await expect(guest.getByRole('button', { name: 'Google でログインして貼る' })).toBeVisible();
+  await expect(guest.getByRole('button', { name: 'Google でログイン' })).toBeVisible();
   await guest.getByRole('button', { name: /^クローバー/ }).click();
   await expect(guest.locator('.stamp-overlay')).toHaveCount(0);
   await expect(guest.locator('.sticker-login')).toHaveAttribute('data-nudge', 'a');
   await beginLayout('main,.site-header,.site-footer');
   // The sticker sheet is open by default on wide screens.
   await expect(page.locator('.sticker-sheet')).toBeVisible();
-  await expect(page.locator('.sticker-account')).toContainText('このアイコンで貼ります');
+  await expect(page.locator('.account-avatar img')).toHaveAttribute(
+    'src',
+    /gravatar\.com\/avatar\/[0-9a-f]{64}/,
+  );
   await endLayout('sticker sheet shown');
   await axe('/#sticker-sheet');
   let unblock;
@@ -283,7 +286,7 @@ try {
   await expect(page.locator('[data-pending=true]')).toHaveCount(1);
   await endLayout('optimistic stamp placement before network response');
   unblock();
-  await expect(page.locator('.stamp-status')).toContainText('保存しました', { timeout: 20000 });
+  await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
   const own = page.locator(`[data-stamp-id^="${user.uid}-"]`);
   await expect(own).toHaveCount(1);
@@ -311,7 +314,7 @@ try {
   await expect(page.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
   await page.mouse.move(spot.x - 120, spot.y + 40, { steps: 6 });
   await page.mouse.click(spot.x - 120, spot.y + 40);
-  await expect(page.locator('.stamp-status')).toContainText('はがしました', { timeout: 20000 });
+  await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
   const moved = page.locator(`[data-stamp-id^="${user.uid}-"]`);
   await expect(moved).toHaveCount(1);
   const landed = await moved.boundingBox();
@@ -326,7 +329,7 @@ try {
   await page.getByRole('button', { name: '最後に貼ったシールをはがす', exact: true }).click();
   await expect(moved).toHaveCount(0);
   await endLayout('optimistic undo');
-  await expect(page.locator('.stamp-status')).toContainText('はがしました', { timeout: 20000 });
+  await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
   await expect(visitor.locator(`[data-stamp-id="${movedId}"]`)).toHaveCount(0);
   await page.unroute('https://**.firebasedatabase.app/**', hold);
   // A second visitor places, lifts and peels a sticker using actual touch events.
@@ -335,11 +338,12 @@ try {
   await visitor.getByRole('button', { name: 'ハート', exact: true }).tap();
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('[data-pending=true]')).toHaveCount(1);
-  await expect(visitor.locator('.stamp-status')).toContainText('保存しました', { timeout: 20000 });
+  await expect(visitor.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
-  await visitor.locator('.sticker-sheet h2').tap();
-  await expect(visitor.locator('.stamp-status')).toContainText('はがしました', { timeout: 20000 });
+  const backing = await visitor.locator('.sticker-sheet').boundingBox();
+  await visitor.touchscreen.tap(backing.x + 6, backing.y + backing.height / 2);
+  await expect(visitor.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
   await expect(visitor.locator('.placed-stamp')).toHaveCount(0);
   await visitor.getByRole('button', { name: 'シール帳を閉じる' }).tap();
   await expect(visitor.locator('.sticker-sheet')).toBeHidden();
@@ -390,7 +394,7 @@ try {
   await page.keyboard.press('ArrowUp');
   await page.keyboard.press('Enter');
   await expect(page.locator('[data-pending=true]')).toHaveCount(1);
-  await expect(page.locator('.stamp-status')).toContainText('元に戻しました', { timeout: 20000 });
+  await expect(page.locator('.stamp-status')).toContainText('保存できませんでした', { timeout: 20000 });
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '再試行' })).toBeVisible();
   report.interactions.push(

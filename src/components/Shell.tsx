@@ -1,4 +1,4 @@
-import { createSignal, createEffect, onSettled, For, Show } from 'solid-js';
+import { For } from 'solid-js';
 import type { JSX } from '@solidjs/web';
 import Icon, { type IconName } from './Icon';
 const navigation: { href: string; label: string; icon: IconName }[] = [
@@ -10,29 +10,6 @@ const navigation: { href: string; label: string; icon: IconName }[] = [
 export default function Shell(props: { path: string; children: JSX.Element }) {
   const section = () =>
     props.path === '/' ? 'home' : props.path.startsWith('/works') ? 'works' : props.path.slice(1) || 'home';
-  // Stamp rally: each section's tab gets a seal once it has been visited in this browser.
-  const [visited, setVisited] = createSignal<string[]>([]);
-  const [ready, setReady] = createSignal(false);
-  onSettled(() => {
-    let stored: string[] = [];
-    try {
-      stored = JSON.parse(localStorage.getItem('cp20-visited') || '[]');
-    } catch {}
-    setVisited(Array.isArray(stored) ? stored : []);
-    setReady(true);
-  });
-  createEffect(
-    () => ({ ready: ready(), section: section() }),
-    ({ ready, section }) => {
-      if (!ready || !navigation.some((n) => (n.href === '/' ? 'home' : n.href.slice(1)) === section)) return;
-      if (visited().includes(section)) return;
-      const next = [...visited(), section];
-      setVisited(next);
-      try {
-        localStorage.setItem('cp20-visited', JSON.stringify(next));
-      } catch {}
-    },
-  );
   return (
     <>
       <a class="skip-link" href="#main">
@@ -56,11 +33,6 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
                   >
                     <Icon name={n.icon} size={18} />
                     <span>{n.label}</span>
-                    <Show when={visited().includes(tab)}>
-                      <span class="tab-seal" aria-hidden="true">
-                        済
-                      </span>
-                    </Show>
                   </a>
                 );
               }}
@@ -96,10 +68,6 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
           <div class="footer-bottom">
             <span>© 2026 cp20</span>
             <a href="/about#credits">クレジット・出典</a>
-            <a href="#main" class="to-top">
-              先頭へ
-              <Icon name="ArrowUp" size={14} />
-            </a>
           </div>
         </footer>
       </div>

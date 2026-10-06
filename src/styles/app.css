@@ -127,7 +127,6 @@
     --perf: 12px;
     --perf-hole: 3.6px;
     --stamp-shadow: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(2px 3px 0 rgb(45 42 51 / 0.14));
-    --stamp-lift: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(5px 8px 4px rgb(45 42 51 / 0.18));
     color-scheme: light;
   }
   body {
@@ -441,26 +440,6 @@
     translate: 0 0;
     background: color-mix(in srgb, var(--tab-soft) 42%, var(--paper));
   }
-  /* Stamp rally: a 済 seal on tabs already visited. */
-  .tab-seal {
-    position: absolute;
-    right: -9px;
-    bottom: 10px;
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border: 2px solid var(--seal);
-    border-radius: 50%;
-    background: var(--paper);
-    color: var(--seal);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0;
-    writing-mode: horizontal-tb;
-    rotate: -12deg;
-    animation: seal 560ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
-  }
   .rail nav a[data-tab='home'] {
     --tab-color: var(--green);
     --tab-soft: var(--green-soft);
@@ -554,19 +533,6 @@
   .footer-bottom a:hover {
     color: var(--ink);
   }
-  .footer-bottom > .to-top {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    margin-left: auto;
-    font-weight: 700;
-  }
-  .to-top svg {
-    transition: transform 300ms var(--spring);
-  }
-  .to-top:hover svg {
-    transform: translateY(-3px);
-  }
 
   .page-heading {
     padding: 28px 0 40px;
@@ -655,7 +621,6 @@
     isolation: isolate;
     padding: calc(var(--perf) * 0.9);
     filter: var(--stamp-shadow);
-    transition: filter 320ms var(--ease);
   }
   .og-image::before,
   .music-image::before,
@@ -1248,9 +1213,6 @@
   .article-row:hover h3 {
     background-size: 100% 100%;
   }
-  .article-row:hover > .og-image {
-    filter: var(--stamp-lift);
-  }
   .article-row:hover .article-arrow {
     border-color: var(--edge);
     background: var(--hi);
@@ -1558,65 +1520,6 @@
     color: var(--muted);
     text-align: center;
   }
-  .source-details {
-    margin-top: 44px;
-    padding: 4px 22px;
-    border: 2px dashed var(--edge);
-    border-radius: 16px;
-  }
-  .source-details summary {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 14px 0;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    list-style: none;
-  }
-  .source-details summary::-webkit-details-marker {
-    display: none;
-  }
-  .source-details summary::after {
-    content: '+';
-    font-size: 22px;
-    line-height: 1;
-    transition: rotate 320ms var(--spring);
-  }
-  .source-details[open] summary::after {
-    rotate: 45deg;
-  }
-  .source-details summary span {
-    margin-left: auto;
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .source-details li {
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 8px 0;
-    border-top: 2px dotted var(--rule);
-    font-size: 13px;
-  }
-  .source-details li span {
-    color: var(--muted);
-    text-align: right;
-  }
-  .source-details > .meta {
-    padding: 8px 0 18px;
-  }
-  .source-details > .meta a {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    margin-left: 8px;
-    font-weight: 700;
-    color: var(--ink);
-    text-decoration: underline wavy var(--hi);
-    text-underline-offset: 5px;
-  }
-
   /* ── Works index: a sheet of stickers ── */
   .work-grid {
     display: grid;
@@ -1655,27 +1558,8 @@
   .work-index-item:nth-child(3n) {
     rotate: -0.4deg;
   }
-  .work-index-item:hover .og-image {
-    filter: var(--stamp-lift);
-  }
   .work-index-item:hover h2 a {
     background-size: 100% 100%;
-  }
-  .work-number {
-    position: absolute;
-    z-index: 1;
-    left: -10px;
-    top: -12px;
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border: 2px solid var(--edge);
-    border-radius: 50%;
-    background: var(--paper);
-    font-size: 13px;
-    font-weight: 700;
-    pointer-events: none;
   }
   .work-featured-label {
     position: absolute;
@@ -1749,48 +1633,66 @@
     margin-top: 120px;
   }
   .repo-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 40px;
-    border-top: 2px dashed var(--rule);
+    padding: 0;
+    list-style: none;
+    border-top: 2px solid var(--edge);
   }
-  .repo-list > a {
+  .repo-list > li > a {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 15em) minmax(0, 1fr) 8.5em 6.5em;
     align-items: baseline;
-    column-gap: 12px;
-    padding: 14px 2px;
+    column-gap: 20px;
+    padding: 12px 6px;
     border-bottom: 2px dashed var(--rule);
+    font-size: 13px;
   }
-  .repo-list h3 {
+  .repo-name {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    width: fit-content;
+    gap: 8px;
+    align-items: baseline;
+    min-width: 0;
     font-family: var(--mono);
     font-size: 14px;
-    font-weight: 400;
+    font-weight: 700;
     overflow-wrap: anywhere;
-    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
-      no-repeat 0 0 / 0% 100%;
-    transition: background-size 320ms var(--ease);
   }
-  .repo-list > a:hover h3 {
-    background-size: 100% 100%;
-  }
-  .repo-list h3 svg {
-    color: var(--faint);
-  }
-  .repo-list p {
-    grid-column: 1;
-    margin-top: 2px;
-    font-size: 13px;
+  .repo-name small {
+    flex: none;
+    font-family: var(--round);
+    font-size: 11px;
+    font-weight: 700;
     color: var(--muted);
   }
-  .repo-list small {
-    grid-column: 2;
-    grid-row: 1;
+  .repo-description {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--muted);
+    text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .repo-language {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    white-space: nowrap;
+  }
+  .repo-language:not(:empty)::before {
+    content: '';
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid var(--edge);
+    border-radius: 50%;
+    background: var(--lang);
+  }
+  .repo-date {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+  }
+  .repo-list > li > a:hover {
+    background: color-mix(in srgb, var(--hi-soft) 55%, transparent);
   }
 
   /* ── Work detail ── */
@@ -2046,28 +1948,6 @@
   .profile-affiliations a:hover {
     background-size: 100% 2px;
   }
-  .profile-related {
-    display: grid;
-    gap: 4px;
-    margin-top: 20px;
-    padding-top: 14px;
-    border-top: 2px dashed var(--rule);
-  }
-  .profile-related a {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 0;
-    font-size: 14px;
-    font-weight: 700;
-  }
-  .profile-related a > svg:last-child {
-    margin-left: auto;
-    transition: transform 300ms var(--spring);
-  }
-  .profile-related a:hover > svg:last-child {
-    transform: translateX(4px);
-  }
   /* History as a stamp-rally route. */
   .history .section-heading > .meta {
     padding: 0 10px;
@@ -2168,7 +2048,7 @@
   }
   .music-item > div:last-child {
     position: relative;
-    padding: 14px 4px 0 44px;
+    padding: 14px 4px 0;
   }
   .music-image {
     --perf: 10px;
@@ -2209,34 +2089,14 @@
   .music-item:nth-child(even) {
     rotate: 0.8deg;
   }
-  .music-item:hover .music-image {
-    filter: var(--stamp-lift);
-  }
   .music-item:hover .play-symbol {
     opacity: 1;
     transform: none;
   }
-  .music-item:hover h4,
-  .book-item:hover h4 {
+  .music-item:hover h4 {
     background-size: 100% 100%;
   }
-  .track-number {
-    position: absolute;
-    left: 0;
-    top: 14px;
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border: 2px solid var(--edge);
-    border-radius: 50%;
-    background: var(--paper);
-    color: var(--ink);
-    font-size: 12px;
-    font-weight: 700;
-  }
-  .music-item h4,
-  .book-item h4 {
+  .music-item h4 {
     width: fit-content;
     background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
       no-repeat 0 0 / 0% 100%;
@@ -2250,97 +2110,108 @@
     font-size: 13px;
     color: var(--muted);
   }
-  .music-item small {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 11px;
-  }
-  /* Volume 1 covers standing on a shelf: a spine, page edges and a board under each row. */
+  /* Spines on a shelf. The chosen book is pulled out and turned so its cover faces you;
+     the width change is the whole interaction, so it stays continuous. */
   .bookshelf {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 34px 26px;
-  }
-  .book-item {
-    display: block;
+    --open: 220px;
+    --spine-width: 60px;
+    --shelf-height: 314px;
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    height: calc(var(--shelf-height) + 12px);
+    padding: 0 10px;
+    border-bottom: 10px solid color-mix(in srgb, var(--yellow) 45%, #c79a5e);
+    border-radius: 0 0 3px 3px;
+    box-shadow: 0 10px 0 -4px rgb(45 42 51 / 0.12);
   }
   .book {
     position: relative;
-    aspect-ratio: 480 / 682;
-    border-radius: 2px 5px 5px 2px;
-    box-shadow:
-      3px 0 0 #f7f4ec,
-      4px 0 0 rgb(45 42 51 / 0.18),
-      6px 1px 0 #f7f4ec,
-      7px 1px 0 rgb(45 42 51 / 0.28),
-      3px 8px 10px -2px rgb(45 42 51 / 0.28);
+    flex: 0 0 var(--spine-width);
+    height: calc(var(--shelf-height) * var(--h, 0.94));
+    overflow: hidden;
+    border: 2px solid var(--edge);
+    border-radius: 4px 4px 2px 2px;
+    background: var(--spine);
+    color: var(--spine-ink);
     transition:
-      translate 360ms var(--ease),
-      box-shadow 360ms var(--ease);
+      flex 560ms var(--ease),
+      height 560ms var(--ease);
   }
-  /* The shelf board the book stands on. */
-  .book::after {
-    content: '';
-    position: absolute;
-    left: -14px;
-    right: -18px;
-    bottom: -9px;
-    height: 7px;
-    border-radius: 2px;
-    background: color-mix(in srgb, var(--yellow) 45%, #c79a5e);
-    box-shadow: 0 2px 0 rgb(45 42 51 / 0.25);
+  .book:nth-child(3n + 1) {
+    --h: 0.9;
   }
-  .book::before {
-    content: '';
-    position: absolute;
-    z-index: 1;
-    inset: 0 auto 0 0;
-    width: 8%;
-    border-radius: 2px 0 0 2px;
-    background: linear-gradient(90deg, rgb(0 0 0 / 0.28), rgb(255 255 255 / 0.28) 45%, rgb(0 0 0 / 0.12));
-    pointer-events: none;
+  .book:nth-child(3n + 2) {
+    --h: 0.97;
+  }
+  .book[aria-expanded='true'] {
+    --h: 1;
+    flex-basis: var(--open);
+    cursor: default;
+  }
+  .book:focus-visible {
+    outline: 3px solid var(--hi);
+    outline-offset: 3px;
   }
   .book-cover {
-    display: block;
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 260ms var(--ease);
   }
-  .book-item:hover .book {
-    translate: 0 -8px;
-    box-shadow:
-      3px 0 0 #f7f4ec,
-      4px 0 0 rgb(45 42 51 / 0.18),
-      6px 1px 0 #f7f4ec,
-      7px 1px 0 rgb(45 42 51 / 0.28),
-      6px 18px 16px -4px rgb(45 42 51 / 0.3);
+  .book[aria-expanded='true'] .book-cover {
+    opacity: 1;
+    transition-delay: 160ms;
   }
-  .book-item:hover .book::after {
-    translate: 0 8px;
-  }
-  .book-item h4 {
+  .book-spine {
+    position: absolute;
+    inset: 14px 0 12px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    margin-top: 22px;
-    font-size: 14px;
-    line-height: 1.5;
+    gap: 10px;
+    writing-mode: vertical-rl;
+    transition: opacity 200ms var(--ease) 200ms;
   }
-  .book-item h4 svg {
+  .book-spine strong {
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+  }
+  .book-spine small {
+    margin-top: auto;
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.85;
+  }
+  .book[aria-expanded='true'] .book-spine {
+    opacity: 0;
+    transition-delay: 0ms;
+  }
+  .book-caption {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    align-items: baseline;
+    margin-top: 20px;
+  }
+  .book-caption a {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    font-size: 17px;
+    font-weight: 700;
+    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%);
+  }
+  .book-caption a svg {
     color: var(--faint);
-    flex-shrink: 0;
   }
-  .book-item p {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    font-size: 12px;
+  .book-caption span {
+    font-size: 13px;
     color: var(--muted);
-    line-height: 1.6;
   }
   /* All image and material sources in one place. */
   .credits {
@@ -2562,22 +2433,6 @@
     align-items: center;
     gap: 4px;
   }
-  .sticker-sheet-head h2 {
-    font-size: 14px;
-    line-height: 1.4;
-    white-space: nowrap;
-  }
-  .sticker-left {
-    margin-left: 6px;
-    margin-right: auto;
-    padding: 0 8px;
-    border-radius: 999px;
-    background: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1.8;
-    white-space: nowrap;
-  }
   .sheet-tool {
     display: grid;
     place-items: center;
@@ -2623,21 +2478,20 @@
     height: 34px;
   }
   .stamp-status {
-    min-height: 18px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
     margin-top: 6px;
     font-size: 11px;
     font-weight: 700;
     line-height: 1.6;
-    color: var(--muted);
+    color: var(--seal);
   }
-  .stamp-policy {
-    font-size: 10px;
-    color: var(--faint);
-    line-height: 1.6;
+  .stamp-status[data-idle] {
+    display: none;
   }
   .stamp-retry {
-    margin-top: 6px;
-    padding: 2px 12px;
+    padding: 0 10px;
     border: 2px solid var(--edge);
     border-radius: 999px;
     background: var(--yellow);
@@ -2658,25 +2512,70 @@
     opacity: 0.8;
     transform: translateY(-2px);
   }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .sticker-head-space {
     margin-right: auto;
   }
-  .sticker-signin {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1.5px dashed rgb(45 42 51 / 0.2);
+  .account-avatar {
+    flex: none;
+    display: block;
+    width: 30px;
+    height: 30px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--paper);
+    box-shadow: 0 0 0 1.5px var(--edge);
+    transition: transform 300ms var(--spring);
+  }
+  .account-avatar:hover {
+    transform: rotate(-8deg) scale(1.06);
+  }
+  .account-avatar img {
+    width: 100%;
+    height: 100%;
+  }
+  /* Stickers left on this page: filled pips are used. */
+  .sticker-pips {
+    display: flex;
+    gap: 4px;
+    margin-left: 8px;
+  }
+  .sticker-pips > span {
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid var(--edge);
+    border-radius: 50%;
+    background: #fff;
+    transition:
+      background-color 260ms var(--ease),
+      scale 360ms var(--spring);
+  }
+  .sticker-pips > span[data-used] {
+    background: var(--seal);
+    scale: 0.85;
+  }
+  .sticker-sheet[data-saving] .sticker-pips > span[data-used] {
+    animation: pip-saving 900ms var(--ease) infinite alternate;
   }
   .sticker-login {
     display: flex;
-    gap: 6px;
+    gap: 5px;
     align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 36px;
+    height: 30px;
+    padding: 0 12px 0 9px;
     border: 2px solid var(--edge);
     border-radius: 999px;
     background: var(--paper);
-    font-size: 13px;
+    font-size: 12px;
+    white-space: nowrap;
     font-weight: 700;
     box-shadow: 2px 2px 0 var(--drop);
     transition:
@@ -2703,52 +2602,6 @@
   }
   .sticker-login[data-nudge='b'] {
     animation: nudge-b 520ms var(--ease);
-  }
-  .sticker-note {
-    margin-top: 7px;
-    font-size: 10.5px;
-    line-height: 1.65;
-    color: var(--muted);
-  }
-  .sticker-note a,
-  .sticker-account a {
-    text-decoration: underline;
-    text-decoration-color: var(--hi);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 2px;
-  }
-  .sticker-account {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1.5px dashed rgb(45 42 51 / 0.2);
-  }
-  .account-avatar {
-    flex: none;
-    width: 32px;
-    height: 32px;
-    border: 2px solid #fff;
-    border-radius: 50%;
-    background: var(--paper);
-    box-shadow: 0 0 0 1.5px var(--edge);
-  }
-  .sticker-account p {
-    display: grid;
-    min-width: 0;
-    margin-right: auto;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1.5;
-  }
-  .sticker-account p a {
-    display: inline-flex;
-    gap: 2px;
-    align-items: center;
-    width: fit-content;
-    font-size: 10.5px;
-    color: var(--muted);
   }
   /* Who put it there: the placer's Gravatar peeks out from behind the sticker. */
   .sticker-avatar {
@@ -2946,7 +2799,6 @@
     .work-index-item,
     .timeline-item,
     .music-item,
-    .book-item,
     .edition-list > a,
     .home-profile {
       animation: reveal linear both;
@@ -2994,6 +2846,11 @@
   @keyframes page-in {
     from {
       opacity: 0;
+    }
+  }
+  @keyframes pip-saving {
+    to {
+      opacity: 0.45;
     }
   }
   @keyframes avatar-peek {
@@ -3087,10 +2944,6 @@
     .music-list {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    .bookshelf {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 34px 30px;
-    }
     .profile-history-layout {
       grid-template-columns: 250px minmax(0, 1fr);
       gap: 40px;
@@ -3116,9 +2969,6 @@
     }
     .edition-list {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .repo-list {
-      grid-template-columns: minmax(0, 1fr);
     }
     .profile-header {
       grid-template-columns: 160px minmax(0, 1fr);
@@ -3194,11 +3044,6 @@
     .rail nav a[aria-current='page'] {
       width: auto;
       translate: 0 0;
-    }
-    .tab-seal {
-      top: -9px;
-      right: -4px;
-      bottom: auto;
     }
     .site-header {
       height: 76px;
@@ -3335,7 +3180,20 @@
       gap: 44px;
     }
     .bookshelf {
-      gap: 30px 20px;
+      --spine-width: 26px;
+      --shelf-height: 215px;
+      gap: 4px;
+      padding: 0 4px;
+    }
+    .book[aria-expanded='true'] {
+      flex: 1 1 0;
+    }
+    .book-spine strong {
+      font-size: 11px;
+      letter-spacing: 0.02em;
+    }
+    .book-spine small {
+      display: none;
     }
     .credits dl {
       grid-template-columns: minmax(0, 1fr);
@@ -3345,22 +3203,29 @@
       margin-bottom: 8px;
     }
     .work-index-item,
-    .music-item,
-    .book-item {
+    .music-item {
       margin-inline: 6px;
     }
-    .book-item h4 {
-      font-size: 13px;
+    .repo-list > li > a {
+      grid-template-columns: minmax(0, 1fr) auto;
+      row-gap: 2px;
     }
-    .book-item h4 svg {
+    .repo-description {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      white-space: normal;
+    }
+    .repo-description:empty {
       display: none;
     }
-    .repo-list > a {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .repo-list small {
+    .repo-language {
       grid-column: 1;
-      grid-row: auto;
+      grid-row: 3;
+      font-size: 12px;
+    }
+    .repo-date {
+      grid-column: 2;
+      grid-row: 1;
     }
     .profile-header {
       grid-template-columns: minmax(0, 1fr);
@@ -3447,14 +3312,17 @@
       grid-template-columns: repeat(6, minmax(0, 1fr));
       margin-top: 2px;
     }
-    .stamp-status[data-idle] {
-      display: none;
-    }
-    .stamp-policy {
-      display: none;
-    }
   }
   @media (max-width: 380px) {
+    .bookshelf {
+      --spine-width: 22px;
+      --shelf-height: 190px;
+      gap: 3px;
+    }
+    .book-spine strong {
+      font-size: 10px;
+      letter-spacing: 0.02em;
+    }
     .wrap {
       padding-inline: 14px;
     }

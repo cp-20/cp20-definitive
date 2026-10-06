@@ -145,10 +145,10 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           stop = api.subscribe(
             path,
             (stamps) => receive(path, stamps),
-            () => setMessage('シールに接続できません。'),
+            () => setMessage('シールに接続できません'),
           );
         } catch {
-          setMessage('シールに接続できません。');
+          setMessage('シールに接続できません');
         }
       }, 200);
       return () => {
@@ -190,7 +190,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       if (!account()) {
         const next = await api.signIn();
         if (next) setAccount(next);
-        else setMessage('Google アカウントでログインしてください。');
+        else setMessage('Google アカウントでログインしてください');
       }
     } catch (e) {
       const code = (e as { code?: string }).code || '';
@@ -198,8 +198,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         code.includes('popup-closed') || code.includes('cancelled-popup')
           ? ''
           : code.includes('popup-blocked')
-            ? 'ポップアップが開けませんでした。もう一度押してください。'
-            : 'ログインできませんでした。',
+            ? 'ポップアップが開けませんでした。もう一度押してください'
+            : 'ログインできませんでした',
       );
     } finally {
       setSigningIn(false);
@@ -209,9 +209,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     cancelHeld(false);
     try {
       await (await client()).signOut();
-      setMessage('ログアウトしました');
     } catch {
-      setMessage('ログアウトできませんでした。');
+      setMessage('ログアウトできませんでした');
     }
   }
   // A locked sticker was reached for: point at the sign-in button instead.
@@ -309,12 +308,11 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         ]);
         setOperations((list) => list.filter((item) => item.id !== op.id));
         lastWrite = Date.now();
-        setMessage(op.type === 'add' ? '保存しました' : 'はがしました');
       })
       .catch(() => {
         setOperations((list) => list.filter((item) => item.id !== op.id));
         setFailed(op);
-        setMessage('保存できませんでした。表示を元に戻しました。');
+        setMessage('保存できませんでした');
       });
   }
   // Where a point on screen lands on the page: the innermost anchor that contains it.
@@ -619,16 +617,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     }
   };
   let aimDown = { x: 0, y: 0, id: -1 };
-  const status = () => {
-    const h = held();
-    if (operations().length) return `保存中… ${operations().length}件`;
-    if (message()) return message();
-    if (h?.mode === 'aim')
-      return h.from === 'page'
-        ? '貼り直す場所をクリック · シール帳に戻すとはがせます'
-        : '貼りたい場所をクリック・タップ';
-    return account() ? 'クリックかドラッグで貼れます' : '';
-  };
   return (
     <>
       {props.children}
@@ -761,6 +749,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           class="sticker-sheet stamp-ui"
           data-open={open() ? 'true' : undefined}
           data-locked={account() ? undefined : 'true'}
+          data-saving={operations().length ? 'true' : undefined}
           inert={!open()}
           aria-label="シール帳"
           onPointerEnter={() => void connectAccount()}
@@ -772,11 +761,46 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
               drop(e.clientX, e.clientY);
           }}
         >
+          <h2 class="visually-hidden">シール</h2>
           <header class="sticker-sheet-head">
-            <h2>シール</h2>
-            <Show when={account()}>
-              <span class="sticker-left">
-                {own().length < LIMIT ? `あと${LIMIT - own().length}枚` : '古い順に入れ替え'}
+            <Show
+              when={account()}
+              fallback={
+                <button
+                  class="sticker-login"
+                  data-nudge={nudge() % 2 ? 'a' : nudge() ? 'b' : undefined}
+                  disabled={signingIn()}
+                  onPointerDown={() => void connectAccount()}
+                  onClick={signIn}
+                >
+                  <Icon name="LogIn" size={15} />
+                  Google でログイン
+                </button>
+              }
+            >
+              <a
+                class="account-avatar"
+                href="https://gravatar.com/profile"
+                target="_blank"
+                rel="noreferrer"
+                title="Gravatar でアイコンを変更"
+              >
+                <img
+                  src={gravatar(account()!.avatar, 64)}
+                  alt="Gravatar でアイコンを変更"
+                  width="28"
+                  height="28"
+                />
+              </a>
+              {/* One pip per sticker you can place on this page. */}
+              <span
+                class="sticker-pips"
+                role="img"
+                aria-label={`このページに貼れるシール 残り${Math.max(0, LIMIT - own().length)}枚`}
+              >
+                <For each={Array.from({ length: LIMIT }, (_, n) => n)}>
+                  {(n) => <span data-used={n < own().length ? 'true' : undefined} />}
+                </For>
               </span>
             </Show>
             <span class="sticker-head-space" />
@@ -798,6 +822,11 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
             >
               <Icon name={hidden() ? 'EyeOff' : 'Eye'} size={15} />
             </button>
+            <Show when={account()}>
+              <button class="sheet-tool" aria-label="ログアウト" onClick={signOut}>
+                <Icon name="LogOut" size={15} />
+              </button>
+            </Show>
             <button class="sheet-tool" aria-label="シール帳を閉じる" onClick={toggle}>
               <Icon name="ChevronDown" size={16} />
             </button>
@@ -826,65 +855,21 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
               )}
             </For>
           </div>
-          <p class="stamp-status" role="status" data-idle={status() ? undefined : 'true'}>
-            {status()}
-          </p>
-          <Show when={failed()}>
-            <button
-              class="stamp-retry"
-              onClick={() => {
-                const op = failed();
-                if (op) enqueue({ ...op, id: crypto.randomUUID() });
-              }}
-            >
-              再試行
-            </button>
-          </Show>
-          <Show
-            when={account()}
-            fallback={
-              <div class="sticker-signin">
-                <button
-                  class="sticker-login"
-                  data-nudge={nudge() % 2 ? 'a' : nudge() ? 'b' : undefined}
-                  disabled={signingIn()}
-                  onPointerDown={() => void connectAccount()}
-                  onClick={signIn}
-                >
-                  <Icon name="LogIn" size={16} />
-                  {signingIn() ? 'ログイン中…' : 'Google でログインして貼る'}
-                </button>
-                <p class="sticker-note">
-                  シールには
-                  <a href="https://gravatar.com/" target="_blank" rel="noreferrer">
-                    Gravatar
-                  </a>
-                  のアイコンが付きます。公開されるのはメールアドレスのハッシュ値だけです。
-                </p>
-              </div>
-            }
-          >
-            <div class="sticker-account">
-              <img
-                class="account-avatar"
-                src={gravatar(account()!.avatar, 80)}
-                alt=""
-                width="32"
-                height="32"
-              />
-              <p>
-                <span>このアイコンで貼ります</span>
-                <a href="https://gravatar.com/profile" target="_blank" rel="noreferrer">
-                  Gravatar で変更
-                  <Icon name="ArrowUpRight" size={11} />
-                </a>
-              </p>
-              <button class="sheet-tool" aria-label="ログアウト" onClick={signOut}>
-                <Icon name="LogOut" size={15} />
+          {/* Only problems are spelled out; saving shows on the pips and the sticker itself. */}
+          <p class="stamp-status" role="status" data-idle={message() ? undefined : 'true'}>
+            {message()}
+            <Show when={failed()}>
+              <button
+                class="stamp-retry"
+                onClick={() => {
+                  const op = failed();
+                  if (op) enqueue({ ...op, id: crypto.randomUUID() });
+                }}
+              >
+                再試行
               </button>
-            </div>
-          </Show>
-          <p class="stamp-policy">1ページ5枚まで · みんなに公開されます</p>
+            </Show>
+          </p>
         </section>
       </Show>
     </>
