@@ -1,4 +1,6 @@
-name: Refresh content and deploy
+# Collects public content and commits the snapshot to main.
+# Publishing is done by Cloudflare Workers Builds, which builds and deploys every push to main.
+name: Refresh content
 on:
   push:
     branches: [main]
@@ -28,29 +30,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TRAP_GHOST_ADMIN_KEY: ${{ secrets.TRAP_GHOST_ADMIN_KEY }}
+      # Validate the new snapshot here so a broken one never reaches main (and Cloudflare's build).
       - name: Check and build
         if: steps.sync.outputs.changed == 'true' || github.event_name != 'schedule'
         run: npm run check && npm run build
-      - name: Publish static assets
-        if: steps.sync.outputs.changed == 'true' || github.event_name != 'schedule'
-        run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo '::notice::Deployment skipped: configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID to publish.'
-            exit 0
-          fi
-          npx wrangler deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      # Commit after a successful publish, an unconfigured deployment, or no content change.
-      # A failed deployment leaves the previous snapshot so the next scheduled run retries.
-      # checkedAt records automated repository activity even while the author is inactive.
+      # Content changes are committed without [skip ci] so Cloudflare Workers Builds redeploys them.
+      # A run that only updates checkedAt (kept so the schedule is not disabled for inactivity)
+      # is marked [skip ci]. Pushes made with GITHUB_TOKEN do not start another workflow run.
       - name: Persist last-known-good content and collection health
+        env:
+          CONTENT_CHANGED: ${{ steps.sync.outputs.changed }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A src/data/generated.json src/data/tracks.json src/data/series.json src/data/previews.json src/data/image-cache.json public/media
           if ! git diff --cached --quiet; then
-            git commit -m 'chore: refresh public content snapshot [skip ci]'
+            if [ "$CONTENT_CHANGED" = 'true' ]; then
+              git commit -m 'chore: refresh public content snapshot'
+            else
+              git commit -m 'chore: record content check [skip ci]'
+            fi
             git push
           fi

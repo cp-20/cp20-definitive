@@ -26,12 +26,18 @@ npm run build
 
 ## 本番公開の初期設定
 
-**Firebase専用DBとセキュリティルールは公開済みです。GitHub Actionsで定期収集します。CloudflareのSecretsが未設定の場合は公開だけをスキップし、収集・必要なビルド・データの保存を実行します。**
+**公開はCloudflare Workers Builds（CloudflareのGit連携）で行います。`main` へのpushごとにCloudflare上でビルドしてデプロイします。GitHub Actionsは記事などの定期収集とスナップショットのコミットだけを担当し、Cloudflareの認証情報は持ちません。**
 
 1. このフォルダをGitHubリポジトリの `main` に配置。
-2. GitHub Actions Secretsに `CLOUDFLARE_ACCOUNT_ID`、`CLOUDFLARE_API_TOKEN`（対象アカウントのWorkers Scripts編集権限）、`TRAP_GHOST_ADMIN_KEY` を登録。
+2. GitHub Actions Secretsに `TRAP_GHOST_ADMIN_KEY` を登録（収集用）。
 3. Actionsにスナップショットを書き戻す権限を許可。ブランチ保護を使う場合も更新経路を確保。
-4. **Refresh content and deploy** を実行。静的ビルド→デプロイ→成功データのコミットを実行します。
+4. Cloudflareダッシュボードの **Workers & Pages → Create → Import a repository** で `cp-20/cp20-definitive` を接続し、次のように設定。
+   - Worker名：`cp20-definitive`（`wrangler.jsonc` の `name` と一致させる。違うとビルドが失敗します）
+   - Production branch：`main`
+   - Build command：`npm run build`
+   - Deploy command：`npx wrangler deploy`
+   - Node.js：`.node-version` の 24（Workers Buildsの既定も24）
+   - 任意：Non-production branch builds を有効にすると、ブランチごとのプレビューURLで確認できます。
 5. workers.devで確認後、CloudflareのCustom Domainsで `cp20.dev` を接続。
 
 ドメイン・既存本番サイト・みんなのものさしリポジトリの公開設定は変更していません。canonical / sitemap / robots / RSSは本番予定の `https://cp20.dev` を指します。
@@ -49,7 +55,7 @@ npm run build
 
 ### 自動更新
 
-6時間ごとにGitHub Actionsで取得します。普段は元のサービスへ記事を投稿するだけです。
+6時間ごとにGitHub Actionsで取得し、公開はCloudflareのGit連携が行います。普段は元のサービスへ記事を投稿するだけです。
 
 | 対象 | 取得元 / 動作 |
 | --- | --- |
@@ -62,7 +68,7 @@ npm run build
 | 作品・記事のOG画像と作品アイコン | 元の公開ページから取得し、画像本体をダウンロード。実画像の寸法を記録。正常取得は週1回、新規・失敗分は6時間ごとに再取得 |
 | YouTubeのサムネイル | おすすめ曲の動画IDに対応したYouTube画像 |
 
-ネットワークの部分障害では前回データを保持し、全記事ソース失敗時は処理を失敗させます。公開データに差分がある場合だけ再デプロイ。チェック日時はコミットして、長期無活動でのActionsスケジュール停止を避けます。スケジュールの遅延・外部サービス障害まで保証するものではありません。
+ネットワークの部分障害では前回データを保持し、全記事ソース失敗時は処理を失敗させます。公開データに差分がある場合は型検査とビルドで確認してから `main` にコミットし、そのpushでCloudflareが再デプロイします。チェック日時だけの更新は `[skip ci]` を付けてコミットし、長期無活動でのActionsスケジュール停止を避けます。スケジュールの遅延・外部サービス障害まで保証するものではありません。
 
 自動取得できない経歴や説明を推測して更新することはしません。学年は各経歴の発生時点の値を保存しています。曲・漫画の「好き」は2026版に本人が選定したものです。視聴履歴を推測しません。
 
