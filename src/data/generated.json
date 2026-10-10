@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-10T05:57:42.064Z",
+  "updatedAt": "2026-10-10T12:37:12.939Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -322,12 +322,22 @@
   ],
   "repos": [
     {
+      "name": "traq-bot-ts",
+      "url": "https://github.com/cp-20/traq-bot-ts",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 4,
+      "updatedAt": "2026-10-10T06:10:01Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "cp20-definitive",
       "url": "https://github.com/cp-20/cp20-definitive",
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-10-09T22:42:14Z",
+      "updatedAt": "2026-10-10T05:57:52Z",
       "fork": false,
       "archived": false
     },
@@ -348,16 +358,6 @@
       "language": "TypeScript",
       "stars": 2,
       "updatedAt": "2026-10-06T07:53:18Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "traq-bot-ts",
-      "url": "https://github.com/cp-20/traq-bot-ts",
-      "description": "",
-      "language": "TypeScript",
-      "stars": 4,
-      "updatedAt": "2026-10-05T18:11:37Z",
       "fork": false,
       "archived": false
     },
@@ -1175,17 +1175,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-10T05:57:42.064Z",
+      "lastSuccess": "2026-10-10T12:37:12.939Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-10T05:57:42.064Z",
+      "lastSuccess": "2026-10-10T12:37:12.939Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-10T05:57:42.064Z",
+      "lastSuccess": "2026-10-10T12:37:12.939Z",
       "count": 7
     },
     "trap.jp": {
@@ -1196,14 +1196,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-10T05:57:42.064Z",
+      "lastSuccess": "2026-10-10T12:37:12.939Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-10T05:57:42.064Z",
+      "lastSuccess": "2026-10-10T12:37:12.939Z",
       "count": 124
     }
   },
-  "checkedAt": "2026-10-10T05:57:42.064Z"
+  "checkedAt": "2026-10-10T12:37:12.939Z"
 }
