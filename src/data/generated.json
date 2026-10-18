@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-17T20:39:59.898Z",
+  "updatedAt": "2026-10-18T04:39:13.942Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -322,22 +322,22 @@
   ],
   "repos": [
     {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-10-17T20:40:12Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "zundamon-explainer",
       "url": "https://github.com/cp-20/zundamon-explainer",
       "description": "ずんだもん×四国めたんの技術解説動画を Manim + VOICEVOX で作る道具と知見（PNG・JPEG・GIF 編）",
       "language": "Python",
       "stars": 0,
       "updatedAt": "2026-10-17T17:51:39Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-10-17T15:39:49Z",
       "fork": false,
       "archived": false
     },
@@ -1185,17 +1185,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-17T20:39:59.898Z",
+      "lastSuccess": "2026-10-18T04:39:13.942Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-17T20:39:59.898Z",
+      "lastSuccess": "2026-10-18T04:39:13.942Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-17T20:39:59.898Z",
+      "lastSuccess": "2026-10-18T04:39:13.942Z",
       "count": 7
     },
     "trap.jp": {
@@ -1206,14 +1206,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-17T20:39:59.898Z",
+      "lastSuccess": "2026-10-18T04:39:13.942Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-17T20:39:59.898Z",
+      "lastSuccess": "2026-10-18T04:39:13.942Z",
       "count": 127
     }
   },
-  "checkedAt": "2026-10-17T20:39:59.898Z"
+  "checkedAt": "2026-10-18T04:39:13.942Z"
 }
