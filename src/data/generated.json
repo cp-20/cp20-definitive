@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-19T04:46:49.945Z",
+  "updatedAt": "2026-10-19T13:24:37.711Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -322,6 +322,26 @@
   ],
   "repos": [
     {
+      "name": "asterion-manifest",
+      "url": "https://github.com/cp-20/asterion-manifest",
+      "description": "",
+      "language": "Shell",
+      "stars": 2,
+      "updatedAt": "2026-10-19T13:14:22Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-10-19T04:47:19Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "dice-spec-v2",
       "url": "https://github.com/cp-20/dice-spec-v2",
       "description": "",
@@ -332,32 +352,12 @@
       "archived": false
     },
     {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-10-18T20:49:11Z",
-      "fork": false,
-      "archived": false
-    },
-    {
       "name": "zundamon-explainer",
       "url": "https://github.com/cp-20/zundamon-explainer",
       "description": "ずんだもん×四国めたんの技術解説動画を Manim + VOICEVOX で作る道具と知見（PNG・JPEG・GIF 編）",
       "language": "Python",
       "stars": 0,
       "updatedAt": "2026-10-17T17:51:39Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "asterion-manifest",
-      "url": "https://github.com/cp-20/asterion-manifest",
-      "description": "",
-      "language": "Shell",
-      "stars": 2,
-      "updatedAt": "2026-10-17T02:47:57Z",
       "fork": false,
       "archived": false
     },
@@ -748,6 +748,16 @@
       "language": "TypeScript",
       "stars": 0,
       "updatedAt": "2025-02-16T07:21:40Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "isucon13-isuc-test",
+      "url": "https://github.com/cp-20/isucon13-isuc-test",
+      "description": "",
+      "language": "Go",
+      "stars": 0,
+      "updatedAt": "2025-02-03T16:47:33Z",
       "fork": false,
       "archived": false
     },
@@ -1185,17 +1195,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-19T04:46:49.945Z",
+      "lastSuccess": "2026-10-19T13:24:37.711Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-19T04:46:49.945Z",
+      "lastSuccess": "2026-10-19T13:24:37.711Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-19T04:46:49.945Z",
+      "lastSuccess": "2026-10-19T13:24:37.711Z",
       "count": 7
     },
     "trap.jp": {
@@ -1206,14 +1216,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-19T04:46:49.945Z",
+      "lastSuccess": "2026-10-19T13:24:37.711Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-19T04:46:49.945Z",
+      "lastSuccess": "2026-10-19T13:24:37.711Z",
       "count": 127
     }
   },
-  "checkedAt": "2026-10-19T04:46:49.945Z"
+  "checkedAt": "2026-10-19T13:24:37.711Z"
 }
