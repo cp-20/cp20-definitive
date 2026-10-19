@@ -22,17 +22,17 @@
   },
   "https://wsh.trap.show": {
     "image": null,
-    "icon": "https://wsh.trap.show/favicon.ico",
+    "icon": null,
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-19T13:24:44.226Z"
+    "checkedAt": "2026-10-19T22:24:12.443Z"
   },
   "https://2025.cp20.dev": {
     "image": null,
     "icon": "https://2025.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-19T13:24:45.760Z"
+    "checkedAt": "2026-10-19T22:24:14.448Z"
   },
   "https://traqing.cp20.dev": {
     "image": "https://traqing.cp20.dev/og.png",
@@ -46,7 +46,7 @@
     "icon": "https://github.githubassets.com/favicons/favicon.png",
     "width": 1200,
     "height": 600,
-    "checkedAt": "2026-10-12T15:33:33.892Z"
+    "checkedAt": "2026-10-19T22:24:12.028Z"
   },
   "https://read-stack.cp20.dev": {
     "image": "https://read-stack.cp20.dev/ogp.png",
@@ -88,7 +88,7 @@
     "icon": "https://2023.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-19T13:24:43.024Z"
+    "checkedAt": "2026-10-19T22:24:12.024Z"
   },
   "https://minna-no-monosashi.lolipop-now.app/": {
     "image": "https://minna-no-monosashi.lolipop-now.app/og/default?v=4",
@@ -501,6 +501,6 @@
     "icon": "https://2024.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-19T13:24:45.968Z"
+    "checkedAt": "2026-10-19T22:24:14.074Z"
   }
 }
