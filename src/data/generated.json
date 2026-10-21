@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-21T11:55:41.064Z",
+  "updatedAt": "2026-10-21T17:16:10.835Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -322,12 +322,22 @@
   ],
   "repos": [
     {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "name": "traq-bot-ts",
+      "url": "https://github.com/cp-20/traq-bot-ts",
+      "description": "",
       "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-10-21T04:55:21Z",
+      "stars": 4,
+      "updatedAt": "2026-10-21T17:09:12Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "asterion-ansible",
+      "url": "https://github.com/cp-20/asterion-ansible",
+      "description": "",
+      "language": "Jinja",
+      "stars": 1,
+      "updatedAt": "2026-10-21T15:27:05Z",
       "fork": false,
       "archived": false
     },
@@ -337,17 +347,17 @@
       "description": "",
       "language": "Shell",
       "stars": 2,
-      "updatedAt": "2026-10-20T22:23:16Z",
+      "updatedAt": "2026-10-21T14:52:20Z",
       "fork": false,
       "archived": false
     },
     {
-      "name": "traq-bot-ts",
-      "url": "https://github.com/cp-20/traq-bot-ts",
-      "description": "",
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
-      "stars": 4,
-      "updatedAt": "2026-10-20T13:10:17Z",
+      "stars": 0,
+      "updatedAt": "2026-10-21T11:55:59Z",
       "fork": false,
       "archived": false
     },
@@ -932,16 +942,6 @@
       "archived": false
     },
     {
-      "name": "asterion-ansible",
-      "url": "https://github.com/cp-20/asterion-ansible",
-      "description": "",
-      "language": "Jinja",
-      "stars": 1,
-      "updatedAt": "2024-09-18T02:21:48Z",
-      "fork": false,
-      "archived": false
-    },
-    {
       "name": "maze-search",
       "url": "https://github.com/cp-20/maze-search",
       "description": "",
@@ -1195,17 +1195,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-21T11:55:41.064Z",
+      "lastSuccess": "2026-10-21T17:16:10.835Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-21T11:55:41.064Z",
+      "lastSuccess": "2026-10-21T17:16:10.835Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-21T11:55:41.064Z",
+      "lastSuccess": "2026-10-21T17:16:10.835Z",
       "count": 7
     },
     "trap.jp": {
@@ -1216,14 +1216,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-21T11:55:41.064Z",
+      "lastSuccess": "2026-10-21T17:16:10.835Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-21T11:55:41.064Z",
+      "lastSuccess": "2026-10-21T17:16:10.835Z",
       "count": 127
     }
   },
-  "checkedAt": "2026-10-21T11:55:41.064Z"
+  "checkedAt": "2026-10-21T17:16:10.835Z"
 }
