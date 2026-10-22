@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-22T04:54:39.620Z",
+  "updatedAt": "2026-10-22T11:58:17.917Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -322,12 +322,22 @@
   ],
   "repos": [
     {
+      "name": "asterion-manifest",
+      "url": "https://github.com/cp-20/asterion-manifest",
+      "description": "",
+      "language": "JavaScript",
+      "stars": 2,
+      "updatedAt": "2026-10-22T10:00:53Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "cp20-definitive",
       "url": "https://github.com/cp-20/cp20-definitive",
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-10-21T21:46:30Z",
+      "updatedAt": "2026-10-22T04:54:57Z",
       "fork": false,
       "archived": false
     },
@@ -358,16 +368,6 @@
       "language": "Jinja",
       "stars": 1,
       "updatedAt": "2026-10-21T15:27:05Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "asterion-manifest",
-      "url": "https://github.com/cp-20/asterion-manifest",
-      "description": "",
-      "language": "Shell",
-      "stars": 2,
-      "updatedAt": "2026-10-21T14:52:20Z",
       "fork": false,
       "archived": false
     },
@@ -526,7 +526,7 @@
       "url": "https://github.com/cp-20/zenn-contents",
       "description": "",
       "language": "",
-      "stars": 2,
+      "stars": 3,
       "updatedAt": "2026-04-02T12:20:54Z",
       "fork": false,
       "archived": false
@@ -1195,17 +1195,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-22T04:54:39.620Z",
+      "lastSuccess": "2026-10-22T11:58:17.917Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-22T04:54:39.620Z",
+      "lastSuccess": "2026-10-22T11:58:17.917Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-22T04:54:39.620Z",
+      "lastSuccess": "2026-10-22T11:58:17.917Z",
       "count": 7
     },
     "trap.jp": {
@@ -1216,14 +1216,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-22T04:54:39.620Z",
+      "lastSuccess": "2026-10-22T11:58:17.917Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-22T04:54:39.620Z",
+      "lastSuccess": "2026-10-22T11:58:17.917Z",
       "count": 127
     }
   },
-  "checkedAt": "2026-10-22T04:54:39.620Z"
+  "checkedAt": "2026-10-22T11:58:17.917Z"
 }
