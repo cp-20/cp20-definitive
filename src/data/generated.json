@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-23T04:56:58.574Z",
+  "updatedAt": "2026-10-23T11:44:16.484Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -322,6 +322,26 @@
   ],
   "repos": [
     {
+      "name": "zundamon-explainer",
+      "url": "https://github.com/cp-20/zundamon-explainer",
+      "description": "ずんだもん×四国めたんの技術解説動画を Manim + VOICEVOX で作る道具と知見（PNG・JPEG・GIF 編）",
+      "language": "Python",
+      "stars": 0,
+      "updatedAt": "2026-10-23T08:03:06Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-10-23T04:57:09Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "dice-spec-v2",
       "url": "https://github.com/cp-20/dice-spec-v2",
       "description": "",
@@ -338,26 +358,6 @@
       "language": "JavaScript",
       "stars": 2,
       "updatedAt": "2026-10-22T23:41:51Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-10-22T21:40:28Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "zundamon-explainer",
-      "url": "https://github.com/cp-20/zundamon-explainer",
-      "description": "ずんだもん×四国めたんの技術解説動画を Manim + VOICEVOX で作る道具と知見（PNG・JPEG・GIF 編）",
-      "language": "Python",
-      "stars": 0,
-      "updatedAt": "2026-10-22T17:26:23Z",
       "fork": false,
       "archived": false
     },
@@ -1195,17 +1195,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-23T04:56:58.574Z",
+      "lastSuccess": "2026-10-23T11:44:16.484Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-23T04:56:58.574Z",
+      "lastSuccess": "2026-10-23T11:44:16.484Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-23T04:56:58.574Z",
+      "lastSuccess": "2026-10-23T11:44:16.484Z",
       "count": 7
     },
     "trap.jp": {
@@ -1216,14 +1216,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-23T04:56:58.574Z",
+      "lastSuccess": "2026-10-23T11:44:16.484Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-23T04:56:58.574Z",
+      "lastSuccess": "2026-10-23T11:44:16.484Z",
       "count": 127
     }
   },
-  "checkedAt": "2026-10-23T04:56:58.574Z"
+  "checkedAt": "2026-10-23T11:44:16.484Z"
 }
