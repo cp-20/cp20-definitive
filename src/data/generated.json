@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-22T21:40:14.609Z",
+  "updatedAt": "2026-10-23T04:56:58.574Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -322,12 +322,32 @@
   ],
   "repos": [
     {
+      "name": "dice-spec-v2",
+      "url": "https://github.com/cp-20/dice-spec-v2",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 2,
+      "updatedAt": "2026-10-23T04:54:37Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "asterion-manifest",
       "url": "https://github.com/cp-20/asterion-manifest",
       "description": "",
       "language": "JavaScript",
       "stars": 2,
-      "updatedAt": "2026-10-22T18:47:17Z",
+      "updatedAt": "2026-10-22T23:41:51Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-10-22T21:40:28Z",
       "fork": false,
       "archived": false
     },
@@ -338,16 +358,6 @@
       "language": "Python",
       "stars": 0,
       "updatedAt": "2026-10-22T17:26:23Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-10-22T17:14:44Z",
       "fork": false,
       "archived": false
     },
@@ -368,16 +378,6 @@
       "language": "Jinja",
       "stars": 1,
       "updatedAt": "2026-10-21T15:27:05Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "dice-spec-v2",
-      "url": "https://github.com/cp-20/dice-spec-v2",
-      "description": "",
-      "language": "TypeScript",
-      "stars": 2,
-      "updatedAt": "2026-10-19T00:21:51Z",
       "fork": false,
       "archived": false
     },
@@ -1195,17 +1195,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-22T21:40:14.609Z",
+      "lastSuccess": "2026-10-23T04:56:58.574Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-22T21:40:14.609Z",
+      "lastSuccess": "2026-10-23T04:56:58.574Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-22T21:40:14.609Z",
+      "lastSuccess": "2026-10-23T04:56:58.574Z",
       "count": 7
     },
     "trap.jp": {
@@ -1216,14 +1216,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-22T21:40:14.609Z",
+      "lastSuccess": "2026-10-23T04:56:58.574Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-22T21:40:14.609Z",
+      "lastSuccess": "2026-10-23T04:56:58.574Z",
       "count": 127
     }
   },
-  "checkedAt": "2026-10-22T21:40:14.609Z"
+  "checkedAt": "2026-10-23T04:56:58.574Z"
 }
