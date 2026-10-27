@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-27T05:11:05.979Z",
+  "updatedAt": "2026-10-27T12:18:23.261Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -322,32 +322,12 @@
   ],
   "repos": [
     {
-      "name": "traq-bot-ts",
-      "url": "https://github.com/cp-20/traq-bot-ts",
-      "description": "",
-      "language": "TypeScript",
-      "stars": 4,
-      "updatedAt": "2026-10-27T01:09:13Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-10-26T22:43:07Z",
-      "fork": false,
-      "archived": false
-    },
-    {
       "name": "asterion-manifest",
       "url": "https://github.com/cp-20/asterion-manifest",
       "description": "",
       "language": "JavaScript",
       "stars": 2,
-      "updatedAt": "2026-10-26T18:23:03Z",
+      "updatedAt": "2026-10-27T08:41:21Z",
       "fork": false,
       "archived": false
     },
@@ -357,7 +337,7 @@
       "description": "",
       "language": "TypeScript",
       "stars": 2,
-      "updatedAt": "2026-10-26T05:46:39Z",
+      "updatedAt": "2026-10-27T07:00:54Z",
       "fork": false,
       "archived": false
     },
@@ -367,7 +347,27 @@
       "description": "ずんだもん×四国めたんの技術解説動画を Manim + VOICEVOX で作る道具と知見（PNG・JPEG・GIF 編）",
       "language": "Python",
       "stars": 0,
-      "updatedAt": "2026-10-23T08:03:06Z",
+      "updatedAt": "2026-10-27T06:58:31Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-10-27T05:11:17Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traq-bot-ts",
+      "url": "https://github.com/cp-20/traq-bot-ts",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 4,
+      "updatedAt": "2026-10-27T01:09:13Z",
       "fork": false,
       "archived": false
     },
@@ -1195,17 +1195,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-27T05:11:05.979Z",
+      "lastSuccess": "2026-10-27T12:18:23.261Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-27T05:11:05.979Z",
+      "lastSuccess": "2026-10-27T12:18:23.261Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-27T05:11:05.979Z",
+      "lastSuccess": "2026-10-27T12:18:23.261Z",
       "count": 7
     },
     "trap.jp": {
@@ -1216,14 +1216,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-27T05:11:05.979Z",
+      "lastSuccess": "2026-10-27T12:18:23.261Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-27T05:11:05.979Z",
+      "lastSuccess": "2026-10-27T12:18:23.261Z",
       "count": 127
     }
   },
-  "checkedAt": "2026-10-27T05:11:05.979Z"
+  "checkedAt": "2026-10-27T12:18:23.261Z"
 }
