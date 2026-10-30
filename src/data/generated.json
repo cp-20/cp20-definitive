@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-30T05:54:21.924Z",
+  "updatedAt": "2026-10-30T13:00:39.730Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -322,12 +322,12 @@
   ],
   "repos": [
     {
-      "name": "dice-spec-v2",
-      "url": "https://github.com/cp-20/dice-spec-v2",
+      "name": "asterion-manifest",
+      "url": "https://github.com/cp-20/asterion-manifest",
       "description": "",
-      "language": "TypeScript",
+      "language": "JavaScript",
       "stars": 2,
-      "updatedAt": "2026-10-30T04:44:08Z",
+      "updatedAt": "2026-10-30T11:25:05Z",
       "fork": false,
       "archived": false
     },
@@ -337,17 +337,17 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-10-29T22:48:42Z",
+      "updatedAt": "2026-10-30T05:54:33Z",
       "fork": false,
       "archived": false
     },
     {
-      "name": "asterion-manifest",
-      "url": "https://github.com/cp-20/asterion-manifest",
+      "name": "dice-spec-v2",
+      "url": "https://github.com/cp-20/dice-spec-v2",
       "description": "",
-      "language": "JavaScript",
+      "language": "TypeScript",
       "stars": 2,
-      "updatedAt": "2026-10-29T18:51:59Z",
+      "updatedAt": "2026-10-30T04:44:08Z",
       "fork": false,
       "archived": false
     },
@@ -1195,17 +1195,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-30T05:54:21.924Z",
+      "lastSuccess": "2026-10-30T13:00:39.730Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-30T05:54:21.924Z",
+      "lastSuccess": "2026-10-30T13:00:39.730Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-30T05:54:21.924Z",
+      "lastSuccess": "2026-10-30T13:00:39.730Z",
       "count": 7
     },
     "trap.jp": {
@@ -1216,14 +1216,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-30T05:54:21.924Z",
+      "lastSuccess": "2026-10-30T13:00:39.730Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-30T05:54:21.924Z",
+      "lastSuccess": "2026-10-30T13:00:39.730Z",
       "count": 127
     }
   },
-  "checkedAt": "2026-10-30T05:54:21.924Z"
+  "checkedAt": "2026-10-30T13:00:39.730Z"
 }
