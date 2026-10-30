@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-30T13:00:39.730Z",
+  "updatedAt": "2026-10-30T22:25:05.167Z",
   "articles": [
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
@@ -327,7 +327,17 @@
       "description": "",
       "language": "JavaScript",
       "stars": 2,
-      "updatedAt": "2026-10-30T11:25:05Z",
+      "updatedAt": "2026-10-30T22:16:21Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traq-bot-ts",
+      "url": "https://github.com/cp-20/traq-bot-ts",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 4,
+      "updatedAt": "2026-10-30T17:11:50Z",
       "fork": false,
       "archived": false
     },
@@ -337,7 +347,7 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-10-30T05:54:33Z",
+      "updatedAt": "2026-10-30T13:00:53Z",
       "fork": false,
       "archived": false
     },
@@ -348,16 +358,6 @@
       "language": "TypeScript",
       "stars": 2,
       "updatedAt": "2026-10-30T04:44:08Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "traq-bot-ts",
-      "url": "https://github.com/cp-20/traq-bot-ts",
-      "description": "",
-      "language": "TypeScript",
-      "stars": 4,
-      "updatedAt": "2026-10-29T00:24:20Z",
       "fork": false,
       "archived": false
     },
@@ -1195,17 +1195,17 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-10-30T13:00:39.730Z",
+      "lastSuccess": "2026-10-30T22:25:05.167Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-30T13:00:39.730Z",
+      "lastSuccess": "2026-10-30T22:25:05.167Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-30T13:00:39.730Z",
+      "lastSuccess": "2026-10-30T22:25:05.167Z",
       "count": 7
     },
     "trap.jp": {
@@ -1216,14 +1216,14 @@
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-10-30T13:00:39.730Z",
+      "lastSuccess": "2026-10-30T22:25:05.167Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-10-30T13:00:39.730Z",
+      "lastSuccess": "2026-10-30T22:25:05.167Z",
       "count": 127
     }
   },
-  "checkedAt": "2026-10-30T13:00:39.730Z"
+  "checkedAt": "2026-10-30T22:25:05.167Z"
 }
