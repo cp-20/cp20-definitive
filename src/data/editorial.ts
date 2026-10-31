@@ -101,7 +101,7 @@ export const mangaCovers: Record<
     spine: '#f08a3c',
     ink: '#ffffff',
     source: 'BOOK☆WALKER',
-    url: 'https://bookwalker.jp/de2b0a8fbc-ca4b-46cc-b482-5287aedb0079/',
+    url: 'https://bookwalker.jp/series/513981/list/',
   },
   没落令嬢の悪党賛歌: {
     image: '/images/covers/botsuraku-reijou.jpg',

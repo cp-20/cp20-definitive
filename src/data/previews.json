@@ -6,13 +6,6 @@
     "height": 630,
     "checkedAt": "2026-10-26T04:52:59.769Z"
   },
-  "https://marketplace.visualstudio.com/items?itemName=seatonjiang.gitmoji-vscode": {
-    "image": "https://seatonjiang.gallerycdn.vsassets.io/extensions/seatonjiang/gitmoji-vscode/2026.3.6/1772774226964/Microsoft.VisualStudio.Services.Icons.Default",
-    "icon": null,
-    "width": 200,
-    "height": 200,
-    "checkedAt": "2026-10-26T04:52:58.754Z"
-  },
   "https://2026.cp20.dev": {
     "image": "https://cp20.dev/og.png",
     "icon": "https://2026.cp20.dev/apple-touch-icon.png",
@@ -502,5 +495,12 @@
     "width": 1200,
     "height": 630,
     "checkedAt": "2026-10-31T12:39:05.200Z"
+  },
+  "https://marketplace.visualstudio.com/items?itemName=cp20.foodmoji-vscode": {
+    "image": "https://cp20.gallerycdn.vsassets.io/extensions/cp20/foodmoji-vscode/1.0.0/1732020741627/Microsoft.VisualStudio.Services.Icons.Default",
+    "icon": null,
+    "width": 256,
+    "height": 256,
+    "checkedAt": "2026-10-31T16:53:39.408Z"
   }
 }

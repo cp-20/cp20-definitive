@@ -62,6 +62,11 @@ export async function dimensions(url, fetcher = fetch) {
   const result = imageSize(bytes);
   return { width: size(result.width, 1200), height: size(result.height, 630) };
 }
+// Only pages the site still links to keep metadata, so a replaced URL's image is not cached forever.
+export const keepReferenced = (previews, urls) => {
+  const linked = new Set(urls);
+  return Object.fromEntries(Object.entries(previews).filter(([url]) => linked.has(url)));
+};
 export async function syncPreviews(request, force = false) {
   const [previous, works, manual, snapshot] = await Promise.all([
     readFile(file, 'utf8')
@@ -76,7 +81,7 @@ export async function syncPreviews(request, force = false) {
       [...works, ...manual.projects, ...mergeArticles(snapshot.articles, [], manual)].map((x) => x.url),
     ),
   ];
-  const next = { ...previous };
+  const next = keepReferenced(previous, urls);
   let fetched = 0;
   // Refresh successes weekly; retry missing/failed entries on the next scheduled run.
   const queue = urls.filter(

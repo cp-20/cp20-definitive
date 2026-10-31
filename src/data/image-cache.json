@@ -67,6 +67,10 @@
     "file": "/media/bcfa2c911969d564ca532294.png",
     "checkedAt": "2026-10-26T04:53:10.957Z"
   },
+  "https://cp20.gallerycdn.vsassets.io/extensions/cp20/foodmoji-vscode/1.0.0/1732020741627/Microsoft.VisualStudio.Services.Icons.Default": {
+    "file": "/media/35da753f75b8481058308e20.png",
+    "checkedAt": "2026-10-31T16:53:28.358Z"
+  },
   "https://deliver.cdn.nicomanga.jp/ogp-images/comics/73554": {
     "file": "/media/e05d3e56a3b1f8cf5222819f.jpg",
     "checkedAt": "2026-10-26T04:53:15.136Z"
@@ -246,10 +250,6 @@
   "https://res.cloudinary.com/zenn/image/upload/s--z89ZUG1---/c_fit%2Cg_north_west%2Cl_text:notosansjp-medium.otf_55:Stylelint%25E3%2581%25A7CSS-in-JS%25E3%2582%2592lint%25E3%2581%2599%25E3%2582%258B%25E6%2599%2582%25E3%2581%25AB%25E3%2583%258F%25E3%2583%259E%25E3%2581%25A3%25E3%2581%259F%25E3%2581%2593%25E3%2581%25A8%2Cw_1010%2Cx_90%2Cy_100/g_south_west%2Cl_text:notosansjp-medium.otf_37:%25E3%2581%2597%25E3%2583%25BC%25E3%2581%25B4%25E3%2583%25BC%2Cx_203%2Cy_121/g_south_west%2Ch_90%2Cl_fetch:aHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EtL0FPaDE0R2lkMENtX3dVYnd6b0NyR1g2aEFVaWdkWnZ3dDJPb2g3cVpEWElEUlE9czk2LWM=%2Cr_max%2Cw_90%2Cx_87%2Cy_95/v1627283836/default/og-base-w1200-v2.png?_a=BACMTiAE": {
     "file": "/media/3261eaabd6f776a59a5583bb.png",
     "checkedAt": "2026-10-26T04:53:12.961Z"
-  },
-  "https://seatonjiang.gallerycdn.vsassets.io/extensions/seatonjiang/gitmoji-vscode/2026.3.6/1772774226964/Microsoft.VisualStudio.Services.Icons.Default": {
-    "file": "/media/4256ba7b88f093d3c88d1cbe.png",
-    "checkedAt": "2026-10-26T04:53:10.900Z"
   },
   "https://sizu.me/api/og-image/528fa40b678a?avatarUrl=https%3A%2F%2Fr2.sizu.me%2Fusers%2F452%2Favatar.png%3Fv%3D1700030367107&theme=user&username=cp20": {
     "file": "/media/5cf97450d3c7d8441df6094e.png",
