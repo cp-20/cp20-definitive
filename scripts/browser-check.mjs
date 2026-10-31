@@ -270,7 +270,7 @@ try {
   releaseWrite = unblock;
   let held = false;
   const hold = async (route) => {
-    if (route.request().method() === 'PUT' && !held) {
+    if (route.request().method() === 'PATCH' && !held) {
       held = true;
       await gate;
     }
@@ -384,7 +384,7 @@ try {
   )
     throw Error('Reduced motion');
   await page.route('https://**.firebasedatabase.app/**', async (route) => {
-    if (route.request().method() === 'PUT') {
+    if (route.request().method() === 'PATCH') {
       await new Promise((r) => setTimeout(r, 800));
       await route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Test outage"}' });
     } else await route.fallback();

@@ -19,3 +19,32 @@ export function applyStreamEvent(current, type, event) {
   else for (const [key, value] of Object.entries(event.data || {})) set(`${event.path}/${key}`, value);
   return root;
 }
+// Runs `run` at most once per `wait` ms however often `schedule` is called, so a burst of
+// stream events (a visitor rewriting their stickers quickly) re-renders the page only a few
+// times a second. The first call after a quiet period runs on the next tick.
+const realClock = {
+  now: () => Date.now(),
+  setTimeout: (fn, ms) => setTimeout(fn, ms),
+  clearTimeout: (id) => clearTimeout(id),
+};
+export function coalesce(run, wait, clock = realClock) {
+  let timer = null,
+    last = -Infinity;
+  return {
+    schedule() {
+      if (timer !== null) return;
+      timer = clock.setTimeout(
+        () => {
+          timer = null;
+          last = clock.now();
+          run();
+        },
+        Math.max(0, last + wait - clock.now()),
+      );
+    },
+    cancel() {
+      if (timer !== null) clock.clearTimeout(timer);
+      timer = null;
+    },
+  };
+}

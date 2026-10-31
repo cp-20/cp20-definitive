@@ -1,14 +1,13 @@
 // In-memory stand-in for the stickers' Firebase services, for browser checks.
 // Stickers need a Google sign-in, which a headless browser cannot do, so a signed-in user is
 // seeded into Firebase Auth's storage and the database is served from memory with the same
-// ownership rules (writes need a Google token for the record's own uid).
+// ownership and throttle rules (writes need a Google token for the record's own uid).
 import { readFile } from 'node:fs/promises';
 const config = JSON.parse(await readFile(new URL('../src/data/firebase.json', import.meta.url)));
 const cors = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': '*',
   'access-control-allow-methods': '*',
-  'access-control-expose-headers': 'ETag',
 };
 const b64 = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
 const claims = (token) => {
@@ -33,7 +32,7 @@ export function googleToken(uid, email) {
 // Pass the returned db to another context to share the database between visitors.
 export async function mockFirebase(
   context,
-  { latency = 250, db = { pages: new Map(), latency, writes: 0 } } = {},
+  { latency = 250, db = { pages: new Map(), throttle: new Map(), latency, writes: 0 } } = {},
 ) {
   // Streams poll the mocked REST endpoint; a fulfilled route cannot stay open.
   await context.addInitScript(() => {
@@ -98,34 +97,62 @@ export async function mockFirebase(
     const request = route.request();
     if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
     const url = new URL(request.url());
-    const [, page, uid] = url.pathname
+    const [root, page, uid] = url.pathname
       .replace(/\.json$/, '')
       .split('/')
       .filter(Boolean);
-    const records = db.pages.get(page) || {};
-    if (!uid) return route.fulfill({ headers: cors, json: Object.keys(records).length ? records : null });
-    const record = records[uid] ?? null;
-    const tag = `"${b64(record).slice(-24)}"`;
-    if (request.method() === 'GET') return route.fulfill({ headers: { ...cors, ETag: tag }, json: record });
     const token = claims(url.searchParams.get('auth') || '');
-    if (token.user_id !== uid || token.firebase?.sign_in_provider !== 'google.com')
-      return route.fulfill({ status: 401, headers: cors, json: { error: 'Permission denied' } });
-    const match = request.headers()['if-match'];
-    if (match && match !== tag)
-      return route.fulfill({ status: 412, headers: { ...cors, ETag: tag }, json: record });
+    const signedIn = (owner) => token.user_id === owner && token.firebase?.sign_in_provider === 'google.com';
+    const deny = () => route.fulfill({ status: 401, headers: cors, json: { error: 'Permission denied' } });
+    if (request.method() === 'GET') {
+      if (root === 'throttle')
+        return signedIn(page)
+          ? route.fulfill({ headers: cors, json: db.throttle.get(page) ?? null })
+          : deny();
+      const records = db.pages.get(page) || {};
+      if (!uid) return route.fulfill({ headers: cors, json: Object.keys(records).length ? records : null });
+      return route.fulfill({ headers: cors, json: records[uid] ?? null });
+    }
+    // Writes are multi-path updates of a record and the writer's throttle entry, checked like
+    // database.rules.json: own uid only, one write a second, compare-and-swap on `prev`.
+    if (request.method() !== 'PATCH' || root) return deny();
+    const body = JSON.parse(request.postData() || '{}');
+    const writes = Object.entries(body).map(([path, value]) => [path.split('/'), value]);
+    const throttle = writes.find(([[kind]]) => kind === 'throttle');
+    const owner = throttle?.[0][1];
+    if (
+      !throttle ||
+      !signedIn(owner) ||
+      writes.some(
+        ([[kind, p, u], value]) => kind !== 'throttle' && (kind !== 'pages' || !p || u !== owner),
+      ) ||
+      writes.some(([keys]) => keys.length !== (keys[0] === 'pages' ? 3 : 2))
+    )
+      return deny();
+    const now = Date.now();
+    const previous = db.throttle.get(owner);
+    if ((previous?.at ?? 0) !== throttle[1]?.prev || (previous && now < previous.at + 1000)) return deny();
     await new Promise((resolve) => setTimeout(resolve, db.latency));
     const resolve = (value) =>
       value && typeof value === 'object'
         ? '.sv' in value
-          ? Date.now()
+          ? now
           : Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolve(v)]))
         : value;
-    const next = request.method() === 'DELETE' ? null : resolve(JSON.parse(request.postData() || 'null'));
-    if (next) records[uid] = next;
-    else delete records[uid];
-    db.pages.set(page, records);
+    const result = {};
+    for (const [[kind, p], value] of writes) {
+      const next = resolve(value);
+      if (kind === 'throttle') db.throttle.set(owner, next);
+      else {
+        const records = db.pages.get(p) || {};
+        if (next) records[owner] = next;
+        else delete records[owner];
+        db.pages.set(p, records);
+      }
+      result[kind === 'throttle' ? `throttle/${owner}` : `pages/${p}/${owner}`] = next ?? null;
+    }
     db.writes++;
-    return route.fulfill({ headers: cors, json: next });
+    return route.fulfill({ headers: cors, json: result });
   });
   return db;
 }

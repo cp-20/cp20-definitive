@@ -1,7 +1,8 @@
 import config from './data/firebase.json';
-import { applyStreamEvent } from './data/stamp-stream.mjs';
+import { applyStreamEvent, coalesce } from './data/stamp-stream.mjs';
 import { sameStamp } from './data/stamp-optimistic.mjs';
 import { stampEntries } from './data/stamp-record.mjs';
+import { recordPath, retryDelay, throttleAt, throttlePath, writeBody } from './data/stamp-write.mjs';
 import type { Auth, User } from 'firebase/auth';
 export type Stamp = { anchor: string; x: number; y: number; kind: number; angle: number; createdAt: number };
 export type PlacedStamp = Stamp & { id: string; owner: string; slot: string; avatar?: string };
@@ -26,15 +27,24 @@ export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void
   url.searchParams.set('limitToLast', '100');
   let stream: EventSource | undefined;
   let records: Record<string, RecordData> = {};
+  // Events are applied as they arrive but rendered at most four times a second.
+  const render = coalesce(() => {
+    try {
+      receive(Object.entries(records).flatMap(([owner, record]) => placed(owner, record)));
+    } catch {
+      fail();
+    }
+  }, 250);
   const change = (event: MessageEvent, type: string) => {
     try {
       records = applyStreamEvent(records, type, JSON.parse(event.data));
-      receive(Object.entries(records).flatMap(([owner, record]) => placed(owner, record)));
+      render.schedule();
     } catch {
       fail();
     }
   };
   const resume = () => {
+    render.cancel();
     stream?.close();
     stream = undefined;
     if (document.hidden) return;
@@ -50,6 +60,7 @@ export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void
   resume();
   document.addEventListener('visibilitychange', resume);
   return () => {
+    render.cancel();
     stream?.close();
     document.removeEventListener('visibilitychange', resume);
   };
@@ -105,31 +116,55 @@ async function currentUser() {
 }
 
 const timestamp = () => ({ '.sv': 'timestamp' });
+const settled = (value: unknown): value is RecordData | null =>
+  value === null || (typeof value === 'object' && typeof (value as RecordData).updatedAt === 'number');
 async function transaction(path: string, update: (data: RecordData | null) => unknown) {
   const identity = await currentUser();
-  const url = new URL(`${config.databaseURL}/pages/${pageKey(path)}/${identity.uid}.json`);
-  url.searchParams.set('auth', await identity.getIdToken());
-  // ETags prevent a second tab from overwriting a concurrent change.
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const current = await fetch(url, {
-      headers: { 'X-Firebase-ETag': 'true' },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!current.ok) throw Error('Cannot read own stamps');
-    const tag = current.headers.get('ETag');
-    if (!tag) throw Error('Missing concurrency token');
-    const previous = await current.json();
+  const page = pageKey(path);
+  const token = await identity.getIdToken();
+  const at = (location: string) => {
+    const url = new URL(`${config.databaseURL}/${location}.json`);
+    url.searchParams.set('auth', token);
+    return url;
+  };
+  const read = async (location: string) => {
+    const response = await fetch(at(location), { signal: AbortSignal.timeout(15000) });
+    if (!response.ok) throw Error('Cannot read own stamps');
+    return response.json();
+  };
+  // The throttle entry is read first: if anything is written after that, its compare-and-swap
+  // fails, so a second tab cannot overwrite a concurrent change.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const throttle = await read(throttlePath(identity.uid));
+    const previous = (await read(recordPath(page, identity.uid))) as RecordData | null;
     const data = update(previous);
-    if (data === undefined) return previous as RecordData | null;
-    const saved = await fetch(url, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'If-Match': tag },
-      body: JSON.stringify(data),
+    if (data === undefined) return previous;
+    const saved = await fetch(at(''), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(writeBody(page, identity.uid, data, throttle)),
       signal: AbortSignal.timeout(15000),
     });
-    if (saved.status === 412) continue;
+    if (saved.status === 401 || saved.status === 403) {
+      // Denied: either another tab wrote in between (retry with fresh data) or the last write
+      // was under a second ago (wait for the database's interval); invalid data fails again.
+      const latest = await read(throttlePath(identity.uid));
+      if (throttleAt(latest) === throttleAt(throttle))
+        await new Promise((resolve) => setTimeout(resolve, retryDelay(throttleAt(latest))));
+      continue;
+    }
     if (!saved.ok) throw Error('Cannot save stamp');
-    return (await saved.json()) as RecordData | null;
+    // The response echoes the written data (flat or nested); read it back if it is not there.
+    const body = (await saved.json()) as Record<string, any> | null;
+    const flat = recordPath(page, identity.uid),
+      nested = body?.pages?.[page];
+    const written =
+      body && flat in body
+        ? body[flat]
+        : nested && typeof nested === 'object' && identity.uid in nested
+          ? nested[identity.uid]
+          : undefined;
+    return settled(written) ? written : ((await read(flat)) as RecordData | null);
   }
   throw Error('Concurrent update; try again');
 }

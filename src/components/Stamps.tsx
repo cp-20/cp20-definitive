@@ -101,17 +101,48 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       .filter(isOwn)
       .sort((a, b) => b.createdAt - a.createdAt),
   );
+  // Anchor boxes are measured once per anchor (not per sticker), and unchanged stickers keep
+  // their previous object so a remote update only touches the stickers that actually moved.
+  type Shown = PlacedStamp & { key: string; left: number; top: number };
+  let shown = new Map<string, Shown>();
   const visible = createMemo(() => {
     revision();
-    if (hidden()) return [];
-    return projected().flatMap((stamp) => {
-      const anchor = document.querySelector<HTMLElement>(`[data-stamp-anchor="${CSS.escape(stamp.anchor)}"]`);
-      if (!anchor || anchor.closest('[inert]') || getComputedStyle(anchor).visibility === 'hidden') return [];
-      const box = layoutBox(anchor);
-      return box.w && box.h
-        ? [{ ...stamp, key: visualKey(stamp), left: box.x + box.w * stamp.x, top: box.y + box.h * stamp.y }]
-        : [];
+    if (hidden()) return ((shown = new Map()), []);
+    const boxes = new Map<string, ReturnType<typeof layoutBox> | null>();
+    const boxOf = (name: string) => {
+      if (boxes.has(name)) return boxes.get(name)!;
+      const anchor = document.querySelector<HTMLElement>(`[data-stamp-anchor="${CSS.escape(name)}"]`);
+      const box =
+        !anchor || anchor.closest('[inert]') || getComputedStyle(anchor).visibility === 'hidden'
+          ? null
+          : layoutBox(anchor);
+      boxes.set(name, box?.w && box.h ? box : null);
+      return boxes.get(name)!;
+    };
+    const next = new Map<string, Shown>();
+    const list = projected().flatMap((stamp) => {
+      const box = boxOf(stamp.anchor);
+      if (!box) return [];
+      const key = visualKey(stamp),
+        left = box.x + box.w * stamp.x,
+        top = box.y + box.h * stamp.y,
+        before = shown.get(key);
+      const item =
+        before &&
+        before.left === left &&
+        before.top === top &&
+        before.id === stamp.id &&
+        before.owner === stamp.owner &&
+        before.slot === stamp.slot &&
+        before.avatar === stamp.avatar &&
+        before.createdAt === stamp.createdAt
+          ? before
+          : { ...stamp, key, left, top };
+      next.set(key, item);
+      return [item];
     });
+    shown = next;
+    return list;
   });
   const reposition = () => {
     if (!frame)
