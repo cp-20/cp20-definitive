@@ -2,6 +2,7 @@ import { createSignal, createMemo, createEffect, onSettled, flush, For, Show } f
 import type { JSX } from '@solidjs/web';
 import type { Account, PlacedStamp } from '../stamps-client';
 import { projectStamps } from '../data/stamp-optimistic.mjs';
+import { sheetStartsOpen } from '../data/sheet-start.mjs';
 import Icon from './Icon';
 const kinds = [
   { symbol: 'clover', name: 'クローバー' },
@@ -260,8 +261,9 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       setKind(Number(localStorage.getItem('cp20-stamp-kind')) || 0);
       if (localStorage.getItem('cp20-sticker-account')) void connectAccount();
     } catch {}
-    // Phones start with the sheet tucked away so it does not cover the page.
-    setOpen(stored ? stored !== 'closed' : !matchMedia('(max-width: 760px)').matches);
+    // Start with the sheet tucked away unless it fits on the desk beside the page, so it never covers content.
+    const page = document.querySelector('.site-body')?.getBoundingClientRect();
+    setOpen(sheetStartsOpen(stored, document.documentElement.clientWidth, page ? page.right : Infinity));
     window.addEventListener('resize', reposition);
     const resize = new ResizeObserver(reposition);
     resize.observe(document.querySelector('.site-body')!);

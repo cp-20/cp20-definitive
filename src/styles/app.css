@@ -78,6 +78,12 @@
   }
   p {
     overflow-wrap: anywhere;
+    text-wrap: pretty;
+  }
+  /* Japanese has no spaces, so balance/wrapping would split words mid-phrase; break between phrases instead. */
+  :lang(ja)
+    :is(h1, h2, h3, h4, .identity p, .project-name, .project-description, .timeline-item p, .intro-profile) {
+    word-break: auto-phrase;
   }
   input,
   select {
@@ -375,7 +381,9 @@
         var(--edge) 9px,
         transparent 9.5px
       )
-      50% 0 / 20px 56px repeat-y;
+      50% 0 / 20px 56px;
+    /* space: the holes spread evenly over any sheet height, so the last one is never cut in half. */
+    background-repeat: no-repeat space;
     pointer-events: none;
   }
   .wrap {
@@ -743,6 +751,9 @@
     width: 100%;
     padding: calc(var(--size) * 0.07) 0;
     border-block: 1.5px solid var(--postmark);
+    /* The date band sits on paper so it stays legible over dark parts of the image. */
+    background: color-mix(in srgb, var(--page, var(--paper)) 85%, transparent);
+    border-radius: 2px;
     font-size: calc(var(--size) * 0.14);
     letter-spacing: 0.02em;
     text-align: center;
@@ -2185,7 +2196,8 @@
     margin-top: auto;
     font-size: 11px;
     font-weight: 700;
-    opacity: 0.85;
+    /* Take the spine's ink, not the base small colour, and stay opaque so the name stays legible. */
+    color: inherit;
   }
   .book[aria-expanded='true'] .book-spine {
     opacity: 0;
@@ -2236,6 +2248,9 @@
   }
   .credits dd {
     margin: 0;
+  }
+  /* Only the list of covers is laid out as items; other entries are running text. */
+  .credits .credits-list {
     display: flex;
     flex-wrap: wrap;
     gap: 0 14px;
@@ -3033,6 +3048,7 @@
       border-radius: 16px 16px 0 0;
       font-size: 12px;
       letter-spacing: 0.02em;
+      white-space: nowrap;
       margin: 0;
       writing-mode: horizontal-tb;
       translate: 0 10px;
@@ -3313,6 +3329,12 @@
       margin-top: 2px;
     }
   }
+  /* Below this, a tab is too narrow for the icon and the longest label (プロフィール) on one line. */
+  @media (max-width: 430px) {
+    .rail nav a > svg {
+      display: none;
+    }
+  }
   @media (max-width: 380px) {
     .bookshelf {
       --spine-width: 22px;
@@ -3325,9 +3347,6 @@
     }
     .wrap {
       padding-inline: 14px;
-    }
-    .rail nav a > svg {
-      display: none;
     }
     .article-row,
     .home-writing .article-row {

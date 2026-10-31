@@ -99,7 +99,7 @@ export const mangaCovers: Record<
   妹は知っている: {
     image: '/images/covers/imouto-wa-shitteiru.jpg',
     spine: '#f08a3c',
-    ink: '#ffffff',
+    ink: '#2d2a33',
     source: 'BOOK☆WALKER',
     url: 'https://bookwalker.jp/series/513981/list/',
   },
@@ -112,7 +112,7 @@ export const mangaCovers: Record<
   },
   寿司ガキ: {
     image: '/images/covers/sushi-gaki.jpg',
-    spine: '#e2493b',
+    spine: '#d63e31',
     ink: '#ffffff',
     source: 'カドコミ（KADOKAWA）',
     url: 'https://comic-walker.com/detail/KC_000933_S',

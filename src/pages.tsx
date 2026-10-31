@@ -354,7 +354,7 @@ export function About() {
             から。サムネイルは YouTube（各動画の投稿者）
           </dd>
           <dt>漫画の表紙</dt>
-          <dd>
+          <dd class="credits-list">
             <For each={series}>
               {(s) => (
                 <span>
