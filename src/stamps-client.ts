@@ -2,6 +2,7 @@ import config from './data/firebase.json';
 import { applyStreamEvent, coalesce } from './data/stamp-stream.mjs';
 import { sameStamp } from './data/stamp-optimistic.mjs';
 import { stampEntries } from './data/stamp-record.mjs';
+import { deadline, reconnectDelay } from './data/resilience.mjs';
 import { recordPath, retryDelay, throttleAt, throttlePath, writeBody } from './data/stamp-write.mjs';
 import type { Auth, User } from 'firebase/auth';
 export type Stamp = { anchor: string; x: number; y: number; kind: number; angle: number; createdAt: number };
@@ -43,26 +44,52 @@ export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void
       fail();
     }
   };
+  // EventSource retries network drops by itself, but closes for good on an HTTP error or a
+  // wrong content type (a captive portal's HTML page). Those, and a cancelled listener, are
+  // retried here with a backoff, and straight away once the device comes back online.
+  let attempts = 0,
+    retry: ReturnType<typeof setTimeout> | undefined;
+  const lost = (source: EventSource) => {
+    fail();
+    if (source !== stream || source.readyState !== EventSource.CLOSED) return;
+    source.close();
+    stream = undefined;
+    clearTimeout(retry);
+    retry = setTimeout(resume, reconnectDelay(attempts++));
+  };
   const resume = () => {
+    clearTimeout(retry);
+    retry = undefined;
     render.cancel();
     stream?.close();
     stream = undefined;
     if (document.hidden) return;
-    stream = new EventSource(url);
-    stream.addEventListener('put', (e) => change(e as MessageEvent, 'put'));
-    stream.addEventListener('patch', (e) => change(e as MessageEvent, 'patch'));
-    stream.addEventListener('cancel', () => {
-      stream?.close();
-      fail();
+    const source = new EventSource(url);
+    stream = source;
+    source.addEventListener('put', (e) => {
+      attempts = 0;
+      change(e as MessageEvent, 'put');
     });
-    stream.onerror = fail; // EventSource reconnects after transient network failures.
+    source.addEventListener('patch', (e) => change(e as MessageEvent, 'patch'));
+    source.addEventListener('cancel', () => {
+      source.close();
+      lost(source);
+    });
+    source.onerror = () => lost(source);
+  };
+  const online = () => {
+    attempts = 0;
+    resume();
   };
   resume();
   document.addEventListener('visibilitychange', resume);
+  window.addEventListener('online', online);
   return () => {
+    clearTimeout(retry);
     render.cancel();
     stream?.close();
     document.removeEventListener('visibilitychange', resume);
+    window.removeEventListener('online', online);
   };
 }
 
@@ -100,10 +127,24 @@ export async function watchAccount(receive: (account: Account | null) => void) {
   const { auth, sdk } = await loadAuth();
   return sdk.onAuthStateChanged(auth, (user) => void toAccount(user).then(receive));
 }
+// Google's sign-in scripts can hang on a bad network; the button is released after this long.
+export const SIGN_IN_TIMEOUT = 20000;
 export async function signIn() {
-  const { auth, sdk } = await loadAuth();
-  const result = await sdk.signInWithPopup(auth, new sdk.GoogleAuthProvider());
-  return toAccount(result.user);
+  const { auth, sdk } = await deadline(loadAuth(), SIGN_IN_TIMEOUT);
+  // Once the popup opens the page loses focus and the wait is the visitor's, not the network's.
+  let opened!: () => void;
+  const popup = new Promise<void>((resolve) => (opened = resolve));
+  window.addEventListener('blur', opened, { once: true });
+  try {
+    const result = await deadline(
+      sdk.signInWithPopup(auth, new sdk.GoogleAuthProvider()),
+      SIGN_IN_TIMEOUT,
+      popup,
+    );
+    return toAccount(result.user);
+  } finally {
+    window.removeEventListener('blur', opened);
+  }
 }
 export async function signOut() {
   const { auth, sdk } = await loadAuth();

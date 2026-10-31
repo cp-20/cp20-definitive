@@ -1,6 +1,7 @@
 import { createSignal, onSettled, flush } from 'solid-js';
 import { currentUrl, pageInfo } from './route';
 import { works } from './data/content';
+import { SCROLL_KEY, readPositions, writePositions } from './data/resilience.mjs';
 const paths = new Set(['/', '/about', '/articles', '/works', ...works.map((w) => `/works/${w.id}`)]);
 // The order of the index tabs. Moving down the tabs turns the page forward.
 const sections = ['/', '/works', '/articles', '/about'];
@@ -27,14 +28,33 @@ function markSheet(prefix: string) {
 export function createNavigation() {
   const [path, setPath] = createSignal(currentUrl().pathname.replace(/\/$/, '') || '/');
   onSettled(() => {
-    const positions = new Map<string, [number, number]>();
-    let key = history.state?.cp20Entry || crypto.randomUUID();
+    // Positions survive a reload or a visit to another document (the browser's own restoring
+    // is off so in-app back/forward can restore after the page has been swapped).
+    let stored: string | null = null;
+    try {
+      stored = sessionStorage.getItem(SCROLL_KEY);
+    } catch {}
+    const positions = readPositions(stored);
+    const entry = history.state?.cp20Entry;
+    let key = entry || crypto.randomUUID();
     history.replaceState({ ...history.state, cp20Entry: key }, '');
     const oldRestoration = history.scrollRestoration;
     history.scrollRestoration = 'manual';
+    const saved = entry && !location.hash ? positions.get(entry) : undefined;
+    if (saved && scrollX === 0 && scrollY === 0)
+      window.scrollTo({ left: saved[0], top: saved[1], behavior: 'instant' });
     let transition: ViewTransition | undefined,
       version = 0;
-    const remember = () => positions.set(key, [scrollX, scrollY]);
+    const remember = () => {
+      positions.delete(key);
+      positions.set(key, [scrollX, scrollY]);
+    };
+    const persist = () => {
+      remember();
+      try {
+        sessionStorage.setItem(SCROLL_KEY, writePositions(positions));
+      } catch {}
+    };
     let aim: HTMLElement | undefined;
     const settleAim = () => {
       const target = aim;
@@ -111,7 +131,7 @@ export function createNavigation() {
       if (url.pathname === location.pathname && url.search === location.search && url.hash) return;
       e.preventDefault();
       if (url.href === location.href) return;
-      remember();
+      persist();
       key = crypto.randomUUID();
       history.pushState({ cp20Entry: key }, '', url);
       move(url, undefined, e.detail !== 0);
@@ -123,11 +143,13 @@ export function createNavigation() {
     document.addEventListener('click', click);
     window.addEventListener('scroll', remember, { passive: true });
     window.addEventListener('popstate', pop);
+    window.addEventListener('pagehide', persist);
     return () => {
       transition?.skipTransition();
       document.removeEventListener('click', click);
       window.removeEventListener('scroll', remember);
       window.removeEventListener('popstate', pop);
+      window.removeEventListener('pagehide', persist);
       history.scrollRestoration = oldRestoration;
     };
   });

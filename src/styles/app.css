@@ -2810,15 +2810,18 @@
   .featured-project[data-pos='active'] .featured-copy > :nth-child(5) {
     transition-delay: 120ms;
   }
-  @supports (animation-timeline: view()) {
-    .work-index-item,
-    .timeline-item,
-    .music-item,
-    .edition-list > a,
-    .home-profile {
-      animation: reveal linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 40%;
+  /* Screen only: when printing, items outside the viewport would stay at the first frame. */
+  @media screen {
+    @supports (animation-timeline: view()) {
+      .work-index-item,
+      .timeline-item,
+      .music-item,
+      .edition-list > a,
+      .home-profile {
+        animation: reveal linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 40%;
+      }
     }
   }
 
@@ -3355,6 +3358,25 @@
     }
     .identity h1 {
       font-size: 44px;
+    }
+  }
+  /* Without JavaScript the filters and the work switcher cannot do anything; every article
+     and the links to the three works are still listed. */
+  @media (scripting: none) {
+    .source-filters,
+    .sort-control,
+    .featured-selector,
+    .featured-bottom {
+      display: none;
+    }
+  }
+  /* Paper copies: the sticker tools and the skip link only make sense on screen. */
+  @media print {
+    .skip-link,
+    .stamp-ui,
+    .stamp-layer,
+    .stamp-overlay {
+      display: none !important;
     }
   }
 }

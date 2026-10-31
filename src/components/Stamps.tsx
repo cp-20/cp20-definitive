@@ -3,6 +3,7 @@ import type { JSX } from '@solidjs/web';
 import type { Account, PlacedStamp } from '../stamps-client';
 import { projectStamps } from '../data/stamp-optimistic.mjs';
 import { sheetStartsOpen } from '../data/sheet-start.mjs';
+import { deadline } from '../data/resilience.mjs';
 import Icon from './Icon';
 const kinds = [
   { symbol: 'clover', name: 'クローバー' },
@@ -45,7 +46,9 @@ function layoutBox(el: HTMLElement) {
 function StickerFace(props: { kind: number }) {
   return (
     <img
-      src={props.kind === 5 ? '/images/avatar.png' : `/stamps/${kinds[props.kind]?.symbol || 'clover'}.svg`}
+      src={
+        props.kind === 5 ? '/images/avatar-384.webp' : `/stamps/${kinds[props.kind]?.symbol || 'clover'}.svg`
+      }
       alt=""
       width="40"
       height="40"
@@ -61,6 +64,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     [kind, setKind] = createSignal(0),
     [hidden, setHidden] = createSignal(false),
     [message, setMessage] = createSignal(''),
+    // The sticker stream's state, kept apart so it never hides a sign-in or saving message.
+    [connection, setConnection] = createSignal(''),
     [failed, setFailed] = createSignal<Operation | null>(null),
     [revision, setRevision] = createSignal(0),
     [account, setAccount] = createSignal<Account | null>(null),
@@ -154,7 +159,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   };
   const receive = (path: string, stamps: PlacedStamp[]) => {
     cache.set(path, stamps);
-    if (message().startsWith('シールに接続')) setMessage('');
+    setConnection('');
     if (props.path === path) {
       setRemote(stamps);
       reposition();
@@ -177,10 +182,10 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           stop = api.subscribe(
             path,
             (stamps) => receive(path, stamps),
-            () => setMessage('シールに接続できません'),
+            () => setConnection('シールに接続できません'),
           );
         } catch {
-          setMessage('シールに接続できません');
+          setConnection('シールに接続できません');
         }
       }, 200);
       return () => {
@@ -217,8 +222,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     setSigningIn(true);
     setMessage('');
     try {
-      const api = await client();
-      await connectAccount();
+      const api = await deadline(client(), 20000);
+      await deadline(connectAccount(), 20000);
       if (!account()) {
         const next = await api.signIn();
         if (next) setAccount(next);
@@ -229,9 +234,11 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       setMessage(
         code.includes('popup-closed') || code.includes('cancelled-popup')
           ? ''
-          : code.includes('popup-blocked')
-            ? 'ポップアップが開けませんでした。もう一度押してください'
-            : 'ログインできませんでした',
+          : code === 'timeout'
+            ? '接続できませんでした。もう一度押してください'
+            : code.includes('popup-blocked')
+              ? 'ポップアップが開けませんでした。もう一度押してください'
+              : 'ログインできませんでした',
       );
     } finally {
       setSigningIn(false);
@@ -889,8 +896,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
             </For>
           </div>
           {/* Only problems are spelled out; saving shows on the pips and the sticker itself. */}
-          <p class="stamp-status" role="status" data-idle={message() ? undefined : 'true'}>
-            {message()}
+          <p class="stamp-status" role="status" data-idle={message() || connection() ? undefined : 'true'}>
+            {message() || connection()}
             <Show when={failed()}>
               <button
                 class="stamp-retry"

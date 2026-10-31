@@ -114,7 +114,7 @@ export function Home() {
         <div class="identity">
           <span class="avatar-stamp">
             <img
-              src="/images/avatar.png"
+              src="/images/avatar-384.webp"
               alt="しーぴーのアイコン"
               width="88"
               height="88"
@@ -205,7 +205,7 @@ export function About() {
         <div class="profile-avatar">
           <span class="avatar-stamp">
             <img
-              src="/images/avatar.png"
+              src="/images/avatar-384.webp"
               width="208"
               height="208"
               alt="しーぴーのアイコン"
