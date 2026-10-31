@@ -1,7 +1,15 @@
 import { createSignal, createStore, createMemo, createEffect, onSettled, For, Show } from 'solid-js';
 import { httpStatus } from '@solidjs/web';
 import Icon from './components/Icon';
-import { OGImage, OriginalIcon, Postmark, articleAnchor, postmarkDate } from './components/Preview';
+import {
+  OGImage,
+  OriginalIcon,
+  Postmark,
+  articleAnchor,
+  postmarkDate,
+  sizes,
+  firstRowWorks,
+} from './components/Preview';
 import Projects from './components/Projects';
 import { articles, works, repos, formatDate, type Article } from './data/content';
 import { featuredIds, milestones, editions, mangaCovers } from './data/editorial';
@@ -92,7 +100,7 @@ export function ArticleRows(props: { items: Article[] }) {
             data-article
             data-date={a.date}
           >
-            <OGImage url={a.url} alt="" />
+            <OGImage url={a.url} alt="" sizes={sizes.articleRow} />
             <div class="article-text">
               <div class="article-meta">
                 <time datetime={a.date}>{formatDate(a.date)}</time>
@@ -495,7 +503,7 @@ export function Works() {
       </header>
       <section class="work-grid" aria-label="制作した作品">
         <For each={projects}>
-          {(w) => (
+          {(w, i) => (
             <article class="work-index-item" data-stamp-anchor={`work-${w.id}`}>
               <div>
                 <Show when={featuredIds.includes(w.id)}>
@@ -520,7 +528,13 @@ export function Works() {
               </div>
               <Show when={true}>
                 <a class="work-thumbnail" href={`/works/${w.id}`} tabindex="-1" aria-hidden="true">
-                  <OGImage url={w.url} alt="" />
+                  <OGImage
+                    url={w.url}
+                    alt=""
+                    sizes={sizes.workGrid}
+                    priority={i() === 0}
+                    eager={i() < firstRowWorks}
+                  />
                   <Postmark date={postmarkDate(w.productionTime)} top="CP20.DEV" bottom="WORKS" />
                 </a>
               </Show>
@@ -587,7 +601,7 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
         </div>
       </header>
       <div class="work-detail-hero" data-stamp-anchor="work-image">
-        <OGImage url={w.url} alt={`${w.title}のOG画像`} priority />
+        <OGImage url={w.url} alt={`${w.title}のOG画像`} sizes={sizes.workHero} priority />
         <Postmark date={postmarkDate(w.productionTime)} top="CP20.DEV" bottom="WORKS" />
       </div>
       <div class="work-detail-layout">

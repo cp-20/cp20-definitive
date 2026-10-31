@@ -1,6 +1,7 @@
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { handleRequest } from '../dist/server/server.js';
 import { mergeArticles, stripInvalidText } from '../src/data/normalize.mjs';
+import { subsetSiteFonts } from './fonts.mjs';
 const load = async (name) =>
   JSON.parse(await readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8'));
 const [baseWorks, manual, snapshot] = await Promise.all(['works', 'manual', 'generated'].map(load));
@@ -41,4 +42,10 @@ await writeFile(
     )
     .join('')}</channel></rss>`,
 );
+// The Vite manifest is only for the build; dist/client is published as-is.
+await rm('dist/client/.vite', { recursive: true, force: true });
+const fonts = await subsetSiteFonts('dist/client');
 console.log(`Prerendered ${paths.length} pages, RSS and sitemap → dist/client`);
+console.log(
+  `Fonts: ${fonts.characters} characters, ${fonts.files.map((f) => `${f.weight} ${(f.size / 1024).toFixed(0)} kB`).join(', ')}`,
+);

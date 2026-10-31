@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, rename, readdir, unlink, access } from 'nod
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { imageSize } from 'image-size';
+import { addVariants, ogSources } from './image-variants.mjs';
 const directory = new URL('../public/media/', import.meta.url);
 const manifestFile = new URL('../src/data/image-cache.json', import.meta.url);
 const previewsFile = new URL('../src/data/previews.json', import.meta.url);
@@ -109,11 +110,13 @@ export async function cacheImages(force = false, previousPreviews) {
       await rename(new URL(previewsFile.href + '.tmp'), previewsFile);
     }
   }
+  await addVariants(next, ogSources(previews));
+  const files = (entry) => [entry.file, ...(entry.variants ?? []).map((v) => v.file)];
   const content = (object) =>
     Object.fromEntries(
       Object.keys(object)
         .sort()
-        .map((k) => [k, object[k].file]),
+        .map((k) => [k, files(object[k])]),
     );
   const changed = JSON.stringify(content(next)) !== JSON.stringify(content(previous));
   await writeFile(
@@ -122,7 +125,7 @@ export async function cacheImages(force = false, previousPreviews) {
       '\n',
   );
   await rename(new URL(manifestFile.href + '.tmp'), manifestFile);
-  const used = new Set(Object.values(next).map((p) => p.file.split('/').at(-1)));
+  const used = new Set(Object.values(next).flatMap((p) => files(p).map((f) => f.split('/').at(-1))));
   for (const filename of await readdir(directory))
     if (!used.has(filename)) await unlink(new URL(filename, directory));
   console.log(

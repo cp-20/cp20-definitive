@@ -8,3 +8,10 @@
 
 /media/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Not content-hashed: cache for a day, then revalidate in the background for a week.
+/images/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/stamps/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

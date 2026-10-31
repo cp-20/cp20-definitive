@@ -1,3 +1,2 @@
-import cache from './image-cache.json';
-export const localImage = (source: string | null | undefined) =>
-  source ? (cache as Record<string, { file: string }>)[source]?.file : undefined;
+import { images } from 'virtual:cp20-media';
+export const localImage = (source: string | null | undefined) => (source ? images[source] : undefined);
