@@ -18,6 +18,7 @@ const LIMIT = 5;
 type Operation = { id: string; path: string } & (
   | { type: 'add'; stamp: PlacedStamp }
   | { type: 'remove'; target: PlacedStamp }
+  | { type: 'move'; target: PlacedStamp; stamp: PlacedStamp }
 );
 // A sticker in hand: pressed (not moved yet), dragged, or aimed (click-to-place / keyboard).
 type Held = {
@@ -343,14 +344,19 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         const who = account();
         if (!who) throw Error('Signed out');
         let result: { owner: string; stamps: PlacedStamp[] };
-        if (op.type === 'add') {
+        if (op.type !== 'remove') {
           const { anchor, x, y, kind, angle } = op.stamp;
-          const added = await api.place(op.path, { anchor, x, y, kind, angle }, who);
+          const target = op.type === 'move' ? resolved.get(op.target.id) || op.target : undefined;
+          // A sticker whose own placement never saved is placed afresh.
+          const added =
+            target && target.owner !== 'local'
+              ? await api.move(op.path, target, { anchor, x, y, kind, angle }, who)
+              : await api.place(op.path, { anchor, x, y, kind, angle }, who);
           result = added;
           resolved.set(op.stamp.id, added.placed);
           setOperations((list) =>
             list.map((item) =>
-              item.type === 'remove' && item.target.id === op.stamp.id
+              item.type !== 'add' && item.target.id === op.stamp.id
                 ? { ...item, target: added.placed }
                 : item,
             ),
@@ -397,7 +403,14 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     }
     return { anchor: anchor.dataset.stampAnchor!, x: (px - box.x) / box.w, y: (py - box.y) / box.h };
   }
-  function put(x: number, y: number, stickerKind: number, angle: number, from?: { x: number; y: number }) {
+  function put(
+    x: number,
+    y: number,
+    stickerKind: number,
+    angle: number,
+    from?: { x: number; y: number },
+    target?: PlacedStamp,
+  ) {
     const spot = locate(x, y);
     if (!spot) return false;
     const id = crypto.randomUUID();
@@ -408,7 +421,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       ...spot,
       kind: stickerKind,
       angle,
-      createdAt: Date.now(),
+      createdAt: target?.createdAt ?? Date.now(),
     };
     // The new sticker starts where the one in hand was, then settles onto the paper.
     const key = visualKey(stamp);
@@ -422,7 +435,9 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         }),
       700,
     );
-    enqueue({ type: 'add', id, path: props.path, stamp });
+    // Moving one of your stickers rewrites it in place, so it never pushes out another one.
+    if (target) enqueue({ type: 'move', id, path: props.path, target, stamp });
+    else enqueue({ type: 'add', id, path: props.path, stamp });
     return true;
   }
   const nameOf = (stickerKind: number) => kinds[stickerKind]?.name || 'しーぴー';
@@ -648,8 +663,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           ? lean
           : Math.round(Math.random() * 16 - 8);
     const from = { x: motion.x, y: motion.y };
-    if (!put(x, y, h.kind, angle, from)) return returnHeld(h, true);
-    if (h.from === 'page' && h.target) erase(h.target, false);
+    const moving = h.from === 'page' && h.target && isOwn(h.target) ? h.target : undefined;
+    if (!put(x, y, h.kind, angle, from, moving)) return returnHeld(h, true);
     if (h.pointer === 'touch') navigator.vibrate?.(10);
     letGo(h);
     finish();

@@ -1,9 +1,8 @@
 import config from './data/firebase.json';
 import { applyStreamEvent, coalesce } from './data/stamp-stream.mjs';
-import { sameStamp } from './data/stamp-optimistic.mjs';
-import { stampEntries } from './data/stamp-record.mjs';
+import { moveIn, placeIn, removeFrom, stampEntries } from './data/stamp-record.mjs';
 import { deadline, reconnectDelay } from './data/resilience.mjs';
-import { recordPath, retryDelay, throttleAt, throttlePath, writeBody } from './data/stamp-write.mjs';
+import { recordPath, throttlePath, writeBody, writeWithRetry } from './data/stamp-write.mjs';
 import type { Auth, User } from 'firebase/auth';
 export type Stamp = { anchor: string; x: number; y: number; kind: number; angle: number; createdAt: number };
 export type PlacedStamp = Stamp & { id: string; owner: string; slot: string; avatar?: string };
@@ -173,68 +172,71 @@ async function transaction(path: string, update: (data: RecordData | null) => un
     if (!response.ok) throw Error('Cannot read own stamps');
     return response.json();
   };
-  // The throttle entry is read first: if anything is written after that, its compare-and-swap
-  // fails, so a second tab cannot overwrite a concurrent change.
-  for (let attempt = 0; attempt < 4; attempt++) {
-    const throttle = await read(throttlePath(identity.uid));
-    const previous = (await read(recordPath(page, identity.uid))) as RecordData | null;
-    const data = update(previous);
-    if (data === undefined) return previous;
-    const saved = await fetch(at(''), {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(writeBody(page, identity.uid, data, throttle)),
-      signal: AbortSignal.timeout(15000),
-    });
-    if (saved.status === 401 || saved.status === 403) {
-      // Denied: either another tab wrote in between (retry with fresh data) or the last write
-      // was under a second ago (wait for the database's interval); invalid data fails again.
-      const latest = await read(throttlePath(identity.uid));
-      if (throttleAt(latest) === throttleAt(throttle))
-        await new Promise((resolve) => setTimeout(resolve, retryDelay(throttleAt(latest))));
-      continue;
-    }
-    if (!saved.ok) throw Error('Cannot save stamp');
-    // The response echoes the written data (flat or nested); read it back if it is not there.
-    const body = (await saved.json()) as Record<string, any> | null;
-    const flat = recordPath(page, identity.uid),
-      nested = body?.pages?.[page];
-    const written =
-      body && flat in body
-        ? body[flat]
-        : nested && typeof nested === 'object' && identity.uid in nested
-          ? nested[identity.uid]
-          : undefined;
-    return settled(written) ? written : ((await read(flat)) as RecordData | null);
-  }
-  throw Error('Concurrent update; try again');
+  return (await writeWithRetry(
+    {
+      readThrottle: () => read(throttlePath(identity.uid)),
+      readRecord: async () => (await read(recordPath(page, identity.uid))) as RecordData | null,
+      save: async (data: unknown, throttle: unknown) => {
+        const saved = await fetch(at(''), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(writeBody(page, identity.uid, data, throttle)),
+          signal: AbortSignal.timeout(15000),
+        });
+        // Denied: another tab wrote in between, or the last write was under a second ago.
+        if (saved.status === 401 || saved.status === 403) return { denied: true };
+        if (!saved.ok) throw Error('Cannot save stamp');
+        // The response echoes the written data (flat or nested); read it back if it is not there.
+        const body = (await saved.json()) as Record<string, any> | null;
+        const flat = recordPath(page, identity.uid),
+          nested = body?.pages?.[page];
+        const written =
+          body && flat in body
+            ? body[flat]
+            : nested && typeof nested === 'object' && identity.uid in nested
+              ? nested[identity.uid]
+              : undefined;
+        return { record: settled(written) ? written : ((await read(flat)) as RecordData | null) };
+      },
+      wait: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
+    },
+    update,
+  )) as RecordData | null;
 }
+const recordOf = (account: Account, stamps: Record<string, unknown> | undefined) =>
+  stamps === undefined
+    ? undefined
+    : Object.keys(stamps).length
+      ? { stamps, updatedAt: timestamp(), avatar: account.avatar }
+      : null;
 export async function place(path: string, stamp: Omit<Stamp, 'createdAt'>, account: Account) {
   let slot = '0';
   const data = await transaction(path, (data) => {
-    const existing = Object.fromEntries(stampEntries(data)) as Record<string, Stamp>;
-    const stamps: Record<string, unknown> = { ...existing };
-    slot =
-      ['0', '1', '2', '3', '4'].find((s) => !stamps[s]) ||
-      Object.keys(stamps).sort((a, b) => existing[a].createdAt - existing[b].createdAt)[0];
-    stamps[slot] = { ...stamp, createdAt: timestamp() };
-    return { stamps, updatedAt: timestamp(), avatar: account.avatar };
+    const edit = placeIn(data, stamp, timestamp());
+    slot = edit.slot;
+    return recordOf(account, edit.stamps);
   });
   const stamps = placed(account.uid, data);
   return { owner: account.uid, stamps, placed: stamps.find((s) => s.slot === slot)! };
 }
 export async function remove(path: string, target: PlacedStamp, account: Account) {
-  const data = await transaction(path, (data) => {
-    const stamps = Object.fromEntries(stampEntries(data)) as Record<string, Stamp>;
-    // Do not delete a newer stamp placed in this slot by another tab.
-    if (
-      !stamps[target.slot] ||
-      !sameStamp(stamps[target.slot], target) ||
-      stamps[target.slot].createdAt !== target.createdAt
-    )
-      return undefined;
-    delete stamps[target.slot];
-    return Object.keys(stamps).length ? { stamps, updatedAt: timestamp(), avatar: account.avatar } : null;
-  });
+  // Does nothing if the slot now holds a newer stamp placed by another tab.
+  const data = await transaction(path, (data) => recordOf(account, removeFrom(data, target).stamps));
   return { owner: account.uid, stamps: placed(account.uid, data) };
+}
+// Moving a sticker is one write of its own slot, so it never pushes out another sticker.
+export async function move(
+  path: string,
+  target: PlacedStamp,
+  stamp: Omit<Stamp, 'createdAt'>,
+  account: Account,
+) {
+  let slot = target.slot;
+  const data = await transaction(path, (data) => {
+    const edit = moveIn(data, target, stamp, timestamp());
+    slot = edit.slot;
+    return recordOf(account, edit.stamps);
+  });
+  const stamps = placed(account.uid, data);
+  return { owner: account.uid, stamps, placed: stamps.find((s) => s.slot === slot)! };
 }

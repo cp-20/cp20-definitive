@@ -17,3 +17,21 @@ export function writeBody(page, uid, record, throttle) {
 // How long to wait before writing again after the previous write at `at` (server time),
 // judged with the local clock; at least a little so a skewed clock still backs off.
 export const retryDelay = (at, now = Date.now()) => Math.min(1100, Math.max(150, at + 1100 - now));
+// One read-modify-write of a sticker record. The throttle entry is read first: if anything is
+// written after that, the compare-and-swap fails, so a second tab cannot overwrite a
+// concurrent change. A denied write is retried with fresh data once the database's interval
+// since the latest write (ours or another tab's) has passed, so the retry is not denied
+// again for coming too soon; data the rules reject stays denied and runs out of attempts.
+// `update` returns the new record, or undefined to leave it as it is.
+export async function writeWithRetry({ readThrottle, readRecord, save, wait }, update, attempts = 4) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const throttle = await readThrottle();
+    const previous = await readRecord();
+    const data = update(previous);
+    if (data === undefined) return previous;
+    const saved = await save(data, throttle);
+    if (!saved.denied) return saved.record;
+    await wait(retryDelay(throttleAt(await readThrottle())));
+  }
+  throw Error('Concurrent update; try again');
+}

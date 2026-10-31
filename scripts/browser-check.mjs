@@ -186,6 +186,26 @@ try {
   report.interactions.push(
     'zero document reloads across navigation, persistent header, back/forward, scroll and filters restored, cross-page anchor, one active Firebase stream',
   );
+  // Reloading, and coming back from another document, return to where the visitor was.
+  {
+    const other = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await other.route(/firebaseio\.com|firebasedatabase\.app|googleapis\.com/, (route) => route.abort());
+    const tab = await other.newPage();
+    await tab.goto(origin + '/articles');
+    await tab.evaluate(() => scrollTo({ top: 2500, behavior: 'instant' }));
+    await tab.waitForTimeout(200);
+    await tab.reload();
+    await tab.waitForTimeout(800);
+    if (Math.abs((await tab.evaluate(() => scrollY)) - 2500) > 2) throw Error('Reload scroll restoration');
+    await tab.goto(origin + '/feed.xml');
+    await tab.goBack();
+    await tab.waitForTimeout(800);
+    if (Math.abs((await tab.evaluate(() => scrollY)) - 2500) > 2) throw Error('Cross-document back scroll');
+    await other.close();
+  }
+  report.interactions.push(
+    'scroll position restored after a reload and after coming back from another document',
+  );
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(origin + '/');
@@ -349,8 +369,53 @@ try {
   await expect(visitor.locator('.sticker-sheet')).toBeHidden();
   await expect(visitor.locator('.sticker-tab')).toBeVisible();
   if (Object.keys(db.pages.get('home') || {}).length) throw Error('Test stickers left in the mock database');
+  // With all five stickers placed, moving one keeps the other four (the oldest included), and
+  // two tabs of one account placing at once both keep their sticker.
+  await page.goto(origin + '/about');
+  await settle();
+  const second = await context.newPage();
+  await second.goto(origin + '/about');
+  const stick = async (tab, fx) => {
+    if (!(await tab.locator('.sticker-sheet').isVisible())) await tab.locator('.sticker-tab').click();
+    const box = await tab.locator('[data-stamp-anchor=profile]').boundingBox();
+    await tab.getByRole('button', { name: 'しーぴーのシールを貼る', exact: true }).click();
+    await tab.mouse.click(box.x + box.width * fx, box.y + Math.min(box.height, 400) * 0.5);
+  };
+  for (const fx of [0.1, 0.25, 0.4, 0.55, 0.7]) await stick(page, fx);
+  await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
+  const five = () => db.pages.get('about')?.[user.uid]?.stamps || {};
+  const beforeMove = structuredClone(five());
+  if (Object.keys(beforeMove).length !== 5) throw Error('Five stickers not saved');
+  const lift = await page.locator(`[data-stamp-id="${user.uid}-3"]`).boundingBox();
+  await page.mouse.click(lift.x + lift.width / 2, lift.y + lift.height / 2);
+  await page.mouse.move(lift.x + 40, lift.y + 140, { steps: 6 });
+  await page.mouse.click(lift.x + 40, lift.y + 140);
+  await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
+  await expect(page.locator(`[data-stamp-id^="${user.uid}-"]`)).toHaveCount(5);
+  const afterMove = five();
+  if (
+    Object.keys(afterMove).length !== 5 ||
+    ['0', '1', '2', '4'].some(
+      (slot) => JSON.stringify(afterMove[slot]) !== JSON.stringify(beforeMove[slot]),
+    ) ||
+    afterMove[3].createdAt !== beforeMove[3].createdAt ||
+    afterMove[3].y === beforeMove[3].y
+  )
+    throw Error('Moving one of five stickers changed the others');
+  db.pages.delete('about');
+  await expect(page.locator(`[data-stamp-id^="${user.uid}-"]`)).toHaveCount(0);
+  await Promise.all([stick(page, 0.3), stick(second, 0.6)]);
+  for (const tab of [page, second])
+    await expect(tab.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
+  if (Object.keys(five()).length !== 2) throw Error('Concurrent tabs lost a sticker');
+  for (const tab of [page, second]) {
+    await expect(tab.locator('.stamp-retry')).toHaveCount(0);
+    await expect(tab.locator(`[data-stamp-id^="${user.uid}-"]`)).toHaveCount(2);
+  }
+  await second.close();
+  db.pages.delete('about');
   report.interactions.push(
-    'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift and peel; responsive anchors',
+    'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift and peel; moving one of five stickers keeps the rest; two tabs placing at once; responsive anchors',
   );
   for (const [width, height] of [
     [390, 844],

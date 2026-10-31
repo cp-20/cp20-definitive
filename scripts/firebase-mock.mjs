@@ -129,10 +129,12 @@ export async function mockFirebase(
       writes.some(([keys]) => keys.length !== (keys[0] === 'pages' ? 3 : 2))
     )
       return deny();
+    // The latency comes first: the rule check and the write below are one atomic step, like the
+    // database's, so two tabs writing at once cannot both pass the compare-and-swap.
+    await new Promise((resolve) => setTimeout(resolve, db.latency));
     const now = Date.now();
     const previous = db.throttle.get(owner);
     if ((previous?.at ?? 0) !== throttle[1]?.prev || (previous && now < previous.at + 1000)) return deny();
-    await new Promise((resolve) => setTimeout(resolve, db.latency));
     const resolve = (value) =>
       value && typeof value === 'object'
         ? '.sv' in value
