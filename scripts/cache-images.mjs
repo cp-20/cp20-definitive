@@ -4,13 +4,21 @@ import { pathToFileURL } from 'node:url';
 import { imageSize } from 'image-size';
 const directory = new URL('../public/media/', import.meta.url);
 const manifestFile = new URL('../src/data/image-cache.json', import.meta.url);
+const previewsFile = new URL('../src/data/previews.json', import.meta.url);
+export const maxImageBytes = 15_000_000;
 export function rasterExtension(bytes) {
   const type = imageSize(bytes).type;
   const extensions = { jpg: 'jpg', png: 'png', gif: 'gif', webp: 'webp', avif: 'avif', ico: 'ico' };
   if (!extensions[type]) throw Error('Unsupported image format');
   return extensions[type];
 }
-export async function cacheImages(force = false) {
+/**
+ * @param {boolean} [force]
+ * @param {Record<string, {image?: string|null, icon?: string|null, width?: number, height?: number}>} [previousPreviews]
+ *   previews.json as it was before this run's syncPreviews; pages whose new image or icon cannot be cached
+ *   fall back to these entries (and their cached files) instead of losing the image.
+ */
+export async function cacheImages(force = false, previousPreviews) {
   await mkdir(directory, { recursive: true });
   const load = (name) =>
     readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8').then(JSON.parse);
@@ -54,7 +62,7 @@ export async function cacheImages(force = false) {
           let size = 0;
           for await (const part of response.body) {
             size += part.length;
-            if (size > 15_000_000) throw Error('Image too large');
+            if (size > maxImageBytes) throw Error('Image too large');
             parts.push(part);
           }
           const bytes = Buffer.concat(parts);
@@ -77,6 +85,30 @@ export async function cacheImages(force = false) {
       }
     }),
   );
+  let previewsReverted = false;
+  if (previousPreviews) {
+    for (const [page, preview] of Object.entries(previews)) {
+      const before = previousPreviews[page];
+      for (const field of ['image', 'icon']) {
+        const source = preview[field];
+        const fallback = before?.[field];
+        if (!source || next[source] || !fallback || fallback === source || !previous[fallback]) continue;
+        const kept = await access(new URL(`../public${previous[fallback].file}`, import.meta.url))
+          .then(() => true)
+          .catch(() => false);
+        if (!kept) continue;
+        next[fallback] = previous[fallback];
+        preview[field] = fallback;
+        if (field === 'image') Object.assign(preview, { width: before.width, height: before.height });
+        previewsReverted = true;
+        console.warn(`Image cache: ${new URL(page).hostname}; new ${field} not cached, kept previous one`);
+      }
+    }
+    if (previewsReverted) {
+      await writeFile(new URL(previewsFile.href + '.tmp'), JSON.stringify(previews, null, 2) + '\n');
+      await rename(new URL(previewsFile.href + '.tmp'), previewsFile);
+    }
+  }
   const content = (object) =>
     Object.fromEntries(
       Object.keys(object)

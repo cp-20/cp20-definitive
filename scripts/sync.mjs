@@ -6,7 +6,13 @@ import { fetchGhostPosts } from './ghost.mjs';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 
 const dataPath = new URL('../src/data/generated.json', import.meta.url);
-const parser = new XMLParser({ ignoreAttributes: false, processEntities: true });
+// Tag values stay strings ('2024', '1e3', 'true' are valid titles); numeric/hex references are decoded.
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  processEntities: true,
+  htmlEntities: true,
+  parseTagValue: false,
+});
 import { safeUrl, article, mergeArticles } from '../src/data/normalize.mjs';
 export { safeUrl, article, mergeArticles } from '../src/data/normalize.mjs';
 export function parseFeed(xml, source) {
@@ -14,11 +20,30 @@ export function parseFeed(xml, source) {
   const data = parser.parse(xml);
   const items = data.rss?.channel?.item;
   if (!items) throw new Error('Feed contained no articles');
-  return [items]
-    .flat()
-    .map((i) => article(typeof i.title === 'object' ? i.title['#text'] : i.title, i.link, i.pubDate, source));
+  const rows = [];
+  for (const i of [items].flat()) {
+    try {
+      rows.push(
+        article(typeof i?.title === 'object' ? i.title['#text'] : i?.title, i?.link, i?.pubDate, source),
+      );
+    } catch {
+      // One malformed item must not hide the rest of the feed.
+      console.warn(`::warning::${source}: skipped an invalid feed item`);
+    }
+  }
+  if (!rows.length) throw new Error('Feed contained no valid articles');
+  return rows;
 }
-export async function request(url, format = 'json', fetcher = fetch, extraHeaders = {}) {
+/**
+ * @param {{maxBytes?: number, truncate?: boolean}} [options] truncate keeps the first maxBytes instead of failing.
+ */
+export async function request(
+  url,
+  format = 'json',
+  fetcher = fetch,
+  extraHeaders = {},
+  { maxBytes = 5_000_000, truncate = false } = {},
+) {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const headers = {
@@ -38,8 +63,12 @@ export async function request(url, format = 'json', fetcher = fetch, extraHeader
       let size = 0;
       const chunks = [];
       for await (const chunk of response.body) {
+        if (size + chunk.length > maxBytes) {
+          if (!truncate) throw new Error(`Response exceeds ${maxBytes} bytes`);
+          chunks.push(chunk.subarray(0, maxBytes - size));
+          break;
+        }
         size += chunk.length;
-        if (size > 5_000_000) throw new Error('Response exceeds 5 MB');
         chunks.push(chunk);
       }
       const text = Buffer.concat(chunks).toString('utf8');
@@ -100,12 +129,32 @@ const providers = {
       (_, rows) => rows.length === 100,
     ),
 };
-export async function collect(previous, loaders = providers, now = new Date().toISOString()) {
+export async function collect(
+  previous,
+  loaders = providers,
+  now = new Date().toISOString(),
+  allowShrink = process.env.ALLOW_TRAP_SHRINK === '1',
+) {
   const next = structuredClone(previous);
   const incoming = [];
   let successes = 0;
   let retained = previous.articles;
   const results = await Promise.allSettled(Object.values(loaders).map((load) => load()));
+  // trap.jp replaces its previous articles, so a sudden large drop is treated as a failure unless confirmed.
+  const trapIndex = Object.keys(loaders).indexOf('trap.jp');
+  const trapBefore = previous.articles.filter((a) => a.source === 'trap.jp').length;
+  if (
+    trapIndex >= 0 &&
+    !allowShrink &&
+    results[trapIndex].status === 'fulfilled' &&
+    trapBefore >= 4 &&
+    results[trapIndex].value.length * 2 < trapBefore
+  ) {
+    console.warn(
+      `::warning::trap.jp: ${results[trapIndex].value.length} of ${trapBefore} posts returned; set ALLOW_TRAP_SHRINK=1 to accept`,
+    );
+    results[trapIndex] = { status: 'rejected', reason: Error('Unconfirmed trap.jp shrink') };
+  }
   Object.keys(loaders).forEach((source, index) => {
     const result = results[index];
     if (result.status === 'fulfilled' && (result.value.length || source === 'trap.jp')) {
@@ -148,10 +197,13 @@ async function main() {
   const tmp = new URL('./generated.json.tmp', dataPath);
   await writeFile(tmp, JSON.stringify(next, null, 2) + '\n');
   await rename(tmp, dataPath);
+  const previewsPath = new URL('./previews.json', dataPath);
+  const previousPreviews = JSON.parse(await readFile(previewsPath, 'utf8').catch(() => '{}'));
   const { syncPreviews } = await import('./previews.mjs');
   const previewChanged = await syncPreviews(request);
   const { cacheImages } = await import('./cache-images.mjs');
-  const imagesChanged = await cacheImages();
+  // A new OG image that cannot be cached falls back to the page's previous image and file.
+  const imagesChanged = await cacheImages(false, previousPreviews);
   const changed =
     imagesChanged ||
     previewChanged ||

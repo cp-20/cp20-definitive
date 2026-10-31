@@ -1,6 +1,8 @@
 import { readFile, writeFile, rename } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { imageSize } from 'image-size';
+import { headTags } from './html-tags.mjs';
+import { rasterExtension, maxImageBytes } from './cache-images.mjs';
 import { mergeArticles } from '../src/data/normalize.mjs';
 const file = new URL('../src/data/previews.json', import.meta.url);
 const decode = (s) =>
@@ -18,16 +20,15 @@ const https = (s, base) => {
     return null;
   }
 };
+// Metadata sizes come from third-party pages: only plausible positive integers are kept.
+const size = (value, fallback) => {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 && n <= 10000 ? n : fallback;
+};
 export function parsePreview(html, url) {
   const metas = {},
     links = [];
-  for (const tag of html.match(/<(?:meta|link)\s[^>]*>/gi) || []) {
-    const a = Object.fromEntries(
-      [...tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g)].map((m) => [
-        m[1].toLowerCase(),
-        m[2] ?? m[3] ?? m[4],
-      ]),
-    );
+  for (const a of headTags(html, ['meta', 'link'])) {
     if (a.content) metas[(a.property || a.name || '').toLowerCase()] ??= a.content;
     if (a.rel && a.href) links.push(a);
   }
@@ -37,31 +38,29 @@ export function parsePreview(html, url) {
   return {
     image,
     icon: icon ? https(icon.href, url) : null,
-    width: +metas['og:image:width'] || 1200,
-    height: +metas['og:image:height'] || 630,
+    width: size(metas['og:image:width'], 1200),
+    height: size(metas['og:image:height'], 630),
   };
 }
-async function dimensions(url) {
-  const r = await fetch(url, {
-    signal: AbortSignal.timeout(12000),
-    headers: { 'User-Agent': 'cp20.dev link preview collector' },
+// Accept a new OG image only when cache-images would also accept it (raster, at most 15 MB);
+// otherwise the page keeps its previous image and the previously cached file.
+export async function dimensions(url, fetcher = fetch) {
+  const r = await fetcher(url, {
+    signal: AbortSignal.timeout(20000),
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; cp20.dev image collector)' },
   });
-  if (!r.ok) throw Error();
-  let size = 0;
+  if (!r.ok) throw Error('Image unavailable');
+  let total = 0;
   const chunks = [];
-  const reader = r.body.getReader();
-  try {
-    while (size < 2_000_000) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      size += value.length;
-    }
-  } finally {
-    await reader.cancel();
+  for await (const chunk of r.body) {
+    total += chunk.length;
+    if (total > maxImageBytes) throw Error('Image too large');
+    chunks.push(chunk);
   }
-  const result = imageSize(Buffer.concat(chunks));
-  return { width: result.width, height: result.height };
+  const bytes = Buffer.concat(chunks);
+  rasterExtension(bytes);
+  const result = imageSize(bytes);
+  return { width: size(result.width, 1200), height: size(result.height, 630) };
 }
 export async function syncPreviews(request, force = false) {
   const [previous, works, manual, snapshot] = await Promise.all([
@@ -88,17 +87,30 @@ export async function syncPreviews(request, force = false) {
     Array.from({ length: 6 }, async () => {
       for (let url; (url = queue.shift()); ) {
         try {
-          const html = await request(url, 'html', fetch, {
-            Accept: 'text/html',
-            'User-Agent': 'Mozilla/5.0 (compatible; cp20.dev link preview collector)',
-          });
+          const html = await request(
+            url,
+            'html',
+            fetch,
+            {
+              Accept: 'text/html',
+              'User-Agent': 'Mozilla/5.0 (compatible; cp20.dev link preview collector)',
+            },
+            { maxBytes: 1_000_000, truncate: true },
+          );
           const preview = parsePreview(html, url);
-          if (preview.image) {
+          const old = previous[url];
+          const keepOldImage = () => {
+            // Image, width and height travel together so a stale image never gets new dimensions.
+            preview.image = old?.image || null;
+            preview.width = (old?.image && old.width) || 1200;
+            preview.height = (old?.image && old.height) || 630;
+          };
+          if (!preview.image) keepOldImage();
+          else {
             try {
               Object.assign(preview, await dimensions(preview.image));
             } catch {
-              if (!previous[url]?.image) preview.image = null;
-              else preview.image = previous[url].image;
+              keepOldImage();
             }
           }
           if (preview.icon) {
@@ -109,11 +121,7 @@ export async function syncPreviews(request, force = false) {
               preview.icon = previous[url]?.icon || null;
             }
           }
-          next[url] = {
-            ...preview,
-            image: preview.image || previous[url]?.image || null,
-            checkedAt: new Date().toISOString(),
-          };
+          next[url] = { ...preview, checkedAt: new Date().toISOString() };
           fetched++;
         } catch {
           console.warn(`Preview unavailable: ${new URL(url).hostname}; retaining previous metadata`);

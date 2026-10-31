@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { handleRequest } from '../dist/server/server.js';
-import { mergeArticles } from '../src/data/normalize.mjs';
+import { mergeArticles, stripInvalidText } from '../src/data/normalize.mjs';
 const load = async (name) =>
   JSON.parse(await readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8'));
 const [baseWorks, manual, snapshot] = await Promise.all(['works', 'manual', 'generated'].map(load));
@@ -20,7 +20,10 @@ for (const path of paths) {
   await writeFile(output, await response.text());
 }
 const escape = (s) =>
-  s.replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]);
+  stripInvalidText(s).replace(
+    /[<>&"']/g,
+    (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c],
+  );
 await writeFile(
   'dist/client/sitemap.xml',
   `<?xml version="1.0" encoding="utf-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths
