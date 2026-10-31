@@ -5,15 +5,20 @@ export function currentUrl() {
 }
 export function pageInfo(path = currentUrl().pathname.replace(/\/$/, '') || '/') {
   const work = works.find((w) => path === `/works/${w.id}`);
-  const title =
-    work?.title ??
-    ({ '/': 'しーぴーのポートフォリオ', '/about': 'プロフィール', '/works': '作品一覧', '/articles': '記事' }[
-      path
-    ] ||
-      'ページが見つかりません');
+  const known = (
+    {
+      '/': 'しーぴーのポートフォリオ',
+      '/about': 'プロフィール',
+      '/works': '作品一覧',
+      '/articles': '記事',
+    } as Record<string, string>
+  )[path];
+  const title = work?.title ?? known ?? 'ページが見つかりません';
   return {
     path,
     work,
+    // Unknown paths render the 404 page: noindex, and no canonical/og:url pointing at them.
+    found: !!(work || known),
     title: `${title} — cp20.dev`,
     description:
       work?.description ||

@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { handleRequest } from '../dist/server/server.js';
-import { mergeArticles, stripInvalidText } from '../src/data/normalize.mjs';
+import { mergeArticles } from '../src/data/normalize.mjs';
+import { buildFeed } from './feed.mjs';
 import { subsetSiteFonts } from './fonts.mjs';
 const load = async (name) =>
   JSON.parse(await readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8'));
@@ -20,11 +21,6 @@ for (const path of paths) {
   await mkdir(output.slice(0, output.lastIndexOf('/')), { recursive: true });
   await writeFile(output, await response.text());
 }
-const escape = (s) =>
-  stripInvalidText(s).replace(
-    /[<>&"']/g,
-    (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c],
-  );
 await writeFile(
   'dist/client/sitemap.xml',
   `<?xml version="1.0" encoding="utf-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths
@@ -32,16 +28,7 @@ await writeFile(
     .map((p) => `<url><loc>https://cp20.dev${p === '/' ? '' : p}</loc></url>`)
     .join('')}</urlset>`,
 );
-await writeFile(
-  'dist/client/feed.xml',
-  `<?xml version="1.0" encoding="utf-8"?><rss version="2.0"><channel><title>cp20.dev — Writing</title><link>https://cp20.dev/articles</link><description>しーぴーの記事</description><language>ja</language>${articles
-    .slice(0, 50)
-    .map(
-      (a) =>
-        `<item><title>${escape(a.title)}</title><link>${escape(a.url)}</link><guid isPermaLink="true">${escape(a.url)}</guid><pubDate>${new Date(a.date).toUTCString()}</pubDate></item>`,
-    )
-    .join('')}</channel></rss>`,
-);
+await writeFile('dist/client/feed.xml', buildFeed(articles));
 // The Vite manifest is only for the build; dist/client is published as-is.
 await rm('dist/client/.vite', { recursive: true, force: true });
 const fonts = await subsetSiteFonts('dist/client');

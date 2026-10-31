@@ -224,6 +224,7 @@ export function About() {
         <div class="profile-intro">
           <p class="eyebrow">PROFILE / WEB ENGINEER</p>
           <h1>
+            <small class="visually-hidden">プロフィール：</small>
             しーぴー<span>cp20</span>
           </h1>
 
@@ -423,7 +424,10 @@ export function Articles() {
         <p class="eyebrow">WRITING</p>
         <h1>記事</h1>
       </header>
-      <section aria-label="記事一覧">
+      <section aria-labelledby="article-list-title">
+        <h2 id="article-list-title" class="visually-hidden">
+          記事一覧
+        </h2>
         <div class="article-toolbar">
           <div class="source-filters" role="group" aria-label="掲載先で絞り込む">
             <For each={['', ...names]}>

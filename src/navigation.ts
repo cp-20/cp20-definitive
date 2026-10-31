@@ -25,6 +25,32 @@ function markSheet(prefix: string) {
   root.setProperty(`--${prefix}-top`, `${Math.max(0, sheet.top)}px`);
   root.setProperty(`--${prefix}-bottom`, `${Math.max(0, innerHeight - sheet.bottom)}px`);
 }
+// Mirror Document.tsx: known pages get canonical + og:url, the 404 page gets noindex instead.
+function syncIndexing(url: string | undefined) {
+  const head = document.head;
+  const tag = <T extends HTMLElement>(selector: string, create: () => T) => {
+    let el = head.querySelector<T>(selector);
+    if (!el) head.append((el = create()));
+    return el;
+  };
+  if (url) {
+    head.querySelector('meta[name="robots"]')?.remove();
+    tag('link[rel="canonical"]', () =>
+      Object.assign(document.createElement('link'), { rel: 'canonical' }),
+    ).href = url;
+    tag('meta[property="og:url"]', () => {
+      const meta = document.createElement('meta');
+      meta.setAttribute('property', 'og:url');
+      return meta;
+    }).content = url;
+  } else {
+    head.querySelector('link[rel="canonical"]')?.remove();
+    head.querySelector('meta[property="og:url"]')?.remove();
+    tag('meta[name="robots"]', () =>
+      Object.assign(document.createElement('meta'), { name: 'robots' }),
+    ).content = 'noindex';
+  }
+}
 export function createNavigation() {
   const [path, setPath] = createSignal(currentUrl().pathname.replace(/\/$/, '') || '/');
   onSettled(() => {
@@ -80,10 +106,7 @@ export function createNavigation() {
         for (const selector of ['meta[name="description"]', 'meta[property="og:description"]'])
           document.querySelector(selector)?.setAttribute('content', info.description);
         document.querySelector('meta[property="og:title"]')?.setAttribute('content', info.title);
-        document
-          .querySelector('meta[property="og:url"]')
-          ?.setAttribute('content', `https://cp20.dev${info.path}`);
-        document.querySelector('link[rel="canonical"]')?.setAttribute('href', `https://cp20.dev${info.path}`);
+        syncIndexing(info.found ? `https://cp20.dev${info.path}` : undefined);
         document.dispatchEvent(new Event('cp20:navigation'));
         const target = url.hash ? document.getElementById(decodeURIComponent(url.hash.slice(1))) : null;
         if (restore) window.scrollTo({ left: restore[0], top: restore[1], behavior: 'instant' });
