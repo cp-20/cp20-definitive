@@ -6,12 +6,15 @@ import { featuredIds } from '../data/editorial';
 export const projects = featuredIds.map((id) => works.find((w) => w.id === id)!);
 export default function Projects() {
   const [selected, setSelected] = createSignal(0);
+  // Read out when the arrows or a swipe turn the deck; the tabs announce themselves on focus.
+  const [spoken, setSpoken] = createSignal('');
   let tabs!: HTMLDivElement;
-  function choose(i: number, focus = false) {
+  function choose(i: number, focus = false, speak = !focus) {
     const next = (i + 3) % 3;
     if (next === selected()) return focus && (tabs.children[next] as HTMLButtonElement).focus();
     setSelected(next);
     if (focus) (tabs.children[next] as HTMLButtonElement).focus();
+    if (speak) setSpoken(`0${next + 1} / 03 ${projects[next].title}`);
   }
   const keyboard = (e: KeyboardEvent) => {
     if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) {
@@ -75,7 +78,7 @@ export default function Projects() {
               aria-selected={selected() === i() ? 'true' : 'false'}
               aria-controls={`project-${i()}`}
               tabindex={selected() === i() ? 0 : -1}
-              onClick={() => choose(i())}
+              onClick={() => choose(i(), false, false)}
               data-project-tab={i()}
             >
               <span class="project-spot">
@@ -148,6 +151,9 @@ export default function Projects() {
       <div class="featured-bottom">
         <span class="project-page">
           0{selected() + 1} <span>/ 03</span>
+        </span>
+        <span class="visually-hidden" role="status">
+          {spoken()}
         </span>
         <div class="deck-arrows">
           <button class="icon-button" aria-label="前の作品" onClick={() => choose(selected() - 1)}>

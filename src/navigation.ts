@@ -51,6 +51,15 @@ function syncIndexing(url: string | undefined) {
     ).content = 'noindex';
   }
 }
+// A hash target is focused through its own heading, so a screen reader announces the section.
+function focusableTarget(target: HTMLElement) {
+  if (
+    /^H[1-6]$/.test(target.tagName) ||
+    target.matches('a[href], button, input, select, textarea, [tabindex]')
+  )
+    return target;
+  return target.querySelector<HTMLElement>('h1, h2, h3, h4, h5, h6') || target;
+}
 export function createNavigation() {
   const [path, setPath] = createSignal(currentUrl().pathname.replace(/\/$/, '') || '/');
   onSettled(() => {
@@ -115,11 +124,12 @@ export function createNavigation() {
           // A smooth scroll still running when the link was clicked can leave the jump short.
           aim = target;
         } else window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        const heading = document.querySelector<HTMLElement>('main h1');
-        if (heading) {
-          heading.tabIndex = -1;
-          heading.focus({ preventScroll: true });
-        }
+        // Focus lands where the link pointed: the target section's heading, else the page heading.
+        // Otherwise the next Tab would start back at the top of the page.
+        const heading =
+          (target && !restore && focusableTarget(target)) || document.querySelector<HTMLElement>('main h1');
+        if (heading && heading.tabIndex < 0 && !heading.hasAttribute('tabindex')) heading.tabIndex = -1;
+        heading?.focus({ preventScroll: true });
         markSheet('flip-new');
       };
       if (

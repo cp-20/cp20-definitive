@@ -68,10 +68,10 @@ try {
   report.hover = { before, after };
   await page.screenshot({ path: '.qa/works-hover.png' });
   await page.goto('http://localhost:4321/');
-  await page.getByRole('button', { name: 'クローバー', exact: true }).click();
+  await page.getByRole('button', { name: 'クローバーのシールを貼る', exact: true }).click();
   await page.mouse.click(500, 195);
   await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
-  await page.getByRole('button', { name: 'クローバー', exact: true }).click();
+  await page.getByRole('button', { name: 'クローバーのシールを貼る', exact: true }).click();
   await page.mouse.click(650, 205);
   await expect(page.locator('[data-pending=true]')).toHaveCount(0, { timeout: 20000 });
   await expect(page.locator('.sticker-count')).toHaveText('2');

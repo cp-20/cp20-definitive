@@ -335,7 +335,7 @@ try {
   // A second visitor places, lifts and peels a sticker using actual touch events.
   await visitor.locator('.sticker-tab').tap();
   await expect(visitor.locator('.sticker-sheet')).toBeVisible();
-  await visitor.getByRole('button', { name: 'ハート', exact: true }).tap();
+  await visitor.getByRole('button', { name: 'ハートのシールを貼る', exact: true }).tap();
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('[data-pending=true]')).toHaveCount(1);
   await expect(visitor.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
@@ -389,16 +389,31 @@ try {
       await route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Test outage"}' });
     } else await route.fallback();
   });
-  await page.getByRole('button', { name: 'クローバー', exact: true }).focus();
+  const clover = page.getByRole('button', { name: 'クローバーのシールを貼る', exact: true });
+  // Escape puts the sticker back and focus returns to the sheet sticker it came from.
+  await clover.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.stamp-overlay')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(clover).toBeFocused();
   await page.keyboard.press('Enter');
   await page.keyboard.press('ArrowUp');
   await page.keyboard.press('Enter');
+  await expect(clover).toBeFocused();
+  await expect(page.locator('p.visually-hidden[role=status]')).toHaveText(
+    /^クローバーを貼りました。残り\d枚$/,
+  );
   await expect(page.locator('[data-pending=true]')).toHaveCount(1);
   await expect(page.locator('.stamp-status')).toContainText('保存できませんでした', { timeout: 20000 });
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '再試行' })).toBeVisible();
+  // An in-app link to a section moves focus to that section, so the next Tab continues there.
+  await page.goto(origin + '/');
+  await page.locator('a[href="/about#credits"]').first().focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#credits h2')).toBeFocused();
   report.interactions.push(
-    'failed saves roll back and expose retry; keyboard placement; reduced motion; complete static content without JS',
+    'failed saves roll back and expose retry; keyboard placement with focus return and spoken result; section links move focus; reduced motion; complete static content without JS',
   );
   if (errors.length || externalImages.length || report.pages.some((p) => p.violations.length))
     throw Error(
