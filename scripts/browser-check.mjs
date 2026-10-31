@@ -272,12 +272,16 @@ try {
   await mockFirebase(guestContext, { db });
   const guest = await guestContext.newPage();
   await guest.goto(origin + '/');
+  // At 1440px the sheet would cover the page, so it starts as the closed tab (sheet-start.mjs).
+  await guest.locator('.sticker-tab').click();
   await expect(guest.getByRole('button', { name: 'Google でログイン' })).toBeVisible();
   await guest.getByRole('button', { name: /^クローバー/ }).click();
   await expect(guest.locator('.stamp-overlay')).toHaveCount(0);
   await expect(guest.locator('.sticker-login')).toHaveAttribute('data-nudge', 'a');
   await beginLayout('main,.site-header,.site-footer');
-  // The sticker sheet is open by default on wide screens.
+  // At 1440px the sheet starts closed so it never covers the page; open it from the tab.
+  await expect(page.locator('.sticker-sheet')).toBeHidden();
+  await page.locator('.sticker-tab').click();
   await expect(page.locator('.sticker-sheet')).toBeVisible();
   await expect(page.locator('.account-avatar img')).toHaveAttribute(
     'src',
@@ -298,7 +302,7 @@ try {
   };
   await page.route('https://**.firebasedatabase.app/**', hold);
   // Click a sticker to hold it, then click the page to stick it.
-  await page.getByRole('button', { name: 'しーぴー', exact: true }).click();
+  await page.getByRole('button', { name: 'しーぴーのシールを貼る', exact: true }).click();
   await expect(page.locator('.stamp-overlay')).toBeVisible();
   const anchor = await page.locator('[data-stamp-anchor=intro]').boundingBox();
   await beginLayout('main,.site-header,.site-footer');

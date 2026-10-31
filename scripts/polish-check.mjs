@@ -2,6 +2,8 @@ import { chromium, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { writeFile } from 'node:fs/promises';
 import { mockFirebase, signInAs } from './firebase-mock.mjs';
+const origin = process.env.CHECK_ORIGIN || 'http://localhost:4321';
+const outputDir = process.env.CHECK_OUTPUT_DIR || '.qa';
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
 // Stickers run against an in-memory database with a seeded Google sign-in (see firebase-mock.mjs).
@@ -19,7 +21,7 @@ let release = () => {};
 try {
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
-    await page.goto('http://localhost:4321/about#manga');
+    await page.goto(origin + '/about#manga');
     await page.locator('#manga').scrollIntoViewIfNeeded();
     await page.waitForTimeout(400);
     // Choosing a spine pulls that book out; on wide screens its cover keeps the book's proportions.
@@ -46,11 +48,11 @@ try {
     )
       throw Error('Manga shelf ' + JSON.stringify(frames));
     if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) throw Error('Overflow');
-    await page.locator('#manga').screenshot({ path: '.qa/manga-' + width + '.png' });
+    await page.locator('#manga').screenshot({ path: `${outputDir}/manga-${width}.png` });
     report.viewports.push({ width, frames });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto('http://localhost:4321/works');
+  await page.goto(origin + '/works');
   const card = page.locator('.work-thumbnail').first();
   await card.scrollIntoViewIfNeeded();
   const state = async () =>
@@ -66,8 +68,10 @@ try {
   if (JSON.stringify(before) !== JSON.stringify(after))
     throw Error('OG frame moved ' + JSON.stringify({ before, after }));
   report.hover = { before, after };
-  await page.screenshot({ path: '.qa/works-hover.png' });
-  await page.goto('http://localhost:4321/');
+  await page.screenshot({ path: `${outputDir}/works-hover.png` });
+  await page.goto(origin + '/');
+  // At 1440px the sheet starts as the closed tab so it never covers the page (sheet-start.mjs).
+  await page.locator('.sticker-tab').click();
   await page.getByRole('button', { name: 'クローバーのシールを貼る', exact: true }).click();
   await page.mouse.click(500, 195);
   await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
@@ -78,7 +82,7 @@ try {
   await page.reload();
   await expect(page.locator('.stamp-delete')).toHaveCount(2, { timeout: 10000 });
   const first = await page.locator('.stamp-delete').first().locator('..').getAttribute('data-stamp-id');
-  await page.screenshot({ path: '.qa/stamp-delete-desktop.png' });
+  await page.screenshot({ path: `${outputDir}/stamp-delete-desktop.png` });
   let held = false;
   const gate = new Promise((r) => (release = r));
   const handler = async (route) => {
@@ -100,7 +104,7 @@ try {
   await expect(page.locator('.stamp-delete')).toHaveCount(1);
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: '.qa/stamp-delete-mobile.png' });
+  await page.screenshot({ path: `${outputDir}/stamp-delete-mobile.png` });
   const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   report.accessibility = result.violations.map((v) => ({
     id: v.id,
@@ -118,6 +122,6 @@ try {
   console.log(JSON.stringify(report));
 } finally {
   release();
-  await writeFile('.qa/polish-check.json', JSON.stringify(report, null, 2));
+  await writeFile(`${outputDir}/polish-check.json`, JSON.stringify(report, null, 2));
   await browser.close();
 }
