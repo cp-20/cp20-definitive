@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { focusAfterRemoval, stampAnnouncement, stampPlace } from '../src/data/stamp-a11y.mjs';
+import { OVER_SHEET, focusAfterRemoval, stampAnnouncement, stampPlace } from '../src/data/stamp-a11y.mjs';
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 const stamps = await source('src/components/Stamps.tsx');
@@ -51,8 +51,13 @@ test('the placement overlay is an application with spoken feedback, and sheet st
     stamps.indexOf('class="stamp-overlay"'),
     stamps.indexOf('onKeyDown={keyboard}'),
   );
-  assert.match(overlay, /role="application"/);
-  assert.match(overlay, /aria-roledescription="シールの配置"/);
+  // Only while aiming with the keys: a pointer is guided by the hint bar, read out as it appears.
+  assert.match(overlay, /role=\{byKeys\(\) \? 'application' : undefined\}/);
+  assert.match(overlay, /aria-roledescription=\{byKeys\(\) \? 'シールの配置'/);
+  assert.match(overlay, /aria-hidden=\{byKeys\(\) \? undefined : 'true'\}/);
+  assert.match(overlay, /tabindex=\{byKeys\(\) \? 0 : undefined\}/);
+  const release = stamps.slice(stamps.indexOf('const release = '), stamps.indexOf('const aimHint = '));
+  assert.match(release, /say\(`\$\{aimHint\(h\)\}/);
   // The live region sits outside the sheet, which turns inert when closed.
   const live = stamps.indexOf('<p class="visually-hidden" role="status">');
   assert.ok(live > 0 && live < stamps.indexOf('class="sticker-sheet stamp-ui"'));
@@ -103,7 +108,10 @@ test('focus follows the sheet when it opens, closes or its header swaps on sign-
 
 test('spoken feedback reaches assistive technology even when the sheet is closed or locked', () => {
   const enqueue = stamps.slice(stamps.indexOf('function enqueue('), stamps.indexOf('function retryFailed('));
-  assert.match(enqueue, /if \(!open\(\)\)\s*say\(stampAnnouncement\('failed'/);
+  // Said from outside the sheet whether it is open or not; the sheet line shows it without repeating it.
+  assert.match(enqueue, /\.catch\([\s\S]*say\(stampAnnouncement\('failed'/);
+  assert.doesNotMatch(enqueue, /if \(!open\(\)\)\s*say/);
+  assert.match(stamps, /<span aria-hidden="true">\{failure\(\)\}<\/span>/);
   assert.match(stamps, /data-failed=\{failed\(\)\.length/);
   const ask = stamps.slice(
     stamps.indexOf('function askToSignIn('),
@@ -111,7 +119,8 @@ test('spoken feedback reaches assistive technology even when the sheet is closed
   );
   assert.match(ask, /say\(/);
   const aim = stamps.slice(stamps.indexOf('function aimWithKeys('), stamps.indexOf('function keyboard('));
-  assert.match(aim, /setTimeout\(announcePlace/);
+  assert.match(aim, /placeSoon\(450\)/);
+  assert.match(stamps, /function placeSoon\([^)]*\) \{[^}]*setTimeout\(announcePlace/);
   // Tabbing out of the placement overlay puts the sticker back, and the overlay says so.
   const overlay = stamps.slice(
     stamps.indexOf('class="stamp-overlay"'),
@@ -146,4 +155,57 @@ test('text follows the browser default font size and the works deck can be pinch
     /if \(e\.isPrimary\)[^\n]*\n\s*else swipeCancel\(\);/,
     'a second finger cancels the swipe',
   );
+});
+
+test('the sticker in hand over the sheet is announced as the sheet, and setting it down there says so', () => {
+  assert.equal(OVER_SHEET, 'シール帳の上（ここには貼れません）');
+  const announce = stamps.slice(
+    stamps.indexOf('function announcePlace('),
+    stamps.indexOf('function placeSoon('),
+  );
+  // Same order as drop(): the sheet is checked before the page under it.
+  assert.ok(
+    announce.indexOf('overSheetAt(') >= 0 && announce.indexOf('overSheetAt(') < announce.indexOf('placeAt('),
+  );
+  const drop = stamps.slice(stamps.indexOf('function drop('), stamps.indexOf('const overSheetAt'));
+  const branch = drop.slice(drop.indexOf('if (overSheetAt('), drop.indexOf('hand.flyTo(slotCenter'));
+  assert.match(branch, /say\(stampAnnouncement\('returned'/);
+});
+
+test('placing says where it went, and scrolling while aiming with the keys re-reads the place', () => {
+  assert.equal(
+    stampAnnouncement('placed', 'いいね', 4, undefined, 'traP Missionの上'),
+    'いいねをtraP Missionの上に貼りました。残り4枚',
+  );
+  assert.equal(
+    stampAnnouncement('placed', 'ハート', 0, 'クローバー', '経歴の上'),
+    'ハートを経歴の上に貼りました。一番古いクローバーをはがしました',
+  );
+  const drop = stamps.slice(stamps.indexOf('function drop('), stamps.indexOf('const overSheetAt'));
+  assert.match(drop, /const place = placeAt\(x, y\)/);
+  assert.match(stamps, /addEventListener\('scroll', scrolled/);
+  const scrolled = stamps.slice(
+    stamps.indexOf('const scrolled = '),
+    stamps.indexOf("addEventListener('scroll'"),
+  );
+  assert.match(scrolled, /placeSoon\(\)/);
+});
+
+test('peeling your last sticker or retrying a save keeps focus on the sheet and says the outcome', () => {
+  const sheetFocus = stamps.slice(
+    stamps.indexOf('function sheetFocus('),
+    stamps.indexOf('function focusPastDeleteButton('),
+  );
+  assert.match(sheetFocus, /remainingWithout\(without\) < LIMIT/);
+  assert.match(stamps, /\(next \|\| sheetFocus\(target\)\)/);
+  const retry = stamps.slice(
+    stamps.indexOf('function retryFailed('),
+    stamps.indexOf('\n  }\n', stamps.indexOf('function retryFailed(')),
+  );
+  assert.ok(retry.indexOf("matches('.stamp-retry')") < retry.indexOf('setFailed([])'));
+  assert.match(retry, /sheetFocus\(\)\?\.focus/);
+  const retried = stamps.slice(stamps.indexOf('function retried('), stamps.indexOf('function retryFailed('));
+  assert.match(retried, /if \(!op\.retry\) return/);
+  assert.match(retried, /stampAnnouncement\('saved'/);
+  assert.equal(stampAnnouncement('saved', 'いいね', 0), 'いいねを保存しました');
 });

@@ -358,7 +358,7 @@ export function About() {
                   <img
                     src={localImage(t.thumbnail)?.src}
                     {...responsive(localImage(t.thumbnail)?.srcset, sizes.track)}
-                    alt={`${t.title}の動画サムネイル`}
+                    alt=""
                     width="480"
                     height="360"
                     loading="lazy"
