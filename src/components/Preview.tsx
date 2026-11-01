@@ -4,13 +4,13 @@ import { pages } from 'virtual:cp20-media';
 // Upper bounds of the laid-out image widths (measured at 320-1920px wide viewports, and checked
 // by scripts/qa/browser-check.ts; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
 export const sizes = {
-  articleRow: '(max-width: 760px) 104px, 144px',
+  articleRow: '(max-width: 380px) 124px, (max-width: 760px) 136px, 232px',
   workGrid: '(max-width: 760px) calc(100vw - 100px), (max-width: 1100px) calc(50vw - 170px), 290px',
   featured:
     '(max-width: 760px) calc(100vw - 104px), (max-width: 900px) calc(100vw - 300px), (max-width: 1100px) calc(55vw - 200px), 470px',
   workHero: '(max-width: 760px) calc(100vw - 120px), (max-width: 1100px) calc(100vw - 300px), 930px',
-  // The open book on the /about shelf (spines show a strip of the same image).
-  bookCover: '(max-width: 460px) 230px, (max-width: 760px) calc(100vw - 230px), 216px',
+  // The open book on the /about shelf (spines show a corner of the same image).
+  bookCover: '(max-width: 760px) 176px, 222px',
   homeCover: '92px',
   homeTrack: '134px',
   track: '(max-width: 760px) calc(100vw - 88px), (max-width: 1100px) calc(50vw - 160px), 292px',

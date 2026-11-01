@@ -249,8 +249,9 @@ test('a series thumbnail hidden behind its volume 1 cover is neither fetched nor
 
 describe('plannedWidths', () => {
   for (const [width, planned] of [
-    [1200, [320, 640, 960]],
-    [1024, [320, 640]],
+    [1200, [320, 480, 640, 960]],
+    [1024, [320, 480, 640]],
+    [600, [320, 480]],
     [400, [320]],
     [300, []],
     [0, []],
