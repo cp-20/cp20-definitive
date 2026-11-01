@@ -1,6 +1,30 @@
 {
-  "updatedAt": "2026-11-01T13:42:48.588Z",
+  "updatedAt": "2026-11-01T14:27:49.442Z",
   "articles": [
+    {
+      "title": "AI Agent 時代こそ個人ブログ",
+      "url": "https://blog.cp20.dev/posts/personal-blog-in-ai-agent-era/",
+      "date": "2026-10-26T15:00:00.000Z",
+      "source": "blog.cp20.dev"
+    },
+    {
+      "title": "Vueコミュニティが最高過ぎる件 【#vuefes 参加記】",
+      "url": "https://blog.cp20.dev/posts/vue-fes-japan-2026/",
+      "date": "2026-10-24T15:00:00.000Z",
+      "source": "blog.cp20.dev"
+    },
+    {
+      "title": "LayerX を1ヶ月楽しんできました！【インターン参加記】",
+      "url": "https://blog.cp20.dev/posts/layerx-internship/",
+      "date": "2026-10-21T15:00:00.000Z",
+      "source": "blog.cp20.dev"
+    },
+    {
+      "title": "CSSの改行と折り返しを整理する",
+      "url": "https://blog.cp20.dev/posts/css-text-wrapping/",
+      "date": "2026-10-13T15:00:00.000Z",
+      "source": "blog.cp20.dev"
+    },
     {
       "title": "【低レイヤ最適化】1BRC for traP を開催しました！",
       "url": "https://trap.jp/post/2984/",
@@ -441,7 +465,27 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "JavaScript",
       "stars": 0,
-      "updatedAt": "2026-11-01T13:42:04Z",
+      "updatedAt": "2026-11-01T14:27:33Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "tsubame-mcp",
+      "url": "https://github.com/cp-20/tsubame-mcp",
+      "description": "MCP relay for operating TSUBAME from Claude cloud sessions",
+      "language": "Python",
+      "stars": 0,
+      "updatedAt": "2026-11-01T14:17:30Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "asterion-manifest",
+      "url": "https://github.com/cp-20/asterion-manifest",
+      "description": "",
+      "language": "JavaScript",
+      "stars": 2,
+      "updatedAt": "2026-11-01T14:11:32Z",
       "fork": false,
       "archived": false
     },
@@ -452,16 +496,6 @@
       "language": "TypeScript",
       "stars": 4,
       "updatedAt": "2026-10-31T14:06:15Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "asterion-manifest",
-      "url": "https://github.com/cp-20/asterion-manifest",
-      "description": "",
-      "language": "JavaScript",
-      "stars": 2,
-      "updatedAt": "2026-10-31T01:15:46Z",
       "fork": false,
       "archived": false
     },
@@ -1309,34 +1343,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T13:42:48.588Z",
+      "lastSuccess": "2026-11-01T14:27:49.442Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T13:42:48.588Z",
+      "lastSuccess": "2026-11-01T14:27:49.442Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T13:42:48.588Z",
+      "lastSuccess": "2026-11-01T14:27:49.442Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T13:42:48.588Z",
+      "lastSuccess": "2026-11-01T14:27:49.442Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T13:42:48.588Z",
+      "lastSuccess": "2026-11-01T14:27:49.442Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T13:42:48.588Z",
-      "count": 127
+      "lastSuccess": "2026-11-01T14:27:49.442Z",
+      "count": 128
+    },
+    "blog.cp20.dev": {
+      "status": "ok",
+      "lastSuccess": "2026-11-01T14:27:49.442Z",
+      "count": 4
     }
   },
-  "checkedAt": "2026-11-01T13:42:48.588Z"
+  "checkedAt": "2026-11-01T14:27:49.442Z"
 }
