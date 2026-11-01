@@ -1,5 +1,4 @@
 import { createMemo, For } from 'solid-js';
-import Icon from './Icon.tsx';
 import { OGImage, articleAnchor, sizes } from './Preview.tsx';
 import { formatDate, type Article } from '../content/content.ts';
 /**
@@ -28,7 +27,6 @@ export function ArticleRows(props: { items: Article[]; shown?: (a: Article) => b
               </div>
               <h3>{a.title}</h3>
             </div>
-            <Icon name="ArrowUpRight" class="article-arrow" size={19} />
           </a>
         )}
       </For>

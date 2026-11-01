@@ -76,7 +76,6 @@ export default function Projects() {
         </div>
         <a href="/works" class="under-link">
           すべての作品
-          <Icon name="ArrowRight" size={16} />
         </a>
       </div>
       <div
@@ -163,7 +162,6 @@ export default function Projects() {
                   </a>
                   <a class="under-link" href={`/works/${p.id}`}>
                     制作について
-                    <Icon name="ArrowRight" size={15} />
                   </a>
                 </div>
               </div>

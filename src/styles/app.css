@@ -413,9 +413,11 @@
     content: '';
     position: absolute;
     top: 30px;
-    bottom: 30px;
     left: 16px;
     width: 20px;
+    /* Holes keep one pitch on every page: the column stops at the last whole hole instead of
+       spreading the holes over the sheet's height. */
+    height: round(down, 100% - 60px, 56px);
     background: radial-gradient(
         circle,
         var(--desk) 7px,
@@ -423,9 +425,7 @@
         var(--edge) 9px,
         transparent 9.5px
       )
-      50% 0 / 20px 56px;
-    /* space: the holes spread evenly over any sheet height, so the last one is never cut in half. */
-    background-repeat: no-repeat space;
+      50% 0 / 20px 56px repeat-y;
     pointer-events: none;
   }
   .wrap {
@@ -1227,7 +1227,7 @@
     --thumb: 144px;
     position: relative;
     display: grid;
-    grid-template-columns: var(--thumb) minmax(0, 1fr) 36px;
+    grid-template-columns: var(--thumb) minmax(0, 1fr);
     gap: 40px;
     align-items: center;
     padding: 18px 4px;
@@ -1278,30 +1278,12 @@
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
   }
-  .article-arrow {
-    justify-self: center;
-    box-sizing: content-box;
-    padding: 7px;
-    border: 2px solid transparent;
-    border-radius: 50%;
-    color: var(--muted);
-  }
   /* Only the way in is animated: leaving a row clears it at once, so scanning down the list
-     leaves no trail of markers and arrows winding back. */
+     leaves no trail of markers winding back. */
   @media (hover: hover) {
     .article-row:hover h3 {
       background-size: 100% 100%;
       transition: background-size var(--t-state) var(--ease);
-    }
-    .article-row:hover .article-arrow {
-      transition:
-        transform var(--t-hover) var(--ease),
-        background var(--t-hover) var(--ease),
-        border-color var(--t-hover) var(--ease);
-      border-color: var(--edge);
-      background: var(--hi);
-      color: var(--on-color);
-      transform: translate(2px, -2px);
     }
   }
   .article-row:active > .og-image {
@@ -1466,17 +1448,6 @@
     font-family: var(--mono);
     font-size: 0.75rem;
     color: var(--muted);
-  }
-  .edition-list svg {
-    position: absolute;
-    right: 22px;
-    top: 22px;
-    transition: transform var(--t-hover) var(--ease);
-  }
-  @media (hover: hover) {
-    .edition-list > a:hover svg {
-      transform: translate(2px, -2px) rotate(10deg);
-    }
   }
 
   /* ── Articles page ── */
@@ -1681,19 +1652,10 @@
     position: absolute;
     inset: -8px;
   }
-  .work-index-item h2 a > svg {
-    margin-left: auto;
-    color: var(--faint);
-  }
   /* As in the article list, only the way in is animated. */
   @media (hover: hover) {
     .work-index-item:hover h2 a {
       transition: background-size var(--t-state) var(--ease);
-    }
-    .work-index-item:hover h2 a > svg {
-      color: var(--ink);
-      transform: translate(2px, -2px);
-      transition: transform var(--t-hover) var(--ease);
     }
   }
   .work-index-item h2 .original-icon {
@@ -2206,7 +2168,6 @@
     color: var(--on-color);
     box-shadow: 3px 3px 0 var(--drop);
     opacity: 0;
-    transform: scale(0.9);
   }
   .play-symbol svg {
     fill: currentColor;
@@ -2218,14 +2179,13 @@
   .music-item:nth-child(even) {
     rotate: 0.8deg;
   }
-  /* As in the article list, only the way in is animated. */
+  /* As in the article list, only the way in is animated. The play button only fades: a moving
+     layer is assumed to overlap the title below it, which Chromium then draws as a separate
+     (tilted) layer and the text goes soft until the hover ends. */
   @media (hover: hover) {
     .music-item:hover .play-symbol {
       opacity: 1;
-      transform: none;
-      transition:
-        opacity var(--t-hover) var(--ease),
-        transform var(--t-state) var(--ease);
+      transition: opacity var(--t-hover) var(--ease);
     }
     .music-item:hover h4 {
       background-size: 100% 100%;
@@ -2913,8 +2873,10 @@
 @layer motion {
   /* Page turns: the screen image of the old page turns over the binding (forward), or the new
      page turns back onto the stack (back). Both are clipped to the sheet so the desk stays still.
-     The tabs and the sticker sheet sit outside the turning page and update live. */
-  .rail {
+     The tabs and the sticker sheet sit outside the turning page and update live. The name goes
+     on the tabs themselves, not on the rail that runs the sheet's full height: a named element is
+     drawn into its own surface on every frame of the turn. */
+  .rail nav {
     view-transition-name: tabs;
   }
   ::view-transition {
@@ -2937,6 +2899,18 @@
   ::view-transition-new(root) {
     animation: none;
     backface-visibility: hidden;
+  }
+  /* The eye sits just off the binding. Right on it (perspective() in the turning transform), the
+     page at 90deg is edge-on to the eye and Chromium re-rasterizes the live page, the new one on
+     a turn back, at every step of the turn. */
+  ::view-transition-image-pair(root) {
+    perspective: 3200px;
+  }
+  :root[data-flip='forward']::view-transition-image-pair(root) {
+    perspective-origin: calc(var(--flip-old-left) + 48px) 50%;
+  }
+  :root[data-flip='back']::view-transition-image-pair(root) {
+    perspective-origin: calc(var(--flip-new-left) + 48px) 50%;
   }
   :root[data-flip='fade']::view-transition-old(root) {
     animation: page-out var(--t-hover) var(--ease) both;
@@ -2965,14 +2939,14 @@
   }
   @keyframes turn-away {
     to {
-      transform: perspective(3200px) rotateY(-90deg);
+      transform: rotateY(-90deg);
       filter: brightness(0.86);
     }
   }
   /* Starts just short of edge-on, so its edge shows from the first frame. */
   @keyframes turn-back {
     from {
-      transform: perspective(3200px) rotateY(-88deg);
+      transform: rotateY(-88deg);
       filter: brightness(0.86);
     }
   }
@@ -3166,7 +3140,7 @@
     }
     .home-writing .article-row {
       --thumb: 104px;
-      grid-template-columns: var(--thumb) minmax(0, 1fr) 32px;
+      grid-template-columns: var(--thumb) minmax(0, 1fr);
       gap: 34px;
     }
     .work-grid,
@@ -3387,9 +3361,6 @@
       gap: 30px;
       padding: 14px 0;
     }
-    .article-row .article-arrow {
-      display: none;
-    }
     .article-row h3 {
       font-size: 0.9375rem;
     }
@@ -3413,10 +3384,6 @@
     }
     .edition-list span {
       padding: 2px 12px 14px;
-    }
-    .edition-list svg {
-      right: 20px;
-      top: 20px;
     }
     .article-toolbar {
       flex-direction: column;
