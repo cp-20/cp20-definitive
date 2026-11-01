@@ -407,9 +407,11 @@
     content: '';
     position: absolute;
     top: 30px;
-    bottom: 30px;
     left: 16px;
     width: 20px;
+    /* Holes keep one pitch on every page: the column stops at the last whole hole instead of
+       spreading the holes over the sheet's height. */
+    height: round(down, 100% - 60px, 56px);
     background: radial-gradient(
         circle,
         var(--desk) 7px,
@@ -417,9 +419,7 @@
         var(--edge) 9px,
         transparent 9.5px
       )
-      50% 0 / 20px 56px;
-    /* space: the holes spread evenly over any sheet height, so the last one is never cut in half. */
-    background-repeat: no-repeat space;
+      50% 0 / 20px 56px repeat-y;
     pointer-events: none;
   }
   .wrap {
