@@ -267,6 +267,14 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     };
     document.addEventListener('pointermove', hover, { passive: true });
     document.addEventListener('pointerdown', tap, { passive: true });
+    // A second finger makes it a pinch: the sticker under the first one stays where it was.
+    const pinch = (e: PointerEvent) => {
+      const h = held();
+      if (e.isPrimary || !h || h.pointer !== e.pointerType || (h.mode !== 'press' && h.mode !== 'drag'))
+        return;
+      cancelHeld(h.mode === 'drag');
+    };
+    document.addEventListener('pointerdown', pinch, true);
     document.addEventListener('keydown', key);
     // Saves lost to a dropped connection are sent again as soon as it is back.
     const online = () => {
@@ -291,6 +299,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       window.removeEventListener('online', online);
       document.removeEventListener('pointermove', hover);
       document.removeEventListener('pointerdown', tap);
+      document.removeEventListener('pointerdown', pinch, true);
       window.removeEventListener('resize', measureCover);
       covered.disconnect();
       cover = '';
@@ -876,7 +885,12 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   const release = (e: PointerEvent) => {
     const h = held();
     if (!h) return;
-    if (h.mode === 'drag') return drop(e.clientX, e.clientY);
+    if (h.mode === 'drag') {
+      // A finger lets go where it pressed after a long press too, and that tap's click would
+      // follow the link under the sticker as it flies back or lands.
+      if (h.pointer !== 'mouse') catchNextClick();
+      return drop(e.clientX, e.clientY);
+    }
     if (h.mode !== 'press') return;
     // A tap on your sticker lying over a link or button presses that instead of lifting it.
     const control = waitsForHold(h)

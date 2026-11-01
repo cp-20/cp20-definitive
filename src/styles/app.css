@@ -2388,12 +2388,13 @@
        compositor layer long after it has landed (the keyframes only have a from). */
     animation: sticker-pop 420ms var(--ease) var(--delay, 0ms) backwards;
   }
-  /* A swipe that starts on your sticker still scrolls the page; a finger drags it only after a
-     long press (stamp-touch.mjs), which neither selects text nor opens a callout. */
+  /* A swipe that starts on your sticker still scrolls the page and a pinch still zooms; a finger
+     drags it only after a long press (stamp-touch.mjs), which neither selects text nor opens a
+     callout. */
   .placed-stamp[data-owned] {
     pointer-events: auto;
     cursor: grab;
-    touch-action: pan-x pan-y;
+    touch-action: pan-x pan-y pinch-zoom;
     -webkit-touch-callout: none;
     user-select: none;
   }

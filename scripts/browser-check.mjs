@@ -381,6 +381,44 @@ try {
   await visitor.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
   await expect.poll(() => visitor.evaluate(() => scrollY)).toBe(0);
   if (db.writes !== writesBeforeSwipe) throw Error('A swipe over your sticker moved it');
+  // In a second tab: a long press let go without moving puts the sticker back and clicks
+  // nothing under it, and a pinch that starts on it zooms instead of dragging it.
+  {
+    const tab = await visitorContext.newPage();
+    await tab.goto(origin + '/');
+    const mine = tab.locator('.placed-stamp[data-owned]');
+    await expect(mine).toHaveCount(1);
+    await tab.evaluate(() => {
+      window.__pageClicks = 0;
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.stamp-ui, .placed-stamp, .stamp-overlay')) window.__pageClicks++;
+      });
+    });
+    const touch = await visitorContext.newCDPSession(tab);
+    const touches = (type, points) => touch.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+    const b = await mine.boundingBox(),
+      x = b.x + b.width / 2,
+      y = b.y + b.height / 2;
+    await touches('touchStart', [{ x, y }]);
+    await tab.waitForTimeout(600);
+    await expect(tab.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
+    await touches('touchEnd', []);
+    await expect(tab.locator('.placed-stamp[data-lifted]')).toHaveCount(0, { timeout: 3000 });
+    await tab.waitForTimeout(700);
+    if (await tab.evaluate(() => window.__pageClicks)) throw Error('A long press let go clicked the page');
+    await touches('touchStart', [{ x, y, id: 1 }]);
+    await tab.waitForTimeout(500);
+    for (let d = 0; d <= 200; d += 20)
+      await touches('touchMove', [
+        { x, y: y - d / 2, id: 1 },
+        { x, y: y + 60 + d, id: 2 },
+      ]);
+    await touches('touchEnd', []);
+    await expect.poll(() => tab.evaluate(() => visualViewport.scale)).toBeGreaterThan(1);
+    await tab.waitForTimeout(700);
+    if (db.writes !== writesBeforeSwipe) throw Error('A long press or pinch on your sticker moved it');
+    await tab.close();
+  }
   // A tapped sticker can be put back without a keyboard.
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
@@ -624,7 +662,7 @@ try {
     'taps that put a sticker back never click the page; a turned phone keeps the held sticker on screen; your sticker over a select opens it',
   );
   report.interactions.push(
-    'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift, put back and peel; swipes over your sticker scroll; moving one of five stickers keeps the rest; two tabs placing at once; responsive anchors',
+    'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift, put back and peel; swipes over your sticker scroll; a long press let go or a pinch on it leaves it and the page alone; moving one of five stickers keeps the rest; two tabs placing at once; responsive anchors',
   );
   for (const [width, height] of [
     [390, 844],
