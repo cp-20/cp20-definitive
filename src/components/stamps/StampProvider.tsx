@@ -108,8 +108,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     askToSignIn,
     isOwn: store.isOwn,
     isLeaving: (s) => edits.isLeaving(visualKey(s)),
-    slotCenter: sheet.slotCenter,
-    say,
   });
   createEffect(
     () => props.path,

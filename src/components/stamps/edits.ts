@@ -7,7 +7,7 @@ import { STAMPS_PER_PAGE as LIMIT } from '../../data/stamp-limits.mjs';
 import { visualKey } from '../../data/stamp-layout.mjs';
 import { locate } from './placement';
 import { stickerName } from './kinds';
-export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+import { reducedMotion } from './prefs';
 // How long the peel-off and settle animations in app.css take, a little rounded up.
 const PEEL_MS = 220,
   SETTLE_MS = 700;

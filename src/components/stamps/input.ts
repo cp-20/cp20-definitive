@@ -9,6 +9,7 @@ import { onSettled } from 'solid-js';
 import type { PlacedStamp } from '../../data/stamp-types';
 import {
   HOLD_MS,
+  clamp,
   HOLD_SLOP,
   TAPPABLE,
   keptOnScreen,
@@ -23,7 +24,6 @@ const KEY_STEP = 16,
 // The hint bar shown while a tapped sticker waits for its spot (.stamp-aim-bar in app.css) ends
 // about this far down; a sticker floating up from under it goes below the finger instead.
 const AIM_BAR_BOTTOM = 80;
-const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 const ARROWS: Record<string, [number, number]> = {
   ArrowLeft: [-1, 0],
   ArrowRight: [1, 0],
@@ -40,8 +40,6 @@ export function createInput(
     askToSignIn: () => void;
     isOwn: (s: PlacedStamp) => boolean;
     isLeaving: (s: PlacedStamp) => boolean;
-    slotCenter: (kind: number) => { x: number; y: number };
-    say: (text: string) => void;
   },
 ) {
   const { held, motion } = hand;
@@ -155,7 +153,7 @@ export function createInput(
     }
     hand.lift(h, 'aim');
     // The hint bar is the only guide for a pointer; read it once as it appears.
-    options.say(`${aimHint(h)}。やめるボタンで戻せます`);
+    hand.say(`${aimHint(h)}。やめるボタンで戻せます`);
     if (h.pointer !== 'mouse') {
       // It floats clear of the finger, but never off screen or under the hint bar.
       const spot = liftedSpot(motion.x, motion.y, innerWidth, innerHeight, AIM_BAR_BOTTOM);
@@ -177,7 +175,7 @@ export function createInput(
     hand.forgetPlace();
     if (!options.signedIn()) return options.askToSignIn();
     const center = { x: innerWidth / 2, y: innerHeight / 2 };
-    hand.begin({ kind, from: 'sheet', mode: 'aim', pointer: 'keys' }, options.slotCenter(kind), center);
+    hand.begin({ kind, from: 'sheet', mode: 'aim', pointer: 'keys' }, hand.slotCenter(kind), center);
     overlay?.focus();
     // Where it starts, once the overlay's own name has been read.
     hand.placeSoon(450);

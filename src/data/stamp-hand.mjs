@@ -6,7 +6,8 @@
 // over a link or button presses that control, and a tap anywhere else lifts it so the next tap
 // puts it down.
 
-const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+/** @param {number} v @param {number} min @param {number} max */
+export const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
 /** @typedef {{ x: number; y: number; tx: number; ty: number; tilt: number; scale: number; ts: number }} Spring */
 

@@ -4,11 +4,11 @@
 // input.ts.
 import { createSignal, flush } from 'solid-js';
 import type { PlacedStamp } from '../../data/stamp-types';
-import { springStep } from '../../data/stamp-hand.mjs';
+import { clamp, springStep } from '../../data/stamp-hand.mjs';
 import { OVER_SHEET, stampAnnouncement } from '../../data/stamp-a11y.mjs';
 import { STICKER_RADIUS, visualKey } from '../../data/stamp-layout.mjs';
 import { overSheetAt, placeAt } from './placement';
-import { reducedMotion } from './edits';
+import { reducedMotion } from './prefs';
 import { stickerName } from './kinds';
 // A sticker in hand: pressed (not moved yet), dragged, or aimed (click-to-place / keyboard).
 export type Held = {
@@ -19,7 +19,6 @@ export type Held = {
   pointer: string;
 };
 type Point = { x: number; y: number };
-const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 // Creates signals: call it synchronously inside the component that owns them.
 export function createHand(options: {
   isOwn: (s: PlacedStamp) => boolean;
@@ -270,6 +269,8 @@ export function createHand(options: {
     },
     placeSoon,
     forgetPlace,
+    say,
+    slotCenter: options.slotCenter,
     stop: () => {
       stop();
       clearTimeout(placeTimer);
