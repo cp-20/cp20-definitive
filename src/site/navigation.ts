@@ -13,7 +13,8 @@ function flipDirection(from: string, to: string) {
   return to.length > from.length ? 'forward' : 'back';
 }
 // The page flips around the sheet's binding, so the animation is clipped to the sheet's rect.
-// The rect goes into a rule for the transition's own pseudo-element, the only place it is read:
+// The rect goes into a rule for the transition's own pseudo-elements, the only place it is read
+// (the image pair takes the binding as its perspective origin; the images inherit the rest):
 // a custom property on <html> would restyle every element of the page on each turn.
 const flipRects: Record<string, string> = {};
 let flipStyle: HTMLStyleElement | undefined;
@@ -22,7 +23,7 @@ function markSheet(prefix: 'flip-old' | 'flip-new') {
   if (!sheet) return;
   const part = prefix === 'flip-old' ? 'old' : 'new';
   flipRects[part] =
-    `::view-transition-${part}(root){` +
+    `::view-transition-image-pair(root){` +
     `--${prefix}-left:${Math.max(0, sheet.left)}px;` +
     `--${prefix}-right:${Math.max(0, innerWidth - sheet.right)}px;` +
     `--${prefix}-top:${Math.max(0, sheet.top)}px;` +

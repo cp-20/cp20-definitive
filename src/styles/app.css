@@ -2902,8 +2902,10 @@
 @layer motion {
   /* Page turns: the screen image of the old page turns over the binding (forward), or the new
      page turns back onto the stack (back). Both are clipped to the sheet so the desk stays still.
-     The tabs and the sticker sheet sit outside the turning page and update live. */
-  .rail {
+     The tabs and the sticker sheet sit outside the turning page and update live. The name goes
+     on the tabs themselves, not on the rail that runs the sheet's full height: a named element is
+     drawn into its own surface on every frame of the turn. */
+  .rail nav {
     view-transition-name: tabs;
   }
   ::view-transition {
@@ -2926,6 +2928,18 @@
   ::view-transition-new(root) {
     animation: none;
     backface-visibility: hidden;
+  }
+  /* The eye sits just off the binding. Right on it (perspective() in the turning transform), the
+     page at 90deg is edge-on to the eye and Chromium re-rasterizes the live page, the new one on
+     a turn back, at every step of the turn. */
+  ::view-transition-image-pair(root) {
+    perspective: 3200px;
+  }
+  :root[data-flip='forward']::view-transition-image-pair(root) {
+    perspective-origin: calc(var(--flip-old-left) + 48px) 50%;
+  }
+  :root[data-flip='back']::view-transition-image-pair(root) {
+    perspective-origin: calc(var(--flip-new-left) + 48px) 50%;
   }
   :root[data-flip='fade']::view-transition-old(root) {
     animation: page-out var(--t-hover) var(--ease) both;
@@ -2954,14 +2968,14 @@
   }
   @keyframes turn-away {
     to {
-      transform: perspective(3200px) rotateY(-90deg);
+      transform: rotateY(-90deg);
       filter: brightness(0.86);
     }
   }
   /* Starts just short of edge-on, so its edge shows from the first frame. */
   @keyframes turn-back {
     from {
-      transform: perspective(3200px) rotateY(-88deg);
+      transform: rotateY(-88deg);
       filter: brightness(0.86);
     }
   }
