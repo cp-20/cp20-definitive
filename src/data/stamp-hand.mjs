@@ -10,24 +10,57 @@
 /** @param {number} v @param {number} min @param {number} max */
 export const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
-/** @typedef {{ x: number; y: number; tx: number; ty: number; tilt: number; scale: number; ts: number }} Spring */
+/**
+ * Where the sticker is, where it is headed, and how fast it is going (px/s).
+ * @typedef {{ x: number; y: number; vx: number; vy: number; tx: number; ty: number; tilt: number; scale: number; ts: number }} Spring
+ */
 
-export const MAX_TILT = 22;
+export const MAX_TILT = 18;
+// How quickly the sticker catches up (rad/s). In hand it trails the pointer by about 2/40 s;
+// let go, it flies home more loosely, so the speed it was thrown with shows in its path.
+export const HELD = 40;
+export const FLYING = 22;
+// How far it leans (deg) for each px/s it travels sideways.
+const LEAN = 0.02;
 
 /**
- * Moves the spring one frame toward its target (tx, ty, ts) in place, leaning into the
- * direction of travel.
- * @param {Spring} m
- * @returns {boolean} whether it had come to rest
+ * Moves one axis of a critically damped spring `dt` seconds on, exactly, so it moves the same
+ * at 60 and 120 frames a second. It never swings back and forth, but a sticker thrown towards
+ * its target can carry on just past it once, as a real one would.
+ * @param {number} x
+ * @param {number} v
+ * @param {number} to
+ * @param {number} dt
+ * @param {number} k stiffness
  */
-export function springStep(m) {
-  const dx = m.tx - m.x,
-    dy = m.ty - m.y;
-  m.x += dx * 0.32;
-  m.y += dy * 0.32;
-  m.tilt += (clamp(dx * 0.5, -MAX_TILT, MAX_TILT) - m.tilt) * 0.2;
-  m.scale += (m.ts - m.scale) * 0.25;
-  return Math.abs(dx) < 0.4 && Math.abs(dy) < 0.4 && Math.abs(m.tilt) < 0.3;
+function follow(x, v, to, dt, k) {
+  const off = x - to,
+    decay = Math.exp(-k * dt),
+    lead = v + k * off;
+  return [to + (off + lead * dt) * decay, (v - k * lead * dt) * decay];
+}
+
+/**
+ * Moves the spring `dt` seconds on toward its target (tx, ty, ts) in place. It keeps its speed
+ * when the target changes, so a sticker let go flies on into its way home, and it leans by how
+ * fast it moves sideways, standing up again once it stops. A long step lands it at once.
+ * @param {Spring} m
+ * @param {number} dt seconds
+ * @param {number} [k] stiffness: HELD or FLYING
+ * @returns {boolean} whether it has come to rest
+ */
+export function springStep(m, dt, k = HELD) {
+  [m.x, m.vx] = follow(m.x, m.vx, m.tx, dt, k);
+  [m.y, m.vy] = follow(m.y, m.vy, m.ty, dt, k);
+  const ease = 1 - Math.exp(-k * dt);
+  m.tilt += (clamp(m.vx * LEAN, -MAX_TILT, MAX_TILT) - m.tilt) * ease;
+  m.scale += (m.ts - m.scale) * ease;
+  return (
+    Math.hypot(m.tx - m.x, m.ty - m.y) < 0.5 &&
+    Math.hypot(m.vx, m.vy) < 5 &&
+    Math.abs(m.tilt) < 0.3 &&
+    Math.abs(m.ts - m.scale) < 0.005
+  );
 }
 
 // How long a finger rests on your sticker before it can be dragged.

@@ -2,6 +2,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  FLYING,
   LIFT,
   MAX_TILT,
   keptOnScreen,
@@ -10,39 +11,92 @@ import {
   waitsForHold,
 } from '../src/data/stamp-hand.mjs';
 
-// Runs the spring until it rests (at most 200 frames) and reports where it went.
-function settle(spring) {
-  let frames = 0,
-    widest = 0;
-  while (!springStep(spring) && frames < 200) {
-    frames++;
+const FRAME = 1 / 60;
+// Runs the spring at `fps` until it rests (at most 2 seconds) and reports how it went.
+function settle(spring, fps = 60, k = undefined) {
+  let time = 0,
+    widest = 0,
+    furthest = -Infinity;
+  while (!springStep(spring, 1 / fps, k) && time < 2) {
+    time += 1 / fps;
     widest = Math.max(widest, Math.abs(spring.tilt));
+    furthest = Math.max(furthest, spring.x);
   }
-  return { frames, widest };
+  return { time, widest, furthest };
 }
-const far = () => ({ x: 0, y: 0, tx: 400, ty: -300, tilt: 0, scale: 1, ts: 1.18 });
+// A sticker at rest at the origin, sent 400px right and 300px up, to be enlarged as when picked up.
+const far = () => ({ x: 0, y: 0, vx: 0, vy: 0, tx: 400, ty: -300, tilt: 0, scale: 1, ts: 1.12 });
 
 describe('springStep', () => {
-  test('ばねは数十フレームで目標の位置に止まる', () => {
+  test('離れた目標まで 0.5 秒ほどで行って止まる', () => {
     const spring = far();
-    const { frames } = settle(spring);
-    assert.ok(frames < 200);
+    const { time } = settle(spring);
+    assert.ok(time < 0.6, String(time));
     assert.deepEqual([Math.round(spring.x), Math.round(spring.y)], [400, -300]);
   });
 
   test('止まるころには目標の大きさになる', () => {
     const spring = far();
     settle(spring);
-    assert.equal(spring.scale.toFixed(2), '1.18');
+    assert.equal(spring.scale.toFixed(2), '1.12');
   });
 
-  test('動く向きに傾くが、上限より傾かない', () => {
+  test('止まっていたシールは、目標を行き過ぎない', () => {
+    const { furthest } = settle(far());
+    assert.ok(furthest <= 400, String(furthest));
+  });
+
+  test('120Hz の画面でも 60Hz と同じ速さで動く', () => {
+    const at60 = far(),
+      at120 = far();
+    for (let i = 0; i < 6; i++) springStep(at60, 1 / 60);
+    for (let i = 0; i < 12; i++) springStep(at120, 1 / 120);
+    assert.ok(Math.abs(at60.x - at120.x) < 0.5, `${at60.x} / ${at120.x}`);
+  });
+
+  test('横へ動く向きに傾くが、上限より傾かない', () => {
     const { widest } = settle(far());
     assert.ok(widest > 10 && widest <= MAX_TILT, String(widest));
   });
 
+  test('右へ動くと時計回りに、左へ動くと反時計回りに傾く', () => {
+    const right = far(),
+      left = { ...far(), tx: -400 };
+    springStep(right, FRAME);
+    springStep(left, FRAME);
+    assert.deepEqual([right.tilt > 0, left.tilt < 0], [true, true]);
+  });
+
+  test('止まるころには、まっすぐに戻っている', () => {
+    const spring = far();
+    settle(spring);
+    assert.ok(Math.abs(spring.tilt) < 0.3, String(spring.tilt));
+  });
+
+  test('手から離れて飛ぶシールは、投げられた勢いを保ったまま向きを変える', () => {
+    // Thrown to the right, then sent home to the left: the first frame still carries it right.
+    const spring = { x: 0, y: 0, vx: 3000, vy: 0, tx: -300, ty: 0, tilt: 0, scale: 1, ts: 1 };
+    springStep(spring, FRAME, FLYING);
+    assert.ok(spring.x > 0, String(spring.x));
+  });
+
+  test('勢いよく投げたシールは、目標を一度だけ少し越えて戻る', () => {
+    const spring = { x: 0, y: 0, vx: 5000, vy: 0, tx: 100, ty: 0, tilt: 0, scale: 1, ts: 1 };
+    const { furthest } = settle(spring, 60, FLYING);
+    assert.ok(furthest > 100 && furthest < 160, String(furthest));
+    assert.equal(Math.round(spring.x), 100);
+  });
+
+  test('長い1歩（動きを減らす設定）では、その場で目標に着いて止まる', () => {
+    const spring = far();
+    assert.equal(springStep(spring, 10), true);
+    assert.deepEqual([spring.x, spring.y, spring.scale, spring.tilt.toFixed(2)], [400, -300, 1.12, '0.00']);
+  });
+
   test('すでに目標にあるばねは、そのまま止まっている', () => {
-    assert.equal(springStep({ x: 5, y: 5, tx: 5, ty: 5, tilt: 0, scale: 1, ts: 1 }), true);
+    const spring = { x: 5, y: 5, vx: 0, vy: 0, tx: 5, ty: 5, tilt: 0, scale: 1, ts: 1 };
+    assert.equal(springStep(spring, FRAME), true);
+    assert.deepEqual([spring.x, spring.y], [5, 5]);
   });
 });
 

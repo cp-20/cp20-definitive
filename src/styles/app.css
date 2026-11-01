@@ -2438,12 +2438,11 @@
   .placed-stamp > .sticker {
     rotate: var(--angle, 0deg);
     transition:
-      transform 260ms var(--ease),
-      filter 260ms var(--ease),
-      opacity 200ms var(--ease);
+      transform var(--t-hover) var(--ease),
+      opacity var(--t-hover) var(--ease);
     /* Backwards only: holding the last frame would keep every placed sticker on its own
        compositor layer long after it has landed (the keyframes only have a from). */
-    animation: sticker-pop 420ms var(--ease) var(--delay, 0ms) backwards;
+    animation: sticker-pop var(--t-enter) var(--spring) var(--delay, 0ms) backwards;
   }
   /* A swipe that starts on your sticker still scrolls the page and a pinch still zooms; a finger
      drags it only after a long press (stamp-touch.mjs), which neither selects text nor opens a
@@ -2461,22 +2460,22 @@
   @media (hover: hover) {
     .placed-stamp[data-owned]:hover > .sticker {
       transform: translateY(-2px) scale(1.06);
-      filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
-        drop-shadow(0 -1.6px 0 #fff) drop-shadow(3px 6px 3px rgb(45 42 51 / 0.28));
     }
   }
   .placed-stamp[data-pending] > .sticker {
     opacity: 0.9;
   }
-  /* Settles from where it was let go: a short glide down onto the paper. */
+  /* Set down from where it was let go: it glides onto the paper, is pressed a little flat and
+     comes to rest. */
   .placed-stamp[data-fresh] > .sticker {
-    animation: stick 460ms var(--ease) both;
+    animation: stick var(--t-state) var(--ease) both;
   }
   .placed-stamp[data-lifted] {
     visibility: hidden;
   }
+  /* Peeled off: it curls up and away, quickening as it goes (gone before edits.ts removes it). */
   .placed-stamp[data-leaving] > .sticker {
-    animation: peel 220ms var(--ease) both;
+    animation: peel var(--t-hover) var(--ease-exit) both;
   }
   .stamp-delete {
     position: absolute;
@@ -2487,11 +2486,11 @@
     width: 28px;
     height: 28px;
     opacity: 0;
-    scale: 0.6;
+    scale: 0.8;
     pointer-events: none;
     transition:
-      opacity 200ms var(--ease),
-      scale 260ms var(--ease);
+      opacity var(--t-hover) var(--ease),
+      scale var(--t-hover) var(--ease);
   }
   /* Covers the sticker; it only shows (as a ring) while focused from the keyboard, and a pointer
      picks the sticker itself up instead. */
@@ -2550,8 +2549,9 @@
   .sticker-ghost[data-active] {
     display: grid;
   }
+  /* One sticker only, so its raised shadow can ease in as it is picked up. */
   .sticker-ghost .sticker {
-    transition: filter 200ms var(--ease);
+    transition: filter var(--t-hover) var(--ease);
   }
   .sticker-ghost[data-dragging] .sticker {
     filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
@@ -2617,19 +2617,20 @@
     rotate: -1.5deg;
     view-transition-name: stickers;
     transition:
-      translate 460ms var(--ease),
-      opacity 300ms var(--ease),
+      translate var(--t-state) var(--ease),
+      opacity var(--t-hover) var(--ease),
       visibility 0s;
   }
-  /* Closed: slides off, then leaves the accessibility tree and hit testing once it is gone. */
+  /* Closed: slides off, faster than it came, then leaves the accessibility tree and hit testing
+     once it is gone. */
   .sticker-sheet:not([data-open]) {
     translate: 0 calc(100% + 96px);
     opacity: 0;
     visibility: hidden;
     transition:
-      translate 460ms var(--ease),
-      opacity 300ms var(--ease),
-      visibility 0s 460ms;
+      translate var(--t-hover) var(--ease-exit),
+      opacity var(--t-hover) var(--ease-exit),
+      visibility 0s var(--t-hover);
   }
   .sticker-sheet-head {
     display: flex;
@@ -2807,10 +2808,10 @@
   }
   /* Two names so every nudge restarts the animation. */
   .sticker-login[data-nudge='a'] {
-    animation: nudge-a 520ms var(--ease);
+    animation: nudge-a var(--t-enter) var(--ease);
   }
   .sticker-login[data-nudge='b'] {
-    animation: nudge-b 520ms var(--ease);
+    animation: nudge-b var(--t-enter) var(--ease);
   }
   /* Who put it there: the placer's Gravatar peeks out from behind the sticker. */
   .sticker-avatar {
@@ -2824,7 +2825,7 @@
     background: var(--paper);
     box-shadow: 1px 2px 3px rgb(45 42 51 / 0.3);
     pointer-events: none;
-    animation: avatar-peek 280ms var(--spring) both;
+    animation: avatar-peek var(--t-hover) var(--spring) both;
   }
   /* Closed sheet: a small tab at the bottom right. */
   .sticker-tab {
@@ -2847,23 +2848,24 @@
     white-space: nowrap;
     box-shadow: 3px 3px 0 var(--drop);
     view-transition-name: sticker-tab;
+    /* Comes back once the closing sheet is mostly out of the way. */
     transition:
-      translate 420ms var(--ease) 160ms,
-      scale 420ms var(--spring) 160ms,
-      opacity 240ms var(--ease) 160ms,
-      box-shadow 160ms var(--ease),
+      translate var(--t-state) var(--ease) 80ms,
+      scale var(--t-state) var(--spring) 80ms,
+      opacity var(--t-hover) var(--ease) 80ms,
+      box-shadow var(--t-hover) var(--ease),
       visibility 0s;
   }
   .sticker-tab:not([data-open]) {
     translate: 0 16px;
-    scale: 0.8;
+    scale: 0.9;
     opacity: 0;
     visibility: hidden;
     transition:
-      translate 200ms var(--ease),
-      scale 200ms var(--ease),
-      opacity 200ms var(--ease),
-      visibility 0s 200ms;
+      translate var(--t-hover) var(--ease-exit),
+      scale var(--t-hover) var(--ease-exit),
+      opacity var(--t-hover) var(--ease-exit),
+      visibility 0s var(--t-hover);
   }
   .sticker-tab > img {
     width: 24px;
@@ -3055,7 +3057,7 @@
   @keyframes avatar-peek {
     from {
       opacity: 0;
-      transform: translate(-6px, -6px) scale(0.4);
+      transform: translate(-6px, -6px) scale(0.6);
     }
   }
   @keyframes nudge-a {
@@ -3083,20 +3085,23 @@
   @keyframes sticker-pop {
     from {
       opacity: 0;
-      transform: scale(0.6);
+      transform: scale(0.7);
     }
   }
+  /* Starts as large as it was in hand (scale 1.12 in hand.ts); only transform moves, the shadow
+     settles at once as it touches the paper. */
   @keyframes stick {
     from {
-      transform: translate(var(--from-x), var(--from-y)) scale(1.18);
-      filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
-        drop-shadow(0 -1.6px 0 #fff) drop-shadow(8px 16px 6px rgb(45 42 51 / 0.22));
+      transform: translate(var(--from-x), var(--from-y)) scale(1.12);
+    }
+    45% {
+      transform: scale(0.96);
     }
   }
   @keyframes peel {
     to {
       opacity: 0;
-      transform: translateY(-14px) rotate(16deg) scale(1.12);
+      transform: translateY(-10px) rotate(12deg) scale(1.06);
     }
   }
   @keyframes postmark-in {
@@ -3117,6 +3122,18 @@
     ::view-transition-old(*),
     ::view-transition-new(*) {
       animation: none !important;
+    }
+    /* What opens, closes or switches still fades, briefly and in place, so the change is seen. */
+    .sticker-sheet,
+    .sticker-tab,
+    .featured-project {
+      translate: none !important;
+      scale: none !important;
+      transition-duration: 150ms !important;
+    }
+    /* Saving: the used pips stay dimmed instead of blinking. */
+    .sticker-sheet[data-saving] .sticker-pips > span[data-used] {
+      opacity: 0.6;
     }
   }
 }

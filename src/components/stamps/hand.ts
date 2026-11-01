@@ -4,7 +4,7 @@
 // input.ts.
 import { createSignal, flush } from 'solid-js';
 import type { PlacedStamp } from '../../data/stamp-types';
-import { clamp, springStep } from '../../data/stamp-hand.mjs';
+import { FLYING, clamp, springStep } from '../../data/stamp-hand.mjs';
 import { OVER_SHEET, stampAnnouncement } from '../../data/stamp-a11y.mjs';
 import { STICKER_RADIUS, visualKey } from '../../data/stamp-layout.mjs';
 import { overSheetAt, placeAt } from './placement';
@@ -43,10 +43,12 @@ export function createHand(options: {
     [lifted, setLifted] = createSignal('');
   let ghost: HTMLElement | undefined;
   // ── The spring ──
-  // Its position follows the target and leans into the direction of travel.
+  // Its position follows the target and leans into the direction of travel (stamp-hand.mjs).
   const motion = {
     x: 0,
     y: 0,
+    vx: 0,
+    vy: 0,
     tx: 0,
     ty: 0,
     tilt: 0,
@@ -62,8 +64,13 @@ export function createHand(options: {
   }
   function animate() {
     cancelAnimationFrame(raf);
-    const step = () => {
-      const settled = springStep(motion);
+    let last = performance.now();
+    const step = (now: number) => {
+      // A frame late by more than 1/30s moves it no further than one on time would; with reduced
+      // motion one long step lands it where it is going at once.
+      const dt = reducedMotion() ? 10 : Math.min(Math.max(now - last, 0) / 1000, 1 / 30);
+      last = now;
+      const settled = springStep(motion, dt, motion.home ? FLYING : undefined);
       paint();
       if (motion.home && settled) {
         const done = motion.home;
@@ -76,7 +83,8 @@ export function createHand(options: {
     raf = requestAnimationFrame(step);
   }
   const stop = () => cancelAnimationFrame(raf);
-  // Send the sticker to a point on screen at a scale, then call `done`.
+  // Send the sticker to a point on screen at a scale, then call `done`. It keeps the speed it was
+  // let go with, so a throw carries on into the flight.
   function flyTo(point: Point, scale: number, done: () => void) {
     motion.tx = point.x;
     motion.ty = point.y;
@@ -99,11 +107,13 @@ export function createHand(options: {
     motion.home = null;
     motion.x = start.x;
     motion.y = start.y;
+    motion.vx = 0;
+    motion.vy = 0;
     motion.tx = pointer.x;
     motion.ty = pointer.y;
     motion.tilt = next.target?.angle ?? 0;
     motion.scale = 1;
-    motion.ts = next.mode === 'press' ? 1.08 : 1.18;
+    motion.ts = next.mode === 'press' ? 1.06 : 1.12;
     flush();
     paint();
     animate();
@@ -111,7 +121,7 @@ export function createHand(options: {
   // Picked up to drag or aim: one of yours from the page hides where it lay.
   function lift(h: Held, mode: 'drag' | 'aim') {
     if (h.mode !== mode) setHeld({ ...h, mode });
-    motion.ts = 1.18;
+    motion.ts = 1.12;
     if (h.from === 'page' && h.target) setLifted(visualKey(h.target));
   }
   function moveTo(x: number, y: number) {
