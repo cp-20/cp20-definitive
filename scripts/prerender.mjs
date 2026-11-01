@@ -1,16 +1,17 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { handleRequest } from '../dist/server/server.js';
 import { mergeArticles } from '../src/data/normalize.mjs';
+import { canonicalUrl, mergeWorks, sitePaths } from '../src/data/site-pages.mjs';
 import { buildFeed } from './feed.mjs';
 import { subsetSiteFonts } from './fonts.mjs';
 const load = async (name) =>
   JSON.parse(await readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8'));
 const [baseWorks, manual, snapshot] = await Promise.all(['works', 'manual', 'generated'].map(load));
-const works = [...baseWorks, ...manual.projects],
+const works = mergeWorks(baseWorks, manual),
   articles = mergeArticles(snapshot.articles, [], manual);
-const paths = ['/', '/about', '/articles', '/works', ...works.map((w) => `/works/${w.id}`), '/404'];
+const paths = [...sitePaths(works), '/404'];
 for (const path of paths) {
-  const response = await handleRequest(new Request(`https://cp20.dev${path}`));
+  const response = await handleRequest(new Request(canonicalUrl(path)));
   if (response.status !== (path === '/404' ? 404 : 200)) throw Error(`Prerender ${path}: ${response.status}`);
   const output =
     path === '/'
@@ -25,7 +26,7 @@ await writeFile(
   'dist/client/sitemap.xml',
   `<?xml version="1.0" encoding="utf-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths
     .filter((p) => p !== '/404')
-    .map((p) => `<url><loc>https://cp20.dev${p === '/' ? '' : p}</loc></url>`)
+    .map((p) => `<url><loc>${canonicalUrl(p === '/' ? '' : p)}</loc></url>`)
     .join('')}</urlset>`,
 );
 await writeFile('dist/client/feed.xml', buildFeed(articles));

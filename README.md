@@ -19,6 +19,7 @@ npm run sync   # 記事・GitHub・おすすめ曲/漫画・サムネイルを�
 npm test       # Ghost公開範囲、データ保持、OG解析、画像形式、スタンプ即時反映
 npm run cache:images # 画像キャッシュだけ更新（通常はsyncが実行）
 npm run check  # Solidの型検査
+npm run rules  # database.rules.json をページ一覧から再生成（--check で差分の検査のみ）
 npm run build
 ```
 
@@ -90,6 +91,14 @@ npm run build
 
 `manual.json` の `articles` はURLで自動取得と合成、`overrides` はタイトル等を上書き、`exclude` は対象URLを非掲載、`projects` は作品を追加します。作品には `works.json` と同じフィールドを指定してください。
 
+**作品の追加方法**
+
+1. `src/data/works.json`（または `manual.json` の `projects`）に作品を追加します。フィールドは既存の作品と同じです。`id` はURL（`/works/<id>`）とシールの保存先（`pages/works--<id>`）になるため、英小文字・数字を1つずつのハイフンでつないだ形（例 `my-app-2`）にしてください。大文字・`.`・`--`・重複は `npm run build` と `npm run rules` がエラーで止めます。
+2. `npm run rules` で `database.rules.json` を再生成し、作品の追加と一緒にコミットします。忘れると `npm test` とPRの `Firebase rules` ワークフローが失敗します（新しいページではシールを保存できないため）。
+3. `main` にマージすると、サイトはCloudflareが、ルールは `Firebase rules` ワークフローが自動でデプロイします。
+
+ページの一覧（固定ページの順番・タイトル・インデックスタブの順・URLの正規化・シールのページキー）は `src/data/site-pages.mjs` にまとめてあり、ルーティング・ページ内遷移・タブ・プリレンダー・sitemap・DBルールはここから作られます。
+
 ## ページに貼れるシール
 
 画面の右下にシール帳（6種類のシール）があります。閉じると右下の小さな「シール」タブになります（スマートフォンでは最初は閉じた状態）。シールを見るのは誰でもできますが、貼るには Google アカウントでのログインが必要です。
@@ -110,13 +119,13 @@ npm run build
 
 1. Authentication → Sign-in method で **Google** を有効化。
 2. Authentication → Settings → 承認済みドメインに `cp20-definitive.cp20.workers.dev` と `cp20.dev`（開発時は `localhost`）を追加。
-3. `npm run firebase:rules` で `database.rules.json` をデプロイ（Google ログインのみ書き込み可・`avatar` 項目の検証を含む）。
+3. `npm run firebase:rules` で `database.rules.json` をデプロイ（Google ログインのみ書き込み可・`avatar` 項目の検証を含む）。ファイルがページ一覧と食い違っているときはデプロイせずに止まります。
 
 Firebase Auth（Googleのポップアップログイン）でログインしたUIDの領域だけ書き込み・削除を許可します。ルールで `auth.token.firebase.sign_in_provider == 'google.com'` を必須にしているため、匿名認証などでは書き込めません。1ページ・1人あたり5つ、6つ目から古いものを置き換え（貼り直しは同じ枠の位置だけを書き換えるので、ほかのシールは消えません）。表示は更新が新しい100人分（最大500個）に制限し、絞り込みなしの公開読込は拒否します。座標・種類・角度・タイムスタンプ・Gravatarハッシュ（64桁の16進数）・項目をDBルールで検証し、1秒未満の連続更新を拒否。間隔は削除しても残る `throttle/$uid` で数え、レコードの書込はその更新と同時（`updatedAt` も毎回サーバー時刻）でなければ拒否するため、子パスへの部分書込や削除→再作成でも回避できません。古いUIDのレコードは自動削除しません。
 
 Web標準のEventSourceでFirebase RESTストリームへ直接接続。非表示タブでは購読を休止し、再表示時に最新データへ接続します。Auth SDKはシール帳に触れたとき（以前ログインした人はページ表示後）に遅延読込し、ログインのポップアップがクリック内で開けるようにしています。保存はレコードと `throttle/$uid`（最終書込時刻）を同時に更新するRESTのマルチパスPATCHで、`throttle` の前回値を照合（compare-and-swap）して同時編集を検出します。受信したストリームの描画は最大で毎秒4回にまとめ、シールの位置は基準要素ごとに1回だけ測ります。配置と取り消しはネットワーク応答を待たず即時反映し、書き込みはDBの間隔制限に合わせて順番に送信。遷移中もキューを維持し、保存失敗時は該当操作を戻して再試行を表示します。購読を休止しても保存は独立して完了し、15秒の通信タイムアウトを設けています。ページ遷移・記事の絞り込み・作品切替はブラウザ内、定期収集はGitHub Actions、HTML/CSS/JSはStatic Assetsで完結し、サイト独自のWorker APIはありません。
 
-ルールの更新：`main` で `database.rules.json` が変わると、GitHub Actionsの `Firebase rules` ワークフローがエミュレーターでルールを検証したうえで専用DBへデプロイします（PRでは検証のみ）。事前にリポジトリのSecretsへ `FIREBASE_SERVICE_ACCOUNT`（cp20-platformの「Firebase Realtime Database 管理者」ロールを持つサービスアカウントのJSONキー）を登録し、Environment `firebase-production` を作成してください（必須レビュアーを付ければ承認制にできます）。手動では、Firebase CLIで対象アカウントにログイン後に `npm run firebase:rules`。サイト（Cloudflare）とルールは別々にデプロイされるため、書込形式が変わるルール変更ではマージ直後の数分間、古いクライアントと新しいルール（またはその逆）の組み合わせでシールの保存が失敗することがあります。`.firebaserc` は専用DBだけを指します。レコードの管理・削除はFirebase Consoleの専用DBから行えます。
+ルールの更新：`database.rules.json` は手で編集せず、`scripts/database-rules.mjs`（ルールの本体）と `src/data/site-pages.mjs`（ページ一覧）・`src/data/stamp-limits.mjs`（1ページ5枚・シール6種・角度±20°・書込間隔1秒）から `npm run rules` で生成してコミットします。`main` で `database.rules.json` か、その元になるファイル（`works.json`・`manual.json` を含む）が変わると、GitHub Actionsの `Firebase rules` ワークフローがコミット済みのルールが最新か（`node scripts/rules.mjs --check`）とエミュレーターでの動作を検証したうえで専用DBへデプロイします（PRでは検証のみ。ルールが古いPRは失敗します）。`manual.json` の記事だけを変えたマージでも同じ内容のルールが再デプロイされますが、結果は変わりません（Environmentに承認者を付けている場合は承認を求められます）。事前にリポジトリのSecretsへ `FIREBASE_SERVICE_ACCOUNT`（cp20-platformの「Firebase Realtime Database 管理者」ロールを持つサービスアカウントのJSONキー）を登録し、Environment `firebase-production` を作成してください（必須レビュアーを付ければ承認制にできます）。手動では、Firebase CLIで対象アカウントにログイン後に `npm run firebase:rules`。サイト（Cloudflare）とルールは別々にデプロイされるため、書込形式が変わるルール変更ではマージ直後の数分間、古いクライアントと新しいルール（またはその逆）の組み合わせでシールの保存が失敗することがあります。`.firebaserc` は専用DBだけを指します。レコードの管理・削除はFirebase Consoleの専用DBから行えます。
 
 ## UI / Web標準
 

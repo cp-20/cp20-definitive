@@ -32,10 +32,7 @@ export default function App() {
   const path = createNavigation();
   const info = createMemo(() => pageInfo(path()));
   return (
-    <StampProvider
-      path={path()}
-      enabled={['/', '/about', '/articles', '/works'].includes(path()) || !!info().work}
-    >
+    <StampProvider path={path()} enabled={info().found}>
       <Shell path={path()}>
         <For each={[path()]}>
           {(route) => (

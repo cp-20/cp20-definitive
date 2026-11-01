@@ -1,6 +1,7 @@
 import type { JSX } from '@solidjs/web';
 import { HydrationScript } from '@solidjs/web';
 import { pageInfo } from './route';
+import { canonicalUrl } from './data/site-pages.mjs';
 export default function Document(props: { children: JSX.Element }) {
   const info = pageInfo();
   return (
@@ -12,7 +13,7 @@ export default function Document(props: { children: JSX.Element }) {
         <meta name="description" content={info.description} />
         <meta name="theme-color" content="#cfe7c4" />
         {info.found ? (
-          <link rel="canonical" href={`https://cp20.dev${info.path}`} />
+          <link rel="canonical" href={canonicalUrl(info.path)} />
         ) : (
           <meta name="robots" content="noindex" />
         )}
@@ -21,7 +22,7 @@ export default function Document(props: { children: JSX.Element }) {
         <meta property="og:title" content={info.title} />
         <meta property="og:description" content={info.description} />
         <meta property="og:type" content="website" />
-        {info.found && <meta property="og:url" content={`https://cp20.dev${info.path}`} />}
+        {info.found && <meta property="og:url" content={canonicalUrl(info.path)} />}
         <HydrationScript />
       </head>
       <body>{props.children}</body>

@@ -3,14 +3,13 @@ import { applyStreamEvent, coalesce } from './data/stamp-stream.mjs';
 import { moveIn, placeIn, removeFrom, stampEntries } from './data/stamp-record.mjs';
 import { deadline, reconnectDelay } from './data/resilience.mjs';
 import { recordPath, throttlePath, writeBody, writeWithRetry } from './data/stamp-write.mjs';
+import { pageKey } from './data/site-pages.mjs';
 import type { Auth, User } from 'firebase/auth';
 export type Stamp = { anchor: string; x: number; y: number; kind: number; angle: number; createdAt: number };
 export type PlacedStamp = Stamp & { id: string; owner: string; slot: string; avatar?: string };
 // A signed-in visitor: the Firebase UID and the Gravatar hash shown on their stickers.
 export type Account = { uid: string; avatar: string };
 type RecordData = { updatedAt: number; stamps: Record<string, Stamp>; avatar?: string };
-export const pageKey = (path: string) =>
-  path === '/' ? 'home' : path.replace(/^\/|\/$/g, '').replaceAll('/', '--');
 const gravatarPattern = /^[0-9a-f]{64}$/;
 const placed = (owner: string, record: RecordData | null): PlacedStamp[] =>
   stampEntries(record).map(([slot, stamp]) => ({

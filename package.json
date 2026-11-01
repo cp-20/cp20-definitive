@@ -12,7 +12,8 @@
     "check": "tsc --noEmit",
     "deploy": "npm run build && wrangler deploy",
     "dev:worker": "wrangler dev --ip 0.0.0.0 --port 8787",
-    "firebase:rules": "firebase deploy --only database:portfolio-stamps --project cp20-platform",
+    "rules": "node scripts/rules.mjs",
+    "firebase:rules": "node scripts/rules.mjs --check && firebase deploy --only database:portfolio-stamps --project cp20-platform",
     "cache:images": "node scripts/cache-images.mjs"
   },
   "dependencies": {

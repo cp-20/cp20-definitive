@@ -2,9 +2,12 @@ import { mergeArticles } from './normalize.mjs';
 import snapshot from './generated.json';
 import manual from './manual.json';
 import baseWorks from './works.json';
+import { mergeWorks } from './site-pages.mjs';
 export type Article = { title: string; url: string; source: string; date: string };
 export const articles: Article[] = mergeArticles(snapshot.articles, [], manual);
-export const works = [...baseWorks, ...manual.projects];
+export type Work = (typeof baseWorks)[number];
+// Checked for malformed or duplicate ids (they become URLs and stamp page keys).
+export const works: Work[] = mergeWorks(baseWorks, manual);
 export const repos = snapshot.repos as {
   name: string;
   url: string;

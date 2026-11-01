@@ -10,6 +10,7 @@
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { writeBody } from '../src/data/stamp-write.mjs';
+import { mergeWorks, stampPageKeys } from '../src/data/site-pages.mjs';
 const emulator = process.env.STAMPS_RULES_EMULATOR;
 if (process.env.STAMPS_LIVE_TEST !== '1' && !emulator)
   throw Error(
@@ -20,6 +21,10 @@ assert.equal(
   config.databaseURL,
   'https://cp20-platform-portfolio-stamps.asia-southeast1.firebasedatabase.app',
 );
+const loadData = async (name) =>
+  JSON.parse(await fs.readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8'));
+// The last page in the generated pattern: a work page key that really is accepted.
+const lastPage = stampPageKeys(mergeWorks(await loadData('works'), await loadData('manual'))).at(-1);
 const base = emulator ? `http://${emulator}` : config.databaseURL;
 const namespace = `stamps-rules-${Date.now()}`;
 async function request(path, method = 'GET', body, token, params = {}) {
@@ -131,6 +136,7 @@ if (google) {
       'sixth slot denied',
     );
     await expect(write('fake-route', uid, record(stamp), google), 401, 'unknown page denied');
+    await expect(write('works--not-a-page', uid, record(stamp), google), 401, 'unknown work page denied');
     await expect(
       request(`pages/home/${uid}`, 'PUT', record(stamp), google),
       401,
@@ -175,10 +181,15 @@ if (google) {
     await sleep(1100);
     await expect(put(record(stamp)), 200, 're-create after the interval accepted');
     await sleep(1100);
+    await expect(write(lastPage, uid, record(stamp), google), 200, `${lastPage} (last listed page) accepted`);
+    await sleep(1100);
+    await expect(write(lastPage, uid, null, google), 200, `${lastPage} record removable`);
+    await sleep(1100);
     await expect(put(null), 200, 'own stamps removable with the throttle entry');
   } finally {
     await sleep(1100);
     await request(`pages/home/${uid}`, 'DELETE', undefined, google);
+    await request(`pages/${lastPage}/${uid}`, 'DELETE', undefined, google);
   }
 } else console.log('Set STAMPS_GOOGLE_ID_TOKEN to also check validation with a Google account');
 console.log(`Firebase rules: ${checks} checks passed`);

@@ -2,14 +2,11 @@ import { createSignal, onSettled, flush } from 'solid-js';
 import { currentUrl, pageInfo } from './route';
 import { works } from './data/content';
 import { SCROLL_KEY, readPositions, writePositions } from './data/resilience.mjs';
-const paths = new Set(['/', '/about', '/articles', '/works', ...works.map((w) => `/works/${w.id}`)]);
-// The order of the index tabs. Moving down the tabs turns the page forward.
-const sections = ['/', '/works', '/articles', '/about'];
-const sectionIndex = (path: string) =>
-  path === '/' ? 0 : sections.findIndex((s, i) => i > 0 && path.startsWith(s));
+import { canonicalUrl, normalizePath, sitePaths, tabIndex } from './data/site-pages.mjs';
+const paths = new Set(sitePaths(works));
 function flipDirection(from: string, to: string) {
-  const a = sectionIndex(from),
-    b = sectionIndex(to);
+  const a = tabIndex(from),
+    b = tabIndex(to);
   if (a < 0 || b < 0 || from === to) return 'fade';
   if (a !== b) return b > a ? 'forward' : 'back';
   // Within a section, the deeper page (a work's detail) is the next page.
@@ -61,7 +58,7 @@ function focusableTarget(target: HTMLElement) {
   return target.querySelector<HTMLElement>('h1, h2, h3, h4, h5, h6') || target;
 }
 export function createNavigation() {
-  const [path, setPath] = createSignal(currentUrl().pathname.replace(/\/$/, '') || '/');
+  const [path, setPath] = createSignal(normalizePath(currentUrl().pathname));
   onSettled(() => {
     // Positions survive a reload or a visit to another document (the browser's own restoring
     // is off so in-app back/forward can restore after the page has been swapped).
@@ -108,14 +105,14 @@ export function createNavigation() {
       transition?.skipTransition();
       const update = () => {
         if (ticket !== version) return;
-        setPath(url.pathname.replace(/\/$/, '') || '/');
+        setPath(normalizePath(url.pathname));
         flush();
         const info = pageInfo(path());
         document.title = info.title;
         for (const selector of ['meta[name="description"]', 'meta[property="og:description"]'])
           document.querySelector(selector)?.setAttribute('content', info.description);
         document.querySelector('meta[property="og:title"]')?.setAttribute('content', info.title);
-        syncIndexing(info.found ? `https://cp20.dev${info.path}` : undefined);
+        syncIndexing(info.found ? canonicalUrl(info.path) : undefined);
         document.dispatchEvent(new Event('cp20:navigation'));
         const target = url.hash ? document.getElementById(decodeURIComponent(url.hash.slice(1))) : null;
         if (restore) window.scrollTo({ left: restore[0], top: restore[1], behavior: 'instant' });
@@ -138,7 +135,7 @@ export function createNavigation() {
         !matchMedia('(prefers-reduced-motion: reduce)').matches
       ) {
         const root = document.documentElement;
-        root.dataset.flip = flipDirection(path(), url.pathname.replace(/\/$/, '') || '/');
+        root.dataset.flip = flipDirection(path(), normalizePath(url.pathname));
         markSheet('flip-old');
         transition = document.startViewTransition(update);
         void transition.ready.catch(() => {});
@@ -160,7 +157,7 @@ export function createNavigation() {
       const a = (e.target as Element).closest<HTMLAnchorElement>('a[href]');
       if (!a || a.hasAttribute('download') || (a.target && a.target !== '_self')) return;
       const url = new URL(a.href);
-      if (url.origin !== location.origin || !paths.has(url.pathname.replace(/\/$/, '') || '/')) return;
+      if (url.origin !== location.origin || !paths.has(normalizePath(url.pathname))) return;
       if (url.pathname === location.pathname && url.search === location.search && url.hash) return;
       e.preventDefault();
       if (url.href === location.href) return;
