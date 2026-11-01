@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, rename, readdir, unlink, access } from 'nod
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { imageSize } from 'image-size';
+import sharp from 'sharp';
 import { addVariants, ogSources } from './image-variants.mjs';
 const directory = new URL('../public/media/', import.meta.url);
 const manifestFile = new URL('../src/data/image-cache.json', import.meta.url);
@@ -12,6 +13,22 @@ export function rasterExtension(bytes) {
   const extensions = { jpg: 'jpg', png: 'png', gif: 'gif', webp: 'webp', avif: 'avif', ico: 'ico' };
   if (!extensions[type]) throw Error('Unsupported image format');
   return extensions[type];
+}
+/**
+ * Like rasterExtension, but also decodes the whole image (ICO aside, which sharp cannot read), so a
+ * file whose header is intact but whose body is truncated or corrupt is rejected before it is cached.
+ * @param {Buffer} bytes
+ */
+export async function decodableRaster(bytes) {
+  const ext = rasterExtension(bytes);
+  if (ext !== 'ico') {
+    try {
+      await sharp(bytes).stats();
+    } catch {
+      throw Error('Undecodable image');
+    }
+  }
+  return ext;
 }
 /**
  * @param {boolean} [force]
@@ -67,7 +84,7 @@ export async function cacheImages(force = false, previousPreviews) {
             parts.push(part);
           }
           const bytes = Buffer.concat(parts);
-          const ext = rasterExtension(bytes);
+          const ext = await decodableRaster(bytes);
           const filename = `${createHash('sha256').update(bytes).digest('hex').slice(0, 24)}.${ext}`;
           const file = new URL(filename, directory);
           const temporary = new URL(

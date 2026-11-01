@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import sharp from 'sharp';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parsePreview, dimensions } from './previews.mjs';
@@ -108,6 +109,53 @@ test('new OG images are accepted only when they are cacheable rasters', async ()
   await assert.rejects(
     dimensions('https://example.com/a.png', async () => new Response('busy', { status: 503 })),
   );
+});
+
+// A large noise PNG cut in half: image-size still reads a valid header, but decoding fails.
+const noise = Buffer.alloc(2000 * 1000 * 3);
+for (let i = 0; i < noise.length; i++) noise[i] = (i * 2654435761) >>> 24;
+const fullPng = await sharp(noise, { raw: { width: 2000, height: 1000, channels: 3 } })
+  .png()
+  .toBuffer();
+const truncatedPng = fullPng.subarray(0, fullPng.length >> 1);
+
+test('OG images with an intact header but a truncated body are rejected', async () => {
+  await assert.rejects(dimensions('https://example.com/cut.png', async () => new Response(truncatedPng)));
+});
+
+test('a truncated image neither aborts the image cache nor enters it', async () => {
+  const page = 'https://example.com/page';
+  const good = 'https://example.com/good.png';
+  const cut = 'https://example.com/cut.png';
+  const box = await sandbox({
+    previews: { [page]: { image: cut, icon: good, width: 2000, height: 1000 } },
+    tracks: [],
+    series: [],
+  });
+  try {
+    const { cacheImages } = await box.importScript('cache-images.mjs');
+    await withFetch(
+      async (url) => new Response(String(url) === cut ? truncatedPng : png),
+      () => cacheImages(false, {}),
+    );
+    assert.deepEqual(Object.keys(await box.load('image-cache')), [good]);
+  } finally {
+    await box.cleanup();
+  }
+});
+
+test('a corrupt cached original keeps its entry without variants', async () => {
+  const source = 'https://example.com/cut.png';
+  const box = await sandbox({}, { 'cut.png': truncatedPng });
+  try {
+    const { addVariants } = await box.importScript('image-variants.mjs');
+    const cache = { [source]: { file: '/media/cut.png', checkedAt: 'now' } };
+    assert.equal(await addVariants(cache, new Set([source])), 0);
+    assert.equal(cache[source].variants, undefined);
+    assert.equal(await box.exists('public/media/cut-320w.webp.tmp'), false);
+  } finally {
+    await box.cleanup();
+  }
 });
 
 test('a failed image refresh keeps the previous image together with its own dimensions', async () => {

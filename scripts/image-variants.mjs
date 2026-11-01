@@ -1,7 +1,7 @@
 // Smaller WebP copies of the cached OG images for thumbnails (article rows, the works grid).
 // The original file stays the largest srcset candidate; variants only shrink and re-encode it, so
 // the artwork, colours and aspect ratio are unchanged.
-import { access, readFile, writeFile, rename } from 'node:fs/promises';
+import { access, readFile, writeFile, rename, rm } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 
@@ -51,14 +51,23 @@ export async function addVariants(cache, sources) {
       const target = publicUrl(file);
       if (!(await exists(target))) {
         const temporary = new URL(target.href + '.tmp');
-        await writeFile(
-          temporary,
-          await sharp(publicUrl(entry.file).pathname)
-            .resize({ width: w, withoutEnlargement: true })
-            .webp({ quality: 80 })
-            .toBuffer(),
-        );
-        await rename(temporary, target);
+        try {
+          await writeFile(
+            temporary,
+            await sharp(publicUrl(entry.file).pathname)
+              .resize({ width: w, withoutEnlargement: true })
+              .webp({ quality: 80 })
+              .toBuffer(),
+          );
+          await rename(temporary, target);
+        } catch {
+          // A corrupt original (intact header, broken body) must not stop the whole run: the entry
+          // keeps only its original file.
+          await rm(temporary, { force: true });
+          console.warn(`Image variants: ${entry.file} could not be resized; kept without variants`);
+          variants.length = 0;
+          break;
+        }
         written++;
       }
       variants.push({ file, width: w });

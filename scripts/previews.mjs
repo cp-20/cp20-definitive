@@ -2,7 +2,7 @@ import { readFile, writeFile, rename } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { imageSize } from 'image-size';
 import { headTags } from './html-tags.mjs';
-import { rasterExtension, maxImageBytes } from './cache-images.mjs';
+import { decodableRaster, maxImageBytes } from './cache-images.mjs';
 import { mergeArticles } from '../src/data/normalize.mjs';
 const file = new URL('../src/data/previews.json', import.meta.url);
 const decode = (s) =>
@@ -58,7 +58,7 @@ export async function dimensions(url, fetcher = fetch) {
     chunks.push(chunk);
   }
   const bytes = Buffer.concat(chunks);
-  rasterExtension(bytes);
+  await decodableRaster(bytes);
   const result = imageSize(bytes);
   return { width: size(result.width, 1200), height: size(result.height, 630) };
 }
