@@ -2637,15 +2637,6 @@
   .stamp-status > p {
     margin: 0;
   }
-  .stamp-retry {
-    padding: 0 10px;
-    border: 2px solid var(--edge);
-    border-radius: 999px;
-    background: var(--yellow);
-    color: var(--on-color);
-    font-size: 0.75rem;
-    font-weight: 700;
-  }
   /* Signed out: the stickers stay on the backing until you sign in. */
   .sticker-sheet[data-locked] .sheet-sticker {
     cursor: pointer;
@@ -2814,7 +2805,7 @@
   .sticker-tab:active {
     box-shadow: 0 0 0 var(--drop);
   }
-  /* A save failed while the sheet was closed: the tab says so until it is retried. */
+  /* The last change could not be saved (and was undone): the tab says so until the next one. */
   .sticker-tab[data-failed] .sticker-tab-label::after {
     content: '・未保存';
     color: var(--seal);

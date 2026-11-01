@@ -480,8 +480,7 @@ try {
   await expect(visitor.locator('.sticker-sheet')).toBeHidden();
   await expect(visitor.locator('.sticker-tab')).toBeVisible();
   if (Object.keys(db.pages.get('home') || {}).length) throw Error('Test stickers left in the mock database');
-  // With all five stickers placed, moving one keeps the other four (the oldest included), and
-  // two tabs of one account placing at once both keep their sticker.
+  // With all five stickers placed, moving one keeps the other four (the oldest included).
   await page.goto(origin + '/about');
   await settle();
   const second = await context.newPage();
@@ -515,14 +514,18 @@ try {
     throw Error('Moving one of five stickers changed the others');
   db.pages.delete('about');
   await expect(page.locator(`[data-stamp-id^="${user.uid}-"]`)).toHaveCount(0);
+  // Two tabs placing at once: a save the database refuses (the other tab wrote first) is undone
+  // and said so in that tab, and no saved sticker is overwritten.
   await Promise.all([stick(page, 0.3), stick(second, 0.6)]);
   for (const tab of [page, second])
     await expect(tab.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
-  if (Object.keys(five()).length !== 2) throw Error('Concurrent tabs lost a sticker');
-  for (const tab of [page, second]) {
-    await expect(tab.locator('.stamp-retry')).toHaveCount(0);
-    await expect(tab.locator(`[data-stamp-id^="${user.uid}-"]`)).toHaveCount(2);
-  }
+  const saved = Object.keys(five()).length;
+  let refused = 0;
+  for (const tab of [page, second])
+    refused += await tab.locator('.stamp-status', { hasText: '保存できませんでした' }).count();
+  if (saved < 1 || saved + refused !== 2) throw Error(`Concurrent tabs: ${saved} saved, ${refused} refused`);
+  for (const tab of [page, second])
+    await expect(tab.locator(`[data-stamp-id^="${user.uid}-"]`)).toHaveCount(saved);
   await second.close();
   db.pages.delete('about');
   // Another visitor's stickers aimed at controls (or written onto the index tabs through the REST
@@ -755,23 +758,20 @@ try {
   await expect(page.locator('p.visually-hidden[role=status]')).toHaveText(
     /^クローバーを(?:.+の上に)?貼りました。残り\d枚$/,
   );
+  // A save that fails is undone at once, said, and shown on the sheet until the next change.
   await expect(page.locator('[data-pending=true]')).toHaveCount(1);
   await expect(page.locator('.stamp-status')).toContainText('保存できませんでした', { timeout: 20000 });
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '再試行' })).toBeVisible();
-  // A second failure while the first is waiting keeps both, and one retry sends both again.
+  await expect(spoken).toHaveText('保存できませんでした。クローバーを元に戻しました');
+  await page.unroute('https://**.firebasedatabase.app/**');
+  const writesAfterOutage = db.writes;
   await page.keyboard.press('Enter');
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
-  await expect(page.locator('.stamp-status')).toContainText('2件保存できませんでした', { timeout: 20000 });
-  await page.unroute('https://**.firebasedatabase.app/**');
-  const writesBeforeRetry = db.writes;
-  await page.getByRole('button', { name: '再試行' }).click();
-  await expect(page.locator('.stamp-retry')).toHaveCount(0);
-  await expect(page.locator('[data-pending=true]')).toHaveCount(0, { timeout: 20000 });
-  await expect.poll(() => db.writes - writesBeforeRetry, { timeout: 20000 }).toBe(2);
   await expect(page.locator('.stamp-status')).not.toContainText('保存できませんでした');
-  // A peel that failed (the sticker comes back) and is then peeled again clears the failure.
+  await expect(page.locator('[data-pending=true]')).toHaveCount(0, { timeout: 20000 });
+  await expect.poll(() => db.writes - writesAfterOutage, { timeout: 20000 }).toBe(1);
+  // A peel that fails brings the sticker back; peeling it again works.
   {
     const ownStickers = page.locator(`[data-stamp-id^="${user.uid}-"]`);
     const before = await ownStickers.count();
@@ -789,9 +789,8 @@ try {
     await undo.click();
     await expect.poll(() => db.writes - writesBeforePeel, { timeout: 20000 }).toBe(1);
     await expect(ownStickers).toHaveCount(before - 1);
-    await expect(page.locator('.stamp-retry')).toHaveCount(0);
     await expect(page.locator('.stamp-status')).not.toContainText('保存できませんでした');
-    await expect(page.locator('.sticker-tab')).not.toHaveAttribute('aria-label', /保存できませんでした/);
+    await expect(page.locator('.sticker-tab[data-failed]')).toHaveCount(0);
   }
   // An in-app link to a section moves focus to that section, so the next Tab continues there.
   await page.goto(origin + '/');
@@ -863,7 +862,7 @@ try {
   }
   report.interactions.push('swapped-out pages and filtered rows are released from memory');
   report.interactions.push(
-    'failed saves roll back and expose retry; keyboard placement with focus return and spoken result; section links move focus; reduced motion; complete static content without JS',
+    'failed saves are undone and said; keyboard placement with focus return and spoken result; section links move focus; reduced motion; complete static content without JS',
   );
   if (errors.length || externalImages.length || report.pages.some((p) => p.violations.length))
     throw Error(

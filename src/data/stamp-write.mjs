@@ -1,39 +1,50 @@
-import { WRITE_SPACING_MS } from './stamp-limits.mjs';
-// Every sticker write is one multi-path update of the page record and the writer's throttle
-// entry (see database.rules.json). The throttle entry outlives deleted records, so the
-// database can keep each account to one write a second, and its `prev` field must match the
-// value read before the write: a compare-and-swap that stops a second tab from overwriting a
-// concurrent change (Firebase has no conditional multi-path update).
-const timestamp = { '.sv': 'timestamp' };
+// One read-modify-write of a visitor's own sticker record through the database's REST API.
+//
+// Every write is one multi-path update of the page record and the writer's throttle entry (see
+// database.rules.json). The throttle entry outlives deleted records, so the database can keep
+// each account to one write a second, and its `prev` field must match the value read before the
+// write: a compare-and-swap that makes a second tab's concurrent write fail instead of
+// overwriting this one. A failed write is not retried; the sticker UI undoes the change.
+import { REQUEST_TIMEOUT_MS } from './stamp-limits.mjs';
+
+/** Stands for the database's own clock in a write. */
+export const SERVER_TIME = { '.sv': 'timestamp' };
 export const throttlePath = (uid) => `throttle/${uid}`;
 export const recordPath = (page, uid) => `pages/${page}/${uid}`;
-export const throttleAt = (throttle) =>
+const throttleAt = (throttle) =>
   typeof throttle?.at === 'number' && Number.isFinite(throttle.at) ? throttle.at : 0;
+
+/** The body of the multi-path update that stores `record` (null deletes it). */
 export function writeBody(page, uid, record, throttle) {
   return {
     [recordPath(page, uid)]: record ?? null,
-    [throttlePath(uid)]: { at: timestamp, prev: throttleAt(throttle) },
+    [throttlePath(uid)]: { at: SERVER_TIME, prev: throttleAt(throttle) },
   };
 }
-// How long to wait before writing again after the previous write at `at` (server time),
-// judged with the local clock; at least a little so a skewed clock still backs off.
-export const retryDelay = (at, now = Date.now()) =>
-  Math.min(WRITE_SPACING_MS, Math.max(150, at + WRITE_SPACING_MS - now));
-// One read-modify-write of a sticker record. The throttle entry is read first: if anything is
-// written after that, the compare-and-swap fails, so a second tab cannot overwrite a
-// concurrent change. A denied write is retried with fresh data once the database's interval
-// since the latest write (ours or another tab's) has passed, so the retry is not denied
-// again for coming too soon; data the rules reject stays denied and runs out of attempts.
-// `update` returns the new record, or undefined to leave it as it is.
-export async function writeWithRetry({ readThrottle, readRecord, save, wait }, update, attempts = 4) {
-  for (let attempt = 0; attempt < attempts; attempt++) {
-    const throttle = await readThrottle();
-    const previous = await readRecord();
-    const data = update(previous);
-    if (data === undefined) return previous;
-    const saved = await save(data, throttle);
-    if (!saved.denied) return saved.record;
-    await wait(retryDelay(throttleAt(await readThrottle())));
-  }
-  throw Error('Concurrent update; try again');
+
+/**
+ * Reads the record, lets `update` edit it and stores the result, then reads it back (with the
+ * server's times filled in). `update` returns undefined to leave the record as it is.
+ * Rejects when any request fails, including a write the rules deny.
+ * @param {{ fetch: typeof fetch; databaseURL: string; token: string; page: string; uid: string }} where
+ * @param {(record: any) => unknown} update
+ */
+export async function writeRecord({ fetch, databaseURL, token, page, uid }, update) {
+  const request = async (path, init = {}) => {
+    const url = new URL(`${databaseURL}/${path}.json`);
+    url.searchParams.set('auth', token);
+    const response = await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    if (!response.ok) throw Error(`${init.method || 'GET'} /${path}: HTTP ${response.status}`);
+    return response.json();
+  };
+  const throttle = await request(throttlePath(uid));
+  const record = await request(recordPath(page, uid));
+  const next = update(record);
+  if (next === undefined) return record;
+  await request('', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(writeBody(page, uid, next, throttle)),
+  });
+  return request(recordPath(page, uid));
 }

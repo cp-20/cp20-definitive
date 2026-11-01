@@ -1,10 +1,32 @@
-// How a finger handles your own stickers on the page. Kept free of the DOM so it can be tested
-// in Node.
+// The sticker in hand, kept free of the DOM so it can be tested in Node: the spring it follows the
+// pointer with, and how a finger handles your own stickers on the page.
 //
 // A swipe that starts on one of your stickers scrolls the page like anywhere else; the sticker
 // only comes up to be dragged once it has been held still for a moment. A short tap on one lying
 // over a link or button presses that control, and a tap anywhere else lifts it so the next tap
 // puts it down.
+
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+/** @typedef {{ x: number; y: number; tx: number; ty: number; tilt: number; scale: number; ts: number }} Spring */
+
+export const MAX_TILT = 22;
+
+/**
+ * Moves the spring one frame toward its target (tx, ty, ts) in place, leaning into the
+ * direction of travel.
+ * @param {Spring} m
+ * @returns {boolean} whether it had come to rest
+ */
+export function springStep(m) {
+  const dx = m.tx - m.x,
+    dy = m.ty - m.y;
+  m.x += dx * 0.32;
+  m.y += dy * 0.32;
+  m.tilt += (clamp(dx * 0.5, -MAX_TILT, MAX_TILT) - m.tilt) * 0.2;
+  m.scale += (m.ts - m.scale) * 0.25;
+  return Math.abs(dx) < 0.4 && Math.abs(dy) < 0.4 && Math.abs(m.tilt) < 0.3;
+}
 
 // How long a finger rests on your sticker before it can be dragged.
 export const HOLD_MS = 350;
@@ -12,8 +34,6 @@ export const HOLD_MS = 350;
 export const HOLD_SLOP = 10;
 // How far above the finger a tapped sticker floats, so the finger does not hide it.
 export const LIFT = 70;
-
-const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
 /**
  * Whether a press waits for a long press before it drags: your stickers on the page, by touch

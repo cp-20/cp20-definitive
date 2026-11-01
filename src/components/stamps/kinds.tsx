@@ -1,12 +1,5 @@
-// The sticker designs. Their order is the `kind` stored in the database (0 … STICKER_KIND_COUNT - 1).
-export const STICKER_KINDS = [
-  { symbol: 'clover', name: 'クローバー' },
-  { symbol: 'thumb', name: 'いいね' },
-  { symbol: 'sparkles', name: 'きらきら' },
-  { symbol: 'eyes', name: '見てる' },
-  { symbol: 'heart', name: 'ハート' },
-  { symbol: '', name: 'しーぴー' },
-];
+import { STICKER_KINDS } from '../../data/sticker-kinds.mjs';
+export { STICKER_KINDS };
 // The last design is the site owner's own icon rather than a Twemoji.
 const AVATAR_KIND = 5;
 export const stickerName = (kind: number) => STICKER_KINDS[kind]?.name || 'しーぴー';

@@ -1,12 +1,13 @@
-// The limits shared by the sticker UI, its write queue and database.rules.json
+import { STICKER_KINDS } from './sticker-kinds.mjs';
+// The limits shared by the sticker UI, its saving and database.rules.json
 // (scripts/database-rules.mjs builds the rules from these, so changing one changes the rules).
 
 /** Stickers one visitor can keep on one page; a new one past this replaces their oldest. */
 export const STAMPS_PER_PAGE = 5;
 /** The record's slot keys: '0' … '4'. */
 export const STAMP_SLOTS = Array.from({ length: STAMPS_PER_PAGE }, (_, i) => String(i));
-/** Sticker designs; kinds are 0 … STICKER_KIND_COUNT - 1 (see src/components/sticker/kinds.tsx). */
-export const STICKER_KIND_COUNT = 6;
+/** Sticker designs; kinds are 0 … STICKER_KIND_COUNT - 1. */
+export const STICKER_KIND_COUNT = STICKER_KINDS.length;
 /** A sticker's tilt, in degrees either way. */
 export const MAX_ANGLE = 20;
 /** The database rejects a second write by the same account sooner than this. */

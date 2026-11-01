@@ -1,7 +1,7 @@
 // Anyone can see the stickers; placing them needs a Google account. The auth SDK is loaded
 // once the visitor reaches for the sheet (or straight away if they signed in before),
 // so the sign-in popup can open within the click.
-import { createSignal } from 'solid-js';
+import { createSignal, onSettled } from 'solid-js';
 import type { Account } from '../../data/stamp-types';
 import { deadline } from '../../data/resilience.mjs';
 import { signInMessage } from '../../data/stamp-a11y.mjs';
@@ -36,6 +36,10 @@ export function createStampAccount(options: {
         setRestoring(false);
       }));
   }
+  // A visitor who signed in before is signed back in straight away.
+  onSettled(() => {
+    if (readPref(ACCOUNT_KEY)) void connect();
+  });
   async function signIn() {
     if (signingIn()) return;
     setSigningIn(true);

@@ -1,7 +1,7 @@
 import './styles/app.css';
 import { For, createMemo } from 'solid-js';
 import Shell from './components/Shell';
-import { StampProvider } from './components/Stamps';
+import { StampProvider } from './components/stamps/StampProvider';
 import { Home, About, Articles, Works, WorkDetail, NotFound } from './pages';
 import { pageInfo } from './route';
 import { createNavigation } from './navigation';

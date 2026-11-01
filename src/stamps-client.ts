@@ -1,8 +1,8 @@
 import config from './data/firebase.json';
 import { applyStreamEvent, coalesce, keepStream } from './data/stamp-stream.mjs';
-import { moveIn, placeIn, removeFrom, stampEntries } from './data/stamp-record.mjs';
+import { moveIn, nextRecord, placeIn, recordStamps, removeFrom } from './data/stamp-record.mjs';
 import { deadline } from './data/resilience.mjs';
-import { recordPath, throttlePath, writeBody, writeWithRetry } from './data/stamp-write.mjs';
+import { SERVER_TIME, writeRecord } from './data/stamp-write.mjs';
 import { pageKey } from './data/site-pages.mjs';
 import {
   AUTH_TIMEOUT_MS as AUTH_TIMEOUT,
@@ -11,17 +11,9 @@ import {
 } from './data/stamp-limits.mjs';
 import type { Auth, User } from 'firebase/auth';
 import type { Account, PlacedStamp, Stamp } from './data/stamp-types';
+// The sticker client, loaded once the page needs stickers: the public stream of a page's
+// stickers, Google sign-in, and saving your own stickers.
 type RecordData = { updatedAt: number; stamps: Record<string, Stamp>; avatar?: string };
-const gravatarPattern = /^[0-9a-f]{64}$/;
-const placed = (owner: string, record: RecordData | null): PlacedStamp[] =>
-  stampEntries(record).map(([slot, stamp]) => ({
-    ...stamp,
-    id: `${owner}-${slot}`,
-    owner,
-    slot,
-    avatar:
-      typeof record?.avatar === 'string' && gravatarPattern.test(record.avatar) ? record.avatar : undefined,
-  }));
 export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void, fail: () => void) {
   const url = new URL(`${config.databaseURL}/pages/${pageKey(path)}.json`);
   url.searchParams.set('orderBy', '"updatedAt"');
@@ -30,7 +22,7 @@ export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void
   // Events are applied as they arrive but rendered at most four times a second.
   const render = coalesce(() => {
     try {
-      receive(Object.entries(records).flatMap(([owner, record]) => placed(owner, record)));
+      receive(Object.entries(records).flatMap(([owner, record]) => recordStamps(owner, record)));
     } catch {
       fail();
     }
@@ -108,89 +100,39 @@ async function currentUser() {
   return auth.currentUser;
 }
 
-const timestamp = () => ({ '.sv': 'timestamp' });
-const settled = (value: unknown): value is RecordData | null =>
-  value === null || (typeof value === 'object' && typeof (value as RecordData).updatedAt === 'number');
-async function transaction(path: string, update: (data: RecordData | null) => unknown) {
-  const identity = await currentUser();
-  const page = pageKey(path);
-  const token = await deadline(identity.getIdToken(), REQUEST_TIMEOUT);
-  const at = (location: string) => {
-    const url = new URL(`${config.databaseURL}/${location}.json`);
-    url.searchParams.set('auth', token);
-    return url;
-  };
-  const read = async (location: string) => {
-    const response = await fetch(at(location), { signal: AbortSignal.timeout(REQUEST_TIMEOUT) });
-    if (!response.ok) throw Error('Cannot read own stamps');
-    return response.json();
-  };
-  return (await writeWithRetry(
-    {
-      readThrottle: () => read(throttlePath(identity.uid)),
-      readRecord: async () => (await read(recordPath(page, identity.uid))) as RecordData | null,
-      save: async (data: unknown, throttle: unknown) => {
-        const saved = await fetch(at(''), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(writeBody(page, identity.uid, data, throttle)),
-          signal: AbortSignal.timeout(REQUEST_TIMEOUT),
-        });
-        // Denied: another tab wrote in between, or the last write was under a second ago.
-        if (saved.status === 401 || saved.status === 403) return { denied: true };
-        if (!saved.ok) throw Error('Cannot save stamp');
-        // The response echoes the written data (flat or nested); read it back if it is not there.
-        const body = (await saved.json()) as Record<string, any> | null;
-        const flat = recordPath(page, identity.uid),
-          nested = body?.pages?.[page];
-        const written =
-          body && flat in body
-            ? body[flat]
-            : nested && typeof nested === 'object' && identity.uid in nested
-              ? nested[identity.uid]
-              : undefined;
-        return { record: settled(written) ? written : ((await read(flat)) as RecordData | null) };
-      },
-      wait: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
-    },
-    update,
-  )) as RecordData | null;
-}
-const recordOf = (account: Account, stamps: Record<string, unknown> | undefined) =>
-  stamps === undefined
-    ? undefined
-    : Object.keys(stamps).length
-      ? { stamps, updatedAt: timestamp(), avatar: account.avatar }
-      : null;
-export async function place(path: string, stamp: Omit<Stamp, 'createdAt'>, account: Account, reuse = false) {
-  let slot = '0';
-  const data = await transaction(path, (data) => {
-    const edit = placeIn(data, stamp, timestamp(), reuse);
-    slot = edit.slot;
-    return recordOf(account, edit.stamps);
-  });
-  const stamps = placed(account.uid, data);
-  return { owner: account.uid, stamps, placed: stamps.find((s) => s.slot === slot) };
-}
-export async function remove(path: string, target: PlacedStamp, account: Account) {
-  // Does nothing if the slot now holds a newer stamp placed by another tab.
-  const data = await transaction(path, (data) => recordOf(account, removeFrom(data, target).stamps));
-  return { owner: account.uid, stamps: placed(account.uid, data) };
-}
-// Moving a sticker is one write of its own slot, so it never pushes out another sticker.
-export async function move(
+// ── Saving ──
+// Only a sticker's look and spot are sent; a new one's age is set by the database.
+type StampData = Omit<Stamp, 'createdAt'>;
+// One read-modify-write of your record on a page (src/data/stamp-write.mjs); `edit` returns the
+// slot it wrote and the new stamps (undefined to change nothing). A place or move whose saved
+// record does not hold the sticker counts as failed.
+async function save(
   path: string,
-  target: PlacedStamp,
-  stamp: Omit<Stamp, 'createdAt'>,
   account: Account,
-  reuse = false,
+  edit: (record: RecordData | null) => { slot: string; stamps?: Record<string, unknown> },
+  placing: boolean,
 ) {
-  let slot = target.slot;
-  const data = await transaction(path, (data) => {
-    const edit = moveIn(data, target, stamp, timestamp(), reuse);
-    slot = edit.slot;
-    return recordOf(account, edit.stamps);
-  });
-  const stamps = placed(account.uid, data);
-  return { owner: account.uid, stamps, placed: stamps.find((s) => s.slot === slot) };
+  const user = await currentUser();
+  const token = await deadline(user.getIdToken(), REQUEST_TIMEOUT);
+  let slot = '';
+  const record = (await writeRecord(
+    { fetch, databaseURL: config.databaseURL, token, page: pageKey(path), uid: user.uid },
+    (stored) => {
+      const result = edit(stored as RecordData | null);
+      slot = result.slot;
+      return nextRecord(result.stamps, account.avatar, SERVER_TIME);
+    },
+  )) as RecordData | null;
+  const stamps = recordStamps(account.uid, record);
+  const placed = stamps.find((s) => s.slot === slot);
+  if (placing && !placed) throw Error('The saved record does not hold the sticker');
+  return { owner: account.uid, stamps, placed };
 }
+export const place = (path: string, stamp: StampData, account: Account) =>
+  save(path, account, (record) => placeIn(record, stamp, SERVER_TIME), true);
+// Does nothing if the slot now holds a newer stamp placed by another tab.
+export const remove = (path: string, target: PlacedStamp, account: Account) =>
+  save(path, account, (record) => removeFrom(record, target), false);
+// Moving a sticker is one write of its own slot, so it never pushes out another sticker.
+export const move = (path: string, target: PlacedStamp, stamp: StampData, account: Account) =>
+  save(path, account, (record) => moveIn(record, target, stamp, SERVER_TIME), true);

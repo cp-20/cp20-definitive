@@ -1,76 +1,155 @@
+// A visitor's sticker record and the edits behind placing, moving and peeling.
+import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import { moveIn, placeIn, removeFrom, stampEntries } from '../src/data/stamp-record.mjs';
-const stamp = { anchor: 'intro', x: 0.5, y: 0.5, kind: 0, angle: 0, createdAt: 1 };
-assert.deepEqual(stampEntries(null), []);
-assert.deepEqual(stampEntries({ stamps: [null, stamp, null] }), [['1', stamp]]);
-assert.deepEqual(stampEntries({ stamps: { 0: null, 4: stamp } }), [['4', stamp]]);
-test('stickers the rules would not accept are dropped', () => {
-  const odd = (fields) => stampEntries({ stamps: { 0: { ...stamp, ...fields } } });
-  assert.deepEqual(odd({ x: { '.value': 0.5, '.priority': 'p' } }), []);
-  assert.deepEqual(odd({ kind: { '.value': 0, '.priority': 'p' } }), []);
-  assert.deepEqual(odd({ angle: { '.value': 0, '.priority': 'p' } }), []);
-  assert.deepEqual(odd({ createdAt: { '.sv': 'timestamp' } }), []);
-  assert.deepEqual(odd({ kind: 1.5 }), []);
-  assert.deepEqual(odd({ anchor: 'Not An Anchor' }), []);
-  assert.deepEqual(odd({ y: NaN }), []);
-  assert.deepEqual(stampEntries({ stamps: { 0: stamp, '.priority': 'junk', 7: stamp } }), [['0', stamp]]);
-});
-const remaining = Object.fromEntries(stampEntries({ stamps: [null, stamp] }));
-delete remaining['1'];
-assert.equal(Object.keys(remaining).length, 0, 'removing the last occupied slot must delete the record');
+import {
+  moveIn,
+  nextRecord,
+  placeIn,
+  recordStamps,
+  removeFrom,
+  stampEntries,
+} from '../src/data/stamp-record.mjs';
 
 const TS = { '.sv': 'timestamp' };
-const full = {
+const sticker = (fields = {}) => ({
+  anchor: 'intro',
+  x: 0.5,
+  y: 0.5,
+  kind: 0,
+  angle: 0,
+  createdAt: 1,
+  ...fields,
+});
+// Five stickers in slots 0…4, the one in slot 0 the oldest.
+const fullRecord = () => ({
   updatedAt: 9,
   stamps: Object.fromEntries(
-    [0, 1, 2, 3, 4].map((i) => [String(i), { ...stamp, x: i / 10, createdAt: 10 + i }]),
+    [0, 1, 2, 3, 4].map((i) => [String(i), sticker({ x: i / 10, createdAt: 10 + i })]),
   ),
-};
-const seen = (slot) => ({ ...full.stamps[slot], slot, id: `me-${slot}`, owner: 'me' });
-test('a move with five stickers rewrites its own slot and keeps its age', () => {
-  const edit = moveIn(full, seen('3'), { ...seen('3'), x: 0.57, y: 0.01 }, TS);
-  assert.equal(edit.slot, '3');
-  assert.equal(Object.keys(edit.stamps).length, 5);
-  for (const slot of ['0', '1', '2', '4']) assert.deepEqual(edit.stamps[slot], full.stamps[slot]);
-  // createdAt stays the stored value (the rules accept it unchanged), and no extra fields leak.
-  assert.deepEqual(edit.stamps['3'], { anchor: 'intro', x: 0.57, y: 0.01, kind: 0, angle: 0, createdAt: 13 });
-  assert.equal(full.stamps['3'].x, 0.3, 'the stored record is not mutated');
 });
-test('placing with five stickers replaces the oldest; a free slot is used first', () => {
-  assert.equal(placeIn(full, stamp, TS).slot, '0');
-  const holes = { stamps: [null, { ...stamp, createdAt: 5 }, null] };
-  assert.equal(placeIn(holes, stamp, TS).slot, '0');
-  assert.equal(placeIn(null, stamp, TS).slot, '0');
-  assert.deepEqual(placeIn(null, { ...stamp, id: 'x', owner: 'y', slot: '3' }, TS).stamps['0'], {
-    ...stamp,
-    createdAt: TS,
+// A stored sticker as the page saw it.
+const seen = (record, slot) => ({ ...record.stamps[slot], slot, id: `me-${slot}`, owner: 'me' });
+
+describe('stampEntries', () => {
+  test('配列で届いた穴あきのスロットも、番号つきで読める', () => {
+    assert.deepEqual(stampEntries({ stamps: [null, sticker(), null] }), [['1', sticker()]]);
+  });
+
+  test('レコードがなければ空', () => {
+    assert.deepEqual(stampEntries(null), []);
+  });
+
+  for (const [name, fields] of [
+    ['priority つきの x', { x: { '.value': 0.5, '.priority': 'p' } }],
+    ['priority つきの kind', { kind: { '.value': 0, '.priority': 'p' } }],
+    ['未解決のサーバー時刻', { createdAt: TS }],
+    ['整数でない kind', { kind: 1.5 }],
+    ['範囲外の kind', { kind: 6 }],
+    ['大きすぎる傾き', { angle: 21 }],
+    ['使えない anchor', { anchor: 'Not An Anchor' }],
+    ['NaN の y', { y: NaN }],
+  ])
+    test(`ルールが受け付けない値（${name}）のシールは捨てる`, () => {
+      assert.deepEqual(stampEntries({ stamps: { 0: sticker(fields) } }), []);
+    });
+
+  test('スロット番号でないキーは捨てる', () => {
+    assert.deepEqual(stampEntries({ stamps: { 0: sticker(), '.priority': 'junk', 7: sticker() } }), [
+      ['0', sticker()],
+    ]);
   });
 });
-test('removing or moving a sticker another tab replaced in its slot leaves it alone', () => {
-  const replaced = { stamps: { ...full.stamps, 3: { ...full.stamps['3'], createdAt: 99 } } };
-  assert.equal(removeFrom(replaced, seen('3')).stamps, undefined);
-  assert.equal(
-    removeFrom({ stamps: { ...full.stamps, 3: { ...stamp, x: 0.9 } } }, seen('3')).stamps,
-    undefined,
-  );
-  assert.deepEqual(Object.keys(removeFrom(full, seen('3')).stamps), ['0', '1', '2', '4']);
-  // A move of a sticker that is gone places it as a new one, never in the replaced slot.
-  const moved = moveIn(replaced, seen('3'), { ...stamp, x: 0.57 }, TS);
-  assert.equal(moved.slot, '0');
-  assert.equal(moved.stamps['3'].createdAt, 99);
-  assert.equal(moved.stamps['0'].createdAt, TS);
+
+describe('recordStamps', () => {
+  test('持ち主とスロットから id をつける', () => {
+    const [stamp] = recordStamps('alice', { stamps: { 3: sticker() } });
+    assert.deepEqual([stamp.id, stamp.owner, stamp.slot], ['alice-3', 'alice', '3']);
+  });
+
+  test('Gravatar のハッシュとして正しいアバターだけを持たせる', () => {
+    const hash = 'ab'.repeat(32);
+    assert.equal(recordStamps('a', { avatar: hash, stamps: { 0: sticker() } })[0].avatar, hash);
+    assert.equal(
+      recordStamps('a', { avatar: 'https://evil.example/x.png', stamps: { 0: sticker() } })[0].avatar,
+      undefined,
+    );
+  });
 });
-test('a retried place or move whose first request was saved does not save the sticker twice', () => {
-  const kept = { ...full.stamps['2'] };
-  // Without `reuse` an identical sticker is a new one (two stickers can be placed alike).
-  assert.equal(placeIn(full, kept, TS).slot, '0');
-  const again = placeIn(full, kept, TS, true);
-  assert.deepEqual(again, { slot: '2', stamps: undefined });
-  // A move whose reply was lost: the slot already holds the moved sticker, so the retry's
-  // target no longer matches and it would otherwise be placed afresh.
-  const movedTo = { ...seen('3'), x: 0.57 };
-  const after = { stamps: { ...full.stamps, 3: { ...full.stamps['3'], x: 0.57 } } };
-  assert.equal(moveIn(after, seen('3'), movedTo, TS).slot, '0');
-  assert.deepEqual(moveIn(after, seen('3'), movedTo, TS, true), { slot: '3', stamps: undefined });
+
+describe('placeIn', () => {
+  test('空いているスロットのうち一番若い番号に貼る', () => {
+    const record = { stamps: [null, sticker({ createdAt: 5 }), null] };
+    assert.equal(placeIn(record, sticker(), TS).slot, '0');
+  });
+
+  test('5枚貼ってあれば一番古いシールと入れ替える', () => {
+    const edit = placeIn(fullRecord(), sticker({ x: 0.9 }), TS);
+    assert.deepEqual([edit.slot, edit.stamps['0'].x], ['0', 0.9]);
+  });
+
+  test('見た目と位置だけを、渡された作成時刻で保存する', () => {
+    const edit = placeIn(null, { ...sticker(), id: 'x', owner: 'local', slot: '' }, TS);
+    assert.deepEqual(edit.stamps['0'], { ...sticker(), createdAt: TS });
+  });
+});
+
+describe('removeFrom', () => {
+  test('見ていたシールをスロットから外す', () => {
+    const record = fullRecord();
+    assert.deepEqual(Object.keys(removeFrom(record, seen(record, '3')).stamps), ['0', '1', '2', '4']);
+  });
+
+  test('別のタブが同じスロットに貼り直していたら何もしない', () => {
+    const record = fullRecord();
+    const target = seen(record, '3');
+    record.stamps['3'] = sticker({ createdAt: 99 });
+    assert.equal(removeFrom(record, target).stamps, undefined);
+  });
+});
+
+describe('moveIn', () => {
+  test('自分のスロットを書き換え、ほかの4枚はそのまま残す', () => {
+    const record = fullRecord();
+    const edit = moveIn(record, seen(record, '3'), sticker({ x: 0.57, y: 0.01 }), TS);
+    assert.equal(edit.slot, '3');
+    assert.deepEqual(
+      ['0', '1', '2', '4'].map((slot) => edit.stamps[slot]),
+      ['0', '1', '2', '4'].map((slot) => record.stamps[slot]),
+    );
+  });
+
+  test('動かしたシールは元の作成時刻を保つ', () => {
+    const record = fullRecord();
+    const edit = moveIn(record, seen(record, '3'), sticker({ x: 0.57 }), TS);
+    assert.equal(edit.stamps['3'].createdAt, 13);
+  });
+
+  test('保存済みのレコードを書き換えない', () => {
+    const record = fullRecord();
+    moveIn(record, seen(record, '3'), sticker({ x: 0.57 }), TS);
+    assert.equal(record.stamps['3'].x, 0.3);
+  });
+
+  test('別のタブではがされていたら、新しいシールとして貼る', () => {
+    const record = fullRecord();
+    const target = seen(record, '3');
+    record.stamps['3'] = sticker({ createdAt: 99 });
+    const edit = moveIn(record, target, sticker({ x: 0.57 }), TS);
+    assert.deepEqual([edit.slot, edit.stamps['0'].createdAt, edit.stamps['3'].createdAt], ['0', TS, 99]);
+  });
+});
+
+describe('nextRecord', () => {
+  test('変更がなければ undefined（書き込まない）', () => {
+    assert.equal(nextRecord(undefined, 'hash', TS), undefined);
+  });
+
+  test('最後の1枚をはがしたらレコードごと消す（null）', () => {
+    assert.equal(nextRecord({}, 'hash', TS), null);
+  });
+
+  test('シールがあれば、アバターと更新時刻を添える', () => {
+    const stamps = { 0: sticker() };
+    assert.deepEqual(nextRecord(stamps, 'hash', TS), { stamps, updatedAt: TS, avatar: 'hash' });
+  });
 });

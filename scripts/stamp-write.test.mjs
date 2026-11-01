@@ -1,108 +1,115 @@
-import { test } from 'node:test';
+// One read-modify-write of your own sticker record through the REST API, against a fake fetch.
+import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeBody, throttleAt, retryDelay } from '../src/data/stamp-write.mjs';
-test('sticker writes update the record and the throttle entry together', () => {
-  const record = { updatedAt: { '.sv': 'timestamp' }, stamps: { 0: { kind: 1 } } };
-  assert.deepEqual(writeBody('home', 'alice', record, { at: 1234, prev: 1000 }), {
-    'pages/home/alice': record,
-    'throttle/alice': { at: { '.sv': 'timestamp' }, prev: 1234 },
-  });
-  // The first write of an account, and removing the last sticker.
-  assert.deepEqual(writeBody('about', 'bob', null, null), {
-    'pages/about/bob': null,
-    'throttle/bob': { at: { '.sv': 'timestamp' }, prev: 0 },
-  });
-});
-test('malformed throttle entries count as no previous write', () => {
-  for (const value of [undefined, null, {}, { at: '5' }, { at: Infinity }])
-    assert.equal(throttleAt(value), 0);
-});
-test('a write rejected by the throttle is retried after the interval', () => {
-  assert.equal(retryDelay(10_000, 10_000), 1100);
-  assert.equal(retryDelay(10_000, 10_600), 500);
-  assert.equal(retryDelay(10_000, 50_000), 150);
-  assert.equal(retryDelay(50_000, 10_000), 1100);
-});
-test('database rules keep the write interval across deletes and partial writes', async () => {
-  const { readFile } = await import('node:fs/promises');
-  const { rules } = JSON.parse(await readFile(new URL('../database.rules.json', import.meta.url), 'utf8'));
-  const record = rules.pages.$page.$uid;
-  // Every record write must set the server time and update the throttle entry in the same request.
-  assert.match(record['.validate'], /newData\.child\('updatedAt'\)\.val\(\) == now/);
-  assert.match(record['.write'], /child\('throttle'\)\.child\(auth\.uid\)\.child\('at'\)\.val\(\) == now/);
-  assert.doesNotMatch(record['.write'], /!data\.exists\(\)/, 'creating a record must not skip the interval');
-  const throttle = rules.throttle.$uid;
-  assert.match(throttle['.write'], /newData\.exists\(\)/, 'throttle entries cannot be deleted');
-  assert.match(throttle['.write'], /now >= data\.child\('at'\)\.val\(\) \+ 1000/);
-  assert.match(throttle['.validate'], /newData\.child\('prev'\)\.val\(\) == data\.child\('at'\)\.val\(\)/);
-});
-// A stand-in for the database's write rules on one account: compare-and-swap on `prev` and one
-// write a second, with a clock that the retry's wait advances.
-function server() {
-  const db = { now: 100_000, throttle: null, record: null, saves: 0, waited: 0 };
-  db.write = (record, throttle) => {
-    db.saves++;
-    const at = throttleAt(db.throttle);
-    if (throttleAt(throttle) !== at || (db.throttle && db.now < at + 1000)) return { denied: true };
-    db.throttle = { at: db.now, prev: at };
-    db.record = record;
-    return { record };
+import { SERVER_TIME, writeBody, writeRecord } from '../src/data/stamp-write.mjs';
+
+// A fake database at https://db.example: answers each request from `answers` by method and path
+// (a function gets the parsed body) and records what was asked.
+function fakeDatabase(answers) {
+  const requests = [];
+  const fetch = async (url, init = {}) => {
+    const { pathname, searchParams } = new URL(url);
+    const method = init.method || 'GET';
+    const path = pathname.replace(/^\/|\.json$/g, '');
+    const body = init.body && JSON.parse(init.body);
+    requests.push({ method, path, auth: searchParams.get('auth'), body });
+    const answer = answers[`${method} ${path}`.trim()];
+    const value = typeof answer === 'function' ? answer(body) : answer;
+    return value instanceof Response ? value : Response.json(value ?? null);
   };
-  return db;
+  return { fetch, requests };
 }
-test('a write that loses a race with another tab is saved on the next attempt', async () => {
-  const { writeWithRetry } = await import('../src/data/stamp-write.mjs');
-  const db = server();
-  db.write({ stamps: { 0: 'old' } }, null);
-  db.now += 5000;
-  db.saves = 0;
-  let raced = false;
-  const io = {
-    readThrottle: async () => db.throttle,
-    readRecord: async () => db.record,
-    save: async (record, throttle) => {
-      // The other tab writes between this tab's read and its save, once.
-      if (!raced) {
-        raced = true;
-        db.write({ stamps: { ...db.record.stamps, 1: 'other tab' } }, db.throttle);
-        db.now += 5;
-      }
-      return db.write(record, throttle);
-    },
-    wait: async (ms) => {
-      db.waited += ms;
-      db.now += ms;
-    },
-  };
-  // Date.now() stands in for the server clock in retryDelay.
-  const realNow = Date.now;
-  Date.now = () => db.now;
-  try {
-    const saved = await writeWithRetry(io, (data) => ({ stamps: { ...data?.stamps, 2: 'this tab' } }));
-    assert.deepEqual(saved.stamps, { 0: 'old', 1: 'other tab', 2: 'this tab' });
-  } finally {
-    Date.now = realNow;
-  }
-  // The other tab's write, then two from this tab: the denied one and the retry after the
-  // interval, never a retry that is denied again for coming too soon.
-  assert.equal(db.saves, 3);
-  assert.ok(db.waited >= 995 && db.waited <= 1100, `waited ${db.waited}ms`);
+const where = (fetch) => ({
+  fetch,
+  databaseURL: 'https://db.example',
+  token: 'id-token',
+  page: 'home',
+  uid: 'alice',
 });
-test('a write the rules keep rejecting gives up, and a no-op update writes nothing', async () => {
-  const { writeWithRetry } = await import('../src/data/stamp-write.mjs');
-  let saves = 0;
-  const io = {
-    readThrottle: async () => null,
-    readRecord: async () => ({ stamps: { 0: 'kept' } }),
-    save: async () => (saves++, { denied: true }),
-    wait: async () => {},
-  };
-  await assert.rejects(
-    writeWithRetry(io, () => ({})),
-    /Concurrent update/,
-  );
-  assert.equal(saves, 4);
-  saves = 0;
-  assert.deepEqual(await writeWithRetry(io, () => undefined), { stamps: { 0: 'kept' } });
-  assert.equal(saves, 0);
+
+describe('writeBody', () => {
+  test('レコードとスロットルを1回の更新で書き、prev に読んだ時刻を入れる', () => {
+    assert.deepEqual(writeBody('home', 'alice', { stamps: {} }, { at: 1234, prev: 1000 }), {
+      'pages/home/alice': { stamps: {} },
+      'throttle/alice': { at: SERVER_TIME, prev: 1234 },
+    });
+  });
+
+  for (const throttle of [null, undefined, {}, { at: '5' }, { at: Infinity }])
+    test(`読めないスロットル（${JSON.stringify(throttle)}）は「書き込みなし」の 0 とする`, () => {
+      assert.equal(writeBody('home', 'alice', null, throttle)['throttle/alice'].prev, 0);
+    });
+
+  test('null のレコードはレコードの削除になる', () => {
+    assert.equal(writeBody('home', 'alice', null, null)['pages/home/alice'], null);
+  });
+});
+
+describe('writeRecord', () => {
+  test('スロットル、レコードの順に読み、更新して、書いたレコードを読み直す', async () => {
+    const db = fakeDatabase({ 'GET throttle/alice': { at: 5, prev: 0 }, 'GET pages/home/alice': null });
+    await writeRecord(where(db.fetch), () => ({ stamps: { 0: 'new' } }));
+    assert.deepEqual(
+      db.requests.map((r) => `${r.method} ${r.path}`.trim()),
+      ['GET throttle/alice', 'GET pages/home/alice', 'PATCH', 'GET pages/home/alice'],
+    );
+  });
+
+  test('すべてのリクエストに ID トークンを付ける', async () => {
+    const db = fakeDatabase({});
+    await writeRecord(where(db.fetch), () => ({ stamps: {} }));
+    assert.deepEqual(new Set(db.requests.map((r) => r.auth)), new Set(['id-token']));
+  });
+
+  test('update には保存されているレコードを渡す', async () => {
+    const stored = { stamps: { 0: 'old' } };
+    const db = fakeDatabase({ 'GET pages/home/alice': stored });
+    let given;
+    await writeRecord(where(db.fetch), (record) => ((given = record), {}));
+    assert.deepEqual(given, stored);
+  });
+
+  test('update の戻り値を、読んだスロットルの時刻を prev にして書く', async () => {
+    const db = fakeDatabase({ 'GET throttle/alice': { at: 5 } });
+    await writeRecord(where(db.fetch), () => ({ stamps: { 1: 'new' } }));
+    const patch = db.requests.find((r) => r.method === 'PATCH');
+    assert.deepEqual(patch.body, writeBody('home', 'alice', { stamps: { 1: 'new' } }, { at: 5 }));
+  });
+
+  test('読み直したレコード（サーバー時刻が入ったもの）を返す', async () => {
+    let written = null;
+    const db = fakeDatabase({
+      PATCH: () => (written = { stamps: { 0: 'saved' }, updatedAt: 42 }),
+      'GET pages/home/alice': () => written,
+    });
+    assert.deepEqual(await writeRecord(where(db.fetch), () => ({})), {
+      stamps: { 0: 'saved' },
+      updatedAt: 42,
+    });
+  });
+
+  test('update が undefined なら書き込まず、読んだレコードを返す', async () => {
+    const db = fakeDatabase({ 'GET pages/home/alice': { stamps: { 0: 'kept' } } });
+    const result = await writeRecord(where(db.fetch), () => undefined);
+    assert.deepEqual(result, { stamps: { 0: 'kept' } });
+    assert.equal(db.requests.filter((r) => r.method === 'PATCH').length, 0);
+  });
+
+  test('ルールに拒否された書き込みは再試行せず失敗にする', async () => {
+    const db = fakeDatabase({ PATCH: new Response('{"error":"Permission denied"}', { status: 401 }) });
+    await assert.rejects(
+      writeRecord(where(db.fetch), () => ({})),
+      /PATCH \/: HTTP 401/,
+    );
+    assert.equal(db.requests.filter((r) => r.method === 'PATCH').length, 1);
+  });
+
+  test('読み込みに失敗したら書き込まない', async () => {
+    const db = fakeDatabase({ 'GET throttle/alice': new Response('busy', { status: 503 }) });
+    await assert.rejects(
+      writeRecord(where(db.fetch), () => ({})),
+      /HTTP 503/,
+    );
+    assert.equal(db.requests.length, 1);
+  });
 });
