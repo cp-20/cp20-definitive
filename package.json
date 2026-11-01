@@ -11,10 +11,10 @@
     "test": "node --test scripts/*.test.mjs",
     "check": "tsc --noEmit",
     "verify": "npm run check && npm run build && npm test",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "npm run verify && wrangler deploy",
     "dev:worker": "wrangler dev --ip 0.0.0.0 --port 8787",
     "rules": "node scripts/rules.mjs",
-    "firebase:rules": "node scripts/rules.mjs --check && firebase deploy --only database:portfolio-stamps --project cp20-platform",
+    "firebase:rules": "node scripts/deploy-rules.mjs",
     "cache:images": "node scripts/cache-images.mjs"
   },
   "dependencies": {

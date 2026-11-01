@@ -153,6 +153,8 @@ test('a corrupt cached original keeps its entry without variants', async () => {
     const cache = { [source]: { file: '/media/cut.png', checkedAt: 'now' } };
     assert.equal(await addVariants(cache, new Set([source])), 0);
     assert.equal(cache[source].variants, undefined);
+    // No width either, so the snapshot tests (variants for every wide thumbnail) still pass.
+    assert.equal(cache[source].width, undefined);
     assert.equal(await box.exists('public/media/cut-320w.webp.tmp'), false);
   } finally {
     await box.cleanup();

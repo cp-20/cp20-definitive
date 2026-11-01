@@ -34,7 +34,8 @@ jobs:
           cache: npm
       # Install scripts are not needed (firebase/protobufjs postinstalls only tune optional defaults).
       - run: npm ci --ignore-scripts
-      - run: npm test
+      # No test run before sync: tests read the snapshot, so one broken snapshot on main would
+      # otherwise stop every later run before it could collect a fixed one.
       - name: Gather independent public sources
         id: sync
         run: npm run sync
@@ -42,10 +43,11 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           TRAP_GHOST_ADMIN_KEY: ${{ secrets.TRAP_GHOST_ADMIN_KEY }}
           ALLOW_TRAP_SHRINK: ${{ inputs.allow_trap_shrink && '1' || '' }}
-      # Validate the new snapshot here so a broken one never reaches main (and Cloudflare's build).
-      - name: Check and build
+      # Validate the new snapshot with Cloudflare's build command (type check, build, then the
+      # tests, which read the snapshot and dist) so a broken one never reaches main.
+      - name: Verify the new snapshot
         if: steps.sync.outputs.changed == 'true' || github.event_name != 'schedule'
-        run: npm run check && npm run build
+        run: npm run verify
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: snapshot

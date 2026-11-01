@@ -166,15 +166,17 @@ export async function addVariants(cache, sources, icons = new Set(), framed = ne
         if (fresh) written++;
       } catch {
         // A corrupt original (intact header, broken body) must not stop the whole run: the entry
-        // keeps only its original file.
+        // keeps only its original file and, like one whose size cannot be read, no width (the
+        // tests require a variant for every thumbnail with a recorded width over 400px).
         console.warn(`Image variants: ${entry.file} could not be resized; kept without variants`);
         variants.length = 0;
         crop = undefined;
+        width = undefined;
         break;
       }
       variants.push({ file, width: w });
     }
-    entry.width = width;
+    if (width !== undefined) entry.width = width;
     if (variants.length) entry.variants = variants;
     if (crop) entry.crop = crop;
   }

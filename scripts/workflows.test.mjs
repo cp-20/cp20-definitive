@@ -45,3 +45,37 @@ test('the rules deploy skips when the deployed files no longer match main', () =
   assert.ok(deploy.indexOf('google-github-actions/auth') > guard);
   assert.ok(deploy.indexOf(' deploy --only') > guard);
 });
+
+test('Refresh content verifies the snapshot it collected, like the Cloudflare build', () => {
+  const workflow = read('.github/workflows/refresh.yml');
+  const refresh = workflow.slice(workflow.indexOf('\n  refresh:'), workflow.indexOf('\n  persist:'));
+  const sync = refresh.indexOf('run: npm run sync');
+  const verify = refresh.indexOf('run: npm run verify');
+  assert.ok(sync > 0 && verify > sync, 'verify runs on the new snapshot, after sync');
+  // A test run before sync would check main's old snapshot and, once that is broken, stop every
+  // later run before it could collect a fixed one.
+  assert.doesNotMatch(refresh.slice(0, sync), /npm (run )?test|npm run verify/);
+  assert.ok(refresh.indexOf('upload-artifact') > verify, 'only a verified snapshot is uploaded');
+});
+
+test('manual deploys run the same checks as the automated ones', async () => {
+  const { scripts } = JSON.parse(read('package.json'));
+  assert.match(scripts.deploy, /^npm run verify && wrangler deploy$/);
+  assert.equal(scripts['firebase:rules'], 'node scripts/deploy-rules.mjs');
+  const deploy = read('scripts/deploy-rules.mjs');
+  const order = ["'--check'", "'FETCH_HEAD'", "'emulators:exec'", "'database:portfolio-stamps'"].map((s) =>
+    deploy.indexOf(s),
+  );
+  assert.ok(
+    order.every((i, n) => i > 0 && (n === 0 || i > order[n - 1])),
+    'rules check, main check, emulator test, then deploy',
+  );
+  // The same pinned CLI as the workflow, never a global `firebase`.
+  const { firebaseTools } = await import('./deploy-rules.mjs');
+  assert.match(firebaseTools, /^firebase-tools@\d+\.\d+\.\d+$/);
+  assert.match(
+    read('.github/workflows/firebase-rules.yml'),
+    new RegExp(`FIREBASE_TOOLS: ${firebaseTools}\n`),
+  );
+  assert.doesNotMatch(deploy, /run\('firebase'/);
+});
