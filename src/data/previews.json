@@ -18,14 +18,14 @@
     "icon": null,
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T15:41:34.444Z"
+    "checkedAt": "2026-11-01T17:58:21.353Z"
   },
   "https://2025.cp20.dev": {
     "image": null,
     "icon": "https://2025.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T15:41:35.827Z"
+    "checkedAt": "2026-11-01T17:58:23.311Z"
   },
   "https://traqing.cp20.dev": {
     "image": "https://traqing.cp20.dev/og.png",
@@ -81,7 +81,7 @@
     "icon": "https://2023.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T15:41:35.062Z"
+    "checkedAt": "2026-11-01T17:58:21.468Z"
   },
   "https://minna-no-monosashi.lolipop-now.app/": {
     "image": "https://minna-no-monosashi.lolipop-now.app/og/default?v=4",
@@ -494,7 +494,7 @@
     "icon": "https://2024.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T15:41:36.368Z"
+    "checkedAt": "2026-11-01T17:58:23.448Z"
   },
   "https://marketplace.visualstudio.com/items?itemName=cp20.foodmoji-vscode": {
     "image": "https://cp20.gallerycdn.vsassets.io/extensions/cp20/foodmoji-vscode/1.0.0/1732020741627/Microsoft.VisualStudio.Services.Icons.Default",
