@@ -715,7 +715,7 @@ try {
   await page.keyboard.press('Enter');
   await expect(clover).toBeFocused();
   await expect(page.locator('p.visually-hidden[role=status]')).toHaveText(
-    /^クローバーを貼りました。残り\d枚$/,
+    /^クローバーを(?:.+の上に)?貼りました。残り\d枚$/,
   );
   await expect(page.locator('[data-pending=true]')).toHaveCount(1);
   await expect(page.locator('.stamp-status')).toContainText('保存できませんでした', { timeout: 20000 });
