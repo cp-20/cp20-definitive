@@ -4,6 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dropWoffFallback, isFontFile } from './src/data/font-css.mjs';
 import { clientMedia, coverSrcsets } from './src/data/client-media.mjs';
 import { mergeArticles } from './src/data/normalize.mjs';
+import { thirdPartyLicenses } from './scripts/licenses.mjs';
 // Every browser that runs this site reads WOFF2, so the WOFF fallback in @fontsource's
 // @font-face rules only adds weight to the render-blocking stylesheet.
 const woff2Only = (): Plugin => ({
@@ -67,6 +68,7 @@ export default defineConfig({
     woff2Only(),
     media(),
     articles(),
+    thirdPartyLicenses(),
     solid({ start: { renderMode: 'async', devtools: false }, ssr: true }),
   ],
   build: {

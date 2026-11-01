@@ -59,6 +59,14 @@ async function files(dir, pattern) {
   return out;
 }
 
+// harfbuzz keeps only name IDs 0-6 by default; the subset is a Modified Version under the SIL OFL,
+// which must still carry the copyright and license, so keep the designer, vendor, URL and license
+// records (8, 9, 11-14) as well.
+export const subsetOptions = {
+  targetFormat: 'woff2',
+  preserveNameIds: [0, 1, 2, 3, 4, 5, 6, 8, 9, 11, 12, 13, 14],
+};
+
 /** @param {string} root the built client directory (dist/client) */
 export async function subsetSiteFonts(root) {
   const pages = await files(root, /\.html$/);
@@ -68,7 +76,7 @@ export async function subsetSiteFonts(root) {
   const characters = collectCharacters(texts);
   const written = [];
   for (const weight of weights) {
-    const bytes = await subsetFont(await readFile(source(weight)), characters, { targetFormat: 'woff2' });
+    const bytes = await subsetFont(await readFile(source(weight)), characters, subsetOptions);
     const name = `zen-maru-gothic-${weight}-${createHash('sha256').update(bytes).digest('hex').slice(0, 12)}.woff2`;
     await writeFile(join(root, 'assets', name), bytes);
     written.push({ weight, href: `/assets/${name}`, size: bytes.length });

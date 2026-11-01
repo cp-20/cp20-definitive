@@ -403,9 +403,15 @@ export function About() {
           <dd>各作品・記事の公開ページの OG 画像</dd>
           <dt>素材</dt>
           <dd>
-            <a href="https://lucide.dev">Lucide</a>（ISC）、シールの絵柄は{' '}
-            <a href="https://github.com/jdecked/twemoji">Twemoji</a>（CC BY 4.0）、フォントは Zen Maru Gothic
-            / IBM Plex Mono（SIL OFL）
+            <a href="https://lucide.dev">Lucide</a>（ISC、一部は Feather 由来で MIT）、シールの絵柄は{' '}
+            <a href="https://github.com/jdecked/twemoji">Twemoji</a>（© Twitter, Inc and other contributors、
+            <a href="/stamps/LICENSE-GRAPHICS.txt">CC BY 4.0</a>
+            ）、フォントは Zen Maru Gothic / IBM Plex Mono（SIL OFL 1.1）
+          </dd>
+          <dt>ライブラリ</dt>
+          <dd>
+            SolidJS（MIT）、Firebase（Apache-2.0）ほか。
+            <a href="/third-party-licenses.txt">ライセンス全文</a>
           </dd>
         </dl>
         <p class="meta">画像・楽曲の権利は各権利者に帰属します。</p>

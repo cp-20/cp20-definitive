@@ -1,3 +1,16 @@
+Sticker graphics on cp20.dev
+
+Files: clover.svg (U+1F340), eyes.svg (U+1F440), heart.svg (U+1F49A),
+       sparkles.svg (U+2728), thumb.svg (U+1F44D)
+Source: Twemoji, https://github.com/jdecked/twemoji (assets/svg)
+Copyright 2019 Twitter, Inc and other contributors
+License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+Changes: none; the files are the upstream SVGs, renamed.
+
+The license text follows.
+
+=======================================================================
+
 Attribution 4.0 International
 
 =======================================================================
