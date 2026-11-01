@@ -1,6 +1,7 @@
 import { Show } from 'solid-js';
 import Icon from '../components/Icon.tsx';
 import { OGImage, Postmark, postmarkDate, sizes } from '../components/Preview.tsx';
+import Brand from '../components/Brand.tsx';
 import { isIconImage } from '../content/icon-image.ts';
 import { articles, works } from '../content/content.ts';
 import { splitLinks } from '../content/inline-links.ts';
@@ -57,6 +58,7 @@ export default function WorkDetail(props: { work: (typeof works)[number] }) {
                   <span>非公開リポジトリ</span>
                 ) : (
                   <a href={r}>
+                    <Brand url={r} />
                     {r.replace('https://github.com/', '')}
                     {WORD_JOINER}
                     <Icon name="ArrowUpRight" size={13} />
@@ -68,9 +70,6 @@ export default function WorkDetail(props: { work: (typeof works)[number] }) {
         </aside>
         <article class="work-detail-copy">
           <h2>制作について</h2>
-          <Show when={w.id !== 'minna-no-monosashi'}>
-            <p class="meta">制作当時の記録です。利用人数などは当時の記載です。</p>
-          </Show>
           {w.comments.map((c) => (
             <p>
               {splitLinks(c).map((part) =>
@@ -89,6 +88,7 @@ export default function WorkDetail(props: { work: (typeof works)[number] }) {
             {related.map((a) => (
               <p>
                 <a href={a.url}>
+                  <Brand url={a.url} />
                   {a.title}
                   {WORD_JOINER}
                   <Icon name="ArrowUpRight" size={16} />

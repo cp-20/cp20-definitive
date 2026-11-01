@@ -8,6 +8,7 @@ import {
   postmarkDate,
   sizes,
 } from '../components/Preview.tsx';
+import Brand from '../components/Brand.tsx';
 import { isIconImage } from '../content/icon-image.ts';
 import { works, repos, formatDate } from '../content/content.ts';
 import { featuredIds } from '../data/editorial.ts';
@@ -38,9 +39,7 @@ export default function Works() {
   return (
     <div class="wrap">
       <header data-stamp-anchor="heading" class="page-heading">
-        <p class="eyebrow">PROJECT ARCHIVE</p>
         <h1>作品一覧</h1>
-        <p class="intro">個人開発・チーム開発の制作物。</p>
       </header>
       <section class="work-grid" aria-label="制作した作品">
         <For each={projects}>
@@ -85,11 +84,9 @@ export default function Works() {
       </section>
       <section class="repo-section">
         <div class="section-heading">
-          <div>
-            <p class="eyebrow">FROM GITHUB</p>
-            <h2>最近更新したリポジトリ</h2>
-          </div>
+          <h2>最近更新したリポジトリ</h2>
           <a class="under-link" href="https://github.com/cp-20?tab=repositories">
+            <Brand url="https://github.com" />
             GitHub
             <Icon name="ArrowUpRight" size={16} />
           </a>

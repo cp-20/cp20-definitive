@@ -1,6 +1,7 @@
 import { createSignal, createStore, createMemo, createEffect, onSettled, For, Show } from 'solid-js';
 import Icon from '../components/Icon.tsx';
 import { ArticleRows } from '../components/ArticleRows.tsx';
+import Brand from '../components/Brand.tsx';
 import { articles, type Article } from '../content/content.ts';
 export default function Articles() {
   const [filters, setFilters] = createStore({ source: '', order: 'newest' });
@@ -35,7 +36,6 @@ export default function Articles() {
   return (
     <div class="wrap">
       <header data-stamp-anchor="heading" class="page-heading">
-        <p class="eyebrow">WRITING</p>
         <h1>記事</h1>
       </header>
       <section aria-labelledby="article-list-title">
@@ -55,6 +55,7 @@ export default function Articles() {
                     })
                   }
                 >
+                  {source && <Brand url={source} />}
                   <span>{source || 'すべて'}</span>
                   <small>
                     {source ? articles.filter((a) => a.source === source).length : articles.length}

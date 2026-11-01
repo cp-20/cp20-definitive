@@ -1260,6 +1260,9 @@
     font-variant-numeric: tabular-nums;
   }
   .article-meta > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     padding: 0 8px;
     border: 1.5px solid var(--edge);
     border-radius: 6px;
@@ -1858,14 +1861,6 @@
   .work-detail-copy > p + p {
     margin-top: 14px;
   }
-  .work-detail-copy > .meta {
-    display: inline-block;
-    margin-bottom: 18px;
-    padding: 2px 12px;
-    border-left: 4px solid var(--hi);
-    font-size: 0.8125rem;
-    line-height: 1.8;
-  }
   .work-detail-copy > p > a {
     font-weight: 700;
     text-decoration: underline;
@@ -2037,11 +2032,6 @@
     }
   }
   /* History as a stamp-rally route. */
-  .history .section-heading > .meta {
-    padding: 0 10px;
-    border: 1.5px solid var(--edge);
-    border-radius: 6px;
-  }
   .timeline {
     position: relative;
   }
@@ -2055,6 +2045,8 @@
   }
   .timeline-item {
     position: relative;
+    width: 100%;
+    text-align: inherit;
     display: grid;
     grid-template-columns: 90px minmax(0, 1fr) 20px;
     gap: 40px;
@@ -2074,7 +2066,7 @@
   }
   /* As in the article list, only the way in is animated. */
   @media (hover: hover) {
-    a.timeline-item:hover::before {
+    button.timeline-item:hover::before {
       background: var(--hi);
       transform: scale(1.25);
       transition:
@@ -2098,7 +2090,7 @@
     color: var(--muted);
   }
   @media (hover: hover) {
-    a.timeline-item:hover h3 {
+    button.timeline-item:hover h3 {
       background-size: 100% 100%;
       transition: background-size var(--t-state) var(--ease);
     }
@@ -2113,7 +2105,7 @@
     color: var(--faint);
   }
   @media (hover: hover) {
-    a.timeline-item:hover > svg {
+    button.timeline-item:hover > svg {
       color: var(--ink);
       transform: translate(2px, -2px);
       transition: transform var(--t-hover) var(--ease);
@@ -2372,20 +2364,97 @@
     font-size: 0.8125rem;
     color: var(--muted);
   }
-  /* All image and material sources in one place. */
-  .credits {
-    margin-top: 110px;
-    padding-top: 28px;
+  /* Service logos sit in the line like one more letter. */
+  .brand-icon {
+    display: inline-block;
+    vertical-align: -0.15em;
+    object-fit: contain;
+  }
+  .work-facts dd a > .brand-icon,
+  .work-detail-copy > p > a > .brand-icon,
+  .profile-affiliations a > .brand-icon {
+    margin-right: 6px;
+  }
+  /* A dialog is a card lifted off the sheet; the page behind it stays put. */
+  html:has(.modal[open]) {
+    overflow: hidden;
+  }
+  .modal {
+    width: min(560px, calc(100% - 32px));
+    max-height: calc(100dvh - 48px);
+    margin: auto;
+    padding: 0;
+    border: 2px solid var(--edge);
+    border-radius: 16px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 5px 5px 0 var(--drop);
+    overscroll-behavior: contain;
+  }
+  .modal::backdrop {
+    background: rgb(45 42 51 / 0.4);
+  }
+  .modal-sheet {
+    padding: 20px 24px 26px;
+  }
+  .modal-head {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+  .modal-head h2 {
+    margin-top: 6px;
+    font-size: 1.25rem;
+  }
+  .modal .modal-close {
+    width: 38px;
+    height: 38px;
+  }
+  .modal-meta {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    margin-bottom: 12px;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+  .modal-meta time {
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .modal-sheet > p:not(.modal-meta, .meta) {
+    line-height: 1.95;
+  }
+  .modal-sheet > p:not(.modal-meta) + p {
+    margin-top: 10px;
+  }
+  .modal-links {
+    display: grid;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
     border-top: 2px dashed var(--rule);
+    font-size: 0.875rem;
   }
-  .credits h2 {
-    font-size: 1.125rem;
+  .modal-links a,
+  .credits a,
+  .credits-open {
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: var(--hi);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
   }
-  .credits dl {
+  .modal-links a .brand-icon {
+    margin-right: 8px;
+  }
+  .credits {
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
     gap: 8px 24px;
-    margin-top: 14px;
     font-size: 0.8125rem;
     line-height: 1.8;
   }
@@ -2393,8 +2462,8 @@
     font-weight: 700;
     color: var(--muted);
   }
-  .credits dd {
-    margin: 0;
+  .credits a {
+    font-weight: 400;
   }
   /* Only the list of covers is laid out as items; other entries are running text. */
   .credits .credits-list {
@@ -2402,14 +2471,23 @@
     flex-wrap: wrap;
     gap: 0 14px;
   }
-  .credits a {
-    text-decoration: underline;
-    text-decoration-color: var(--hi);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 4px;
+  .modal-sheet > .meta {
+    margin-top: 16px;
   }
-  .credits .meta {
-    margin-top: 14px;
+  .credits-open {
+    font-size: inherit;
+    font-weight: 400;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .modal[open] {
+      animation: modal-in var(--t-state) var(--ease);
+    }
+  }
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+    }
   }
   /* ── Stickers ──
      Visitors' stickers are die-cut: a white outline that follows the motif and a soft shadow.
@@ -3502,12 +3580,15 @@
     .book-spine small {
       font-size: 0.625rem;
     }
-    .credits dl {
+    .credits {
       grid-template-columns: minmax(0, 1fr);
       gap: 2px;
     }
     .credits dd {
       margin-bottom: 8px;
+    }
+    .modal-sheet {
+      padding: 16px 18px 22px;
     }
     .work-index-item,
     .music-item {

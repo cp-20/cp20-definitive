@@ -108,11 +108,11 @@ describe.skipIf(skip)('ビルドした第三者ライセンス表示', () => {
   });
 });
 
-describe.skipIf(skip)('the built credits on /about', () => {
-  const html = skip ? '' : readFileSync(built('about/index.html'), 'utf8');
+describe.skipIf(skip)('the built credits dialog', () => {
+  const html = skip ? '' : readFileSync(built('index.html'), 'utf8');
   const credits = html.slice(
     html.indexOf('id="credits"'),
-    html.indexOf('</section>', html.indexOf('id="credits"')),
+    html.indexOf('</dialog>', html.indexOf('id="credits"')),
   );
   for (const [what, needle] of [
     ['the third-party notices', 'href="/third-party-licenses.txt"'],

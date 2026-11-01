@@ -1,4 +1,5 @@
 import { createMemo, For } from 'solid-js';
+import Brand from './Brand.tsx';
 import { OGImage, articleAnchor, sizes } from './Preview.tsx';
 import { formatDate, type Article } from '../content/content.ts';
 /**
@@ -23,7 +24,10 @@ export function ArticleRows(props: { items: Article[]; shown?: (a: Article) => b
             <div class="article-text">
               <div class="article-meta">
                 <time datetime={a.date}>{formatDate(a.date)}</time>
-                <span>{a.source}</span>
+                <span>
+                  <Brand url={a.source} size={14} />
+                  {a.source}
+                </span>
               </div>
               <h3>{a.title}</h3>
             </div>
