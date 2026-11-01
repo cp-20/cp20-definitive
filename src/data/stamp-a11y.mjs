@@ -52,3 +52,17 @@ export function focusAfterRemoval(items, removed) {
   if (at < 0) return undefined;
   return items[at + 1] ?? items[at - 1];
 }
+
+/**
+ * What the sheet says when signing in fails, by the error's code (Firebase's, or 'timeout').
+ * Closing or replacing the popup is the visitor's own choice and says nothing.
+ * @param {string | undefined} code
+ * @returns {string}
+ */
+export function signInMessage(code) {
+  const c = code || '';
+  if (c.includes('popup-closed') || c.includes('cancelled-popup')) return '';
+  if (c === 'timeout') return '接続できませんでした。もう一度押してください';
+  if (c.includes('popup-blocked')) return 'ポップアップが開けませんでした。もう一度押してください';
+  return 'ログインできませんでした';
+}

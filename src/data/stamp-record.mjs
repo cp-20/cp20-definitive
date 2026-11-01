@@ -1,7 +1,7 @@
+import { STAMP_SLOTS as SLOTS } from './stamp-limits.mjs';
 // Firebase may encode numeric slot keys as an array with null holes.
 export const stampEntries = (record) =>
   Object.entries(record?.stamps || {}).filter(([, stamp]) => stamp != null);
-const SLOTS = ['0', '1', '2', '3', '4'];
 const visual = ['anchor', 'x', 'y', 'kind', 'angle'];
 // The stored sticker in `target`'s slot is still the one the visitor saw (not a newer one a
 // second tab put in the same slot).

@@ -15,3 +15,5 @@ export const WRITE_INTERVAL_MS = 1000;
 export const WRITE_SPACING_MS = 1100;
 /** What a sticker may be anchored to: a data-stamp-anchor name. */
 export const ANCHOR_PATTERN = '^[a-z0-9-]{1,96}$';
+/** Google's sign-in scripts can hang on a bad network; the button is released after this long. */
+export const SIGN_IN_TIMEOUT_MS = 20000;

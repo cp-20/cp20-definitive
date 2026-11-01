@@ -4,11 +4,9 @@ import { moveIn, placeIn, removeFrom, stampEntries } from './data/stamp-record.m
 import { deadline, reconnectDelay } from './data/resilience.mjs';
 import { recordPath, throttlePath, writeBody, writeWithRetry } from './data/stamp-write.mjs';
 import { pageKey } from './data/site-pages.mjs';
+import { SIGN_IN_TIMEOUT_MS as SIGN_IN_TIMEOUT } from './data/stamp-limits.mjs';
 import type { Auth, User } from 'firebase/auth';
-export type Stamp = { anchor: string; x: number; y: number; kind: number; angle: number; createdAt: number };
-export type PlacedStamp = Stamp & { id: string; owner: string; slot: string; avatar?: string };
-// A signed-in visitor: the Firebase UID and the Gravatar hash shown on their stickers.
-export type Account = { uid: string; avatar: string };
+import type { Account, PlacedStamp, Stamp } from './data/stamp-types';
 type RecordData = { updatedAt: number; stamps: Record<string, Stamp>; avatar?: string };
 const gravatarPattern = /^[0-9a-f]{64}$/;
 const placed = (owner: string, record: RecordData | null): PlacedStamp[] =>
@@ -113,7 +111,7 @@ function loadAuth() {
 const isGoogle = (user: User | null): user is User =>
   !!user && !user.isAnonymous && user.providerData.some((p) => p.providerId === 'google.com');
 // Gravatar's hash: SHA-256 of the trimmed, lower-cased email address.
-export async function gravatarHash(email: string) {
+async function gravatarHash(email: string) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(email.trim().toLowerCase()));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
@@ -125,8 +123,6 @@ export async function watchAccount(receive: (account: Account | null) => void) {
   const { auth, sdk } = await loadAuth();
   return sdk.onAuthStateChanged(auth, (user) => void toAccount(user).then(receive));
 }
-// Google's sign-in scripts can hang on a bad network; the button is released after this long.
-export const SIGN_IN_TIMEOUT = 20000;
 export async function signIn() {
   const { auth, sdk } = await deadline(loadAuth(), SIGN_IN_TIMEOUT);
   // Once the popup opens the page loses focus and the wait is the visitor's, not the network's.

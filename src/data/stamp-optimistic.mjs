@@ -1,3 +1,4 @@
+import { STAMPS_PER_PAGE } from './stamp-limits.mjs';
 export const sameStamp = (a, b) => ['anchor', 'x', 'y', 'kind', 'angle'].every((key) => a[key] === b[key]);
 export function projectStamps(remote, operations, owner) {
   let result = [...remote];
@@ -19,7 +20,7 @@ export function projectStamps(remote, operations, owner) {
     const own = result
       .filter((s) => s.owner === owner || s.owner === 'local')
       .sort((a, b) => a.createdAt - b.createdAt);
-    if (own.length >= 5) result = result.filter((s) => s.id !== own[0].id);
+    if (own.length >= STAMPS_PER_PAGE) result = result.filter((s) => s.id !== own[0].id);
     result.push(op.stamp);
   }
   return result;

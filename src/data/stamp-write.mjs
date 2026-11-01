@@ -1,3 +1,4 @@
+import { WRITE_SPACING_MS } from './stamp-limits.mjs';
 // Every sticker write is one multi-path update of the page record and the writer's throttle
 // entry (see database.rules.json). The throttle entry outlives deleted records, so the
 // database can keep each account to one write a second, and its `prev` field must match the
@@ -16,7 +17,8 @@ export function writeBody(page, uid, record, throttle) {
 }
 // How long to wait before writing again after the previous write at `at` (server time),
 // judged with the local clock; at least a little so a skewed clock still backs off.
-export const retryDelay = (at, now = Date.now()) => Math.min(1100, Math.max(150, at + 1100 - now));
+export const retryDelay = (at, now = Date.now()) =>
+  Math.min(WRITE_SPACING_MS, Math.max(150, at + WRITE_SPACING_MS - now));
 // One read-modify-write of a sticker record. The throttle entry is read first: if anything is
 // written after that, the compare-and-swap fails, so a second tab cannot overwrite a
 // concurrent change. A denied write is retried with fresh data once the database's interval

@@ -1,25 +1,17 @@
 import { createSignal, createMemo, createEffect, onSettled, flush, For, Show } from 'solid-js';
 import type { JSX } from '@solidjs/web';
-import type { Account, PlacedStamp } from '../stamps-client';
+import type { Operation, PlacedStamp } from '../data/stamp-types';
 import { projectStamps } from '../data/stamp-optimistic.mjs';
 import { sheetStartsOpen } from '../data/sheet-start.mjs';
-import { deadline } from '../data/resilience.mjs';
 import { focusAfterRemoval, stampAnnouncement, stampPlace } from '../data/stamp-a11y.mjs';
+import { STAMPS_PER_PAGE as LIMIT } from '../data/stamp-limits.mjs';
+import { saveOperation, writeDelay } from '../data/stamp-save.mjs';
 import Icon from './Icon';
-const kinds = [
-  { symbol: 'clover', name: 'クローバー' },
-  { symbol: 'thumb', name: 'いいね' },
-  { symbol: 'sparkles', name: 'きらきら' },
-  { symbol: 'eyes', name: '見てる' },
-  { symbol: 'heart', name: 'ハート' },
-  { symbol: '', name: 'しーぴー' },
-];
-const LIMIT = 5;
-type Operation = { id: string; path: string } & (
-  | { type: 'add'; stamp: PlacedStamp }
-  | { type: 'remove'; target: PlacedStamp }
-  | { type: 'move'; target: PlacedStamp; stamp: PlacedStamp }
-);
+import { STICKER_KINDS as kinds, StickerFace, gravatarUrl as gravatar, stickerName } from './sticker/kinds';
+import { anchorAt, centerOf as center, createAnchorMeasure, locate } from './sticker/dom';
+import { createHand } from './sticker/hand';
+import { createStampAccount } from './sticker/account';
+import { ACCOUNT_KEY, HIDE_KEY, SHEET_KEY, readPref, writePref } from './sticker/prefs';
 // A sticker in hand: pressed (not moved yet), dragged, or aimed (click-to-place / keyboard).
 type Held = {
   kind: number;
@@ -32,31 +24,16 @@ const visualKey = (s: Pick<PlacedStamp, 'anchor' | 'x' | 'y' | 'kind' | 'angle'>
   `${s.anchor}|${s.x}|${s.y}|${s.kind}|${s.angle}`;
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-const gravatar = (hash: string, size = 64) => `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
-// Layout position relative to <body>, ignoring transforms and scroll.
-function layoutBox(el: HTMLElement) {
-  let x = 0,
-    y = 0,
-    node: HTMLElement | null = el;
-  while (node && node !== document.body) {
-    x += node.offsetLeft;
-    y += node.offsetTop;
-    node = node.offsetParent as HTMLElement | null;
-  }
-  return { x, y, w: el.offsetWidth, h: el.offsetHeight };
-}
-function StickerFace(props: { kind: number }) {
-  return (
-    <img
-      src={
-        props.kind === 5 ? '/images/avatar-384.webp' : `/stamps/${kinds[props.kind]?.symbol || 'clover'}.svg`
-      }
-      alt=""
-      width="40"
-      height="40"
-      draggable={false}
-    />
-  );
+// A copy of a map or set without one key.
+function withoutKey<V>(map: ReadonlyMap<string, V>, key: string): ReadonlyMap<string, V>;
+function withoutKey(set: ReadonlySet<string>, key: string): ReadonlySet<string>;
+function withoutKey(
+  items: ReadonlyMap<string, unknown> | ReadonlySet<string>,
+  key: string,
+): ReadonlyMap<string, unknown> | ReadonlySet<string> {
+  const next = items instanceof Map ? new Map(items) : new Set(items as ReadonlySet<string>);
+  next.delete(key);
+  return next;
 }
 export function StampProvider(props: { path: string; enabled: boolean; children: JSX.Element }) {
   const [remote, setRemote] = createSignal<PlacedStamp[]>([]),
@@ -71,8 +48,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     [connection, setConnection] = createSignal(''),
     [failed, setFailed] = createSignal<Operation | null>(null),
     [revision, setRevision] = createSignal(0),
-    [account, setAccount] = createSignal<Account | null>(null),
-    [signingIn, setSigningIn] = createSignal(false),
     [nudge, setNudge] = createSignal(0),
     [held, setHeld] = createSignal<Held | null>(null),
     [ghostKind, setGhostKind] = createSignal(-1),
@@ -96,6 +71,18 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     ghost: HTMLDivElement | undefined,
     writes = Promise.resolve(),
     lastWrite = 0;
+  // ── Account ── (see sticker/account.ts)
+  const {
+    account,
+    signingIn,
+    connect: connectAccount,
+    signIn,
+    signOut,
+  } = createStampAccount({
+    client,
+    onMessage: setMessage,
+    beforeSignOut: () => cancelHeld(false),
+  });
   const owner = () => account()?.uid || '';
   const projected = createMemo<PlacedStamp[]>(() =>
     projectStamps(
@@ -118,17 +105,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   const visible = createMemo(() => {
     revision();
     if (hidden()) return ((shown = new Map()), []);
-    const boxes = new Map<string, ReturnType<typeof layoutBox> | null>();
-    const boxOf = (name: string) => {
-      if (boxes.has(name)) return boxes.get(name)!;
-      const anchor = document.querySelector<HTMLElement>(`[data-stamp-anchor="${CSS.escape(name)}"]`);
-      const box =
-        !anchor || anchor.closest('[inert]') || getComputedStyle(anchor).visibility === 'hidden'
-          ? null
-          : layoutBox(anchor);
-      boxes.set(name, box?.w && box.h ? box : null);
-      return boxes.get(name)!;
-    };
+    const boxOf = createAnchorMeasure();
     const next = new Map<string, Shown>();
     const list = projected().flatMap((stamp) => {
       const box = boxOf(stamp.anchor);
@@ -200,62 +177,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     },
   );
 
-  // ── Account ──
-  // Anyone can see the stickers; placing them needs a Google account. The auth SDK is loaded
-  // once the visitor reaches for the sheet (or straight away if they signed in before),
-  // so the sign-in popup can open within the click.
-  let watching: Promise<void> | undefined;
-  function connectAccount() {
-    return (watching ||= client()
-      .then((api) =>
-        api.watchAccount((next) => {
-          setAccount(next);
-          try {
-            if (next) localStorage.setItem('cp20-sticker-account', '1');
-            else localStorage.removeItem('cp20-sticker-account');
-          } catch {}
-        }),
-      )
-      .then(() => {})
-      .catch(() => {
-        watching = undefined;
-      }));
-  }
-  async function signIn() {
-    if (signingIn()) return;
-    setSigningIn(true);
-    setMessage('');
-    try {
-      const api = await deadline(client(), 20000);
-      await deadline(connectAccount(), 20000);
-      if (!account()) {
-        const next = await api.signIn();
-        if (next) setAccount(next);
-        else setMessage('Google アカウントでログインしてください');
-      }
-    } catch (e) {
-      const code = (e as { code?: string }).code || '';
-      setMessage(
-        code.includes('popup-closed') || code.includes('cancelled-popup')
-          ? ''
-          : code === 'timeout'
-            ? '接続できませんでした。もう一度押してください'
-            : code.includes('popup-blocked')
-              ? 'ポップアップが開けませんでした。もう一度押してください'
-              : 'ログインできませんでした',
-      );
-    } finally {
-      setSigningIn(false);
-    }
-  }
-  async function signOut() {
-    cancelHeld(false);
-    try {
-      await (await client()).signOut();
-    } catch {
-      setMessage('ログアウトできませんでした');
-    }
-  }
   // A locked sticker was reached for: point at the sign-in button instead.
   function askToSignIn() {
     setMessage('');
@@ -265,12 +186,9 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   }
 
   onSettled(() => {
-    let stored: string | null = null;
-    try {
-      setHidden(localStorage.getItem('cp20-hide-stamps') === 'true');
-      stored = localStorage.getItem('cp20-sticker-sheet');
-      if (localStorage.getItem('cp20-sticker-account')) void connectAccount();
-    } catch {}
+    setHidden(readPref(HIDE_KEY) === 'true');
+    const stored = readPref(SHEET_KEY);
+    if (readPref(ACCOUNT_KEY)) void connectAccount();
     // Start with the sheet tucked away unless it fits on the desk beside the page, so it never covers content.
     const page = document.querySelector('.site-body')?.getBoundingClientRect();
     setOpen(sheetStartsOpen(stored, document.documentElement.clientWidth, page ? page.right : Infinity));
@@ -296,7 +214,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       resize.disconnect();
       mutations.disconnect();
       cancelAnimationFrame(frame);
-      cancelAnimationFrame(motion.raf);
+      hand.stop();
       clearTimeout(peekTimer);
       window.removeEventListener('resize', reposition);
       document.removeEventListener('keydown', key);
@@ -322,15 +240,11 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     setOpen(next);
     if (!next && held()?.from === 'sheet') cancelHeld(false);
     if (next) void connectAccount();
-    try {
-      localStorage.setItem('cp20-sticker-sheet', next ? 'open' : 'closed');
-    } catch {}
+    writePref(SHEET_KEY, next ? 'open' : 'closed');
   }
   function setHide(value: boolean) {
     setHidden(value);
-    try {
-      localStorage.setItem('cp20-hide-stamps', String(value));
-    } catch {}
+    writePref(HIDE_KEY, String(value));
   }
   function enqueue(op: Operation) {
     setOperations((list) => [...list, op]);
@@ -338,36 +252,24 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     setFailed(null);
     writes = writes
       .then(async () => {
-        const delay = Math.max(0, 1100 - (Date.now() - lastWrite));
+        const delay = writeDelay(lastWrite);
         if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
         const api = await client();
         const who = account();
         if (!who) throw Error('Signed out');
-        let result: { owner: string; stamps: PlacedStamp[] };
-        if (op.type !== 'remove') {
-          const { anchor, x, y, kind, angle } = op.stamp;
-          const target = op.type === 'move' ? resolved.get(op.target.id) || op.target : undefined;
-          // A sticker whose own placement never saved is placed afresh.
-          const added =
-            target && target.owner !== 'local'
-              ? await api.move(op.path, target, { anchor, x, y, kind, angle }, who)
-              : await api.place(op.path, { anchor, x, y, kind, angle }, who);
-          result = added;
-          resolved.set(op.stamp.id, added.placed);
+        const { result, placed } = await saveOperation(api, op, who, (s) => resolved.get(s.id) || s);
+        if (placed && op.type !== 'remove') {
+          resolved.set(op.stamp.id, placed);
           setOperations((list) =>
             list.map((item) =>
-              item.type !== 'add' && item.target.id === op.stamp.id
-                ? { ...item, target: added.placed }
-                : item,
+              item.type !== 'add' && item.target.id === op.stamp.id ? { ...item, target: placed } : item,
             ),
           );
-        } else {
-          const target = resolved.get(op.target.id) || op.target;
-          if (target.owner === 'local') {
-            setOperations((list) => list.filter((item) => item.id !== op.id));
-            return;
-          }
-          result = await api.remove(op.path, target, who);
+        }
+        if (!result) {
+          // Removing a sticker that never saved needs no request.
+          setOperations((list) => list.filter((item) => item.id !== op.id));
+          return;
         }
         receive(op.path, [
           ...(cache.get(op.path) || []).filter((s) => s.owner !== result.owner),
@@ -381,27 +283,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         setFailed(op);
         setMessage('保存できませんでした');
       });
-  }
-  // Where a point on screen lands on the page: the innermost anchor that contains it.
-  function locate(x: number, y: number) {
-    const below = document
-      .elementsFromPoint(x, y)
-      .find((el) => !el.closest('.sticker-sheet,.sticker-tab,.stamp-overlay,.stamp-layer,.sticker-ghost'));
-    let anchor =
-      below?.closest<HTMLElement>('[data-stamp-anchor]') ||
-      document.querySelector<HTMLElement>('[data-stamp-anchor="page"]');
-    if (!anchor || below?.closest('.rail') || anchor.closest('[inert]')) return null;
-    // Page coordinates follow the document, so stickers scroll natively with the content.
-    const page = document.body.getBoundingClientRect(),
-      px = x - page.left,
-      py = y - page.top;
-    let box = layoutBox(anchor);
-    while (px < box.x || px > box.x + box.w || py < box.y || py > box.y + box.h) {
-      anchor = anchor.parentElement?.closest<HTMLElement>('[data-stamp-anchor]') || null;
-      if (!anchor) return null;
-      box = layoutBox(anchor);
-    }
-    return { anchor: anchor.dataset.stampAnchor!, x: (px - box.x) / box.w, y: (py - box.y) / box.h };
   }
   function put(
     x: number,
@@ -426,21 +307,13 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     // The new sticker starts where the one in hand was, then settles onto the paper.
     const key = visualKey(stamp);
     setFresh((map) => new Map(map).set(key, { x: (from?.x ?? x) - x, y: (from?.y ?? y) - y, r: 0 }));
-    setTimeout(
-      () =>
-        setFresh((map) => {
-          const next = new Map(map);
-          next.delete(key);
-          return next;
-        }),
-      700,
-    );
+    setTimeout(() => setFresh((map) => withoutKey(map, key)), 700);
     // Moving one of your stickers rewrites it in place, so it never pushes out another one.
     if (target) enqueue({ type: 'move', id, path: props.path, target, stamp });
     else enqueue({ type: 'add', id, path: props.path, stamp });
     return true;
   }
-  const nameOf = (stickerKind: number) => kinds[stickerKind]?.name || 'しーぴー';
+  const nameOf = stickerName;
   // Stickers you could still place here once `without` is gone.
   const remainingWithout = (without?: PlacedStamp) =>
     LIMIT - own().filter((s) => s.id !== without?.id && !leaving().has(visualKey(s))).length;
@@ -474,11 +347,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     focusPastDeleteButton(target);
     say(stampAnnouncement('removed', nameOf(target.kind), remainingWithout(target)));
     const commit = () => {
-      setLeaving((set) => {
-        const next = new Set(set);
-        next.delete(key);
-        return next;
-      });
+      setLeaving((set) => withoutKey(set, key));
       enqueue({ type: 'remove', id: crypto.randomUUID(), path: props.path, target });
       flush();
     };
@@ -511,44 +380,12 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
 
   // ── The sticker in hand ──
   // Its position follows the pointer with a spring and leans into the direction of travel.
-  // Updated outside Solid on every frame so dragging stays smooth.
-  const motion = {
-    x: 0,
-    y: 0,
-    tx: 0,
-    ty: 0,
-    tilt: 0,
-    scale: 1,
-    ts: 1,
-    raf: 0,
-    home: null as null | (() => void),
-  };
+  const hand = createHand(
+    () => ghost,
+    () => !!held(),
+  );
+  const { m: motion, paint, animate } = hand;
   let press = { x: 0, y: 0 };
-  function paint() {
-    if (!ghost) return;
-    ghost.style.transform = `translate(${motion.x}px, ${motion.y}px) rotate(${motion.tilt}deg) scale(${motion.scale})`;
-  }
-  function animate() {
-    cancelAnimationFrame(motion.raf);
-    const step = () => {
-      const dx = motion.tx - motion.x,
-        dy = motion.ty - motion.y;
-      motion.x += dx * 0.32;
-      motion.y += dy * 0.32;
-      motion.tilt += (clamp(dx * 0.5, -22, 22) - motion.tilt) * 0.2;
-      motion.scale += (motion.ts - motion.scale) * 0.25;
-      paint();
-      const settled = Math.abs(dx) < 0.4 && Math.abs(dy) < 0.4 && Math.abs(motion.tilt) < 0.3;
-      if (motion.home && settled) {
-        const done = motion.home;
-        motion.home = null;
-        done();
-        return;
-      }
-      if (held() || motion.home) motion.raf = requestAnimationFrame(step);
-    };
-    motion.raf = requestAnimationFrame(step);
-  }
   function slotCenter(stickerKind: number) {
     const slot = (
       open() ? sheet?.querySelector(`[data-sticker-kind="${stickerKind}"]`) : null
@@ -614,11 +451,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       say(stampAnnouncement(blocked ? 'blocked' : 'returned', nameOf(h.kind), remainingWithout()));
     letGo(h);
     if (reducedMotion()) return finish();
-    motion.tx = point.x;
-    motion.ty = point.y;
-    motion.ts = 1;
-    motion.home = finish;
-    animate();
+    hand.flyTo(point, 1, finish);
   }
   function finish() {
     setGhostKind(-1);
@@ -643,12 +476,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       // Putting one of your stickers back on the sheet peels it off the page.
       if (h.from === 'page' && h.target) erase(h.target, false);
       letGo(h);
-      const home = slotCenter(h.kind);
-      motion.tx = home.x;
-      motion.ty = home.y;
-      motion.ts = 0.6;
-      motion.home = finish;
-      return animate();
+      return hand.flyTo(slotCenter(h.kind), 0.6, finish);
     }
     // Set down where it was picked up: nothing changes.
     if (h.from === 'page') {
@@ -670,7 +498,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     finish();
     flush();
     say(stampAnnouncement('placed', nameOf(h.kind), remainingWithout()));
-    cancelAnimationFrame(motion.raf);
+    hand.stop();
   }
   // While aiming with the keyboard, say what the sticker is over once it stops moving.
   let placeTimer = 0,
@@ -678,12 +506,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   function announcePlace() {
     const h = held();
     if (!h || h.mode !== 'aim') return;
-    const below = document
-      .elementsFromPoint(motion.tx, motion.ty)
-      .find((el) => !el.closest('.sticker-sheet,.sticker-tab,.stamp-overlay,.stamp-layer,.sticker-ghost'));
-    const anchor =
-      below?.closest<HTMLElement>('[data-stamp-anchor]') ||
-      document.querySelector<HTMLElement>('[data-stamp-anchor="page"]');
+    const { below, anchor } = anchorAt(motion.tx, motion.ty);
     if (!anchor) return;
     const labelledBy = anchor.getAttribute('aria-labelledby');
     const label =
@@ -729,10 +552,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     }
   }
   // Pointer handlers shared by sheet stickers and your own stickers on the page.
-  const center = (el: Element) => {
-    const r = el.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-  };
   function grab(e: PointerEvent, next: Omit<Held, 'mode' | 'pointer'>) {
     if (e.button !== 0 || !e.isPrimary) return;
     if (!account()) return askToSignIn();
@@ -819,7 +638,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
               <Show when={isOwn(s()) && !leaving().has(s().key)}>
                 <button
                   class="stamp-delete"
-                  aria-label={`${kinds[s().kind]?.name || 'しーぴー'}のシールをはがす`}
+                  aria-label={`${stickerName(s().kind)}のシールをはがす`}
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => erase(s())}
                 >
