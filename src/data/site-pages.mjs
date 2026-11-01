@@ -85,6 +85,22 @@ export function validateWorks(works) {
 export const mergeWorks = (base, manual) => validateWorks([...base, ...(manual.projects ?? [])]);
 
 /**
+ * Fails when a work links a related article that the article list does not
+ * hold, so a work page never shows a bare URL in place of the article title.
+ * @param {readonly { id: string, relatedArticles?: readonly string[] }[]} works
+ * @param {readonly { url: string }[]} articles
+ */
+export function assertRelatedArticles(works, articles) {
+  const known = new Set(articles.map((a) => a.url));
+  for (const work of works)
+    for (const url of work.relatedArticles ?? [])
+      if (!known.has(url))
+        throw Error(
+          `Work "${work.id}" links ${url}, which is not in the article list: add it to manual.json articles`,
+        );
+}
+
+/**
  * Every page that exists, in prerender order.
  * @param {readonly { id: string }[]} works
  */

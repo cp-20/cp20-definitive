@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
   TAB_PATHS,
+  assertRelatedArticles,
   mergeWorks,
   normalizePath,
   pageKey,
@@ -15,10 +16,11 @@ import {
   workPath,
 } from '../src/data/site-pages.mjs';
 import { buildRules, generatedRules } from './database-rules.mjs';
+import { mergeArticles } from '../src/data/normalize.mjs';
 
 const load = async (name) =>
   JSON.parse(await readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8'));
-const [baseWorks, manual] = await Promise.all([load('works'), load('manual')]);
+const [baseWorks, manual, snapshot] = await Promise.all([load('works'), load('manual'), load('generated')]);
 const works = mergeWorks(baseWorks, manual);
 const pagePattern = (rules) =>
   new RegExp(rules.rules.pages.$page['.validate'].match(/matches\(\/(.*)\/\)$/)[1]);
@@ -79,4 +81,19 @@ test('paths, page keys, tabs and sections', () => {
     assert.equal(tabIndex(path), tab, path);
     assert.equal(sectionName(path), section, path);
   }
+});
+
+test('every related article of a work is in the article list, so it shows with its title', () => {
+  const articles = mergeArticles(snapshot.articles, [], manual);
+  assertRelatedArticles(works, articles);
+  // The C compiler write-up is the main explanation of a headline work.
+  assert.equal(
+    articles.find((a) => a.url === 'https://trap.jp/post/2313/')?.title,
+    'Cコンパイラを作ろうとしてみた',
+  );
+  assert.throws(
+    () => assertRelatedArticles([{ id: 'a', relatedArticles: ['https://example.com/x'] }], articles),
+    /Work "a" links https:\/\/example\.com\/x/,
+  );
+  assertRelatedArticles([{ id: 'a' }], []);
 });

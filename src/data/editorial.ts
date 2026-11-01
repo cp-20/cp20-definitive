@@ -31,7 +31,7 @@ export const milestones: { year: string; grade: string; title: string; text: str
     grade: '大学1年',
     title: 'Web Speed Hackathon 2024 優勝',
     text: 'Webアプリケーションのパフォーマンス改善。',
-    url: 'https://github.com/CyberAgentHack/web-speed-hackathon-2024',
+    url: 'https://trap.jp/post/2170/',
   },
   {
     year: '2023.08',
@@ -45,13 +45,13 @@ export const milestones: { year: string; grade: string; title: string; text: str
     grade: '大学1年',
     title: 'SecHack365 採択',
     text: '技術記事の未読消化をサポートするReadStackを開発。',
-    url: 'https://sechack365.nict.go.jp/',
+    url: 'https://sechack365.nict.go.jp/achievement/2023/#area_24dn',
   },
   {
     year: '2023.04',
     grade: '大学1年',
     title: '東京工業大学 入学',
-    text: '情報理工学院（現在の東京科学大学）。',
+    text: '東京工業大学（現 東京科学大学）情報理工学院。',
     url: 'https://note.com/cp20/n/n3be2d294a6f3',
   },
   {

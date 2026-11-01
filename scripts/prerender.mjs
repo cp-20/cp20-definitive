@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { handleRequest } from '../dist/server/server.js';
 import { mergeArticles } from '../src/data/normalize.mjs';
-import { canonicalUrl, mergeWorks, sitePaths } from '../src/data/site-pages.mjs';
+import { assertRelatedArticles, canonicalUrl, mergeWorks, sitePaths } from '../src/data/site-pages.mjs';
 import { buildFeed } from './feed.mjs';
 import { subsetSiteFonts } from './fonts.mjs';
 const load = async (name) =>
@@ -9,6 +9,7 @@ const load = async (name) =>
 const [baseWorks, manual, snapshot] = await Promise.all(['works', 'manual', 'generated'].map(load));
 const works = mergeWorks(baseWorks, manual),
   articles = mergeArticles(snapshot.articles, [], manual);
+assertRelatedArticles(works, articles);
 const paths = [...sitePaths(works), '/404'];
 for (const path of paths) {
   const response = await handleRequest(new Request(canonicalUrl(path)));
