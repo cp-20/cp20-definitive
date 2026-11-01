@@ -137,7 +137,7 @@ Lucide公式のSVGノードをSolidで描画。CSS Grid、transitions / keyframe
 
 ## 検証と素材
 
-`npm test`（`node --test scripts/*.test.mjs`）は外から観測できる振る舞いだけを検査します。純粋なロジックは `src/data/*.mjs` に置き、fetch・時計・EventSource は小さなテストダブルに差し替えるので、テストは速く決定的です。ソースコードの文字列を照合するテストは置かず、見た目や操作は下記のブラウザ検証で、生成物はビルド結果（`dist/client`）で確かめます。テスト名は仕様として読める文で、1テストにつき1つの関心だけを検査します。
+`npm test`（`node --test scripts/*.test.mjs`）は外から観測できる振る舞いだけを検査します。純粋なロジックは `src/data/*.mjs` に置き、fetch・時計・EventSource は小さなテストダブルに差し替えるので、テストは速く決定的です。ソースコードの文字列を照合するテストは置かず、見た目や操作は下記のブラウザ検証で、生成物はビルド結果（`dist/client`）で確かめます。テスト名は仕様として読める文で、1テストにつき1つの関心だけを検査します。CSSの約束事（px指定のfont-sizeを使わない、印刷用スタイル、シールの層の解放）はソース照合のテストをやめた際に自動検査から外し、レビューで見ます。ビルド結果を読むテストは `dist/client` がなければスキップするため、`npm run verify` の中で走らせてください。シールの保存失敗の取り消し（`store.ts` の配線）はブラウザ検証でだけ確かめており、`npm run verify` には含まれません。
 
 `node scripts/browser-check.mjs` は8787のサイトを検証し、`.qa/` に結果と画面を保存します。初回は `npx playwright install chromium`。Googleログインはヘッドレスブラウザでは行えないため、シールの操作は `scripts/firebase-mock.mjs`（ログイン済みユーザーを注入し、DBをメモリ上で同じ所有者ルールで再現）に対して検証し、実際のDBには書き込みません。`STAMPS_RULES_EMULATOR=127.0.0.1:9000 node scripts/stamps-rules.mjs` はローカルのRealtime Databaseエミュレーターにルールを読み込み、署名なしのGoogleトークンで書込の検証（連続更新・子パス書込・削除→再作成・同時編集の拒否を含む）を行います。`STAMPS_LIVE_TEST=1 node scripts/stamps-rules.mjs` は実際のDBで公開読込の制限と、未ログイン・匿名アカウントの書き込み拒否を検証します。`STAMPS_GOOGLE_ID_TOKEN`（Googleログインしたブラウザで取得したIDトークン）を渡すと、項目の検証と自分の領域への書き込み・削除も確認します。
 

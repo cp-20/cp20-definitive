@@ -63,7 +63,7 @@ const headings = (html) =>
     ([, level, text]) => ({ level: +level, text: text.replace(/<[^>]+>|<!--.*?-->/g, '').trim() }),
   );
 
-test('built pages link the feed under its own title', { skip }, () => {
+test('ビルドしたページは、フィードをその名前でリンクする', { skip }, () => {
   const head = readFileSync(built('index.html'), 'utf8').split('</head>')[0];
   assert.ok(head.includes(`title="${feedTitle}"`));
 });
@@ -76,15 +76,15 @@ const skipped = (page) =>
     .map((h) => `h${h.level} ${h.text}`);
 const h1 = (page) => headings(readFileSync(built(page), 'utf8')).find((h) => h.level === 1).text;
 
-test('built 404 page asks not to be indexed', { skip }, () => {
+test('404 ページは、検索エンジンに載せないよう求める', { skip }, () => {
   assert.match(head('404.html'), /<meta\b[^>]*name="robots" content="noindex"/);
 });
 
-test('built 404 page names no canonical URL', { skip }, () => {
+test('404 ページは、正規 URL を名乗らない', { skip }, () => {
   assert.doesNotMatch(head('404.html'), /rel="canonical"|property="og:url"/);
 });
 
-test('built home page names its canonical URL and may be indexed', { skip }, () => {
+test('トップページは、正規 URL を名乗り、検索エンジンに載せてよい', { skip }, () => {
   assert.deepEqual(
     [
       /<link\b[^>]*rel="canonical" href="https:\/\/cp20\.dev\/"/.test(head('index.html')),
@@ -95,11 +95,11 @@ test('built home page names its canonical URL and may be indexed', { skip }, () 
 });
 
 for (const page of ['index.html', 'about/index.html', 'articles/index.html', 'works/index.html'])
-  test(`built ${page} never skips a heading level`, { skip }, () => {
+  test(`${page} の見出しは、レベルを飛ばさない`, { skip }, () => {
     assert.deepEqual(skipped(page), []);
   });
 
-test('/ and /about have distinct h1s, /about naming the profile', { skip }, () => {
+test('/ と /about の h1 は別の文で、/about のものはプロフィールを名乗る', { skip }, () => {
   assert.deepEqual(
     [h1('index.html') !== h1('about/index.html'), h1('about/index.html').includes('プロフィール')],
     [true, true],

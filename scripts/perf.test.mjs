@@ -1,5 +1,5 @@
 // Page weight: thumbnail variants, the client media table and font subsetting.
-import { describe, test } from 'node:test';
+import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { access, cp, mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -52,9 +52,18 @@ test('縮小版のファイル名だけを縮小版と判定する', () => {
   assert.deepEqual([isVariantFile('/media/abc-320w.webp'), isVariantFile('/media/abc.png')], [true, false]);
 });
 
-test('addVariants writes smaller WebP copies for thumbnails and icons only, and only when they are smaller', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'cp20-variants-'));
-  try {
+// addVariants run once on a copy of the scripts with four images: an OG thumbnail, an icon, a
+// flat two-colour logo used as an icon, and one no longer used.
+describe('addVariants', () => {
+  let dir;
+  const cache = {
+    'https://example.com/og.png': { file: '/media/og.png', checkedAt: 'x' },
+    'https://example.com/icon.png': { file: '/media/icon.png', checkedAt: 'x' },
+    'https://example.com/flat.png': { file: '/media/flat.png', checkedAt: 'x' },
+    'https://example.com/unused.png': { file: '/media/unused.png', checkedAt: 'x', variants: [] },
+  };
+  before(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'cp20-variants-'));
     await cp(join(root, 'scripts'), join(dir, 'scripts'), { recursive: true });
     await mkdir(join(dir, 'src/data'), { recursive: true });
     for (const file of ['variant-names.mjs', 'manga-covers.mjs'])
@@ -62,10 +71,7 @@ test('addVariants writes smaller WebP copies for thumbnails and icons only, and 
     await symlink(join(root, 'node_modules'), join(dir, 'node_modules'));
     await mkdir(join(dir, 'public/media'), { recursive: true });
     const png = await readFile(join(root, 'public/images/avatar.png')); // 512px
-    await writeFile(join(dir, 'public/media/og.png'), png);
-    await writeFile(join(dir, 'public/media/icon.png'), png);
-    await writeFile(join(dir, 'public/media/unused.png'), png);
-    // A flat two-colour logo is smaller as PNG than as WebP: no copy is kept for it.
+    for (const name of ['og', 'icon', 'unused']) await writeFile(join(dir, `public/media/${name}.png`), png);
     const flat =
       '<svg xmlns="http://www.w3.org/2000/svg" width="315" height="315"><rect x="40" y="40" width="235" height="235" fill="#3ea8ff"/></svg>';
     await writeFile(
@@ -73,43 +79,56 @@ test('addVariants writes smaller WebP copies for thumbnails and icons only, and 
       await sharp(Buffer.from(flat)).png({ palette: true, colours: 2, compressionLevel: 9 }).toBuffer(),
     );
     const { addVariants } = await import(pathToFileURL(join(dir, 'scripts/image-variants.mjs')).href);
-    const cache = {
-      'https://example.com/og.png': { file: '/media/og.png', checkedAt: 'x' },
-      'https://example.com/icon.png': { file: '/media/icon.png', checkedAt: 'x' },
-      'https://example.com/flat.png': { file: '/media/flat.png', checkedAt: 'x' },
-      'https://example.com/unused.png': { file: '/media/unused.png', checkedAt: 'x', variants: [] },
-    };
     await addVariants(
       cache,
       new Set(['https://example.com/og.png']),
       new Set(['https://example.com/icon.png', 'https://example.com/flat.png']),
     );
-    assert.deepEqual(cache['https://example.com/og.png'], {
-      file: '/media/og.png',
-      checkedAt: 'x',
-      width: 512,
-      variants: [{ file: '/media/og-320w.webp', width: 320 }],
-    });
-    assert.deepEqual(cache['https://example.com/icon.png'], {
-      file: '/media/icon.png',
-      checkedAt: 'x',
-      width: 512,
-      variants: [{ file: '/media/icon-96w.webp', width: 96 }],
-    });
-    assert.deepEqual(cache['https://example.com/flat.png'], {
-      file: '/media/flat.png',
-      checkedAt: 'x',
-      width: 315,
-    });
-    assert.ok(!(await exists(join(dir, 'public/media/flat-96w.webp'))));
-    assert.deepEqual(cache['https://example.com/unused.png'], { file: '/media/unused.png', checkedAt: 'x' });
+  });
+  after(() => rm(dir, { recursive: true, force: true }));
+
+  test('サムネイルには、320px の WebP の縮小版を作って記録する', async () => {
     const meta = await sharp(join(dir, 'public/media/og-320w.webp')).metadata();
-    assert.deepEqual([meta.format, meta.width, meta.height], ['webp', 320, 320]);
-    const icon = await sharp(join(dir, 'public/media/icon-96w.webp')).metadata();
-    assert.deepEqual([icon.format, icon.width], ['webp', 96]);
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
+    assert.deepEqual(
+      [cache['https://example.com/og.png'], [meta.format, meta.width, meta.height]],
+      [
+        {
+          file: '/media/og.png',
+          checkedAt: 'x',
+          width: 512,
+          variants: [{ file: '/media/og-320w.webp', width: 320 }],
+        },
+        ['webp', 320, 320],
+      ],
+    );
+  });
+
+  test('アイコンには、96px の WebP の縮小版を作って記録する', async () => {
+    const meta = await sharp(join(dir, 'public/media/icon-96w.webp')).metadata();
+    assert.deepEqual(
+      [cache['https://example.com/icon.png'], [meta.format, meta.width]],
+      [
+        {
+          file: '/media/icon.png',
+          checkedAt: 'x',
+          width: 512,
+          variants: [{ file: '/media/icon-96w.webp', width: 96 }],
+        },
+        ['webp', 96],
+      ],
+    );
+  });
+
+  test('PNG のほうが小さい平坦なロゴには、縮小版を作らない', async () => {
+    assert.deepEqual(
+      [cache['https://example.com/flat.png'], await exists(join(dir, 'public/media/flat-96w.webp'))],
+      [{ file: '/media/flat.png', checkedAt: 'x', width: 315 }, false],
+    );
+  });
+
+  test('使われなくなった画像からは、縮小版の記録を外す', () => {
+    assert.deepEqual(cache['https://example.com/unused.png'], { file: '/media/unused.png', checkedAt: 'x' });
+  });
 });
 
 describe('コミットされた画像キャッシュ', () => {
@@ -207,7 +226,7 @@ describe('漫画の表紙', () => {
   });
 });
 
-test('the client media table keeps only local paths, srcset candidates and sizes', () => {
+describe('clientMedia', () => {
   const page = 'https://example.com/post';
   const { pages, images } = clientMedia(
     {
@@ -247,23 +266,38 @@ test('the client media table keeps only local paths, srcset candidates and sizes
     },
     ['https://i.ytimg.com/vi/a/hq.jpg', 'https://i.ytimg.com/vi/b/hq.jpg', null],
   );
-  assert.deepEqual(pages[page], {
-    width: 1200,
-    height: 630,
-    image: '/media/og.png',
-    srcset: '/media/og-320w.webp 320w, /media/og-640w.webp 640w, /media/og.png 1200w',
-    icon: '/media/icon-96w.webp',
+
+  test('ページの画像は、ローカルのパスと srcset とサイズにする', () => {
+    assert.deepEqual(pages[page], {
+      width: 1200,
+      height: 630,
+      image: '/media/og.png',
+      srcset: '/media/og-320w.webp 320w, /media/og-640w.webp 640w, /media/og.png 1200w',
+      icon: '/media/icon-96w.webp',
+    });
   });
-  assert.deepEqual(pages['https://example.com/none'], { width: 1200, height: 630 });
-  assert.deepEqual(images, {
-    'https://i.ytimg.com/vi/a/hq.jpg': {
-      src: '/media/yt.jpg',
-      srcset: '/media/yt-320w.webp 320w, /media/yt.jpg 480w',
-    },
-    'https://i.ytimg.com/vi/b/hq.jpg': { src: '/media/yt-b.jpg' },
+
+  test('画像のないページは、サイズだけを持つ', () => {
+    assert.deepEqual(pages['https://example.com/none'], { width: 1200, height: 630 });
   });
-  const serialized = JSON.stringify({ pages, images });
-  assert.ok(!serialized.includes('checkedAt') && !serialized.includes('cdn.example.com'));
+
+  test('ページ以外の画像は、使われているものだけを src と srcset にする', () => {
+    assert.deepEqual(images, {
+      'https://i.ytimg.com/vi/a/hq.jpg': {
+        src: '/media/yt.jpg',
+        srcset: '/media/yt-320w.webp 320w, /media/yt.jpg 480w',
+      },
+      'https://i.ytimg.com/vi/b/hq.jpg': { src: '/media/yt-b.jpg' },
+    });
+  });
+
+  test('確認日時や元の URL は、クライアントに送らない', () => {
+    const serialized = JSON.stringify({ pages, images });
+    assert.deepEqual(
+      [serialized.includes('checkedAt'), serialized.includes('cdn.example.com')],
+      [false, false],
+    );
+  });
 });
 
 describe('collectCharacters', () => {

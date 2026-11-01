@@ -24,8 +24,18 @@ describe('spotIn', () => {
     assert.deepEqual(spotIn({ x: 200, y: 300, w: 400, h: 200 }, 300, 350), { x: 0.25, y: 0.25 });
   });
 
-  test('箱の外の点は null', () => {
-    assert.equal(spotIn({ x: 200, y: 300, w: 400, h: 200 }, 199, 350), null);
+  for (const [where, px, py] of [
+    ['左', 199, 350],
+    ['右', 601, 350],
+    ['上', 300, 299],
+    ['下', 300, 501],
+  ])
+    test(`箱の${where}の外の点は null`, () => {
+      assert.equal(spotIn({ x: 200, y: 300, w: 400, h: 200 }, px, py), null);
+    });
+
+  test('箱の縁の上の点は、箱の中として扱う', () => {
+    assert.deepEqual(spotIn({ x: 200, y: 300, w: 400, h: 200 }, 600, 500), { x: 1, y: 1 });
   });
 });
 
@@ -54,6 +64,19 @@ describe('layoutStamps', () => {
     assert.equal(after.get(visualKey(stamp('a'))), before.get(visualKey(stamp('a'))));
   });
 
+  test('箱が動いたシールは、前回のオブジェクトを使い回さず新しい座標で描く', () => {
+    const before = layoutStamps([stamp('a')], boxOf);
+    const moved = (name) => (name === 'intro' ? { ...boxes.intro, x: 250 } : boxOf(name));
+    const after = layoutStamps([stamp('a')], moved, before);
+    assert.equal(after.get(visualKey(stamp('a'))).left, 450);
+  });
+
+  test('持ち主のアバターが変わったシールは、新しいオブジェクトにする', () => {
+    const before = layoutStamps([stamp('a')], boxOf);
+    const after = layoutStamps([stamp('a', { avatar: 'ab'.repeat(32) })], boxOf, before);
+    assert.equal(after.get(visualKey(stamp('a'))).avatar, 'ab'.repeat(32));
+  });
+
   test('保存されて id が変わったシールは、新しいオブジェクトにする', () => {
     const before = layoutStamps([stamp('local-1', { owner: 'local' })], boxOf);
     const after = layoutStamps([stamp('me-0')], boxOf, before);
@@ -74,6 +97,10 @@ describe('stampAt', () => {
 
   test('条件に合うシールだけを探す', () => {
     assert.equal(stampAt(shown, 105, 100, (s) => s.id === 'below').id, 'below');
+  });
+
+  test('ちょうどシールの半径の距離の点では見つかる', () => {
+    assert.equal(stampAt(shown, 100, 100 + STICKER_RADIUS, (s) => s.id === 'below').id, 'below');
   });
 
   test('シールの半径より遠い点では見つからない', () => {

@@ -21,22 +21,43 @@ describe('stampPlace', () => {
 });
 
 describe('stampAnnouncement', () => {
-  for (const [args, expected] of [
-    [['placed', 'ハート', 4], 'ハートを貼りました。残り4枚'],
-    [['placed', 'いいね', 4, undefined, 'traP Missionの上'], 'いいねをtraP Missionの上に貼りました。残り4枚'],
+  for (const [why, args, expected] of [
+    ['貼ったら、残りの枚数を伝える', ['placed', 'ハート', 4], 'ハートを貼りました。残り4枚'],
     [
+      '貼った場所がわかれば、その見出しも伝える',
+      ['placed', 'いいね', 4, undefined, 'traP Missionの上'],
+      'いいねをtraP Missionの上に貼りました。残り4枚',
+    ],
+    [
+      '押し出したシールがあれば、残りの代わりにそれを伝える',
       ['placed', 'ハート', 0, 'クローバー', '経歴の上'],
       'ハートを経歴の上に貼りました。一番古いクローバーをはがしました',
     ],
-    [['placed', 'ハート', -1], 'ハートを貼りました。残り0枚'],
-    [['removed', 'ハート', 5], 'ハートをはがしました。残り5枚'],
-    [['returned', 'いいね', 3], 'いいねをシール帳に戻しました'],
-    [['kept', 'ハート', 3], 'ハートを元の場所に戻しました'],
-    [['blocked', 'いいね', 3], 'ここには貼れません。いいねをシール帳に戻しました'],
-    [['blocked-kept', 'ハート', 3], 'ここには貼れません。ハートを元の場所に戻しました'],
-    [['failed', 'しーぴー', 0], '保存できませんでした。しーぴーを元に戻しました'],
+    ['残りの枚数が負なら、0枚と伝える', ['placed', 'ハート', -1], 'ハートを貼りました。残り0枚'],
+    ['はがしたら、残りの枚数を伝える', ['removed', 'ハート', 5], 'ハートをはがしました。残り5枚'],
+    ['シール帳に戻したら、そう伝える', ['returned', 'いいね', 3], 'いいねをシール帳に戻しました'],
+    [
+      '持ち上げたシールを元の場所に戻したら、そう伝える',
+      ['kept', 'ハート', 3],
+      'ハートを元の場所に戻しました',
+    ],
+    [
+      '貼れない場所では、シール帳に戻したと伝える',
+      ['blocked', 'いいね', 3],
+      'ここには貼れません。いいねをシール帳に戻しました',
+    ],
+    [
+      '持ち上げたシールを貼れない場所に置いたら、元の場所に戻したと伝える',
+      ['blocked-kept', 'ハート', 3],
+      'ここには貼れません。ハートを元の場所に戻しました',
+    ],
+    [
+      '保存できなかったら、元に戻したと伝える',
+      ['failed', 'しーぴー', 0],
+      '保存できませんでした。しーぴーを元に戻しました',
+    ],
   ])
-    test(`${args.join(' / ')} →「${expected}」`, () => {
+    test(why, () => {
       assert.equal(stampAnnouncement(...args), expected);
     });
 });
@@ -60,15 +81,23 @@ describe('focusAfterRemoval', () => {
 });
 
 describe('signInMessage', () => {
-  for (const [code, expected] of [
-    ['auth/popup-closed-by-user', ''],
-    ['auth/cancelled-popup-request', ''],
-    ['timeout', '接続できませんでした。もう一度押してください'],
-    ['auth/popup-blocked', 'ポップアップが開けませんでした。もう一度押してください'],
-    ['auth/network-request-failed', 'ログインできませんでした'],
-    [undefined, 'ログインできませんでした'],
+  for (const [why, code, expected] of [
+    ['ポップアップを自分で閉じたら、何も言わない', 'auth/popup-closed-by-user', ''],
+    ['ポップアップを開き直したら、何も言わない', 'auth/cancelled-popup-request', ''],
+    ['時間切れなら、もう一度押すよう促す', 'timeout', '接続できませんでした。もう一度押してください'],
+    [
+      'ポップアップがブロックされたら、もう一度押すよう促す',
+      'auth/popup-blocked',
+      'ポップアップが開けませんでした。もう一度押してください',
+    ],
+    [
+      'ネットワークの失敗は、ログインできなかったと伝える',
+      'auth/network-request-failed',
+      'ログインできませんでした',
+    ],
+    ['コードのない失敗も、ログインできなかったと伝える', undefined, 'ログインできませんでした'],
   ])
-    test(`${code} →「${expected}」`, () => {
+    test(why, () => {
       assert.equal(signInMessage(code), expected);
     });
 });
