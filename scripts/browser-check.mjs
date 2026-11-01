@@ -504,6 +504,56 @@ try {
   report.interactions.push(
     "other visitors' stickers let clicks, modifier clicks and the select through, keep off the index tabs and show their avatar on hover",
   );
+  // On phones the tabs are fixed to the bottom of the screen; stickers scrolling under them
+  // (another visitor's or your own) must not be painted over the tab labels.
+  await visitor.goto(origin + '/articles');
+  await visitor.evaluate(() => scrollTo({ top: 300, behavior: 'instant' }));
+  await visitor.waitForTimeout(200);
+  const tabTargets = await visitor.evaluate(() => {
+    const body = document.querySelector('[data-stamp-anchor=page]').getBoundingClientRect();
+    return [...document.querySelectorAll('.rail nav a')].map((a) => {
+      const r = a.getBoundingClientRect();
+      return {
+        x: (r.left + r.width / 2 - body.left) / body.width,
+        y: (r.top + r.height / 2 - body.top) / body.height,
+      };
+    });
+  });
+  const stampsAt = (targets) =>
+    Object.fromEntries(
+      targets.map((t, i) => [i, { anchor: 'page', ...t, kind: 1, angle: 0, createdAt: 1700000000000 + i }]),
+    );
+  db.pages.set('articles', {
+    'other-visitor': { avatar: 'b'.repeat(64), stamps: stampsAt(tabTargets.slice(0, 2)) },
+    'mock-visitor': { avatar: 'c'.repeat(64), stamps: stampsAt(tabTargets.slice(2)) },
+  });
+  await expect(visitor.locator('.placed-stamp')).toHaveCount(tabTargets.length);
+  const overTabs = await visitor.evaluate(() => {
+    // Hit testing skips elements without pointer events (other visitors' stickers); turn them on
+    // briefly so elementsFromPoint follows paint order.
+    const probe = document.head.appendChild(document.createElement('style'));
+    probe.textContent = '.placed-stamp, .placed-stamp * { pointer-events: auto !important; }';
+    const result = [...document.querySelectorAll('.rail nav a')]
+      .map((a, i) => {
+        const r = a.getBoundingClientRect(),
+          x = r.left + r.width / 2,
+          y = r.top + r.height / 2;
+        const onStamp = [...document.querySelectorAll('.placed-stamp')].some((s) => {
+          const b = s.getBoundingClientRect();
+          return x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
+        });
+        if (!onStamp) return `tab ${i + 1} has no sticker under it`;
+        const top = document.elementsFromPoint(x, y).find((el) => el.closest('.rail, .placed-stamp'));
+        return top?.closest('.rail') ? null : `tab ${i + 1}`;
+      })
+      .filter(Boolean);
+    probe.remove();
+    return result;
+  });
+  if (overTabs.length) throw Error(`Stickers painted over the mobile tabs: ${overTabs}`);
+  db.pages.delete('articles');
+  await expect(visitor.locator('.placed-stamp')).toHaveCount(0);
+  report.interactions.push('stickers scrolling under the fixed mobile tabs stay below them');
   report.interactions.push(
     'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift, put back and peel; swipes over your sticker scroll; moving one of five stickers keeps the rest; two tabs placing at once; responsive anchors',
   );

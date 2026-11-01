@@ -3101,9 +3101,11 @@
     .wrap {
       padding-inline: 18px;
     }
-    /* Tabs peek up from the bottom edge of the screen. */
+    /* Tabs peek up from the bottom edge of the screen. Fixed over the page, they stay above the
+       stickers (.stamp-layer) scrolling under them, but below the placement overlay and the sheet. */
     .rail {
       position: fixed;
+      z-index: 30;
       top: auto;
       left: 0;
       right: 0;

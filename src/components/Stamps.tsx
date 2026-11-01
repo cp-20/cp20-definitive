@@ -115,7 +115,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     if (hidden()) return ((shown = new Map()), []);
     const boxOf = createAnchorMeasure();
     // The index tabs hang off the page's right edge; a sticker written there directly (the UI never
-    // places one on them) is pulled back so it cannot cover them.
+    // places one on them) is pulled back so it cannot cover them. On phones the tabs are fixed to
+    // the bottom of the screen and painted above the stamp layer instead (app.css).
     const right = () => {
       const page = boxOf('page');
       // A tilted sticker reaches a little past its box; keep its corners off the tabs as well.
