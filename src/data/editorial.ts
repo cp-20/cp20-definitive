@@ -1,6 +1,12 @@
 export const featuredIds = ['dice-spec-v2', 'c-compiler', 'minna-no-monosashi'];
 export const milestones: { year: string; grade: string; title: string; text: string; url?: string }[] = [
   {
+    year: '2026.09',
+    grade: '大学4年',
+    title: 'LayerX インターン',
+    text: 'バクラクの Enabling チーム。プロダクト横断で開発基盤を支える。',
+  },
+  {
     year: '2026.03',
     grade: '大学3年',
     title: 'フィックスターズ インターン',
@@ -23,8 +29,8 @@ export const milestones: { year: string; grade: string; title: string; text: str
   {
     year: '2024.04',
     grade: '大学2年',
-    title: 'Flatt Security インターン開始',
-    text: 'Shisho Cloud Team / Software Engineering',
+    title: 'Flatt Security インターン',
+    text: 'Shisho Cloud Team / Software Engineering（2024.04〜2025.09）',
   },
   {
     year: '2024.03',

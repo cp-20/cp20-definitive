@@ -671,7 +671,7 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
         <aside>
           <dl class="work-facts">
             <dt>制作時期</dt>
-            <dd>{w.productionTime.replace('now', '（元サイト記載時点）')}</dd>
+            <dd>{w.productionTime.replace('now', '現在')}</dd>
             <dt>使用技術</dt>
             <dd>
               {w.techStack.map((t) => (
