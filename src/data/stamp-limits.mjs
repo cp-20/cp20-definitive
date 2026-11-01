@@ -1,3 +1,4 @@
+// @ts-check
 import { STICKER_KINDS } from './sticker-kinds.mjs';
 // The limits shared by the sticker UI, its saving and database.rules.json
 // (scripts/database-rules.mjs builds the rules from these, so changing one changes the rules).

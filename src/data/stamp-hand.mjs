@@ -1,3 +1,4 @@
+// @ts-check
 // The sticker in hand, kept free of the DOM so it can be tested in Node: the spring it follows the
 // pointer with, and how a finger handles your own stickers on the page.
 //

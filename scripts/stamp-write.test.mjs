@@ -94,13 +94,6 @@ describe('writeRecord', () => {
     assert.equal(await writeRecord(where(db.fetch), () => null), null);
   });
 
-  test('update が undefined なら書き込まず、読んだレコードを返す', async () => {
-    const db = fakeDatabase({ 'GET pages/home/alice': { stamps: { 0: 'kept' } } });
-    const result = await writeRecord(where(db.fetch), () => undefined);
-    assert.deepEqual(result, { stamps: { 0: 'kept' } });
-    assert.equal(db.requests.filter((r) => r.method === 'PATCH').length, 0);
-  });
-
   test('ルールに拒否された書き込みは再試行せず失敗にする', async () => {
     const db = fakeDatabase({ PATCH: new Response('{"error":"Permission denied"}', { status: 401 }) });
     await assert.rejects(

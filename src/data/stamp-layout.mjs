@@ -1,3 +1,4 @@
+// @ts-check
 // Where placed stickers are drawn. A sticker is stored as a fraction of its anchor's box (a
 // section, a heading, the page), so it stays on the same content at any screen width. Kept free
 // of the DOM so it can be tested in Node.
@@ -10,6 +11,7 @@
 export const STICKER_RADIUS = 23;
 
 /** What a sticker looks like and where it lies; two stickers alike are drawn as one. */
+/** @param {import('./stamp-types').Stamp} s */
 export const visualKey = (s) => `${s.anchor}|${s.x}|${s.y}|${s.kind}|${s.angle}`;
 
 /**
@@ -23,6 +25,7 @@ export function spotIn(box, px, py) {
   return { x: (px - box.x) / box.w, y: (py - box.y) / box.h };
 }
 
+/** @param {PlacedStamp} a @param {PlacedStamp} b */
 const sameShown = (a, b) =>
   a.id === b.id &&
   a.owner === b.owner &&

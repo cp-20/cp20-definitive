@@ -1,3 +1,4 @@
+// @ts-check
 // Optimistic updates: your changes to your stickers show at once, laid over what the database
 // last sent, and are saved one at a time in the background. A change that fails to save is
 // simply dropped, which puts the page back as it was. Kept free of the DOM and of Firebase so
@@ -8,7 +9,9 @@ import { STAMPS_PER_PAGE, WRITE_SPACING_MS } from './stamp-limits.mjs';
 /** @typedef {import('./stamp-types').Operation} Operation */
 /** @typedef {import('./stamp-types').SavedRecord} SavedRecord */
 
-export const sameStamp = (a, b) => ['anchor', 'x', 'y', 'kind', 'angle'].every((key) => a[key] === b[key]);
+/** @param {PlacedStamp} a @param {PlacedStamp} b */
+export const sameStamp = (a, b) =>
+  a.anchor === b.anchor && a.x === b.x && a.y === b.y && a.kind === b.kind && a.angle === b.angle;
 
 /**
  * The stickers to draw: `remote` with the pending `operations` applied in order.
@@ -83,11 +86,14 @@ export function createPendingSaves({ send, wait, changed }) {
   let pending = [];
   /** @type {Map<string, PlacedStamp>} a local sticker id → the sticker it stands for now */
   const standsFor = new Map();
+  /** @param {PlacedStamp} stamp */
   const resolve = (stamp) => standsFor.get(stamp.id) ?? stamp;
+  /** @param {readonly Operation[]} next */
   const update = (next) => {
     pending = next;
     changed(pending);
   };
+  /** @param {string} id @param {PlacedStamp} stamp */
   const retarget = (id, stamp) => {
     standsFor.set(id, stamp);
     update(pending.map((op) => (op.type !== 'add' && op.target.id === id ? { ...op, target: stamp } : op)));

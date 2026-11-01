@@ -25,9 +25,8 @@ export function writeBody(page, uid, record, throttle) {
 
 /**
  * Reads the record, lets `update` edit it and stores it. Returns the record as stored, with the
- * server's times filled in (the PATCH reply holds the written values as a tree). `update` returns
- * undefined to leave the record as it is. Rejects when any request fails, including a write the
- * rules deny.
+ * server's times filled in (the PATCH reply holds the written values as a tree). Rejects when
+ * any request fails, including a write the rules deny.
  * @param {{ fetch: typeof fetch; databaseURL: string; token: string; page: string; uid: string }} where
  * @param {(record: any) => unknown} update
  */
@@ -42,7 +41,6 @@ export async function writeRecord({ fetch, databaseURL, token, page, uid }, upda
   const throttle = await request(throttlePath(uid));
   const record = await request(recordPath(page, uid));
   const next = update(record);
-  if (next === undefined) return record;
   const written = await request('', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },

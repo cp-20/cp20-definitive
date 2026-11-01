@@ -132,10 +132,6 @@ describe('moveIn', () => {
 });
 
 describe('nextRecord', () => {
-  test('変更がなければ undefined（書き込まない）', () => {
-    assert.equal(nextRecord(undefined, 'hash', TS), undefined);
-  });
-
   test('最後の1枚をはがしたらレコードごと消す（null）', () => {
     assert.equal(nextRecord({}, 'hash', TS), null);
   });

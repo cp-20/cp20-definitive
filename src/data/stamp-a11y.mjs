@@ -1,7 +1,9 @@
+// @ts-check
 // What the sticker sheet says out loud, and where keyboard focus goes when the thing it was on
 // leaves the page. Kept free of the DOM so the wording and the order can be tested in Node.
 
 // Anchors that wrap other content (or have no heading of their own) are named by where they are.
+/** @type {Record<string, string>} */
 const PLACES = {
   page: 'ページの余白',
   header: 'ヘッダー',

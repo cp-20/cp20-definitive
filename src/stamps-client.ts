@@ -102,11 +102,11 @@ export async function save(
   const user = await currentUser();
   const token = await user.getIdToken();
   const edit = (record: RecordData | null) =>
-    op.type === 'remove'
-      ? removeFrom(record, target)
-      : op.type === 'move' && target
-        ? moveIn(record, target, op.stamp)
-        : placeIn(record, op.stamp, SERVER_TIME);
+    op.type === 'add'
+      ? placeIn(record, op.stamp, SERVER_TIME)
+      : op.type === 'remove'
+        ? removeFrom(record, target ?? op.target)
+        : moveIn(record, target ?? op.target, op.stamp);
   let slot = '';
   const record = (await writeRecord(
     { fetch, databaseURL: config.databaseURL, token, page: pageKey(op.path), uid: user.uid },
