@@ -96,3 +96,6 @@ jobs:
             fi
             git push
           fi
+      # Runs after the push so the last-known-good snapshot is saved either way.
+      - name: Fail when a source has been failing for over 48 hours
+        run: node scripts/source-health.mjs
