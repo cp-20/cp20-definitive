@@ -149,9 +149,12 @@ try {
   await expect(page.locator('main h1')).toHaveText('みんなのものさし');
   await page.locator('.rail nav a[href="/articles"]').click();
   await page.getByRole('button', { name: /^zenn.dev/ }).click();
-  await expect(page.locator('[data-article]')).toHaveCount(11);
+  // Filtering hides rows instead of rebuilding the list, so only the rows shown are counted.
+  await expect(page.locator('[data-article]:not([hidden])')).toHaveCount(11);
   await page.locator('#article-sort').selectOption('oldest');
-  const dates = await page.locator('[data-article]').evaluateAll((rows) => rows.map((r) => r.dataset.date));
+  const dates = await page
+    .locator('[data-article]:not([hidden])')
+    .evaluateAll((rows) => rows.map((r) => r.dataset.date));
   if (dates.join() !== [...dates].sort().join()) throw Error('Sort order');
   await page.evaluate(() => scrollTo({ top: 900, behavior: 'instant' }));
   await page.waitForTimeout(100);
@@ -159,7 +162,7 @@ try {
   await page.locator('.rail nav a[href="/about"]').click();
   await expect(page.locator('main h1')).toContainText('しーぴー');
   await page.goBack();
-  await expect(page.locator('[data-article]')).toHaveCount(11);
+  await expect(page.locator('[data-article]:not([hidden])')).toHaveCount(11);
   await expect(page.locator('#article-sort')).toHaveValue('oldest');
   if (Math.abs((await page.evaluate(() => scrollY)) - scroll) > 2) throw Error('Back scroll restoration');
   if (
@@ -601,10 +604,13 @@ try {
     }
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(origin + '/articles');
+  const allArticles = await page.locator('[data-article]:not([hidden])').count();
   const nojs = await browser.newContext({ javaScriptEnabled: false });
   const plain = await nojs.newPage();
   await plain.goto(origin + '/articles');
-  await expect(plain.locator('[data-article]')).toHaveCount(54);
+  // Without JS every article is listed, as many as the full list with JS.
+  await expect(plain.locator('[data-article]')).toHaveCount(allArticles);
   await plain.goto(origin + '/');
   await expect(plain.locator('noscript a')).toHaveCount(3);
   await nojs.close();
@@ -687,6 +693,49 @@ try {
   await page.getByRole('button', { name: 'シール帳を閉じる' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.sticker-tab')).toBeFocused();
+  // Pages swapped out and rows filtered away are released: after a warm-up lap the DOM node
+  // count (after GC) stays flat. Chromium kept every client-rendered srcset image, and with it
+  // its whole page, while srcset was set during the build (see responsive() in Preview.tsx).
+  {
+    const leak = await context.newPage();
+    const cdp = await context.newCDPSession(leak);
+    await cdp.send('Performance.enable');
+    const nodes = async () => {
+      for (let i = 0; i < 3; i++) await cdp.send('HeapProfiler.collectGarbage');
+      const { metrics } = await cdp.send('Performance.getMetrics');
+      return metrics.find((m) => m.name === 'Nodes').value;
+    };
+    const follow = async (href) => {
+      await leak.evaluate((href) => {
+        const a = Object.assign(document.createElement('a'), { href });
+        document.querySelector('main').append(a);
+        a.click();
+        a.remove();
+      }, href);
+      await leak.waitForTimeout(250);
+    };
+    const lap = async () => {
+      for (const href of ['/works', '/about', '/articles', '/works/dice-spec-v2', '/']) await follow(href);
+      await follow('/articles');
+      for (let i = 0; i < 6; i++)
+        await leak
+          .locator('.source-chip')
+          .nth(i % 2 ? 0 : 1)
+          .click();
+      await leak.locator('#article-sort').selectOption('oldest');
+      await leak.locator('#article-sort').selectOption('newest');
+      await follow('/');
+    };
+    await leak.goto(origin + '/');
+    await lap();
+    const warm = await nodes();
+    await lap();
+    await lap();
+    const after = await nodes();
+    if (after > warm + 100) throw Error(`Detached pages kept in memory: ${warm} → ${after} DOM nodes`);
+    await leak.close();
+  }
+  report.interactions.push('swapped-out pages and filtered rows are released from memory');
   report.interactions.push(
     'failed saves roll back and expose retry; keyboard placement with focus return and spoken result; section links move focus; reduced motion; complete static content without JS',
   );

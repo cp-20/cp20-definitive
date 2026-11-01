@@ -215,7 +215,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     const mutations = new MutationObserver(reposition);
     mutations.observe(document.querySelector('main')!, {
       attributes: true,
-      attributeFilter: ['class', 'inert'],
+      attributeFilter: ['class', 'inert', 'hidden'],
       childList: true,
       subtree: true,
     });

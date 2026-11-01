@@ -9,6 +9,7 @@ import {
   articleAnchor,
   postmarkDate,
   sizes,
+  responsive,
   firstRowWorks,
 } from './components/Preview';
 import Projects from './components/Projects';
@@ -72,8 +73,7 @@ function Bookshelf() {
               <img
                 class="book-cover"
                 src={coverOf(s)?.src}
-                srcset={coverOf(s)?.srcset}
-                sizes={coverOf(s)?.srcset ? sizes.bookCover : undefined}
+                {...responsive(coverOf(s)?.srcset, sizes.bookCover)}
                 alt=""
                 width="480"
                 height="682"
@@ -103,15 +103,26 @@ function Bookshelf() {
     </>
   );
 }
-export function ArticleRows(props: { items: Article[] }) {
+/**
+ * With `shown`, every row stays in the DOM and rows it rejects are only hidden, so filtering
+ * neither rebuilds the list nor detaches images (see /articles).
+ */
+export function ArticleRows(props: { items: Article[]; shown?: (a: Article) => boolean }) {
+  // Position of each row among the visible ones, for the stagger of the rows settling in.
+  const position = createMemo(() => {
+    const at = new Map<Article, number>();
+    for (const a of props.items) if (!props.shown || props.shown(a)) at.set(a, at.size);
+    return at;
+  });
   return (
     <div class="article-list">
       <For each={props.items}>
-        {(a, i) => (
+        {(a) => (
           <a
             href={a.url}
             class="article-row"
-            style={{ '--i': Math.min(i(), 10) }}
+            hidden={!position().has(a)}
+            style={{ '--i': Math.min(position().get(a) ?? 0, 10) }}
             data-stamp-anchor={articleAnchor(a.url)}
             data-article
             data-date={a.date}
@@ -185,8 +196,7 @@ export function Home() {
             <a href="/about#music">
               <img
                 src={localImage(tracks[0].thumbnail)?.src}
-                srcset={localImage(tracks[0].thumbnail)?.srcset}
-                sizes={localImage(tracks[0].thumbnail)?.srcset ? sizes.homeTrack : undefined}
+                {...responsive(localImage(tracks[0].thumbnail)?.srcset, sizes.homeTrack)}
                 alt={tracks[0].title}
                 width="120"
                 height="90"
@@ -197,8 +207,7 @@ export function Home() {
             <a href="/about#manga">
               <img
                 src={coverOf(series[0])?.src}
-                srcset={coverOf(series[0])?.srcset}
-                sizes={coverOf(series[0])?.srcset ? sizes.homeCover : undefined}
+                {...responsive(coverOf(series[0])?.srcset, sizes.homeCover)}
                 alt={series[0].title}
                 width="96"
                 height="136"
@@ -348,8 +357,7 @@ export function About() {
                 <div class="music-image">
                   <img
                     src={localImage(t.thumbnail)?.src}
-                    srcset={localImage(t.thumbnail)?.srcset}
-                    sizes={localImage(t.thumbnail)?.srcset ? sizes.track : undefined}
+                    {...responsive(localImage(t.thumbnail)?.srcset, sizes.track)}
                     alt={`${t.title}の動画サムネイル`}
                     width="480"
                     height="360"
@@ -448,10 +456,9 @@ export function Articles() {
       history.replaceState(history.state, '', location.pathname + (params.size ? '?' + params : ''));
     },
   );
-  const filtered = createMemo(() => {
-    const list = articles.filter((a) => !filters.source || a.source === filters.source);
-    return filters.order === 'oldest' ? [...list].reverse() : list;
-  });
+  const ordered = createMemo(() => (filters.order === 'oldest' ? [...articles].reverse() : articles));
+  const shown = (a: Article) => !filters.source || a.source === filters.source;
+  const count = createMemo(() => articles.filter(shown).length);
   return (
     <div class="wrap">
       <header data-stamp-anchor="heading" class="page-heading">
@@ -485,7 +492,7 @@ export function Articles() {
           </div>
           <div class="article-sort-row">
             <p id="filter-count" class="meta" role="status">
-              {filtered().length} 件
+              {count()} 件
             </p>
             <div class="sort-control">
               <label for="article-sort">並び順</label>
@@ -508,18 +515,13 @@ export function Articles() {
           </div>
         </div>
         <div class="article-results">
-          <Show
-            when={filtered().length}
-            fallback={
-              <p id="article-empty" class="empty-state">
-                記事がありません。
-              </p>
-            }
-          >
-            {/* Remount on filter change so the new list settles in with a short stagger. */}
-            <For each={[`${filters.source}|${filters.order}`]}>
-              {() => <ArticleRows items={filtered()} />}
-            </For>
+          {/* The rows stay mounted: filtering hides them and sorting moves them (keyed), so the
+              list is never rebuilt and only the rows that newly come into view settle in. */}
+          <ArticleRows items={ordered()} shown={shown} />
+          <Show when={!count()}>
+            <p id="article-empty" class="empty-state">
+              記事がありません。
+            </p>
           </Show>
         </div>
       </section>

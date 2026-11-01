@@ -140,8 +140,20 @@ test('every manga cover has WebP copies whose srcset descriptors are their real 
 test('covers, music thumbnails and icons are offered at their shown size', async () => {
   const pages = await read('src/pages.tsx');
   for (const name of ['bookCover', 'homeCover', 'homeTrack', 'track'])
-    assert.match(pages, new RegExp(`sizes=\\{[^}]*sizes\\.${name}\\b`), name);
-  assert.equal((pages.match(/srcset=\{/g) ?? []).length, 4);
+    assert.match(pages, new RegExp(`\\.\\.\\.responsive\\([^)]*\\)?[^)]*, sizes\\.${name}\\)`), name);
+  assert.equal((pages.match(/\.\.\.responsive\(/g) ?? []).length, 4);
+});
+
+test('client-rendered images get srcset only through responsive(), after the page settles', async () => {
+  // In Chromium an <img> given srcset while Solid builds a page kept that page in memory after
+  // it was swapped out (browser-check.mjs measures this).
+  for (const file of ['src/pages.tsx', 'src/components/Preview.tsx', 'src/components/Projects.tsx']) {
+    const source = await read(file);
+    assert.ok(!/\bsrcset=\{(?!image\.srcset\})/.test(source), file);
+  }
+  const preview = await read('src/components/Preview.tsx');
+  assert.match(preview, /srcset: isServer \? set\?\.srcset : undefined/);
+  assert.match(preview, /onSettled\(\(\) => \{\s*img\.sizes = set\.sizes;\s*img\.srcset = set\.srcset;/);
 });
 
 test('articles are merged and validated at build time, and dates share one formatter', async () => {

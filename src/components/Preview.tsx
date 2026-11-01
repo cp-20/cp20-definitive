@@ -1,4 +1,5 @@
-import { createSignal, Show } from 'solid-js';
+import { createSignal, onSettled, Show } from 'solid-js';
+import { isServer } from '@solidjs/web';
 import { pages } from 'virtual:cp20-media';
 // Upper bounds of the laid-out image widths (measured at 320-1920px wide viewports, and checked
 // by browser-check.mjs; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
@@ -18,6 +19,27 @@ export const sizes = {
 export const firstRowWorks = 3;
 export function previewFor(url: string) {
   return pages[url];
+}
+/**
+ * `srcset` and `sizes` for an <img> (both or neither). The server-rendered HTML carries them, so
+ * the first load picks a small variant; on the client they are applied by `ref` once the page
+ * has settled, not while Solid is still building it. In Chromium an image given its srcset
+ * during that build stayed registered for viewport changes after its page was swapped out, so
+ * every page visited stayed in memory (the leak check in browser-check.mjs catches this).
+ */
+export function responsive(srcset: string | undefined, sizes: string | undefined) {
+  const set = srcset && sizes ? { srcset, sizes } : undefined;
+  return {
+    srcset: isServer ? set?.srcset : undefined,
+    sizes: isServer ? set?.sizes : undefined,
+    ref: (img: HTMLImageElement) => {
+      if (set)
+        onSettled(() => {
+          img.sizes = set.sizes;
+          img.srcset = set.srcset;
+        });
+    },
+  };
 }
 /**
  * The site's own icon. With `placeholder`, a work without one gets a badge with its initial
@@ -68,6 +90,7 @@ export function OGImage(props: {
 }) {
   const [failed, setFailed] = createSignal(false);
   const icon = () => Boolean(props.icon);
+  const image = responsive(props.sizes && previewFor(props.url)?.srcset, props.sizes);
   return (
     <div
       class={['og-image', { unavailable: !previewFor(props.url)?.image || failed(), icon: icon() }]}
@@ -85,8 +108,9 @@ export function OGImage(props: {
       >
         <img
           src={previewFor(props.url)?.image}
-          srcset={props.sizes ? previewFor(props.url)?.srcset : undefined}
-          sizes={props.sizes && previewFor(props.url)?.srcset ? props.sizes : undefined}
+          ref={image.ref}
+          srcset={image.srcset}
+          sizes={image.sizes}
           alt={props.alt}
           width={previewFor(props.url)?.width || 1200}
           height={previewFor(props.url)?.height || 630}
