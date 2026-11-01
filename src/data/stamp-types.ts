@@ -6,7 +6,8 @@ export type PlacedStamp = Stamp & { id: string; owner: string; slot: string; ava
 export type Account = { uid: string; avatar: string };
 // A change to the visitor's stickers on one page, waiting to be saved.
 // `retry`: sent again after a failure whose request may still have been saved.
-export type Operation = { id: string; path: string; retry?: boolean } & (
+// `uid`: the account it was made with (set by the queue); it is never sent for another one.
+export type Operation = { id: string; path: string; retry?: boolean; uid?: string } & (
   | { type: 'add'; stamp: PlacedStamp }
   | { type: 'remove'; target: PlacedStamp }
   | { type: 'move'; target: PlacedStamp; stamp: PlacedStamp }

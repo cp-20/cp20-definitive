@@ -225,3 +225,77 @@ test('only a retried place or move asks the client to reuse an identical saved s
   await saveOperation(api, { type: 'add', id: 'b', path: '/', stamp, retry: true }, who, same);
   assert.deepEqual(flags, [false, true]);
 });
+
+// After a failed move the saved sticker it came from is shown again, and later edits act on it.
+test('a failed move is not retried once the saved sticker it came from was peeled off', async () => {
+  const api = fakeApi();
+  const ledger = createSaveLedger();
+  const saved = sticker('u1-0', 'u1');
+  const moved = {
+    type: 'move',
+    id: 'm',
+    path: '/',
+    target: saved,
+    stamp: sticker('l1', 'local', { x: 0.4 }),
+  };
+  let failed = await runQueue(failingOnce(api, 'move'), ledger, [moved]);
+  assert.deepEqual(
+    failed.map((op) => op.id),
+    ['m'],
+  );
+  failed = await runQueue(api, ledger, [{ type: 'remove', id: 'r', path: '/', target: saved }], failed);
+  assert.deepEqual(failed, []);
+  // Even a retry sent before the list was updated brings nothing back.
+  await runQueue(api, ledger, [{ ...moved, id: 'retry', retry: true }]);
+  assert.deepEqual(
+    api.calls.map((c) => c[0]),
+    ['failed', 'remove'],
+  );
+});
+
+test('a failed move is not retried once the saved sticker it came from was moved again', async () => {
+  const api = fakeApi();
+  const ledger = createSaveLedger();
+  const saved = sticker('u1-0', 'u1');
+  const moved = {
+    type: 'move',
+    id: 'm',
+    path: '/',
+    target: saved,
+    stamp: sticker('l1', 'local', { x: 0.4 }),
+  };
+  let failed = await runQueue(failingOnce(api, 'move'), ledger, [moved]);
+  const again = {
+    type: 'move',
+    id: 'm2',
+    path: '/',
+    target: saved,
+    stamp: sticker('l2', 'local', { x: 0.7 }),
+  };
+  failed = await runQueue(api, ledger, [again], failed);
+  assert.deepEqual(failed, []);
+  await runQueue(api, ledger, [{ ...moved, id: 'retry', retry: true }]);
+  assert.deepEqual(
+    api.calls.map((c) => c[0]),
+    ['failed', 'move'],
+  );
+  assert.equal(api.calls[1][3].x, 0.7);
+});
+
+test('a failed move that nothing took over is sent again by the retry', async () => {
+  const api = fakeApi();
+  const ledger = createSaveLedger();
+  const saved = sticker('u1-0', 'u1');
+  const moved = {
+    type: 'move',
+    id: 'm',
+    path: '/',
+    target: saved,
+    stamp: sticker('l1', 'local', { x: 0.4 }),
+  };
+  const failed = await runQueue(failingOnce(api, 'move'), ledger, [moved]);
+  const retry = failed.map((op) => ({ ...op, id: 'retry', retry: true }));
+  assert.deepEqual(await runQueue(api, ledger, retry), []);
+  assert.deepEqual(api.calls[1].slice(0, 3), ['move', '/', 'u1-0']);
+  assert.equal(api.calls[1][3].x, 0.4);
+});

@@ -343,23 +343,25 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     setHidden(value);
     writePref(HIDE_KEY, String(value));
   }
-  function enqueue(op: Operation) {
+  function enqueue(draft: Operation) {
+    const op: Operation = { ...draft, uid: draft.uid ?? owner() };
+    // Changes made while signed in to another account (or signed out since) are dropped
+    // rather than saved to, or failed on, whoever is signed in now.
+    const mine = () => !!op.uid && op.uid === owner();
+    const drop = () => void setOperations((list) => list.filter((item) => item.id !== op.id));
     setOperations((list) => [...list, op]);
     setMessage('');
     writes = writes
       .then(async () => {
         // A retried save that a later move or peel already settled.
-        if (ledger.superseded(op)) {
-          setOperations((list) => list.filter((item) => item.id !== op.id));
-          return;
-        }
+        if (ledger.superseded(op) || !mine()) return drop();
         ledger.start(op);
         setFailed((list) => list.filter((item) => !ledger.superseded(item)));
         const delay = writeDelay(lastWrite);
         if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
         const api = await client();
         const who = account();
-        if (!who) throw Error('Signed out');
+        if (!who || !mine()) return drop();
         const { result, placed } = await saveOperation(api, op, who, ledger.resolve);
         if (placed && op.type !== 'remove') {
           ledger.saved(op, placed);
@@ -371,20 +373,22 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         }
         if (!result) {
           // Removing a sticker that never saved needs no request.
-          setOperations((list) => list.filter((item) => item.id !== op.id));
+          drop();
           return retried(op);
         }
         receive(op.path, [
           ...(cache.get(op.path) || []).filter((s) => s.owner !== result.owner),
           ...result.stamps,
         ]);
-        setOperations((list) => list.filter((item) => item.id !== op.id));
+        drop();
         lastWrite = Date.now();
         retried(op);
       })
       .catch(() => {
+        drop();
+        // Signed out mid-request: nothing to retry for the account now signed in (if any).
+        if (!mine()) return;
         ledger.failed(op);
-        setOperations((list) => list.filter((item) => item.id !== op.id));
         setFailed((list) => [...list, op]);
         // Said from outside the sheet (inert while closed), naming the sticker that went back.
         // The sheet's own line shows the failure without repeating it.

@@ -56,12 +56,18 @@ export async function saveOperation(api, op, who, resolve) {
  * - A sticker that a later move or removal took over (`superseded`): its own failed add or move
  *   is then settled and must not be sent again. A failed add followed by a move that placed the
  *   sticker afresh would otherwise save it twice.
+ * - A failed move is also settled once a later move or removal acts on the saved sticker it was
+ *   moved from (shown again after the failure): retrying it would bring back a peeled sticker,
+ *   or save a second copy of one moved elsewhere.
  */
 export function createSaveLedger() {
   /** @type {Map<string, PlacedStamp>} */
   const saved = new Map();
   /** @type {Set<string>} */
   const handled = new Set();
+  // Failed moves: the moved sticker's id → the id of the saved sticker it was moved from.
+  /** @type {Map<string, string>} */
+  const movedFrom = new Map();
   /** @param {PlacedStamp} stamp */
   const resolve = (stamp) => saved.get(stamp.id) || stamp;
   return {
@@ -70,15 +76,25 @@ export function createSaveLedger() {
     superseded: (op) => op.type !== 'remove' && handled.has(op.stamp.id),
     /** Called as the queue starts sending `op`. @param {Operation} op */
     start(op) {
-      if (op.type !== 'add') handled.add(op.target.id);
+      if (op.type === 'add') return;
+      handled.add(op.target.id);
+      const base = resolve(op.target).id;
+      for (const [id, from] of movedFrom) {
+        // A retry of the failed move itself carries the same sticker and is not taken over.
+        if (from === base && !(op.type === 'move' && op.stamp.id === id)) handled.add(id);
+      }
     },
     /** @param {Operation & { type: 'add' | 'move' }} op @param {PlacedStamp} placed */
     saved(op, placed) {
       saved.set(op.stamp.id, placed);
+      movedFrom.delete(op.stamp.id);
     },
     /** @param {Operation} op */
     failed(op) {
-      if (op.type === 'move') saved.set(op.stamp.id, resolve(op.target));
+      if (op.type !== 'move') return;
+      const from = resolve(op.target);
+      saved.set(op.stamp.id, from);
+      movedFrom.set(op.stamp.id, from.id);
     },
   };
 }
