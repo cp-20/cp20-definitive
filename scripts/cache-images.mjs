@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { imageSize } from 'image-size';
 import sharp from 'sharp';
-import { addVariants, framedSources, iconSources, thumbnailSources } from './image-variants.mjs';
+import { addVariants, framedSources, iconSources, shownItems, thumbnailSources } from './image-variants.mjs';
 const directory = new URL('../public/media/', import.meta.url);
 const manifestFile = new URL('../src/data/image-cache.json', import.meta.url);
 const previewsFile = new URL('../src/data/previews.json', import.meta.url);
@@ -50,8 +50,7 @@ export async function cacheImages(force = false, previousPreviews) {
     ...new Set(
       [
         ...Object.values(previews).flatMap((p) => [p.image, p.icon]),
-        ...tracks.map((t) => t.thumbnail),
-        ...series.map((s) => s.thumbnail),
+        ...shownItems(tracks, series).map((i) => i.thumbnail),
       ].filter(Boolean),
     ),
   ];
@@ -131,7 +130,7 @@ export async function cacheImages(force = false, previousPreviews) {
   }
   await addVariants(
     next,
-    thumbnailSources(previews, [...tracks, ...series]),
+    thumbnailSources(previews, shownItems(tracks, series)),
     iconSources(previews),
     framedSources(tracks),
   );

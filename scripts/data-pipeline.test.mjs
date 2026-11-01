@@ -21,7 +21,7 @@ async function sandbox(data, media = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'cp20-pipeline-'));
   await cp(join(root, 'scripts'), join(dir, 'scripts'), { recursive: true });
   await mkdir(join(dir, 'src/data'), { recursive: true });
-  for (const file of ['normalize.mjs', 'variant-names.mjs'])
+  for (const file of ['normalize.mjs', 'variant-names.mjs', 'manga-covers.mjs'])
     await cp(join(root, 'src/data', file), join(dir, 'src/data', file));
   await mkdir(join(dir, 'public/media'), { recursive: true });
   await symlink(join(root, 'node_modules'), join(dir, 'node_modules'));
@@ -316,4 +316,35 @@ test('RSS titles stay strings, hex references decode, and one bad item does not 
     ['2024', '1e3', 'true', '0x1F', '007', '<b>'],
   );
   assert.throws(() => parseFeed(`<rss><channel>${item('bad', 1, 'not a date')}</channel></rss>`, 'note.com'));
+});
+
+test('a series thumbnail hidden behind its volume 1 cover is neither fetched nor kept', async () => {
+  const hidden = 'https://example.com/key-visual.png';
+  const shown = 'https://example.com/uncovered.png';
+  const box = await sandbox(
+    {
+      previews: {},
+      tracks: [],
+      series: [
+        { title: '寿司ガキ', thumbnail: hidden },
+        { title: 'no cover yet', thumbnail: shown },
+      ],
+      'image-cache': { [hidden]: { file: '/media/hidden.png', checkedAt: new Date().toISOString() } },
+    },
+    { 'hidden.png': png, 'hidden-320w.webp': png },
+  );
+  try {
+    const { cacheImages } = await box.importScript('cache-images.mjs');
+    const fetched = [];
+    await withFetch(
+      async (url) => (fetched.push(String(url)), new Response(png)),
+      () => cacheImages(false, {}),
+    );
+    assert.deepEqual(fetched, [shown]);
+    assert.deepEqual(Object.keys(await box.load('image-cache')), [shown]);
+    assert.equal(await box.exists('public/media/hidden.png'), false);
+    assert.equal(await box.exists('public/media/hidden-320w.webp'), false);
+  } finally {
+    await box.cleanup();
+  }
 });

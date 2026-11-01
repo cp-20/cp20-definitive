@@ -34,7 +34,7 @@ const contrast = (a, b) => {
 };
 
 test('every manga spine keeps its title and author legible (4.5:1) and authors inherit the spine ink', async () => {
-  const editorial = await readFile(new URL('../src/data/editorial.ts', import.meta.url), 'utf8');
+  const editorial = await readFile(new URL('../src/data/manga-covers.mjs', import.meta.url), 'utf8');
   const pairs = [...editorial.matchAll(/spine: '(#[0-9a-f]{6})',\s*ink: '(#[0-9a-f]{6})'/gi)];
   assert.ok(pairs.length >= 6);
   for (const [, spine, ink] of pairs) {

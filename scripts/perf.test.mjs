@@ -34,7 +34,8 @@ test('addVariants writes smaller WebP copies for thumbnails and icons only, and 
   try {
     await cp(join(root, 'scripts'), join(dir, 'scripts'), { recursive: true });
     await mkdir(join(dir, 'src/data'), { recursive: true });
-    await cp(join(root, 'src/data/variant-names.mjs'), join(dir, 'src/data/variant-names.mjs'));
+    for (const file of ['variant-names.mjs', 'manga-covers.mjs'])
+      await cp(join(root, 'src/data', file), join(dir, 'src/data', file));
     await symlink(join(root, 'node_modules'), join(dir, 'node_modules'));
     await mkdir(join(dir, 'public/media'), { recursive: true });
     const png = await readFile(join(root, 'public/images/avatar.png')); // 512px
@@ -114,7 +115,7 @@ test('every music and manga thumbnail and site icon has its WebP copies on disk'
 });
 
 test('every manga cover has WebP copies whose srcset descriptors are their real widths', async () => {
-  const editorial = await read('src/data/editorial.ts');
+  const editorial = await read('src/data/manga-covers.mjs');
   const covers = [...editorial.matchAll(/image: '(\/images\/covers\/[^']+)'/g)].map((m) => m[1]);
   assert.equal(covers.length, 6);
   const srcsets = coverSrcsets(await readdir(join(root, 'public/images/covers')));

@@ -9,6 +9,7 @@ import { access, readFile, readdir, writeFile, rename, rm, stat } from 'node:fs/
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { variantFile, iconWidth } from '../src/data/variant-names.mjs';
+import { shownSeriesThumbnail } from '../src/data/manga-covers.mjs';
 
 export { variantFile, iconWidth };
 
@@ -226,6 +227,17 @@ export const iconSources = (previews) =>
  * @param {Record<string, {image?: string|null}>} previews
  * @param {{thumbnail?: string|null}[]} items tracks.json and series.json entries
  */
+/**
+ * The music and manga entries whose thumbnails the pages show: every track, and only the series
+ * without a committed volume 1 cover (the others never display their publisher thumbnail).
+ * @param {{thumbnail?: string|null}[]} tracks
+ * @param {{title: string, thumbnail?: string|null}[]} series
+ */
+export const shownItems = (tracks, series) => [
+  ...tracks,
+  ...series.map((s) => ({ thumbnail: shownSeriesThumbnail(s) })),
+];
+
 export const thumbnailSources = (previews, items) =>
   new Set([...ogSources(previews), ...items.map((i) => i.thumbnail).filter(Boolean)]);
 
@@ -250,7 +262,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const written =
     (await addVariants(
       cache,
-      thumbnailSources(previews, [...tracks, ...series]),
+      thumbnailSources(previews, shownItems(tracks, series)),
       iconSources(previews),
       framedSources(tracks),
     )) + (await addCoverVariants());

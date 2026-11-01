@@ -187,36 +187,6 @@
       }
     ]
   },
-  "https://cdn-img.comic-action.com/public/series-thumbnail/4856001361584720984-39e246cd9d55aa415a4849ba91de8a6e?1690953662": {
-    "file": "/media/4d526e8afc3ae0c5e2831e69.jpg",
-    "checkedAt": "2026-10-26T04:53:13.417Z",
-    "width": 901,
-    "variants": [
-      {
-        "file": "/media/4d526e8afc3ae0c5e2831e69-320w.webp",
-        "width": 320
-      },
-      {
-        "file": "/media/4d526e8afc3ae0c5e2831e69-640w.webp",
-        "width": 640
-      }
-    ]
-  },
-  "https://cdn.comic-walker.com/integration/cdpf/resources/000933/1e18b5d1-a1e2-46f0-aa00-660bae11fc28.jpg": {
-    "file": "/media/82d854a4c4a6021806f5ed4d.jpg",
-    "checkedAt": "2026-10-26T04:53:13.637Z",
-    "width": 960,
-    "variants": [
-      {
-        "file": "/media/82d854a4c4a6021806f5ed4d-320w.webp",
-        "width": 320
-      },
-      {
-        "file": "/media/82d854a4c4a6021806f5ed4d-640w.webp",
-        "width": 640
-      }
-    ]
-  },
   "https://cdn.image.st-hatena.com/image/scale/d27c3aa7b8fe95a65823b4bea20757884bc549f8/backend=imagemagick;version=1;width=1300/https%3A%2F%2Fcdn-ak.f.st-hatena.com%2Fimages%2Ffotolife%2Fm%2Fm3tech%2F20250926%2F20250926170015.jpg": {
     "file": "/media/cbb15579f741e8def659b7c3.jpg",
     "checkedAt": "2026-10-26T04:53:12.241Z",
@@ -271,44 +241,6 @@
     "checkedAt": "2026-10-31T16:53:28.358Z",
     "width": 256
   },
-  "https://deliver.cdn.nicomanga.jp/ogp-images/comics/73554": {
-    "file": "/media/e05d3e56a3b1f8cf5222819f.jpg",
-    "checkedAt": "2026-10-26T04:53:15.136Z",
-    "width": 1200,
-    "variants": [
-      {
-        "file": "/media/e05d3e56a3b1f8cf5222819f-320w.webp",
-        "width": 320
-      },
-      {
-        "file": "/media/e05d3e56a3b1f8cf5222819f-640w.webp",
-        "width": 640
-      },
-      {
-        "file": "/media/e05d3e56a3b1f8cf5222819f-960w.webp",
-        "width": 960
-      }
-    ]
-  },
-  "https://deliver.cdn.nicomanga.jp/ogp-images/comics/74042": {
-    "file": "/media/61ac16229dd339a05e8bc8ba.jpg",
-    "checkedAt": "2026-10-26T04:53:15.318Z",
-    "width": 1200,
-    "variants": [
-      {
-        "file": "/media/61ac16229dd339a05e8bc8ba-320w.webp",
-        "width": 320
-      },
-      {
-        "file": "/media/61ac16229dd339a05e8bc8ba-640w.webp",
-        "width": 640
-      },
-      {
-        "file": "/media/61ac16229dd339a05e8bc8ba-960w.webp",
-        "width": 960
-      }
-    ]
-  },
   "https://dicespec.app/apple-touch-icon.png": {
     "file": "/media/7ae41b75ee2cad38e5964530.png",
     "checkedAt": "2026-10-26T04:53:11.174Z",
@@ -335,25 +267,6 @@
       },
       {
         "file": "/media/02fed6616cc48ae4d8ba7c08-960w.webp",
-        "width": 960
-      }
-    ]
-  },
-  "https://eh96lnrmau.user-space.cdn.idcfcloud.net/thumbnail/book/2060.jpg?auto=webp": {
-    "file": "/media/2d9072555edf2ff075bab0b6.jpg",
-    "checkedAt": "2026-10-26T04:53:14.564Z",
-    "width": 1200,
-    "variants": [
-      {
-        "file": "/media/2d9072555edf2ff075bab0b6-320w.webp",
-        "width": 320
-      },
-      {
-        "file": "/media/2d9072555edf2ff075bab0b6-640w.webp",
-        "width": 640
-      },
-      {
-        "file": "/media/2d9072555edf2ff075bab0b6-960w.webp",
         "width": 960
       }
     ]
@@ -659,21 +572,6 @@
       {
         "file": "/media/a5b0b629a83a286bb876133f-960w.webp",
         "width": 960
-      }
-    ]
-  },
-  "https://public.ynjn.jp/key_visual/3855/keyvisual_yamero_2512.png": {
-    "file": "/media/e6228d51ffcff874ef8d0659.png",
-    "checkedAt": "2026-10-26T04:53:13.803Z",
-    "width": 1125,
-    "variants": [
-      {
-        "file": "/media/e6228d51ffcff874ef8d0659-320w.webp",
-        "width": 320
-      },
-      {
-        "file": "/media/e6228d51ffcff874ef8d0659-640w.webp",
-        "width": 640
       }
     ]
   },

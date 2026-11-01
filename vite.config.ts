@@ -3,6 +3,7 @@ import solid from '@solidjs/vite-plugin';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dropWoffFallback, isFontFile } from './src/data/font-css.mjs';
 import { clientMedia, coverSrcsets } from './src/data/client-media.mjs';
+import { shownSeriesThumbnail } from './src/data/manga-covers.mjs';
 import { mergeArticles } from './src/data/normalize.mjs';
 import { thirdPartyLicenses } from './scripts/licenses.mjs';
 // Every browser that runs this site reads WOFF2, so the WOFF fallback in @fontsource's
@@ -33,7 +34,8 @@ const media = (): Plugin => {
       const { pages, images } = clientMedia(
         previews,
         cache,
-        [...tracks, ...series].map((item: { thumbnail?: string }) => item.thumbnail),
+        // Series with their own cover never show the publisher's thumbnail, so it is not mapped.
+        [...tracks.map((t: { thumbnail?: string }) => t.thumbnail), ...series.map(shownSeriesThumbnail)],
       );
       const coverDirectory = new URL('./public/images/covers/', import.meta.url);
       this.addWatchFile(coverDirectory.pathname);

@@ -14,7 +14,7 @@ import {
 } from './components/Preview';
 import Projects from './components/Projects';
 import { articles, works, repos, formatDate, type Article } from './data/content';
-import { featuredIds, milestones, editions, mangaCovers } from './data/editorial';
+import { featuredIds, milestones, editions, mangaCovers, shownSeriesThumbnail } from './data/editorial';
 import profile from './data/profile.json';
 import { localImage, coverImage } from './data/images';
 import { splitLinks } from './data/inline-links.mjs';
@@ -41,7 +41,7 @@ const languageColor = (language: string) => languageColors[language] || 'transpa
 // The volume 1 cover (with its WebP copies) or, without one, the series thumbnail.
 const coverOf = (s: (typeof series)[number]) => {
   const cover = mangaCovers[s.title]?.image;
-  return cover ? coverImage(cover) : localImage(s.thumbnail);
+  return cover ? coverImage(cover) : localImage(shownSeriesThumbnail(s));
 };
 // Spines on a shelf; choosing one pulls that book out so its cover faces you.
 function Bookshelf() {
