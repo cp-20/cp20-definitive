@@ -30,7 +30,8 @@ export function stampPlace(anchor, label) {
 export const OVER_SHEET = 'シール帳の上（ここには貼れません）';
 
 /**
- * @param {'placed' | 'removed' | 'returned' | 'blocked' | 'failed' | 'saved'} event
+ * @param {'placed' | 'removed' | 'returned' | 'kept' | 'blocked' | 'blocked-kept' | 'failed' | 'saved'} event
+ *   kept / blocked-kept: one of your stickers being moved went back where it was on the page
  * @param {string} name the sticker's name (ハート, …)
  * @param {number} remaining stickers still available on this page
  * @param {string} [pushedOut] the name of your oldest sticker, when placing this one took it off
@@ -47,6 +48,8 @@ export function stampAnnouncement(event, name, remaining, pushedOut, place) {
   if (event === 'saved') return `${name}を保存しました`;
   if (event === 'removed') return `${name}をはがしました。${left}`;
   if (event === 'blocked') return `ここには貼れません。${name}をシール帳に戻しました`;
+  if (event === 'blocked-kept') return `ここには貼れません。${name}を元の場所に戻しました`;
+  if (event === 'kept') return `${name}を元の場所に戻しました`;
   return `${name}をシール帳に戻しました`;
 }
 

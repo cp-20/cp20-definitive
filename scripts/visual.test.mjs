@@ -56,7 +56,7 @@ test('Japanese headings and short copy break between phrases, not mid-word', () 
 
 test('manga spines shrink to fit the shelf; the open book keeps its cover width', () => {
   assert.match(rule('.book'), /flex: 0 1 var\(--spine-width\);/);
-  assert.match(rule(".book[aria-expanded='true']"), /flex-shrink: 0;/);
+  assert.match(rule(".book[aria-selected='true']"), /flex-shrink: 0;/);
 });
 
 test('an icon-only work image sits on the placeholder pattern at no more than its own size', async () => {

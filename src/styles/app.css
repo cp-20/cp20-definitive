@@ -2218,7 +2218,7 @@
   .book:nth-child(3n + 2) {
     --h: 0.97;
   }
-  .book[aria-expanded='true'] {
+  .book[aria-selected='true'] {
     --h: 1;
     flex-basis: var(--open);
     flex-shrink: 0;
@@ -2237,7 +2237,7 @@
     opacity: 0;
     transition: opacity 260ms var(--ease);
   }
-  .book[aria-expanded='true'] .book-cover {
+  .book[aria-selected='true'] .book-cover {
     opacity: 1;
     transition-delay: 160ms;
   }
@@ -2274,7 +2274,7 @@
       display: none;
     }
   }
-  .book[aria-expanded='true'] .book-spine {
+  .book[aria-selected='true'] .book-spine {
     opacity: 0;
     transition-delay: 0ms;
   }
@@ -2432,6 +2432,21 @@
     transition:
       opacity 200ms var(--ease),
       scale 260ms var(--ease);
+  }
+  /* Covers the sticker; it only shows (as a ring) while focused from the keyboard, and a pointer
+     picks the sticker itself up instead. */
+  .stamp-move {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .stamp-move:focus-visible {
+    opacity: 1;
+    outline: 3px dashed var(--seal);
+    outline-offset: 2px;
+    border-radius: 50%;
   }
   .stamp-delete > span {
     display: grid;
@@ -2617,6 +2632,9 @@
   }
   .stamp-status[data-idle] {
     display: none;
+  }
+  .stamp-status > p {
+    margin: 0;
   }
   .stamp-retry {
     padding: 0 10px;
@@ -3354,7 +3372,7 @@
       gap: 4px;
       padding: 0 4px;
     }
-    .book[aria-expanded='true'] {
+    .book[aria-selected='true'] {
       flex: 1 1 0;
     }
     .book-spine strong {

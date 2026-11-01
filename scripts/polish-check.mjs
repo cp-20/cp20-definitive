@@ -114,7 +114,7 @@ try {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(origin + '/about#manga');
     await page.waitForTimeout(700);
-    const clipped = await page.$$eval('.book:not([aria-expanded=true])', (books) =>
+    const clipped = await page.$$eval('.book:not([aria-selected=true])', (books) =>
       books.flatMap((book) => {
         const box = book.getBoundingClientRect();
         return [...book.querySelectorAll('.book-spine > *')]
@@ -137,7 +137,7 @@ try {
       await page.locator('.book').nth(i).click();
       await page.waitForTimeout(700);
       frames.push(
-        await page.locator('.book[aria-expanded=true]').evaluate((el) => ({
+        await page.locator('.book[aria-selected=true]').evaluate((el) => ({
           width: el.clientWidth,
           height: el.clientHeight,
           fit: getComputedStyle(el.querySelector('img')).objectFit,

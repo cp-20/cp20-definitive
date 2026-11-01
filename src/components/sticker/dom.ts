@@ -62,3 +62,17 @@ export function createAnchorMeasure() {
     return boxes.get(name)!;
   };
 }
+// An element's text as a screen reader hears it: aria-hidden parts (an icon's initial letter)
+// are left out, and a block or <br> inside it is a word break, not glued to the next word.
+export function spokenText(el: Element): string {
+  let text = '';
+  for (const node of el.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) text += node.textContent;
+    else if (node instanceof Element && node.getAttribute('aria-hidden') !== 'true') {
+      const display = getComputedStyle(node).display;
+      const apart = node.localName === 'br' || (display !== 'inline' && display !== 'contents');
+      text += apart ? ` ${spokenText(node)} ` : spokenText(node);
+    }
+  }
+  return text;
+}

@@ -226,3 +226,48 @@ test('peeling your last sticker or retrying a save keeps focus on the sheet and 
   assert.match(retried, /stampAnnouncement\('saved'/);
   assert.equal(stampAnnouncement('saved', 'いいね', 0), 'いいねを保存しました');
 });
+
+test('the /about shelf is a tablist with Home/End, and its caption is not read a second time', async () => {
+  const pages = await source('src/pages.tsx');
+  const shelf = pages.slice(
+    pages.indexOf('function Bookshelf'),
+    pages.indexOf('export function ArticleRows'),
+  );
+  assert.match(shelf, /role="tablist" aria-label="本棚"/);
+  assert.match(shelf, /role="tab"\s/);
+  assert.match(shelf, /aria-selected=/);
+  assert.match(shelf, /Home: 0,\s*End: last/);
+  assert.match(shelf, /id="book-caption" class="book-caption" role="tabpanel"/);
+  assert.doesNotMatch(shelf, /aria-live|aria-expanded/);
+});
+
+test('the keyboard can move your sticker, take big steps, and hears headings as they are named', () => {
+  // A move button on each of your stickers lifts it where it lies for the keyboard overlay.
+  assert.match(
+    stamps,
+    /class="stamp-move"[^>]*aria-label=\{`\$\{stickerName\(s\(\)\.kind\)\}のシールを動かす`\}/s,
+  );
+  assert.match(stamps, /onClick=\{\(e\) => moveWithKeys\(s\(\), e\.currentTarget\)\}/);
+  const move = stamps.slice(stamps.indexOf('function moveWithKeys('), stamps.indexOf('function keyboard('));
+  assert.match(move, /from: 'page', target, mode: 'aim', pointer: 'keys'/);
+  // Enter under the sticker in hand is never taken for a tap on the floating sticker.
+  const drop = stamps.slice(stamps.indexOf('function drop('), stamps.indexOf('const overSheetAt'));
+  assert.match(drop, /h\.pointer !== 'keys'/);
+  assert.equal(stampAnnouncement('kept', 'ハート', 3), 'ハートを元の場所に戻しました');
+  assert.match(stampAnnouncement('blocked-kept', 'ハート', 3), /^ここには貼れません。ハートを元の場所/);
+  const keys = stamps.slice(stamps.indexOf('function keyboard('), stamps.indexOf('function grab('));
+  assert.match(keys, /e\.shiftKey \? KEY_JUMP : KEY_STEP/);
+  assert.match(stamps, /Shiftを押しながらで大きく移動/);
+  // The place is named from the heading's spoken text, without an icon's aria-hidden initial.
+  const placeAt = stamps.slice(stamps.indexOf('function placeAt('), stamps.indexOf('let placeTimer'));
+  assert.doesNotMatch(placeAt, /textContent/);
+  assert.match(placeAt, /spokenText\(heading\)/);
+});
+
+test('a failed save is spoken once: the retry button sits beside the status line, not in it', () => {
+  const status = stamps.slice(stamps.indexOf('<div class="stamp-status"'), stamps.indexOf('</section>'));
+  const line = status.slice(status.indexOf('<p role="status">'), status.indexOf('</p>'));
+  assert.ok(line.length > 0);
+  assert.doesNotMatch(line, /stamp-retry/);
+  assert.match(status, /class="stamp-retry"/);
+});
