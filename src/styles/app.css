@@ -77,6 +77,9 @@
   h4 {
     line-height: 1.4;
     text-wrap: balance;
+    /* A word that cannot fit on one line (a long katakana word under auto-phrase) still wraps
+       instead of running off the page (break-word, unlike anywhere, leaves min-content alone). */
+    overflow-wrap: break-word;
   }
   p {
     overflow-wrap: anywhere;
@@ -566,7 +569,7 @@
     gap: 6px 18px;
     margin-top: 14px;
   }
-  .page-heading h1 > span,
+  .page-heading h1 > span:not(.work-title),
   .section-heading > h3 > .meta {
     display: inline-grid;
     place-items: center;
@@ -1644,6 +1647,17 @@
     width: 26px;
     height: 26px;
   }
+  .icon-placeholder {
+    display: inline-grid;
+    place-items: center;
+    border: 2px solid var(--edge);
+    background: var(--paper-2);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+  }
   .work-index-item p {
     margin-top: 6px;
     font-size: 14px;
@@ -1681,18 +1695,18 @@
     border-bottom: 2px dashed var(--rule);
     font-size: 13px;
   }
+  /* Inline so the star stays next to the end of a wrapped name, not out at the right edge. */
   .repo-name {
-    display: flex;
-    gap: 8px;
-    align-items: baseline;
     min-width: 0;
     font-family: var(--mono);
     font-size: 14px;
     font-weight: 700;
-    overflow-wrap: anywhere;
+    /* Names wrap at the <wbr> after a hyphen or before a capital; break-word is the last resort. */
+    overflow-wrap: break-word;
   }
   .repo-name small {
-    flex: none;
+    margin-left: 8px;
+    white-space: nowrap;
     font-family: var(--round);
     font-size: 11px;
     font-weight: 700;
@@ -1741,9 +1755,15 @@
     display: table;
     margin-bottom: 6px;
   }
+  /* The highlighter is drawn per line under the text, so a wrapped title is not followed by
+     a band across the empty end of its last line. */
   .work-heading h1 {
-    width: fit-content;
+    display: block;
+  }
+  .work-heading h1 > .work-title {
     background: linear-gradient(transparent 62%, var(--hi-soft) 62%, var(--hi-soft) 92%, transparent 92%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
   .work-heading-actions {
     margin-top: 26px;
@@ -2230,6 +2250,17 @@
     font-weight: 700;
     /* Take the spine's ink, not the base small colour, and stay opaque so the name stays legible. */
     color: inherit;
+  }
+  /* Where the spines give way (see .book) they are too narrow for the title and the author side
+     by side, so they keep only the title, as on phones, with a little room from the edges. */
+  @media (min-width: 761px) and (max-width: 833px) {
+    .book-spine {
+      justify-content: center;
+      padding: 0 3px;
+    }
+    .book-spine small {
+      display: none;
+    }
   }
   .book[aria-expanded='true'] .book-spine {
     opacity: 0;
@@ -3069,6 +3100,22 @@
       width: 160px;
     }
   }
+  /* Below this the description column would be squeezed to a few characters next to the name,
+     so the description takes a line of its own under the name. */
+  @media (max-width: 1000px) {
+    .repo-list > li > a {
+      grid-template-columns: minmax(0, 1fr) 8.5em 6.5em;
+      row-gap: 2px;
+    }
+    .repo-description {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      white-space: normal;
+    }
+    .repo-description:empty {
+      display: none;
+    }
+  }
   @media (max-width: 760px) {
     /* ...and of the tabs along the bottom edge, which are there even without the sticker tab. */
     html {
@@ -3092,6 +3139,11 @@
     }
     .site-body::before {
       display: none;
+    }
+    /* Work titles shrink with the screen so the longest word (スコアリングツール, nine characters)
+       still fits on one line of the paper, about 70px narrower than the screen. */
+    .work-heading h1 {
+      font-size: clamp(26px, (100vw - 70px) / 9.2, 38px);
     }
     /* Off-stage deck panels and postmarks must not widen the layout viewport on phones.
        The tabs and the sticker sheet are fixed, so they are not clipped. */
@@ -3307,15 +3359,9 @@
     }
     .repo-list > li > a {
       grid-template-columns: minmax(0, 1fr) auto;
-      row-gap: 2px;
     }
-    .repo-description {
+    .repo-name {
       grid-column: 1 / -1;
-      grid-row: 2;
-      white-space: normal;
-    }
-    .repo-description:empty {
-      display: none;
     }
     .repo-language {
       grid-column: 1;
@@ -3324,7 +3370,7 @@
     }
     .repo-date {
       grid-column: 2;
-      grid-row: 1;
+      grid-row: 3;
     }
     .profile-header {
       grid-template-columns: minmax(0, 1fr);

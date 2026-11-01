@@ -19,10 +19,23 @@ export const firstRowWorks = 3;
 export function previewFor(url: string) {
   return pages[url];
 }
-export function OriginalIcon(props: { url: string; name: string }) {
+/**
+ * The site's own icon. With `placeholder`, a work without one gets a badge with its initial
+ * in the same space, so titles in a list start at the same position.
+ */
+export function OriginalIcon(props: { url: string; name: string; placeholder?: boolean }) {
   const [failed, setFailed] = createSignal(false);
   return (
-    <Show when={previewFor(props.url)?.icon}>
+    <Show
+      when={previewFor(props.url)?.icon}
+      fallback={
+        props.placeholder && (
+          <span class="original-icon icon-placeholder" aria-hidden="true">
+            {props.name.trim().charAt(0).toUpperCase()}
+          </span>
+        )
+      }
+    >
       <img
         class="original-icon"
         style={{ visibility: failed() ? 'hidden' : 'inherit' }}

@@ -19,6 +19,80 @@ page.on('pageerror', (e) => errors.push(e.message));
 const report = { viewports: [], errors, accessibility: [] };
 let release = () => {};
 try {
+  // Work titles fit the paper on phones: a long word wraps instead of being clipped, and the
+  // highlighter stops at the end of each line's text.
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const id of [
+      'no-log-chat',
+      'titech-lecture-list',
+      'wsh-scoring-tool',
+      'trap-conference',
+      'dice-spec-v2',
+    ]) {
+      await page.goto(`${origin}/works/${id}`);
+      const heading = await page.locator('.work-heading h1').evaluate((h1) => {
+        const title = h1.querySelector('.work-title');
+        const range = document.createRange();
+        range.selectNodeContents(title);
+        const text = [...range.getClientRects()];
+        const band = [...title.getClientRects()];
+        return {
+          textRight: Math.max(...text.map((r) => r.right)),
+          main: document.querySelector('main').getBoundingClientRect().right,
+          bandPastText: Math.max(
+            ...band.map(
+              (b) =>
+                b.right -
+                Math.max(...text.filter((t) => Math.abs(t.top - b.top) < b.height / 2).map((t) => t.right)),
+            ),
+          ),
+        };
+      });
+      if (heading.textRight > heading.main - 2 || heading.bandPastText > 2)
+        throw Error(`Work title ${id} at ${width}: ${JSON.stringify(heading)}`);
+    }
+  }
+  // Repository descriptions are never squeezed to a few characters next to the name.
+  for (const width of [761, 768, 900, 1000, 1101]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(origin + '/works');
+    const squeezed = await page.$$eval('.repo-description', (els) =>
+      els
+        .filter((e) => e.textContent && e.clientWidth < Math.min(e.scrollWidth, 240))
+        .map((e) => e.textContent),
+    );
+    if (squeezed.length) throw Error(`Repository descriptions squeezed at ${width}: ${squeezed}`);
+  }
+  // Works without a site icon keep the title where the others start it.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(origin + '/works');
+  const titleStarts = await page.$$eval('.work-index-item h2 a', (links) =>
+    links.map((a) => {
+      const text = [...a.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      return Math.round(range.getClientRects()[0].left - a.getBoundingClientRect().left);
+    }),
+  );
+  if (new Set(titleStarts).size !== 1) throw Error(`Work title starts ${titleStarts}`);
+  // Spines that give way (761-833px) are not cut at their edges.
+  for (const width of [761, 768, 800, 834]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(origin + '/about#manga');
+    await page.waitForTimeout(700);
+    const clipped = await page.$$eval('.book:not([aria-expanded=true])', (books) =>
+      books.flatMap((book) => {
+        const box = book.getBoundingClientRect();
+        return [...book.querySelectorAll('.book-spine > *')]
+          .filter((e) => getComputedStyle(e).display !== 'none')
+          .map((e) => e.getBoundingClientRect())
+          .filter((r) => r.left < box.left + 2 || r.right > box.right - 2)
+          .map((r) => `${Math.round(r.left - box.left)}..${Math.round(box.right - r.right)}`);
+      }),
+    );
+    if (clipped.length) throw Error(`Spine text clipped at ${width}: ${clipped}`);
+  }
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(origin + '/about#manga');

@@ -17,6 +17,7 @@ import { featuredIds, milestones, editions, mangaCovers } from './data/editorial
 import profile from './data/profile.json';
 import { localImage, coverImage } from './data/images';
 import { splitLinks } from './data/inline-links.mjs';
+import { nameParts } from './data/name-breaks.mjs';
 import tracks from './data/tracks.json';
 import series from './data/series.json';
 // GitHub's language colours, for the dot beside each repository.
@@ -548,7 +549,7 @@ export function Works() {
                 </Show>
                 <h2>
                   <a href={`/works/${w.id}`}>
-                    <OriginalIcon url={w.url} name={w.title} />
+                    <OriginalIcon url={w.url} name={w.title} placeholder />
                     {w.title}
                     <Icon name="ArrowUpRight" size={18} />
                   </a>
@@ -598,7 +599,7 @@ export function Works() {
               <li>
                 <a href={r.url}>
                   <span class="repo-name">
-                    {r.name}
+                    {nameParts(r.name).map((part, i) => (i ? [<wbr />, part] : part))}
                     <Show when={r.stars > 0}>
                       <small aria-label={`スター ${r.stars}`}>☆{r.stars}</small>
                     </Show>
@@ -629,7 +630,9 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
           作品一覧
         </a>
         <p class="eyebrow">{w.tags.join(' / ')}</p>
-        <h1>{w.title}</h1>
+        <h1>
+          <span class="work-title">{w.title}</span>
+        </h1>
         <p class="intro">{w.description}</p>
         <div class="work-heading-actions">
           <a class="primary-button" href={w.url}>

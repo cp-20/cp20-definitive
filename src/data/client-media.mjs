@@ -4,7 +4,7 @@
 import { iconWidth } from './variant-names.mjs';
 
 /**
- * @typedef {{file: string, width?: number, variants?: {file: string, width: number}[]}} CacheEntry
+ * @typedef {{file: string, width?: number, crop?: object, variants?: {file: string, width: number}[]}} CacheEntry
  * @typedef {{image: string|null, icon: string|null, width: number, height: number}} Preview
  */
 
@@ -45,6 +45,14 @@ export function clientMedia(previews, cache, thumbnails) {
   for (const source of thumbnails) {
     const image = source ? cache[source] : undefined;
     if (!image || !source) continue;
+    // A cropped thumbnail (YouTube's letterboxed 4:3 file) is shown only as its cut-out copies.
+    if (image.crop && image.variants?.length) {
+      images[source] = {
+        src: image.variants.at(-1).file,
+        srcset: image.variants.map((v) => `${v.file} ${v.width}w`).join(', '),
+      };
+      continue;
+    }
     const candidates = image.width ? srcset(image) : undefined;
     images[source] = candidates ? { src: image.file, srcset: candidates } : { src: image.file };
   }

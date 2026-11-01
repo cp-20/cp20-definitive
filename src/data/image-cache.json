@@ -369,10 +369,20 @@
     "width": 480,
     "variants": [
       {
-        "file": "/media/e2344d3add1985eda017a69a-320w.webp",
+        "file": "/media/e2344d3add1985eda017a69a-5-48-469x264-320w.webp",
         "width": 320
+      },
+      {
+        "file": "/media/e2344d3add1985eda017a69a-5-48-469x264-469w.webp",
+        "width": 469
       }
-    ]
+    ],
+    "crop": {
+      "left": 5,
+      "top": 48,
+      "width": 469,
+      "height": 264
+    }
   },
   "https://i.ytimg.com/vi/cx8cSaUKINk/hqdefault.jpg": {
     "file": "/media/0b3e17277ce15d9fd470fbdc.jpg",
@@ -380,10 +390,20 @@
     "width": 480,
     "variants": [
       {
-        "file": "/media/0b3e17277ce15d9fd470fbdc-320w.webp",
+        "file": "/media/0b3e17277ce15d9fd470fbdc-0-45-480x270-320w.webp",
         "width": 320
+      },
+      {
+        "file": "/media/0b3e17277ce15d9fd470fbdc-0-45-480x270-480w.webp",
+        "width": 480
       }
-    ]
+    ],
+    "crop": {
+      "left": 0,
+      "top": 45,
+      "width": 480,
+      "height": 270
+    }
   },
   "https://i.ytimg.com/vi/fXDhx1GtD1g/hqdefault.jpg": {
     "file": "/media/5f13f375a8885a24b4abb40a.jpg",
@@ -391,10 +411,20 @@
     "width": 480,
     "variants": [
       {
-        "file": "/media/5f13f375a8885a24b4abb40a-320w.webp",
+        "file": "/media/5f13f375a8885a24b4abb40a-0-45-480x270-320w.webp",
         "width": 320
+      },
+      {
+        "file": "/media/5f13f375a8885a24b4abb40a-0-45-480x270-480w.webp",
+        "width": 480
       }
-    ]
+    ],
+    "crop": {
+      "left": 0,
+      "top": 45,
+      "width": 480,
+      "height": 270
+    }
   },
   "https://i.ytimg.com/vi/IUOkiMMn1S4/hqdefault.jpg": {
     "file": "/media/a3c87efc3e5b53a470f517a6.jpg",
@@ -402,10 +432,20 @@
     "width": 480,
     "variants": [
       {
-        "file": "/media/a3c87efc3e5b53a470f517a6-320w.webp",
+        "file": "/media/a3c87efc3e5b53a470f517a6-6-49-468x263-320w.webp",
         "width": 320
+      },
+      {
+        "file": "/media/a3c87efc3e5b53a470f517a6-6-49-468x263-468w.webp",
+        "width": 468
       }
-    ]
+    ],
+    "crop": {
+      "left": 6,
+      "top": 49,
+      "width": 468,
+      "height": 263
+    }
   },
   "https://i.ytimg.com/vi/ocHivJOVQcs/hqdefault.jpg": {
     "file": "/media/a50239eec9db156df55f94ec.jpg",
@@ -413,10 +453,20 @@
     "width": 480,
     "variants": [
       {
-        "file": "/media/a50239eec9db156df55f94ec-320w.webp",
+        "file": "/media/a50239eec9db156df55f94ec-0-45-480x270-320w.webp",
         "width": 320
+      },
+      {
+        "file": "/media/a50239eec9db156df55f94ec-0-45-480x270-480w.webp",
+        "width": 480
       }
-    ]
+    ],
+    "crop": {
+      "left": 0,
+      "top": 45,
+      "width": 480,
+      "height": 270
+    }
   },
   "https://i.ytimg.com/vi/Q2n-G_SMAEw/hqdefault.jpg": {
     "file": "/media/7224b51b2782fa324eb12ec3.jpg",
@@ -424,10 +474,20 @@
     "width": 480,
     "variants": [
       {
-        "file": "/media/7224b51b2782fa324eb12ec3-320w.webp",
+        "file": "/media/7224b51b2782fa324eb12ec3-14-53-452x254-320w.webp",
         "width": 320
+      },
+      {
+        "file": "/media/7224b51b2782fa324eb12ec3-14-53-452x254-452w.webp",
+        "width": 452
       }
-    ]
+    ],
+    "crop": {
+      "left": 14,
+      "top": 53,
+      "width": 452,
+      "height": 254
+    }
   },
   "https://i.ytimg.com/vi/upUv8iWVs-I/hqdefault.jpg": {
     "file": "/media/9acb280437d593b3ace39f64.jpg",
@@ -435,10 +495,16 @@
     "width": 480,
     "variants": [
       {
-        "file": "/media/9acb280437d593b3ace39f64-320w.webp",
-        "width": 320
+        "file": "/media/9acb280437d593b3ace39f64-57-78-366x206-366w.webp",
+        "width": 366
       }
-    ]
+    ],
+    "crop": {
+      "left": 57,
+      "top": 78,
+      "width": 366,
+      "height": 206
+    }
   },
   "https://i.ytimg.com/vi/yduc1fLK2us/hqdefault.jpg": {
     "file": "/media/ffed0164f7fb994a991df1a6.jpg",
@@ -446,10 +512,16 @@
     "width": 480,
     "variants": [
       {
-        "file": "/media/ffed0164f7fb994a991df1a6-320w.webp",
-        "width": 320
+        "file": "/media/ffed0164f7fb994a991df1a6-104-103-272x153-272w.webp",
+        "width": 272
       }
-    ]
+    ],
+    "crop": {
+      "left": 104,
+      "top": 103,
+      "width": 272,
+      "height": 153
+    }
   },
   "https://i.ytimg.com/vi/yy3clMmk9u8/hqdefault.jpg": {
     "file": "/media/dcfd067d60faf350e40798d0.jpg",
@@ -457,10 +529,20 @@
     "width": 480,
     "variants": [
       {
-        "file": "/media/dcfd067d60faf350e40798d0-320w.webp",
+        "file": "/media/dcfd067d60faf350e40798d0-0-45-480x270-320w.webp",
         "width": 320
+      },
+      {
+        "file": "/media/dcfd067d60faf350e40798d0-0-45-480x270-480w.webp",
+        "width": 480
       }
-    ]
+    ],
+    "crop": {
+      "left": 0,
+      "top": 45,
+      "width": 480,
+      "height": 270
+    }
   },
   "https://minna-no-monosashi.lolipop-now.app/apple-touch-icon.png?v=3": {
     "file": "/media/4bc6ef7f4e0cfe99e36b1750.png",
