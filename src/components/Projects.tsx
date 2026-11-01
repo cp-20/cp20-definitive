@@ -4,6 +4,7 @@ import { isIconImage } from '../data/icon-image.mjs';
 import { OGImage, OriginalIcon, Postmark, postmarkDate, sizes } from './Preview';
 import { works } from '../data/content';
 import { featuredIds } from '../data/editorial';
+import { fingerSpeed, swipeTurn } from '../data/deck-swipe.mjs';
 export const projects = featuredIds.map((id) => works.find((w) => w.id === id)!);
 export default function Projects() {
   const [selected, setSelected] = createSignal(0);
@@ -14,6 +15,7 @@ export default function Projects() {
     const next = (i + 3) % 3;
     if (next === selected()) return focus && (tabs.children[next] as HTMLButtonElement).focus();
     setSelected(next);
+    setAway(32);
     if (focus) (tabs.children[next] as HTMLButtonElement).focus();
     if (speak) setSpoken(`0${next + 1} / 03 ${projects[next].title}`);
   }
@@ -26,32 +28,40 @@ export default function Projects() {
       );
     }
   };
-  // Touch swipe: the card follows the finger, then settles on the next work or springs back.
+  // Touch swipe: the card follows the finger one to one, and a flick turns the deck as surely as
+  // a long drag (deck-swipe.mjs). The card thrown away keeps going the way it was thrown: how far
+  // it steps aside (--away) grows with the speed it was let go at.
   // Vertical scrolling and pinch zoom stay native (touch-action: pan-y pinch-zoom); a second
   // finger means a pinch, so it cancels the swipe.
   const [drag, setDrag] = createSignal(0);
-  let swipe = { x: 0, y: 0, id: -1 };
+  const [away, setAway] = createSignal(32);
+  let swipe = { x: 0, y: 0, id: -1, moves: [] as { t: number; x: number }[] };
   const swipeCancel = () => {
     swipe.id = -1;
     setDrag(0);
   };
   const swipeStart = (e: PointerEvent) => {
     if (e.pointerType === 'mouse') return;
-    if (e.isPrimary) swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    if (e.isPrimary) swipe = { x: e.clientX, y: e.clientY, id: e.pointerId, moves: [] };
     else swipeCancel();
   };
   const swipeMove = (e: PointerEvent) => {
     if (e.pointerId !== swipe.id) return;
+    swipe.moves = [...swipe.moves.filter((m) => e.timeStamp - m.t <= 100), { t: e.timeStamp, x: e.clientX }];
     const dx = e.clientX - swipe.x;
-    if (Math.abs(dx) > Math.abs(e.clientY - swipe.y)) setDrag(dx * 0.7);
+    if (Math.abs(dx) > Math.abs(e.clientY - swipe.y)) setDrag(dx);
   };
   const swipeEnd = (e: PointerEvent) => {
     if (e.pointerId !== swipe.id) return;
     swipe.id = -1;
     const dx = e.clientX - swipe.x,
-      dy = e.clientY - swipe.y;
+      speed = fingerSpeed(swipe.moves, e.timeStamp, e.clientX),
+      turn = swipeTurn(dx, e.clientY - swipe.y, speed);
     setDrag(0);
-    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4) choose(selected() + (dx < 0 ? 1 : -1));
+    if (!turn) return;
+    choose(selected() + turn);
+    // About as far as the card would go in the slide's first moments at the speed it was let go.
+    setAway(Math.max(32, Math.abs(dx) + Math.min(120, Math.abs(speed) * 60)));
   };
   return (
     <section
@@ -102,7 +112,7 @@ export default function Projects() {
       <div
         class="project-deck"
         data-dragging={drag() ? 'true' : undefined}
-        style={{ '--drag': `${drag()}px` }}
+        style={{ '--drag': `${drag()}px`, '--away': `${away()}px` }}
         onPointerDown={swipeStart}
         onPointerMove={swipeMove}
         onPointerUp={swipeEnd}
