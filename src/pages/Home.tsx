@@ -23,7 +23,6 @@ export default function Home() {
             />
           </span>
           <div>
-            <p class="eyebrow">Web Engineer / Tokyo</p>
             <h1 id="hero-title">
               しーぴー<span>cp20</span>
             </h1>
@@ -43,10 +42,7 @@ export default function Home() {
       <div class="home-middle">
         <section class="home-writing" aria-labelledby="writing-title">
           <div class="section-heading">
-            <div>
-              <p class="eyebrow">WRITING</p>
-              <h2 id="writing-title">最近の記事</h2>
-            </div>
+            <h2 id="writing-title">最近の記事</h2>
             <a href="/articles" class="under-link">
               すべて見る
               <Icon name="ArrowRight" size={16} />
@@ -55,7 +51,6 @@ export default function Home() {
           <ArticleRows items={articles.slice(0, 4)} />
         </section>
         <aside class="home-profile">
-          <p class="eyebrow">ABOUT ME</p>
           <h2>プロフィール</h2>
           <p>フロントエンドを中心に開発しています。漫画とボカロが好きです。</p>
           <div class="home-favorites">

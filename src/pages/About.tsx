@@ -2,11 +2,12 @@ import { For } from 'solid-js';
 import Icon from '../components/Icon.tsx';
 import { responsive, sizes } from '../components/Preview.tsx';
 import Bookshelf from '../components/Bookshelf.tsx';
-import { milestones, mangaCovers } from '../data/editorial.ts';
+import Brand from '../components/Brand.tsx';
+import Modal, { openModal } from '../components/Modal.tsx';
+import { milestones } from '../data/editorial.ts';
 import { localImage } from '../content/images.ts';
 import profile from '../data/profile.json';
 import tracks from '../data/tracks.json';
-import series from '../data/series.json';
 export default function About() {
   return (
     <div class="wrap about-page">
@@ -23,7 +24,6 @@ export default function About() {
           </span>
         </div>
         <div class="profile-intro">
-          <p class="eyebrow">PROFILE / WEB ENGINEER</p>
           <h1>
             <small class="visually-hidden">プロフィール：</small>
             しーぴー<span>cp20</span>
@@ -38,6 +38,7 @@ export default function About() {
             <For each={profile.links}>
               {(l) => (
                 <a href={l.url}>
+                  <Brand url={l.url} />
                   {l.name}
                   <Icon name="ArrowUpRight" size={14} />
                 </a>
@@ -48,13 +49,15 @@ export default function About() {
       </header>
       <div class="profile-history-layout">
         <aside class="profile-details">
-          <p class="eyebrow">NOW</p>
           <h2>所属</h2>
           <ul class="profile-affiliations">
             <For each={profile.affiliations}>
               {(a) => (
                 <li>
-                  <a href={a.url}>{a.name}</a>
+                  <a href={a.url}>
+                    <Brand url={a.url} />
+                    {a.name}
+                  </a>
                   {a.sub?.map((s) => (
                     <small>
                       <a href={s.url}>
@@ -70,15 +73,11 @@ export default function About() {
         </aside>
         <section data-stamp-anchor="history" class="history" aria-labelledby="history-title">
           <div class="section-heading">
-            <div>
-              <p class="eyebrow">HISTORY</p>
-              <h2 id="history-title">経歴</h2>
-            </div>
-            <span class="meta">学年は当時</span>
+            <h2 id="history-title">経歴</h2>
           </div>
           <div class="timeline">
             <For each={milestones}>
-              {(m) => {
+              {(m, i) => {
                 const body = (
                   <>
                     <div class="timeline-date">
@@ -91,12 +90,41 @@ export default function About() {
                     </div>
                   </>
                 );
-                // Link only when there is a write-up or an official result page.
-                return m.url ? (
-                  <a class="timeline-item" href={m.url}>
-                    {body}
-                    <Icon name="ArrowUpRight" size={16} />
-                  </a>
+                const id = `milestone-${i()}`;
+                // An entry opens its dialog only when there is more to say than the line itself.
+                return m.detail.length || m.links.length ? (
+                  <>
+                    <button
+                      type="button"
+                      class="timeline-item"
+                      aria-haspopup="dialog"
+                      onClick={() => openModal(id)}
+                    >
+                      {body}
+                      <Icon name="Plus" size={16} />
+                    </button>
+                    <Modal id={id} title={m.title}>
+                      <p class="modal-meta">
+                        <time datetime={m.year.replace('.', '-')}>{m.year}</time>
+                        <span>{m.grade}</span>
+                      </p>
+                      {(m.detail.length ? m.detail : [m.text]).map((d) => (
+                        <p>{d}</p>
+                      ))}
+                      {m.links.length > 0 && (
+                        <ul class="modal-links">
+                          {m.links.map((l) => (
+                            <li>
+                              <a href={l.url}>
+                                <Brand url={l.url} />
+                                {l.label}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </Modal>
+                  </>
                 ) : (
                   <div class="timeline-item">{body}</div>
                 );
@@ -106,7 +134,6 @@ export default function About() {
         </section>
       </div>
       <div class="favorites-heading">
-        <p class="eyebrow">INTERESTS</p>
         <h2>好きなもの</h2>
       </div>
       <section data-stamp-anchor="music" id="music" class="media-section" aria-labelledby="music-title">
@@ -151,46 +178,6 @@ export default function About() {
           </h3>
         </div>
         <Bookshelf />
-      </section>
-      <section id="credits" class="credits" data-stamp-anchor="credits" aria-labelledby="credits-title">
-        <h2 id="credits-title">クレジット・出典</h2>
-        <dl>
-          <dt>アイコン</dt>
-          <dd>
-            <a href="https://twitter.com/sora_douhu">空どうふ（@sora_douhu）</a>
-          </dd>
-          <dt>音楽</dt>
-          <dd>
-            <a href="https://2026.cp20.dev/featured-tracks">2026版のおすすめ曲</a>
-            から。サムネイルは YouTube（各動画の投稿者）
-          </dd>
-          <dt>漫画の表紙</dt>
-          <dd class="credits-list">
-            <For each={series}>
-              {(s) => (
-                <span>
-                  {s.title}：
-                  <a href={mangaCovers[s.title]?.url ?? s.link}>{mangaCovers[s.title]?.source ?? s.credit}</a>
-                </span>
-              )}
-            </For>
-          </dd>
-          <dt>作品・記事の画像</dt>
-          <dd>各作品・記事の公開ページの OG 画像</dd>
-          <dt>素材</dt>
-          <dd>
-            <a href="https://lucide.dev">Lucide</a>（ISC、一部は Feather 由来で MIT）、シールの絵柄は{' '}
-            <a href="https://github.com/jdecked/twemoji">Twemoji</a>（© Twitter, Inc and other contributors、
-            <a href="/stamps/LICENSE-GRAPHICS.txt">CC BY 4.0</a>
-            ）、フォントは Zen Maru Gothic / IBM Plex Mono（SIL OFL 1.1）
-          </dd>
-          <dt>ライブラリ</dt>
-          <dd>
-            SolidJS（MIT）、Firebase（Apache-2.0）ほか。
-            <a href="/third-party-licenses.txt">ライセンス全文</a>
-          </dd>
-        </dl>
-        <p class="meta">画像・楽曲の権利は各権利者に帰属します。</p>
       </section>
     </div>
   );

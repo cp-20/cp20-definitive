@@ -70,10 +70,7 @@ export default function Projects() {
       data-stamp-anchor="featured"
     >
       <div class="section-heading">
-        <div>
-          <p class="eyebrow">SELECTED WORKS</p>
-          <h2 id="featured-title">主な3作品</h2>
-        </div>
+        <h2 id="featured-title">主な3作品</h2>
         <a href="/works" class="under-link">
           すべての作品
           <Icon name="ArrowRight" size={16} />
@@ -104,7 +101,7 @@ export default function Projects() {
                 <span class="project-order">0{i() + 1}</span>
               </span>
               <span class="project-name">{p.title}</span>
-              {p.id === 'minna-no-monosashi' && <small>NEW</small>}
+              {p.id === 'minna-no-monosashi' && <small>新作</small>}
             </button>
           )}
         </For>

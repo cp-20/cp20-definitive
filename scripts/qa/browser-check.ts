@@ -199,11 +199,21 @@ try {
     if (Math.abs((await tab.evaluate(() => scrollY)) - 2500) > 2) throw Error('Cross-document back scroll');
     await other.close();
   }
-  // A section link moves focus to that section; back returns it to the link the keyboard followed.
+  // The credits dialog: Esc and a click on the backdrop close it, and focus goes back to its button.
   await page.goto(origin + '/');
-  await page.locator('a[href="/about#credits"]').first().focus();
+  const creditsButton = page.locator('.credits-open');
+  await creditsButton.focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('#credits h2')).toBeFocused();
+  await expect(page.locator('#credits')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#credits')).toBeHidden();
+  await expect(creditsButton).toBeFocused();
+  await page.goto(origin + '/about');
+  await page.locator('button.timeline-item').first().click();
+  await expect(page.locator('#milestone-0')).toBeVisible();
+  await page.mouse.click(5, 5);
+  await expect(page.locator('#milestone-0')).toBeHidden();
+  // Back returns focus to the link the keyboard followed.
   await page.goto(origin + '/works');
   const lastWork = page.locator('main a[href^="/works/"]:not([tabindex="-1"])').last();
   await lastWork.focus();
