@@ -284,3 +284,15 @@ test('non-hashed images and stickers are cached, build manifest is not published
     );
   assert.match(await read('scripts/prerender.mjs'), /rm\('dist\/client\/\.vite'/);
 });
+
+// A finished entrance animation that holds its last frame (fill-mode both/forwards) keeps every
+// placed sticker on its own compositor layer for good; their keyframes only have a `from`.
+test('placed stickers drop their compositor layer once they have landed', async () => {
+  const css = await read('src/styles/app.css');
+  const rule = css.slice(css.indexOf('  .placed-stamp > .sticker {'));
+  const animation = rule.slice(0, rule.indexOf('}')).match(/animation: sticker-pop [^;]*;/)?.[0];
+  assert.ok(animation, 'placed stickers pop in');
+  assert.match(animation, / backwards;$/);
+  const keyframes = css.slice(css.indexOf('@keyframes sticker-pop'));
+  assert.doesNotMatch(keyframes.slice(0, keyframes.indexOf('\n  }')), /\bto\b|100%/);
+});

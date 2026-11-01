@@ -37,6 +37,8 @@ const STICKER_RADIUS = 23;
 // about this far down; a sticker floating up from under it goes below the finger instead.
 const AIM_BAR_BOTTOM = 80;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+// The phone layout in app.css: tabs along the bottom edge and the sheet pinned across the screen.
+const PHONE_LAYOUT = '(max-width: 760px)';
 // A copy of a map or set without one key.
 function withoutKey<V>(map: ReadonlyMap<string, V>, key: string): ReadonlyMap<string, V>;
 function withoutKey(set: ReadonlySet<string>, key: string): ReadonlySet<string>;
@@ -288,16 +290,30 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       document.removeEventListener('pointerdown', tap);
       window.removeEventListener('resize', measureCover);
       covered.disconnect();
-      document.documentElement.style.removeProperty('--stamp-cover');
+      cover = '';
+      document.documentElement.style.removeProperty('scroll-padding-bottom');
+      document.body.style.removeProperty('padding-bottom');
     };
   });
-  // The sheet (or its tab) is pinned over the bottom of the screen. Its height feeds
-  // scroll-padding-bottom, so whatever gets keyboard focus is scrolled clear of it.
+  // The sheet (or its tab) is pinned over the bottom of the screen. Its height goes straight into
+  // scroll-padding-bottom, so whatever gets keyboard focus is scrolled clear of it, and on a phone
+  // into the body's bottom padding, so the last links can scroll above it. Only those two elements
+  // are restyled (a custom property on <html> would restyle every element), and only on a change.
+  let cover = '';
   function measureCover() {
     const el = open() ? sheet : open() === false ? tab : undefined;
-    const px =
-      el?.isConnected && props.enabled ? el.offsetHeight + (parseFloat(getComputedStyle(el).bottom) || 0) : 0;
-    document.documentElement.style.setProperty('--stamp-cover', `${Math.round(px)}px`);
+    const px = Math.round(
+      el?.isConnected && props.enabled ? el.offsetHeight + (parseFloat(getComputedStyle(el).bottom) || 0) : 0,
+    );
+    const phone = matchMedia(PHONE_LAYOUT).matches;
+    if (cover === `${px} ${phone}`) return;
+    cover = `${px} ${phone}`;
+    const root = document.documentElement.style,
+      body = document.body.style;
+    if (px) root.setProperty('scroll-padding-bottom', `calc(max(${px}px, var(--tabs-cover)) + 16px)`);
+    else root.removeProperty('scroll-padding-bottom');
+    if (px && phone) body.setProperty('padding-bottom', `max(96px, ${px + 16}px)`);
+    else body.removeProperty('padding-bottom');
   }
   createEffect(
     () => [open(), props.enabled] as const,

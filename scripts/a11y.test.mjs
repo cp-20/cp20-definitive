@@ -84,10 +84,27 @@ test('in-app links to a section focus that section instead of the page heading',
 test('focused controls scroll clear of the pinned sticker sheet and the phone tabs', async () => {
   const css = await source('src/styles/app.css');
   const html = css.slice(css.indexOf('  html {'), css.indexOf('}', css.indexOf('  html {')));
-  assert.match(html, /scroll-padding-bottom: calc\(var\(--stamp-cover, 0px\) \+ 16px\)/);
+  assert.match(html, /--tabs-cover: 0px;\s*scroll-padding-bottom: calc\(var\(--tabs-cover\) \+ 16px\)/);
   const phone = css.slice(css.indexOf('@media (max-width: 760px)'));
-  assert.match(phone.slice(0, 600), /scroll-padding-bottom: calc\(max\(var\(--stamp-cover, 0px\), 58px/);
-  assert.match(stamps, /setProperty\('--stamp-cover'/);
+  assert.match(phone.slice(0, 600), /--tabs-cover: calc\(58px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(
+    stamps,
+    /setProperty\('scroll-padding-bottom', `calc\(max\(\$\{px\}px, var\(--tabs-cover\)\) \+ 16px\)`\)/,
+  );
+  assert.match(stamps, /const PHONE_LAYOUT = '\(max-width: 760px\)'/);
+});
+
+// Perf: a custom property written on <html> restyles every element of the page, so the
+// measurements written on each load, sheet toggle and page turn must not go there.
+test('measured sizes are not written as custom properties on <html>', async () => {
+  const nav = await source('src/navigation.ts');
+  for (const code of [stamps, nav]) {
+    assert.doesNotMatch(code, /documentElement\.style\.setProperty\('--/);
+    assert.doesNotMatch(code, /root\.setProperty\(`--/);
+  }
+  assert.match(nav, /::view-transition-\$\{part\}\(root\)\{/);
+  const css = await source('src/styles/app.css');
+  assert.ok(!css.includes('--stamp-cover'), 'the sheet cover is written inline, not as a custom property');
 });
 
 test('turning the featured deck with the arrows is announced', async () => {

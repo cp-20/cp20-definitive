@@ -13,14 +13,23 @@ function flipDirection(from: string, to: string) {
   return to.length > from.length ? 'forward' : 'back';
 }
 // The page flips around the sheet's binding, so the animation is clipped to the sheet's rect.
-function markSheet(prefix: string) {
+// The rect goes into a rule for the transition's own pseudo-element, the only place it is read:
+// a custom property on <html> would restyle every element of the page on each turn.
+const flipRects: Record<string, string> = {};
+let flipStyle: HTMLStyleElement | undefined;
+function markSheet(prefix: 'flip-old' | 'flip-new') {
   const sheet = document.querySelector('.site-body')?.getBoundingClientRect();
   if (!sheet) return;
-  const root = document.documentElement.style;
-  root.setProperty(`--${prefix}-left`, `${Math.max(0, sheet.left)}px`);
-  root.setProperty(`--${prefix}-right`, `${Math.max(0, innerWidth - sheet.right)}px`);
-  root.setProperty(`--${prefix}-top`, `${Math.max(0, sheet.top)}px`);
-  root.setProperty(`--${prefix}-bottom`, `${Math.max(0, innerHeight - sheet.bottom)}px`);
+  const part = prefix === 'flip-old' ? 'old' : 'new';
+  flipRects[part] =
+    `::view-transition-${part}(root){` +
+    `--${prefix}-left:${Math.max(0, sheet.left)}px;` +
+    `--${prefix}-right:${Math.max(0, innerWidth - sheet.right)}px;` +
+    `--${prefix}-top:${Math.max(0, sheet.top)}px;` +
+    `--${prefix}-bottom:${Math.max(0, innerHeight - sheet.bottom)}px}`;
+  if (!flipStyle?.isConnected) document.head.append((flipStyle = document.createElement('style')));
+  const text = Object.values(flipRects).join('\n');
+  if (flipStyle.textContent !== text) flipStyle.textContent = text;
 }
 // Mirror Document.tsx: known pages get canonical + og:url, the 404 page gets noindex instead.
 function syncIndexing(url: string | undefined) {

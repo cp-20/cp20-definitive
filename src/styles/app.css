@@ -28,8 +28,11 @@
     scrollbar-gutter: stable;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
-    /* Focused controls scroll clear of the pinned sticker sheet or its tab (measured in Stamps.tsx). */
-    scroll-padding-bottom: calc(var(--stamp-cover, 0px) + 16px);
+    /* Focused controls scroll clear of the pinned sticker sheet or its tab: Stamps.tsx measures it
+       and writes scroll-padding-bottom inline (a custom property on <html> would restyle the whole
+       page each time). --tabs-cover is what stays covered without the sheet. */
+    --tabs-cover: 0px;
+    scroll-padding-bottom: calc(var(--tabs-cover) + 16px);
   }
   body {
     min-width: 300px;
@@ -2381,7 +2384,9 @@
       transform 260ms var(--ease),
       filter 260ms var(--ease),
       opacity 200ms var(--ease);
-    animation: sticker-pop 420ms var(--ease) var(--delay, 0ms) both;
+    /* Backwards only: holding the last frame would keep every placed sticker on its own
+       compositor layer long after it has landed (the keyframes only have a from). */
+    animation: sticker-pop 420ms var(--ease) var(--delay, 0ms) backwards;
   }
   /* A swipe that starts on your sticker still scrolls the page; a finger drags it only after a
      long press (stamp-touch.mjs), which neither selects text nor opens a callout. */
@@ -3130,11 +3135,11 @@
   @media (max-width: 760px) {
     /* ...and of the tabs along the bottom edge, which are there even without the sticker tab. */
     html {
-      scroll-padding-bottom: calc(max(var(--stamp-cover, 0px), 58px + env(safe-area-inset-bottom)) + 16px);
+      --tabs-cover: calc(58px + env(safe-area-inset-bottom));
     }
     body {
-      /* Room to scroll the last links above an open sticker sheet. */
-      padding: 10px 0 max(96px, var(--stamp-cover, 0px) + 16px);
+      /* Room to scroll the last links above an open sticker sheet (raised inline by Stamps.tsx). */
+      padding: 10px 0 96px;
     }
     .site-body {
       width: calc(100% - 20px);
