@@ -59,4 +59,11 @@ test('a burst of stream events renders at most once per interval', () => {
   const settled = runs;
   advance(1000);
   assert.equal(runs, settled, 'a cancelled render does not run');
+  // A clock that went backwards waits one interval at most.
+  time -= 3600000;
+  render.schedule();
+  assert.ok(
+    [...timers.values()].every((t) => t.at - time <= 250),
+    'no stall after the clock went back',
+  );
 });

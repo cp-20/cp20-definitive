@@ -27,3 +27,39 @@ jobs:
       # Install scripts are not needed (firebase/protobufjs postinstalls only tune optional defaults).
       - run: npm ci --ignore-scripts
       - run: npm run verify
+  # The sticker client, the save queue and in-page navigation run only in a browser, so the
+  # end-to-end check (scripts/browser-check.mjs) runs here too, against the built site served by
+  # wrangler like Cloudflare Static Assets. Stickers use the in-memory mock database
+  # (scripts/firebase-mock.mjs): nothing is written to the real one. Make "CI / browser" required.
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      WRANGLER_SEND_METRICS: 'false'
+      CHECK_ORIGIN: http://127.0.0.1:8787
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Serve the built site
+        run: |
+          npx wrangler dev --ip 127.0.0.1 --port 8787 > wrangler.log 2>&1 &
+          for i in $(seq 60); do curl -fsS -o /dev/null "$CHECK_ORIGIN/" && exit 0; sleep 1; done
+          cat wrangler.log
+          exit 1
+      - run: node scripts/browser-check.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: browser-check
+          path: |
+            .qa/
+            wrangler.log
+          if-no-files-found: ignore

@@ -118,6 +118,8 @@ test('writes are spaced a little over the database interval', () => {
   assert.equal(writeDelay(5000, 5000), 1100);
   assert.equal(writeDelay(5000, 5600), 500);
   assert.equal(writeDelay(5000, 7000), 0);
+  // A clock that went backwards waits one interval at most.
+  assert.equal(writeDelay(5000, 5000 - 3600000), 1100);
 });
 
 // Runs operations the way the write queue in Stamps.tsx does, keeping the failed ones for a retry.
@@ -328,6 +330,69 @@ test('a move and a peel that both failed offline only peel the sticker when retr
   const retry = failed.map((op) => ({ ...op, id: `${op.id}-retry`, retry: true }));
   // A stale list still holding the move brings nothing back either.
   assert.deepEqual(await runQueue(api, ledger, [{ ...moved, id: 'm-retry', retry: true }, ...retry]), []);
+  assert.deepEqual(
+    api.calls.map((c) => c.slice(0, 3)),
+    [['remove', '/', 'u1-0']],
+  );
+});
+
+test('a failed peel is settled by a later peel of the same sticker', async () => {
+  const api = fakeApi();
+  const ledger = createSaveLedger();
+  const saved = sticker('u1-0', 'u1');
+  const peel = { type: 'remove', id: 'r1', path: '/', target: saved };
+  let failed = await runQueue(failingOnce(api, 'remove'), ledger, [peel]);
+  assert.deepEqual(
+    failed.map((op) => op.id),
+    ['r1'],
+  );
+  // The sticker is shown again and peeled once more, which saves.
+  failed = await runQueue(api, ledger, [{ ...peel, id: 'r2' }], failed);
+  assert.deepEqual(failed, []);
+  assert.ok(ledger.superseded(peel));
+  assert.deepEqual(
+    api.calls.map((c) => c.slice(0, 3)),
+    [
+      ['failed', 'remove'],
+      ['remove', '/', 'u1-0'],
+    ],
+  );
+});
+
+test('a failed peel is settled by a later move of the same sticker', async () => {
+  const api = fakeApi();
+  const ledger = createSaveLedger();
+  const saved = sticker('u1-0', 'u1');
+  const peel = { type: 'remove', id: 'r1', path: '/', target: saved };
+  let failed = await runQueue(failingOnce(api, 'remove'), ledger, [peel]);
+  const move = { type: 'move', id: 'm', path: '/', target: saved, stamp: sticker('l1', 'local', { x: 0.2 }) };
+  failed = await runQueue(api, ledger, [move], failed);
+  assert.deepEqual(failed, []);
+  assert.deepEqual(
+    api.calls.map((c) => c[0]),
+    ['failed', 'move'],
+  );
+});
+
+test('a failed peel that fails again keeps one failure, and a fresh peel still runs', async () => {
+  const offline = {
+    place: () => Promise.reject(Error('offline')),
+    move: () => Promise.reject(Error('offline')),
+    remove: () => Promise.reject(Error('offline')),
+  };
+  const ledger = createSaveLedger();
+  const saved = sticker('u1-0', 'u1');
+  let failed = await runQueue(offline, ledger, [{ type: 'remove', id: 'r1', path: '/', target: saved }]);
+  failed = await runQueue(offline, ledger, [{ type: 'remove', id: 'r2', path: '/', target: saved }], failed);
+  assert.deepEqual(
+    failed.map((op) => op.id),
+    ['r2'],
+  );
+  // The retry is not taken over by the failure it retries.
+  const api = fakeApi();
+  const retry = failed.map((op) => ({ ...op, id: 'r2-retry', retry: true }));
+  assert.equal(ledger.superseded(retry[0]), false);
+  assert.deepEqual(await runQueue(api, ledger, retry), []);
   assert.deepEqual(
     api.calls.map((c) => c.slice(0, 3)),
     [['remove', '/', 'u1-0']],

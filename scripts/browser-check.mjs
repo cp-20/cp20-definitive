@@ -733,6 +733,28 @@ try {
   await expect(page.locator('[data-pending=true]')).toHaveCount(0, { timeout: 20000 });
   await expect.poll(() => db.writes - writesBeforeRetry, { timeout: 20000 }).toBe(2);
   await expect(page.locator('.stamp-status')).not.toContainText('保存できませんでした');
+  // A peel that failed (the sticker comes back) and is then peeled again clears the failure.
+  {
+    const ownStickers = page.locator(`[data-stamp-id^="${user.uid}-"]`);
+    const before = await ownStickers.count();
+    const outage = (route) =>
+      route.request().method() === 'PATCH'
+        ? route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Test outage"}' })
+        : route.fallback();
+    await page.route('https://**.firebasedatabase.app/**', outage);
+    const undo = page.getByRole('button', { name: '最後に貼ったシールをはがす', exact: true });
+    await undo.click();
+    await expect(page.locator('.stamp-status')).toContainText('保存できませんでした', { timeout: 20000 });
+    await expect(ownStickers).toHaveCount(before);
+    await page.unroute('https://**.firebasedatabase.app/**', outage);
+    const writesBeforePeel = db.writes;
+    await undo.click();
+    await expect.poll(() => db.writes - writesBeforePeel, { timeout: 20000 }).toBe(1);
+    await expect(ownStickers).toHaveCount(before - 1);
+    await expect(page.locator('.stamp-retry')).toHaveCount(0);
+    await expect(page.locator('.stamp-status')).not.toContainText('保存できませんでした');
+    await expect(page.locator('.sticker-tab')).not.toHaveAttribute('aria-label', /保存できませんでした/);
+  }
   // An in-app link to a section moves focus to that section, so the next Tab continues there.
   await page.goto(origin + '/');
   await page.locator('a[href="/about#credits"]').first().focus();

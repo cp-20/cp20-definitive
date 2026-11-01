@@ -23,9 +23,10 @@ export function applyStreamEvent(current, type, event) {
 }
 // Runs `run` at most once per `wait` ms however often `schedule` is called, so a burst of
 // stream events (a visitor rewriting their stickers quickly) re-renders the page only a few
-// times a second. The first call after a quiet period runs on the next tick.
+// times a second. The first call after a quiet period runs on the next tick. The clock is
+// monotonic, and the wait never exceeds `wait`, so a system clock set back cannot stall it.
 const realClock = {
-  now: () => Date.now(),
+  now: () => performance.now(),
   setTimeout: (fn, ms) => setTimeout(fn, ms),
   clearTimeout: (id) => clearTimeout(id),
 };
@@ -41,7 +42,7 @@ export function coalesce(run, wait, clock = realClock) {
           last = clock.now();
           run();
         },
-        Math.max(0, last + wait - clock.now()),
+        Math.min(wait, Math.max(0, last + wait - clock.now())),
       );
     },
     cancel() {

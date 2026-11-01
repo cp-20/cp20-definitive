@@ -419,7 +419,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           ...result.stamps,
         ]);
         drop();
-        lastWrite = Date.now();
+        lastWrite = performance.now();
         retried(op);
       })
       .catch(() => {

@@ -59,6 +59,8 @@ export async function saveOperation(api, op, who, resolve) {
  * - A failed move is also settled once a later move or removal acts on the saved sticker it was
  *   moved from (shown again after the failure): retrying it would bring back a peeled sticker,
  *   or save a second copy of one moved elsewhere.
+ * - A failed removal is settled the same way once a later move or removal acts on the sticker it
+ *   tried to peel (shown again after the failure), so its failure and retry go away with it.
  */
 export function createSaveLedger() {
   /** @type {Map<string, PlacedStamp>} */
@@ -68,12 +70,18 @@ export function createSaveLedger() {
   // Failed moves: the moved sticker's id → the id of the saved sticker it was moved from.
   /** @type {Map<string, string>} */
   const movedFrom = new Map();
+  // Failed removals: the operation's id → the id of the saved sticker it tried to peel.
+  /** @type {Map<string, string>} */
+  const peeled = new Map();
+  // Failed removals that a later operation took over, by operation id.
+  /** @type {Set<string>} */
+  const settled = new Set();
   /** @param {PlacedStamp} stamp */
   const resolve = (stamp) => saved.get(stamp.id) || stamp;
   return {
     resolve,
     /** @param {Operation} op */
-    superseded: (op) => op.type !== 'remove' && handled.has(op.stamp.id),
+    superseded: (op) => (op.type === 'remove' ? settled.has(op.id) : handled.has(op.stamp.id)),
     /** Called as the queue starts sending `op`. @param {Operation} op */
     start(op) {
       if (op.type === 'add') return;
@@ -83,6 +91,11 @@ export function createSaveLedger() {
         // A retry of the failed move itself carries the same sticker and is not taken over.
         if (from === base && !(op.type === 'move' && op.stamp.id === id)) handled.add(id);
       }
+      for (const [id, from] of peeled) {
+        if (from !== base || id === op.id) continue;
+        peeled.delete(id);
+        settled.add(id);
+      }
     },
     /** @param {Operation & { type: 'add' | 'move' }} op @param {PlacedStamp} placed */
     saved(op, placed) {
@@ -91,6 +104,7 @@ export function createSaveLedger() {
     },
     /** @param {Operation} op */
     failed(op) {
+      if (op.type === 'remove') return void peeled.set(op.id, resolve(op.target).id);
       if (op.type !== 'move') return;
       const from = resolve(op.target);
       saved.set(op.stamp.id, from);
@@ -100,7 +114,10 @@ export function createSaveLedger() {
 }
 
 /**
- * How long to wait before the next write so the database's interval is kept.
+ * How long to wait before the next write so the database's interval is kept. Times come from a
+ * monotonic clock (`performance.now()`); the wait is kept within one interval anyway, so a clock
+ * that went backwards cannot stall the queue.
  * @param {number} lastWrite when the previous write finished (0: never)
  */
-export const writeDelay = (lastWrite, now = Date.now()) => Math.max(0, WRITE_SPACING_MS - (now - lastWrite));
+export const writeDelay = (lastWrite, now = performance.now()) =>
+  lastWrite ? Math.min(WRITE_SPACING_MS, Math.max(0, WRITE_SPACING_MS - (now - lastWrite))) : 0;

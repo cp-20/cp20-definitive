@@ -27,6 +27,25 @@ test('CI runs verify on every pull request and on pushes to main', () => {
   assert.match(ci, /- run: npm run verify\n/);
 });
 
+test('CI runs the browser check against the built site with the mock database', () => {
+  const ci = read('.github/workflows/ci.yml');
+  const job = ci.slice(ci.indexOf('\n  browser:\n'));
+  assert.ok(ci.indexOf('\n  browser:\n') > 0, 'job name used as the required check');
+  const order = [
+    'playwright install',
+    'run: npm run build',
+    'wrangler dev',
+    'run: node scripts/browser-check.mjs',
+  ].map((s) => job.indexOf(s));
+  assert.ok(
+    order.every((i, n) => i > 0 && (n === 0 || i > order[n - 1])),
+    'install the browser, build, serve, then check',
+  );
+  // The check writes stickers only to the in-memory mock, never to a real database.
+  assert.match(read('scripts/browser-check.mjs'), /mockFirebase\(context\)/);
+  assert.doesNotMatch(job, /secrets\./);
+});
+
 test('README tells Cloudflare to build with verify', () => {
   assert.match(read('README.md'), /Build command：`npm run verify`/);
 });
