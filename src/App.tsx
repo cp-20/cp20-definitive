@@ -10,7 +10,7 @@ import WorkDetail from './pages/WorkDetail.tsx';
 import NotFound from './pages/NotFound.tsx';
 import { pageInfo } from './site/route.ts';
 import { createNavigation } from './site/navigation.ts';
-// Built pages get Zen Maru Gothic as one subset WOFF2 per weight (scripts/fonts.mjs, run by prerender);
+// Built pages get Zen Maru Gothic as one subset WOFF2 per weight (scripts/build/fonts.ts, run by prerender);
 // the dev server, which has no prerender step, uses the full @fontsource split instead.
 if (import.meta.env.DEV)
   void Promise.all([

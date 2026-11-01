@@ -1,14 +1,15 @@
-// What crawlers see: the RSS feed, and the built pages' heads and heading structure.
+// What the build publishes: the RSS feed, the built pages' heads and heading structure for
+// crawlers, and nothing that is only for the build.
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { XMLParser } from 'fast-xml-parser';
-import { buildFeed, feedTitle, feedUrl } from './feed.mjs';
+import { buildFeed, feedTitle, feedUrl } from './prerender.ts';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
-const article = (n, date, source = 'zenn.dev') => ({
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const article = (n: number, date: string, source = 'zenn.dev') => ({
   title: `記事 ${n} <&>`,
   url: `https://example.com/${n}`,
   date,
@@ -56,9 +57,9 @@ describe('buildFeed', () => {
   });
 });
 
-const built = (path) => join(root, 'dist/client', path);
-const skip = !existsSync(built('404.html')) && 'run `npm run build` first';
-const headings = (html) =>
+const built = (path: string) => join(root, 'dist/client', path);
+const skip = !existsSync(built('404.html'));
+const headings = (html: string) =>
   [...html.replace(/<template[\s\S]*?<\/template>/g, '').matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/g)].map(
     ([, level, text]) => ({ level: +level, text: text.replace(/<[^>]+>|<!--.*?-->/g, '').trim() }),
   );
@@ -68,13 +69,13 @@ test.skipIf(skip)('ビルドしたページは、フィードをその名前で�
   assert.ok(head.includes(`title="${feedTitle}"`));
 });
 
-const head = (page) => readFileSync(built(page), 'utf8').split('</head>')[0];
+const head = (page: string) => readFileSync(built(page), 'utf8').split('</head>')[0];
 // The heading levels that come more than one level below the one before them.
-const skipped = (page) =>
+const skipped = (page: string) =>
   headings(readFileSync(built(page), 'utf8'))
     .filter((h, i, all) => h.level > (i ? all[i - 1].level : 0) + 1)
     .map((h) => `h${h.level} ${h.text}`);
-const h1 = (page) => headings(readFileSync(built(page), 'utf8')).find((h) => h.level === 1).text;
+const h1 = (page: string) => headings(readFileSync(built(page), 'utf8')).find((h) => h.level === 1)?.text;
 
 test.skipIf(skip)('404 ページは、検索エンジンに載せないよう求める', () => {
   assert.match(head('404.html'), /<meta\b[^>]*name="robots" content="noindex"/);
@@ -101,7 +102,11 @@ for (const page of ['index.html', 'about/index.html', 'articles/index.html', 'wo
 
 test.skipIf(skip)('/ と /about の h1 は別の文で、/about のものはプロフィールを名乗る', () => {
   assert.deepEqual(
-    [h1('index.html') !== h1('about/index.html'), h1('about/index.html').includes('プロフィール')],
+    [h1('index.html') !== h1('about/index.html'), h1('about/index.html')?.includes('プロフィール')],
     [true, true],
   );
+});
+
+test.skipIf(skip)('ビルド用のマニフェストは公開しない', () => {
+  assert.equal(existsSync(built('.vite')), false);
 });

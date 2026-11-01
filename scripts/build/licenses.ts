@@ -6,19 +6,29 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
+import type { Plugin } from 'vite';
 
 export const licensesPath = 'third-party-licenses.txt';
-const vendored = new URL('../licenses/', import.meta.url);
+const vendored = new URL('../../licenses/', import.meta.url);
+
+type Notice = {
+  name: string;
+  version?: string;
+  license: string;
+  homepage?: string;
+  copyright: string[];
+  text: string;
+};
 
 /** The installed package directory a module id belongs to, or undefined outside node_modules. */
-export function packageDirectory(id) {
+export function packageDirectory(id: string) {
   const path = id.replace(/^\0/, '').split('?')[0].replaceAll('\\', '/');
   const m = /^((?:.*\/)?node_modules\/(?:@[^/]+\/)?[^/]+)\//.exec(path);
   return m?.[1];
 }
 
 /** The package name of a bare import specifier (`lucide`, `@solidjs/web/storage`), else undefined. */
-export function bareName(specifier) {
+export function bareName(specifier: string) {
   if (/^(\.|\/|\0|[a-z]+:)/i.test(specifier)) return;
   const parts = specifier.split('/');
   return (specifier.startsWith('@') ? parts.slice(0, 2) : parts.slice(0, 1)).join('/');
@@ -26,9 +36,9 @@ export function bareName(specifier) {
 
 // Copyright lines from the package's own sources, for packages that ship no LICENSE file
 // (Firebase keeps its notices in `@license` comments, Solid only in package.json).
-function copyrightLines(directory) {
-  const lines = new Set();
-  const walk = (dir) => {
+function copyrightLines(directory: string) {
+  const lines = new Set<string>();
+  const walk = (dir: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       if (entry.name === 'node_modules') continue;
       const path = join(dir, entry.name);
@@ -47,7 +57,7 @@ function copyrightLines(directory) {
  * packages without one, the vendored license text with the copyright notices found in its sources
  * (or its package.json author). Any other package without a LICENSE file fails the build.
  */
-export function packageLicense(directory) {
+export function packageLicense(directory: string): Notice {
   const pkg = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'));
   const file = readdirSync(directory).find((name) => /^(licen[cs]e|copying)(\.(md|txt))?$/i.test(name));
   const author = typeof pkg.author === 'string' ? pkg.author : pkg.author?.name;
@@ -62,13 +72,13 @@ export function packageLicense(directory) {
 }
 
 /** Notices for assets that do not come from an npm package bundled by Vite. */
-export const extraNotices = [
+export const extraNotices: Notice[] = [
   {
     name: 'Zen Maru Gothic (fonts/zen-maru-gothic, subset at build time)',
     license: 'OFL-1.1',
     homepage: 'https://github.com/googlefonts/zen-marugothic',
     copyright: [],
-    text: readFileSync(new URL('../fonts/zen-maru-gothic/OFL.txt', import.meta.url), 'utf8').trim(),
+    text: readFileSync(new URL('../../fonts/zen-maru-gothic/OFL.txt', import.meta.url), 'utf8').trim(),
   },
   {
     name: 'Twemoji graphics (/stamps/*.svg)',
@@ -88,8 +98,8 @@ export const extraNotices = [
  * carry only Apache-2.0 `@license` comments) are listed together, each with its own copyright
  * lines, followed by that text once.
  */
-export function formatNotices(notices) {
-  const groups = new Map();
+export function formatNotices(notices: Notice[]) {
+  const groups = new Map<string, Notice[]>();
   for (const notice of [...notices].sort((a, b) => a.name.localeCompare(b.name))) {
     const group = groups.get(notice.text) ?? [];
     group.push(notice);
@@ -122,10 +132,14 @@ export function formatNotices(notices) {
  */
 // The client and SSR environments load the config, and so this plugin, separately: share the
 // package directories of each environment through globalThis, keyed by environment name.
-const shared = (globalThis[Symbol.for('cp20.third-party-licenses')] ??= new Map());
-export function thirdPartyLicenses() {
+const key = Symbol.for('cp20.third-party-licenses');
+const shared: Map<string, Set<string>> = ((globalThis as Record<symbol, unknown>)[key] ??= new Map()) as Map<
+  string,
+  Set<string>
+>;
+export function thirdPartyLicenses(): Plugin {
   let root = process.cwd();
-  let clientOut;
+  let clientOut = '';
   return {
     name: 'cp20-third-party-licenses',
     apply: 'build',
@@ -134,7 +148,7 @@ export function thirdPartyLicenses() {
       clientOut = join(root, config.environments?.client?.build?.outDir ?? 'dist/client');
     },
     generateBundle(_, bundle) {
-      const directories = new Set();
+      const directories = new Set<string>();
       shared.set(this.environment?.name ?? 'client', directories);
       for (const id of this.getModuleIds()) {
         const directory = packageDirectory(id);

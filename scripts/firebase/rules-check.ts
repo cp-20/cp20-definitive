@@ -9,25 +9,33 @@
 // loaded into a throwaway namespace and unsigned Google tokens stand in for real sign-ins.
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
-import { throttlePath, writeBody } from '../src/stamps/write.ts';
-import { mergeWorks, stampPageKeys } from '../src/site/pages.ts';
+import { throttlePath, writeBody } from '../../src/stamps/write.ts';
+import { mergeWorks, stampPageKeys } from '../../src/site/pages.ts';
 const emulator = process.env.STAMPS_RULES_EMULATOR;
 if (process.env.STAMPS_LIVE_TEST !== '1' && !emulator)
   throw Error(
     'Set STAMPS_LIVE_TEST=1 to test the dedicated live stamps database, or STAMPS_RULES_EMULATOR=host:port',
   );
-const config = JSON.parse(await fs.readFile(new URL('../src/data/firebase.json', import.meta.url), 'utf8'));
+const config = JSON.parse(
+  await fs.readFile(new URL('../../src/data/firebase.json', import.meta.url), 'utf8'),
+);
 assert.equal(
   config.databaseURL,
   'https://cp20-platform-portfolio-stamps.asia-southeast1.firebasedatabase.app',
 );
-const loadData = async (name) =>
-  JSON.parse(await fs.readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8'));
+const loadData = async (name: string) =>
+  JSON.parse(await fs.readFile(new URL(`../../src/data/${name}.json`, import.meta.url), 'utf8'));
 // The last page in the generated pattern: a work page key that really is accepted.
-const lastPage = stampPageKeys(mergeWorks(await loadData('works'), await loadData('manual'))).at(-1);
+const lastPage = stampPageKeys(mergeWorks(await loadData('works'), await loadData('manual'))).at(-1)!;
 const base = emulator ? `http://${emulator}` : config.databaseURL;
 const namespace = `stamps-rules-${Date.now()}`;
-async function request(path, method = 'GET', body, token, params = {}) {
+async function request(
+  path: string,
+  method = 'GET',
+  body?: unknown,
+  token?: string | null,
+  params: Record<string, string> = {},
+) {
   const url = new URL(`${base}/${path}.json`);
   if (emulator) url.searchParams.set('ns', namespace);
   if (token) url.searchParams.set('auth', token);
@@ -38,8 +46,8 @@ async function request(path, method = 'GET', body, token, params = {}) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
-const b64 = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
-const unsignedToken = (uid, provider = 'google.com') => {
+const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+const unsignedToken = (uid: string, provider = 'google.com') => {
   const now = Math.floor(Date.now() / 1000);
   return `${b64({ alg: 'none', typ: 'JWT' })}.${b64({
     sub: uid,
@@ -50,7 +58,7 @@ const unsignedToken = (uid, provider = 'google.com') => {
   })}.`;
 };
 if (emulator) {
-  const rules = await fs.readFile(new URL('../database.rules.json', import.meta.url), 'utf8');
+  const rules = await fs.readFile(new URL('../../database.rules.json', import.meta.url), 'utf8');
   const loaded = await fetch(`${base}/.settings/rules.json?ns=${namespace}`, {
     method: 'PUT',
     headers: { Authorization: 'Bearer owner' },
@@ -58,18 +66,36 @@ if (emulator) {
   });
   assert.equal(loaded.status, 200, `rules load: ${await loaded.text()}`);
 }
-const uidOf = (token) => JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).user_id;
+const uidOf = (token: string) => JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).user_id;
 const avatar = 'a'.repeat(64);
-const stamp = { anchor: 'intro', x: 0.3, y: 0.7, kind: 0, angle: -4, createdAt: { '.sv': 'timestamp' } };
-const record = (s, extra = {}) => ({ updatedAt: { '.sv': 'timestamp' }, stamps: { 0: s }, avatar, ...extra });
+const stamp: Record<string, unknown> = {
+  anchor: 'intro',
+  x: 0.3,
+  y: 0.7,
+  kind: 0,
+  angle: -4,
+  createdAt: { '.sv': 'timestamp' },
+};
+const record = (s: unknown, extra = {}) => ({
+  updatedAt: { '.sv': 'timestamp' },
+  stamps: { 0: s },
+  avatar,
+  ...extra,
+});
 let checks = 0;
-const expect = async (response, status, label) => {
+const expect = async (response: Promise<Response>, status: number, label: string) => {
   assert.equal((await response).status, status, label);
   checks++;
 };
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 // Writes the way the site does: the record and the throttle entry in one multi-path update.
-async function write(page, uid, body, token, { throttle } = {}) {
+async function write(
+  page: string,
+  uid: string,
+  body: unknown,
+  token: string,
+  { throttle }: { throttle?: { at?: unknown } | null } = {},
+) {
   if (throttle === undefined) {
     const current = await request(`throttle/${uid}`, 'GET', undefined, token);
     throttle = current.ok ? await current.json() : null;
@@ -122,7 +148,7 @@ if (emulator) {
 const google = emulator ? unsignedToken('rules-test-writer') : process.env.STAMPS_GOOGLE_ID_TOKEN;
 if (google) {
   const uid = uidOf(google);
-  const put = (body) => write('home', uid, body, google);
+  const put = (body: unknown) => write('home', uid, body, google);
   try {
     await expect(write('home', 'someone-else', record(stamp), google), 401, 'other owner write denied');
     await expect(put(record({ ...stamp, x: 2 })), 401, 'out-of-range position denied');
@@ -151,8 +177,8 @@ if (google) {
       'avatar priority denied',
     );
     {
-      const body = writeBody('home', uid, record(stamp), null);
-      body[throttlePath(uid)] = { ...body[throttlePath(uid)], '.priority': big };
+      const body: Record<string, unknown> = writeBody('home', uid, record(stamp), null);
+      body[throttlePath(uid)] = { ...(body[throttlePath(uid)] as object), '.priority': big };
       await expect(request('', 'PATCH', body, google), 401, 'throttle priority denied');
     }
     await expect(

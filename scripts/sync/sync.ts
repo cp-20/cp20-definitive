@@ -1,12 +1,38 @@
+// npm run sync: collects the public content (articles, repositories, the featured music and manga,
+// link previews and their images) into src/data, keeping the last good data of any source that
+// fails (health.ts reports a source that keeps failing).
 import { readFile, writeFile, rename, appendFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
-import { syncMedia } from './media.mjs';
-import { mergeWorks } from '../src/site/pages.ts';
-import { fetchTrapPosts } from './trap.mjs';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
+import { article, mergeArticles, safeUrl, type Article } from '../../src/content/normalize.ts';
+import { mergeWorks } from '../../src/site/pages.ts';
+import { fetchTrapPosts } from './trap.ts';
+import { syncMedia, syncPreviews } from './previews.ts';
+import { cacheImages } from './images.ts';
 
-const dataPath = new URL('../src/data/generated.json', import.meta.url);
+type Repo = {
+  name: string;
+  url: string;
+  description: string;
+  language: string;
+  stars: number;
+  updatedAt: string;
+  fork: boolean;
+  archived: boolean;
+};
+export type Source = { status: string; lastSuccess?: string; count?: number; reason?: string };
+export type Snapshot = {
+  articles: Article[];
+  repos: Repo[];
+  sources: Record<string, Source>;
+  updatedAt: string;
+  checkedAt?: string;
+};
+export type Format = 'json' | 'html' | 'xml';
+export type Request = typeof request;
+
+const dataPath = new URL('../../src/data/generated.json', import.meta.url);
 // Tag values stay strings ('2024', '1e3', 'true' are valid titles); numeric/hex references are decoded.
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -14,14 +40,12 @@ const parser = new XMLParser({
   htmlEntities: true,
   parseTagValue: false,
 });
-import { safeUrl, article, mergeArticles } from '../src/content/normalize.ts';
-export { safeUrl, article, mergeArticles } from '../src/content/normalize.ts';
-export function parseFeed(xml, source) {
+export function parseFeed(xml: string, source: string) {
   if (XMLValidator.validate(xml) !== true || /<!DOCTYPE|<!ENTITY/i.test(xml)) throw new Error('Invalid feed');
   const data = parser.parse(xml);
   const items = data.rss?.channel?.item;
   if (!items) throw new Error('Feed contained no articles');
-  const rows = [];
+  const rows: Article[] = [];
   for (const i of [items].flat()) {
     try {
       rows.push(
@@ -36,18 +60,19 @@ export function parseFeed(xml, source) {
   return rows;
 }
 /**
- * @param {{maxBytes?: number, truncate?: boolean}} [options] truncate keeps the first maxBytes instead of failing.
+ * GETs `url` (retrying once), as parsed JSON or as text.
+ * @param options truncate keeps the first maxBytes instead of failing.
  */
 export async function request(
-  url,
-  format = 'json',
-  fetcher = fetch,
-  extraHeaders = {},
+  url: string,
+  format: Format = 'json',
+  fetcher: typeof fetch = fetch,
+  extraHeaders: Record<string, string> = {},
   { maxBytes = 5_000_000, truncate = false } = {},
-) {
-  for (let attempt = 0; attempt < 2; attempt++) {
+): Promise<any> {
+  for (let attempt = 0; ; attempt++) {
     try {
-      const headers = {
+      const headers: Record<string, string> = {
         'User-Agent': 'cp20-definitive-content-sync',
         Accept:
           format === 'json'
@@ -66,8 +91,8 @@ export async function request(
       if (!response.ok)
         throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status });
       let size = 0;
-      const chunks = [];
-      for await (const chunk of response.body) {
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of response.body!) {
         if (size + chunk.length > maxBytes) {
           if (!truncate) throw new Error(`Response exceeds ${maxBytes} bytes`);
           chunks.push(chunk.subarray(0, maxBytes - size));
@@ -79,13 +104,18 @@ export async function request(
       const text = Buffer.concat(chunks).toString('utf8');
       return format === 'json' ? JSON.parse(text) : text;
     } catch (error) {
-      if (attempt === 1 || error.status === 404) throw error;
+      if (attempt === 1 || (error as { status?: number }).status === 404) throw error;
       await new Promise((resolve) => setTimeout(resolve, 800));
     }
   }
 }
-export async function paginated(load, select, map, hasNext) {
-  const results = [];
+export async function paginated<Raw, Row, T>(
+  load: (page: number) => Promise<Raw>,
+  select: (raw: Raw) => Row[],
+  map: (row: Row) => T,
+  hasNext: (raw: Raw, rows: Row[]) => boolean,
+) {
+  const results: T[] = [];
   for (let page = 1; page <= 100; page++) {
     const raw = await load(page),
       rows = select(raw);
@@ -95,19 +125,20 @@ export async function paginated(load, select, map, hasNext) {
   }
   throw new Error('Pagination exceeded 100 pages; preserving previous snapshot');
 }
-const providers = {
+type Loaders = Record<string, () => Promise<(Article | Repo)[]>>;
+const providers: Loaders = {
   'zenn.dev': () =>
     paginated(
       (page) => request(`https://zenn.dev/api/articles?username=cp20&count=100&page=${page}`),
       (d) => d.articles,
-      (a) => article(a.title, `https://zenn.dev${a.path}`, a.published_at, 'zenn.dev'),
+      (a: any) => article(a.title, `https://zenn.dev${a.path}`, a.published_at, 'zenn.dev'),
       (d) => Boolean(d.next_page),
     ),
   'qiita.com': () =>
     paginated(
       (page) => request(`https://qiita.com/api/v2/users/cp20/items?per_page=100&page=${page}`),
       (d) => d,
-      (a) => article(a.title, a.url, a.created_at, 'qiita.com'),
+      (a: any) => article(a.title, a.url, a.created_at, 'qiita.com'),
       (_, rows) => rows.length === 100,
     ),
   'note.com': async () => parseFeed(await request('https://note.com/cp20/rss', 'xml'), 'note.com'),
@@ -117,7 +148,7 @@ const providers = {
     paginated(
       (page) => request(`https://api.github.com/users/cp-20/repos?per_page=100&sort=updated&page=${page}`),
       (d) => d,
-      (r) => {
+      (r: any): Repo => {
         if (typeof r.name !== 'string' || !Number.isFinite(Date.parse(r.pushed_at)))
           throw new Error('Invalid repository');
         return {
@@ -135,29 +166,30 @@ const providers = {
     ),
 };
 export async function collect(
-  previous,
-  loaders = providers,
+  previous: Snapshot,
+  loaders: Loaders = providers,
   now = new Date().toISOString(),
   allowShrink = process.env.ALLOW_TRAP_SHRINK === '1',
-  pinned = new Set(),
+  pinned = new Set<string>(),
 ) {
   const next = structuredClone(previous);
-  const incoming = [];
+  const incoming: Article[] = [];
   let successes = 0;
   let retained = previous.articles;
   const results = await Promise.allSettled(Object.values(loaders).map((load) => load()));
   // trap.jp replaces its previous articles, so a sudden large drop is treated as a failure unless confirmed.
   const trapIndex = Object.keys(loaders).indexOf('trap.jp');
+  const trap = results[trapIndex];
   const trapBefore = previous.articles.filter((a) => a.source === 'trap.jp').length;
   if (
-    trapIndex >= 0 &&
+    trap &&
     !allowShrink &&
-    results[trapIndex].status === 'fulfilled' &&
+    trap.status === 'fulfilled' &&
     trapBefore >= 4 &&
-    results[trapIndex].value.length * 2 < trapBefore
+    trap.value.length * 2 < trapBefore
   ) {
     console.warn(
-      `::warning::trap.jp: ${results[trapIndex].value.length} of ${trapBefore} posts returned; set ALLOW_TRAP_SHRINK=1 to accept`,
+      `::warning::trap.jp: ${trap.value.length} of ${trapBefore} posts returned; set ALLOW_TRAP_SHRINK=1 to accept`,
     );
     results[trapIndex] = { status: 'rejected', reason: Error('Unconfirmed trap.jp shrink') };
   }
@@ -166,14 +198,15 @@ export async function collect(
     if (result.status === 'fulfilled' && (result.value.length || source === 'trap.jp')) {
       successes++;
       if (source === 'github.com')
-        next.repos = result.value
+        next.repos = (result.value as Repo[])
           .filter((r) => !r.fork && !r.archived)
           .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       else {
+        const posts = result.value as Article[];
         // A complete author-page listing is authoritative: remove unpublished or deleted posts.
         // Posts a work links as related are kept, so the build's related-article check cannot jam every source.
         if (source === 'trap.jp') {
-          const returned = new Set(result.value.map((a) => a.url));
+          const returned = new Set(posts.map((a) => a.url));
           retained = retained.filter((a) => {
             if (a.source !== 'trap.jp') return true;
             if (!pinned.has(a.url) || returned.has(a.url)) return false;
@@ -181,7 +214,7 @@ export async function collect(
             return true;
           });
         }
-        incoming.push(...result.value);
+        incoming.push(...posts);
       }
       next.sources[source] = { status: 'ok', lastSuccess: now, count: result.value.length };
     } else {
@@ -202,11 +235,17 @@ export async function collect(
   next.checkedAt = now;
   return next;
 }
+
 async function main() {
-  const previous = JSON.parse(await readFile(dataPath, 'utf8'));
-  const load = async (name) => JSON.parse(await readFile(new URL(`./${name}.json`, dataPath), 'utf8'));
+  const previous: Snapshot = JSON.parse(await readFile(dataPath, 'utf8'));
+  const load = async (name: string) =>
+    JSON.parse(await readFile(new URL(`./${name}.json`, dataPath), 'utf8'));
   const [works, manual] = await Promise.all([load('works'), load('manual')]);
-  const pinned = new Set(mergeWorks(works, manual).flatMap((w) => w.relatedArticles ?? []));
+  const pinned = new Set<string>(
+    mergeWorks<{ id: string; relatedArticles?: string[] }>(works, manual).flatMap(
+      (w) => w.relatedArticles ?? [],
+    ),
+  );
   const next = await collect(previous, providers, undefined, undefined, pinned);
   const mediaChanged = await syncMedia(request);
 
@@ -215,9 +254,7 @@ async function main() {
   await rename(tmp, dataPath);
   const previewsPath = new URL('./previews.json', dataPath);
   const previousPreviews = JSON.parse(await readFile(previewsPath, 'utf8').catch(() => '{}'));
-  const { syncPreviews } = await import('./previews.mjs');
   const previewChanged = await syncPreviews(request);
-  const { cacheImages } = await import('./cache-images.mjs');
   // A new OG image that cannot be cached falls back to the page's previous image and file.
   const imagesChanged = await cacheImages(false, previousPreviews);
   const changed =

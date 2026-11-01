@@ -3,10 +3,10 @@
 // seeded into Firebase Auth's storage and the database is served from memory with the same
 // ownership and throttle rules (writes need a Google token for the record's own uid).
 import { readFile } from 'node:fs/promises';
-const config = JSON.parse(await readFile(new URL('../src/data/firebase.json', import.meta.url)));
+const config = JSON.parse(await readFile(new URL('../../src/data/firebase.json', import.meta.url)));
 // Page keys are checked against database.rules.json itself (the file that gets deployed), so a
 // client page key the rules do not allow fails the browser checks too.
-const rules = JSON.parse(await readFile(new URL('../database.rules.json', import.meta.url)));
+const rules = JSON.parse(await readFile(new URL('../../database.rules.json', import.meta.url)));
 const pagePattern = rules.rules.pages.$page['.validate'].match(/^\$page\.matches\(\/(.+)\/\)$/)?.[1];
 if (!pagePattern) throw Error('database.rules.json has no $page pattern the mock can read');
 const allowedPage = (key) => new RegExp(pagePattern).test(key);
@@ -130,8 +130,7 @@ export async function mockFirebase(
       !throttle ||
       !signedIn(owner) ||
       writes.some(
-        ([[kind, p, u]]) =>
-          kind !== 'throttle' && (kind !== 'pages' || !p || !allowedPage(p) || u !== owner),
+        ([[kind, p, u]]) => kind !== 'throttle' && (kind !== 'pages' || !p || !allowedPage(p) || u !== owner),
       ) ||
       writes.some(([keys]) => keys.length !== (keys[0] === 'pages' ? 3 : 2))
     )

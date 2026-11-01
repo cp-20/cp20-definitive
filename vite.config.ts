@@ -2,11 +2,11 @@
 import { defineConfig, type Plugin } from 'vite';
 import solid from '@solidjs/vite-plugin';
 import { readFileSync, readdirSync } from 'node:fs';
-import { dropWoffFallback, isFontFile } from './src/data/font-css.mjs';
+import { dropWoffFallback, isFontFile } from './scripts/build/fonts.ts';
 import { clientMedia, coverSrcsets } from './src/content/media.ts';
 import { shownSeriesThumbnail } from './src/data/manga-covers.ts';
 import { mergeArticles } from './src/content/normalize.ts';
-import { thirdPartyLicenses } from './scripts/licenses.mjs';
+import { thirdPartyLicenses } from './scripts/build/licenses.ts';
 // Every browser that runs this site reads WOFF2, so the WOFF fallback in @fontsource's
 // @font-face rules only adds weight to the render-blocking stylesheet.
 const woff2Only = (): Plugin => ({

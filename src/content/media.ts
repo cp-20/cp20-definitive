@@ -12,7 +12,13 @@ export type CacheEntry = {
   crop?: Crop;
   variants?: Variant[];
 };
-export type Preview = { image: string | null; icon: string | null; width: number; height: number };
+export type Preview = {
+  image: string | null;
+  icon: string | null;
+  width: number;
+  height: number;
+  checkedAt?: string;
+};
 
 /** `/media/abc.png`, 320 → `/media/abc-320w.webp` */
 export const variantFile = (file: string, width: number) =>

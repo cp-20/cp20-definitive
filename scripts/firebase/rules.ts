@@ -1,44 +1,46 @@
 // Builds database.rules.json (the stamp database's security rules) from the page list and the
 // sticker limits, so a new work's page can hold stickers as soon as its rules are deployed.
-// `npm run rules` writes the file; `node scripts/rules.mjs --check` fails if it is out of date.
-// Only imports node built-ins and dependency-free modules, so CI needs no npm ci.
-import { readFile } from 'node:fs/promises';
-import { mergeWorks, stampPageKeys } from '../src/site/pages.ts';
+// npm run rules: rewrites the file. --check: exits 1 instead if the committed file differs (CI and
+// npm run firebase:rules). Only imports node built-ins and dependency-free modules.
+import { readFile, writeFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+import { mergeWorks, stampPageKeys } from '../../src/site/pages.ts';
 import {
   ANCHOR_PATTERN,
   MAX_ANGLE,
   STAMPS_PER_PAGE,
   STICKER_KIND_COUNT,
   WRITE_INTERVAL_MS,
-} from '../src/stamps/limits.ts';
+} from '../../src/stamps/limits.ts';
 
 const KEY_PATTERN = /^[a-z0-9-]+$/;
 
 // A write can attach a `.priority` to any node, and no type or $other check sees it, yet the
 // public stream delivers it to every visitor. So every validated node under a visitor's own
 // paths also requires that no priority is set.
-function withoutPriority(node) {
-  const out = {};
+type Rules = { [key: string]: string | boolean | string[] | Rules };
+function withoutPriority(node: Rules): Rules {
+  const out: Rules = {};
   for (const [key, value] of Object.entries(node))
     out[key] =
       key === '.validate' && typeof value === 'string'
         ? `newData.getPriority() == null && (${value})`
         : value && typeof value === 'object' && !Array.isArray(value)
-          ? withoutPriority(value)
+          ? withoutPriority(value as Rules)
           : value;
   return out;
 }
 
-/** @param {readonly string[]} pageKeys every page that may hold stickers (see stampPageKeys) */
-export function buildRules(pageKeys) {
+/** @param pageKeys every page that may hold stickers (see stampPageKeys) */
+export function buildRules(pageKeys: readonly string[]) {
   if (!pageKeys.length) throw Error('No pages');
   for (const key of pageKeys)
     if (!KEY_PATTERN.test(key)) throw Error(`Page key ${JSON.stringify(key)} cannot go into the rules`);
   if (STAMPS_PER_PAGE < 1 || STAMPS_PER_PAGE > 10) throw Error('Slots must be single digits');
-  // Written by the visitor alongside each record write; see src/data/stamp-write.mjs.
+  // Written by the visitor alongside each record write; see src/stamps/write.ts.
   const throttled = `newData.parent().parent().parent().child('throttle').child(auth.uid).child('at').val() == now`;
   const signedInOwner = `auth != null && auth.uid == $uid && auth.token.firebase.sign_in_provider == 'google.com'`;
-  const number = (min, max, extra = '') =>
+  const number = (min: number, max: number, extra = '') =>
     `newData.isNumber() && newData.val() >= ${min} && newData.val() <= ${max}${extra}`;
   return {
     rules: {
@@ -107,13 +109,30 @@ export function buildRules(pageKeys) {
 }
 
 /** The file's layout: two-space JSON with one-element arrays kept on one line. */
-export const formatRules = (rules) =>
+export const formatRules = (rules: unknown) =>
   JSON.stringify(rules, null, 2).replace(/\[\n\s+("[^"\n]*")\n\s+\]/g, '[$1]') + '\n';
 
 /** What database.rules.json should contain for the current works.json and manual.json. */
 export async function generatedRules() {
-  const load = async (name) =>
-    JSON.parse(await readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8'));
+  const load = async (name: string) =>
+    JSON.parse(await readFile(new URL(`../../src/data/${name}.json`, import.meta.url), 'utf8'));
   const [works, manual] = await Promise.all([load('works'), load('manual')]);
   return formatRules(buildRules(stampPageKeys(mergeWorks(works, manual))));
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const file = new URL('../../database.rules.json', import.meta.url);
+  const next = await generatedRules();
+  const current = await readFile(file, 'utf8').catch(() => null);
+  if (process.argv.includes('--check')) {
+    if (current !== next) {
+      console.error('database.rules.json is out of date — run npm run rules');
+      process.exit(1);
+    }
+    console.log('database.rules.json is up to date');
+  } else if (current === next) console.log('database.rules.json is up to date');
+  else {
+    await writeFile(file, next);
+    console.log('Wrote database.rules.json');
+  }
 }

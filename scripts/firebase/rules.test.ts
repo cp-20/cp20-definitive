@@ -2,17 +2,17 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { mergeWorks, stampPageKeys } from '../src/site/pages.ts';
-import { buildRules, generatedRules } from './database-rules.mjs';
+import baseWorks from '../../src/data/works.json' with { type: 'json' };
+import manual from '../../src/data/manual.json' with { type: 'json' };
+import { mergeWorks, stampPageKeys } from '../../src/site/pages.ts';
+import { buildRules, generatedRules } from './rules.ts';
 
-const load = async (name) =>
-  JSON.parse(await readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8'));
-const works = mergeWorks(await load('works'), await load('manual'));
-const pagePattern = (rules) =>
-  new RegExp(rules.rules.pages.$page['.validate'].match(/matches\(\/(.*)\/\)$/)[1]);
+const works = mergeWorks<{ id: string }>(baseWorks, manual);
+const pagePattern = (rules: ReturnType<typeof buildRules>) =>
+  new RegExp(rules.rules.pages.$page['.validate'].match(/matches\(\/(.*)\/\)$/)![1]);
 
 test('database.rules.json はページ一覧から生成したものと一致する（npm run rules）', async () => {
-  const committed = await readFile(new URL('../database.rules.json', import.meta.url), 'utf8');
+  const committed = await readFile(new URL('../../database.rules.json', import.meta.url), 'utf8');
   assert.equal(committed, await generatedRules());
 });
 

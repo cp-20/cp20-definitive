@@ -1,18 +1,19 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { fetchTrapPosts, nextPage, parseAuthorPage } from './trap.mjs';
-import { article, collect } from './sync.mjs';
+import { article } from '../../src/content/normalize.ts';
+import { collect } from './sync.ts';
+import { fetchTrapPosts, nextPage, parseAuthorPage } from './trap.ts';
 
-const card = (id, title, day = '2026年7月5日') => `
+const card = (id: number, title: string, day = '2026年7月5日') => `
 <a href="/post/${id}/" class="article">
   <picture class="lozad background" data-alt="${title} feature image"></picture>
   <div class="meta"><small>${day}</small><br><strong>${title}</strong>
     <div class="author"><span>cp20</span><span class="others">他</span></div></div>
 </a>`;
-const page = (next, ...cards) =>
+const page = (next: string | null, ...cards: string[]) =>
   `<html><head>${next ? `<link rel="next" href="${next}">` : ''}</head><body><section class="postlist"><div class="articles">${cards.join('')}</div></section></body></html>`;
 const P2 = 'https://trap.jp/author/cp20/page/2/';
-const fail = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+const fail = (status: number) => Object.assign(new Error(`HTTP ${status}`), { status });
 
 describe('parseAuthorPage', () => {
   test('記事カードを記事名・URL・日本時間の日付にする', () => {
@@ -43,14 +44,14 @@ describe('nextPage', () => {
 });
 
 describe('fetchTrapPosts', () => {
-  const site = {
+  const site: Record<string, string> = {
     'https://trap.jp/author/cp20/rss/':
       '<rss><channel><item><title>x</title><link>https://trap.jp/post/3/</link><pubDate>Sun, 05 Jul 2026 09:00:48 GMT</pubDate></item></channel></rss>',
     'https://trap.jp/author/cp20/': page(P2, card(3, 'three'), card(2, 'two')),
     [P2]: page(null, card(1, 'one', '2023年6月1日')),
   };
   const crawl = async () => {
-    const requested = [];
+    const requested: [string, string][] = [];
     const posts = await fetchTrapPosts(async (url, format) => {
       requested.push([url, format]);
       if (!(url in site)) throw fail(404);
@@ -77,7 +78,7 @@ describe('fetchTrapPosts', () => {
   });
 
   // The first page links to P2; `second` answers P2 (RSS is optional and down).
-  const crawlWith = (second, next = P2) =>
+  const crawlWith = (second: () => Promise<string>, next = P2) =>
     fetchTrapPosts(async (url) => {
       if (url.endsWith('/rss/')) throw fail(503);
       if (url === 'https://trap.jp/author/cp20/') return page(next, card(2, 'two'));
@@ -104,7 +105,7 @@ describe('fetchTrapPosts', () => {
       'https://evil.example/page/2/',
       /unexpected next page/,
     ],
-  ])
+  ] as [string, () => Promise<string>, string, RegExp][])
     test(`${why}ときは、途中までの一覧を返さず失敗にする`, async () => {
       await assert.rejects(crawlWith(second, next), error);
     });
