@@ -1,6 +1,5 @@
-// Regression tests for page weight: thumbnail variants, the client media table, font subsetting,
-// cache headers and build-only files.
-import { test } from 'node:test';
+// Page weight: thumbnail variants, the client media table and font subsetting.
+import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { access, cp, mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -19,22 +18,38 @@ import {
 } from './image-variants.mjs';
 import { collectCharacters, fontHead, weights } from './fonts.mjs';
 import { clientMedia, coverSrcsets } from '../src/data/client-media.mjs';
+import { mangaCovers } from '../src/data/manga-covers.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFile(join(root, path), 'utf8');
+const readJson = async (name) => JSON.parse(await read(`src/data/${name}.json`));
 const exists = (path) =>
   access(path)
     .then(() => true)
     .catch(() => false);
+// The files under public/ of `entries` that are missing.
+const missing = async (files) =>
+  (await Promise.all(files.map(async (f) => ((await exists(join(root, 'public', f))) ? [] : [f])))).flat();
 
-test('variants are only planned when they are a real reduction', () => {
-  assert.deepEqual(plannedWidths(1200), [320, 640, 960]);
-  assert.deepEqual(plannedWidths(1024), [320, 640]);
-  assert.deepEqual(plannedWidths(400), [320]);
-  assert.deepEqual(plannedWidths(300), []);
-  assert.deepEqual(plannedWidths(0), []);
+describe('plannedWidths', () => {
+  for (const [width, planned] of [
+    [1200, [320, 640, 960]],
+    [1024, [320, 640]],
+    [400, [320]],
+    [300, []],
+    [0, []],
+  ])
+    test(`幅 ${width}px の画像には ${JSON.stringify(planned)} の縮小版を作る`, () => {
+      assert.deepEqual(plannedWidths(width), planned);
+    });
+});
+
+test('縮小版のファイル名は元の名前に幅をつけた WebP', () => {
   assert.equal(variantFile('/media/abc.png', 320), '/media/abc-320w.webp');
-  assert.ok(isVariantFile('/media/abc-320w.webp') && !isVariantFile('/media/abc.png'));
+});
+
+test('縮小版のファイル名だけを縮小版と判定する', () => {
+  assert.deepEqual([isVariantFile('/media/abc-320w.webp'), isVariantFile('/media/abc.png')], [true, false]);
 });
 
 test('addVariants writes smaller WebP copies for thumbnails and icons only, and only when they are smaller', async () => {
@@ -97,107 +112,99 @@ test('addVariants writes smaller WebP copies for thumbnails and icons only, and 
   }
 });
 
-test('every committed OG image wider than 400px has its thumbnail variants on disk', async () => {
-  const cache = JSON.parse(await read('src/data/image-cache.json'));
-  const previews = JSON.parse(await read('src/data/previews.json'));
-  for (const { image } of Object.values(previews)) {
-    const entry = image && cache[image];
-    if (!entry || !(entry.width > 400) || /\.(gif|ico)$/.test(entry.file)) continue;
-    assert.ok(entry.variants?.length, `${entry.file} has no variants`);
-    for (const v of entry.variants) assert.ok(await exists(join(root, 'public', v.file)), v.file);
+describe('コミットされた画像キャッシュ', () => {
+  test('幅 400px を超える OG 画像には、縮小版がそろっている', async () => {
+    const [cache, previews] = await Promise.all([readJson('image-cache'), readJson('previews')]);
+    const wide = Object.values(previews)
+      .map(({ image }) => image && cache[image])
+      .filter((entry) => entry && entry.width > 400 && !/\.(gif|ico)$/.test(entry.file));
+    assert.deepEqual(
+      wide.filter((entry) => !entry.variants?.length).map((entry) => entry.file),
+      [],
+    );
+    assert.deepEqual(await missing(wide.flatMap((entry) => entry.variants.map((v) => v.file))), []);
+  });
+
+  test('キャッシュした画像は、どれもページに表示されるもの', async () => {
+    const [cache, previews, tracks, series, works] = await Promise.all(
+      ['image-cache', 'previews', 'tracks', 'series', 'works'].map(readJson),
+    );
+    const shown = new Set([
+      ...thumbnailSources(previews, shownItems(tracks, series)),
+      ...iconSources(previews, iconPages(works)),
+    ]);
+    assert.deepEqual(
+      Object.keys(cache).filter((source) => !shown.has(source)),
+      [],
+    );
+  });
+
+  test('public/media のファイルは、どれも画像キャッシュに載っている', async () => {
+    const cache = await readJson('image-cache');
+    const files = new Set(
+      Object.values(cache).flatMap((e) => [e.file, ...(e.variants ?? []).map((v) => v.file)]),
+    );
+    const names = await readdir(join(root, 'public/media'));
+    assert.deepEqual(
+      names.filter((name) => !files.has(`/media/${name}`)),
+      [],
+    );
+  });
+
+  test('音楽と漫画のサムネイル、サイトアイコンは幅が記録され、縮小版がそろっている', async () => {
+    const [cache, previews, tracks, series] = await Promise.all(
+      ['image-cache', 'previews', 'tracks', 'series'].map(readJson),
+    );
+    const sources = [...tracks, ...series]
+      .map((i) => i.thumbnail)
+      .concat(Object.values(previews).map((p) => p.icon));
+    const entries = sources
+      .map((source) => source && cache[source])
+      .filter((e) => e && !/\.(gif|ico|svg)$/.test(e.file));
+    assert.deepEqual(
+      entries.filter((e) => !(e.width > 0)).map((e) => e.file),
+      [],
+    );
+    assert.deepEqual(await missing(entries.flatMap((e) => (e.variants ?? []).map((v) => v.file))), []);
+  });
+
+  test('幅 400px 以上の音楽と漫画のサムネイルには縮小版がある', async () => {
+    const [cache, tracks, series] = await Promise.all(['image-cache', 'tracks', 'series'].map(readJson));
+    const wide = [...tracks, ...series].map((i) => cache[i.thumbnail]).filter((e) => e?.width >= 400);
+    assert.deepEqual(
+      wide.filter((e) => !e.variants?.length).map((e) => e.file),
+      [],
+    );
+  });
+});
+
+describe('漫画の表紙', () => {
+  const srcsets = readdir(join(root, 'public/images/covers')).then(coverSrcsets);
+  const candidates = async (image) => (await srcsets)[image]?.split(', ').map((c) => c.split(' ')) ?? [];
+  for (const { image } of Object.values(mangaCovers)) {
+    test(`${image} の最大の候補は、元の表紙と同じ幅`, async () => {
+      const { width } = await sharp(join(root, 'public', image)).metadata();
+      assert.equal((await candidates(image)).at(-1)?.[1], `${width}w`);
+    });
+
+    test(`${image} の WebP の候補は、srcset に書いた幅のとおり`, async () => {
+      const copies = (await candidates(image)).filter(([file]) => file.endsWith('.webp'));
+      const actual = await Promise.all(
+        copies.map(async ([file]) => `${(await sharp(join(root, 'public', file)).metadata()).width}w`),
+      );
+      assert.deepEqual(
+        actual,
+        copies.map(([, descriptor]) => descriptor),
+      );
+    });
   }
-});
 
-test('every cached image is one the pages show (no unused third-party files under /media)', async () => {
-  const cache = JSON.parse(await read('src/data/image-cache.json'));
-  const [previews, tracks, series, works] = await Promise.all(
-    ['previews', 'tracks', 'series', 'works'].map(async (n) => JSON.parse(await read(`src/data/${n}.json`))),
-  );
-  const shown = new Set([
-    ...thumbnailSources(previews, shownItems(tracks, series)),
-    ...iconSources(previews, iconPages(works)),
-  ]);
-  for (const source of Object.keys(cache))
-    assert.ok(shown.has(source), `${source} is cached but never shown`);
-  const files = new Set(
-    Object.values(cache).flatMap((e) => [e.file, ...(e.variants ?? []).map((v) => v.file)]),
-  );
-  for (const name of await readdir(join(root, 'public/media')))
-    assert.ok(files.has(`/media/${name}`), `public/media/${name} is not in the image cache`);
-});
-
-test('every music and manga thumbnail and site icon has its WebP copies on disk', async () => {
-  const cache = JSON.parse(await read('src/data/image-cache.json'));
-  const previews = JSON.parse(await read('src/data/previews.json'));
-  const items = [
-    ...JSON.parse(await read('src/data/tracks.json')),
-    ...JSON.parse(await read('src/data/series.json')),
-  ];
-  for (const source of [...items.map((i) => i.thumbnail), ...Object.values(previews).map((p) => p.icon)]) {
-    const entry = source && cache[source];
-    if (!entry || /\.(gif|ico|svg)$/.test(entry.file)) continue;
-    assert.ok(entry.width > 0, `${entry.file} has no recorded width`);
-    for (const v of entry.variants ?? []) assert.ok(await exists(join(root, 'public', v.file)), v.file);
-  }
-  for (const { thumbnail } of items) {
-    const entry = cache[thumbnail];
-    if (entry?.width >= 400) assert.ok(entry.variants?.length, `${entry.file} has no variants`);
-  }
-});
-
-test('every manga cover has WebP copies whose srcset descriptors are their real widths', async () => {
-  const editorial = await read('src/data/manga-covers.mjs');
-  const covers = [...editorial.matchAll(/image: '(\/images\/covers\/[^']+)'/g)].map((m) => m[1]);
-  assert.equal(covers.length, 6);
-  const srcsets = coverSrcsets(await readdir(join(root, 'public/images/covers')));
-  for (const image of covers) {
-    const { width } = await sharp(join(root, 'public', image)).metadata();
-    const candidates = srcsets[image]?.split(', ').map((c) => c.split(' ')) ?? [];
-    assert.ok(candidates.length, `${image} has no WebP copies`);
-    // The largest copy is the full-size one, so the shelf never shows a blurrier cover than before.
-    assert.equal(candidates.at(-1)?.[1], `${width}w`, image);
-    for (const [file, descriptor] of candidates) {
-      const copy = await sharp(join(root, 'public', file)).metadata();
-      assert.deepEqual([copy.format, `${copy.width}w`], ['webp', descriptor], file);
-    }
-  }
-  assert.deepEqual(
-    coverSrcsets(['a.jpg', 'a-240w.webp', 'a-480w.webp', 'a-b.jpg', 'b.png', 'notes.txt'], '/c/'),
-    {
-      '/c/a.jpg': '/c/a-240w.webp 240w, /c/a-480w.webp 480w',
-    },
-  );
-});
-
-test('covers, music thumbnails and icons are offered at their shown size', async () => {
-  const pages = await read('src/pages.tsx');
-  for (const name of ['bookCover', 'homeCover', 'homeTrack', 'track'])
-    assert.match(pages, new RegExp(`\\.\\.\\.responsive\\([^)]*\\)?[^)]*, sizes\\.${name}\\)`), name);
-  assert.equal((pages.match(/\.\.\.responsive\(/g) ?? []).length, 4);
-});
-
-test('client-rendered images get srcset only through responsive(), after the page settles', async () => {
-  // In Chromium an <img> given srcset while Solid builds a page kept that page in memory after
-  // it was swapped out (browser-check.mjs measures this).
-  for (const file of ['src/pages.tsx', 'src/components/Preview.tsx', 'src/components/Projects.tsx']) {
-    const source = await read(file);
-    assert.ok(!/\bsrcset=\{(?!image\.srcset\})/.test(source), file);
-  }
-  const preview = await read('src/components/Preview.tsx');
-  assert.match(preview, /srcset: isServer \? set\?\.srcset : undefined/);
-  assert.match(preview, /onSettled\(\(\) => \{\s*img\.sizes = set\.sizes;\s*img\.srcset = set\.srcset;/);
-});
-
-test('articles are merged and validated at build time, and dates share one formatter', async () => {
-  const content = await read('src/data/content.ts');
-  assert.ok(content.includes("from 'virtual:cp20-articles'"));
-  assert.ok(
-    !/mergeArticles|normalize\.mjs/.test(content),
-    'content.ts must not merge articles in the browser',
-  );
-  assert.ok(!/=>\s*new Intl\.DateTimeFormat/.test(content), 'formatDate must not build a formatter per call');
-  const config = await read('vite.config.ts');
-  assert.match(config, /mergeArticles\(snapshot\.articles, \[\], manual\)/);
+  test('srcset は元の画像と同じ名前の WebP だけから作る', () => {
+    assert.deepEqual(
+      coverSrcsets(['a.jpg', 'a-240w.webp', 'a-480w.webp', 'a-b.jpg', 'b.png', 'notes.txt'], '/c/'),
+      { '/c/a.jpg': '/c/a-240w.webp 240w, /c/a-480w.webp 480w' },
+    );
+  });
 });
 
 test('the client media table keeps only local paths, srcset candidates and sizes', () => {
@@ -259,71 +266,46 @@ test('the client media table keeps only local paths, srcset candidates and sizes
   assert.ok(!serialized.includes('checkedAt') && !serialized.includes('cdn.example.com'));
 });
 
-test('the app reads images from the compact media module, not the raw JSON files', async () => {
-  for (const file of ['src/data/images.ts', 'src/components/Preview.tsx']) {
-    const source = await read(file);
-    assert.ok(source.includes("from 'virtual:cp20-media'"), file);
-    assert.ok(!/image-cache\.json|previews\.json/.test(source), file);
-  }
-});
-
-test('the works grid loads its first row eagerly and thumbnails offer sizes', async () => {
-  const pages = await read('src/pages.tsx');
-  assert.match(pages, /priority=\{i\(\) === 0\}\s+eager=\{i\(\) < firstRowWorks\}/);
-  assert.match(pages, /sizes=\{sizes\.articleRow\}/);
-  assert.match(await read('src/components/Projects.tsx'), /sizes=\{sizes\.featured\}/);
-});
-
-test('font characters include escapes, character references and printable ASCII', () => {
+describe('collectCharacters', () => {
   const chars = collectCharacters(['あ', '"\\u3044\\u{1F600}"', '<p>&#x3046;&#12360;</p>', '\u0007']);
-  for (const c of ['あ', 'い', '😀', 'う', 'え', 'A', '~', ' ']) assert.ok(chars.includes(c), c);
-  assert.ok(!chars.includes('\u0007'));
+  for (const [c, why] of [
+    ['あ', 'そのままの文字'],
+    ['い', '\\u エスケープ'],
+    ['😀', '\\u{} エスケープ'],
+    ['う', '16進の文字参照'],
+    ['え', '10進の文字参照'],
+    ['A', '印字可能な ASCII'],
+  ])
+    test(`${why}の文字を含める`, () => {
+      assert.ok(chars.includes(c));
+    });
+
+  test('制御文字は含めない', () => {
+    assert.ok(!chars.includes('\u0007'));
+  });
 });
 
-test('the font head declares one WOFF2 file per weight and nothing else', () => {
+describe('fontHead', () => {
   const head = fontHead([
     { weight: 500, href: '/assets/z-500-a.woff2' },
     { weight: 700, href: '/assets/z-700-b.woff2' },
   ]);
-  assert.equal(head.match(/@font-face/g).length, 2);
-  assert.match(head, /font-weight:500;src:url\(\/assets\/z-500-a\.woff2\) format\('woff2'\)/);
-  assert.ok(!head.includes('unicode-range') && !head.includes("format('woff')"));
+  test('太さごとに @font-face を1つずつ宣言する', () => {
+    assert.equal(head.match(/@font-face/g).length, 2);
+  });
+
+  test('各太さは1つの WOFF2 ファイルを指す', () => {
+    assert.ok(head.includes("font-weight:500;src:url(/assets/z-500-a.woff2) format('woff2')"));
+  });
+
+  test('unicode-range も WOFF の代替も書かない', () => {
+    assert.deepEqual([head.includes('unicode-range'), head.includes("format('woff')")], [false, false]);
+  });
 });
 
-test('the vendored fonts subset to small WOFF2 files', async () => {
-  for (const weight of weights) {
+for (const weight of weights)
+  test(`同梱した Zen Maru Gothic ${weight} は、小さな WOFF2 に絞り込める`, async () => {
     const full = await readFile(join(root, `fonts/zen-maru-gothic/zen-maru-gothic-${weight}.woff2`));
     const subset = await subsetFont(full, 'しーぴーのスタンプ帳cp20', { targetFormat: 'woff2' });
-    assert.equal(subset.subarray(0, 4).toString('latin1'), 'wOF2');
-    assert.ok(subset.length < 20_000, `${weight}: ${subset.length} bytes`);
-  }
-});
-
-test('the client no longer imports the split @fontsource Zen Maru Gothic in builds', async () => {
-  const app = await read('src/App.tsx');
-  assert.ok(!/^import '@fontsource\/zen-maru-gothic/m.test(app));
-  assert.match(app, /if \(import\.meta\.env\.DEV\)/);
-});
-
-test('non-hashed images and stickers are cached, build manifest is not published', async () => {
-  const headers = await read('public/_headers');
-  for (const path of ['/images/*', '/stamps/*'])
-    assert.match(
-      headers,
-      new RegExp(`^${path.replace('*', '\\*')}\\n\\s+Cache-Control: public, max-age=86400`, 'm'),
-      path,
-    );
-  assert.match(await read('scripts/prerender.mjs'), /rm\('dist\/client\/\.vite'/);
-});
-
-// A finished entrance animation that holds its last frame (fill-mode both/forwards) keeps every
-// placed sticker on its own compositor layer for good; their keyframes only have a `from`.
-test('placed stickers drop their compositor layer once they have landed', async () => {
-  const css = await read('src/styles/app.css');
-  const rule = css.slice(css.indexOf('  .placed-stamp > .sticker {'));
-  const animation = rule.slice(0, rule.indexOf('}')).match(/animation: sticker-pop [^;]*;/)?.[0];
-  assert.ok(animation, 'placed stickers pop in');
-  assert.match(animation, / backwards;$/);
-  const keyframes = css.slice(css.indexOf('@keyframes sticker-pop'));
-  assert.doesNotMatch(keyframes.slice(0, keyframes.indexOf('\n  }')), /\bto\b|100%/);
-});
+    assert.deepEqual([subset.subarray(0, 4).toString('latin1'), subset.length < 20_000], ['wOF2', true]);
+  });

@@ -1,6 +1,6 @@
 // Regression tests for the third-party notices: the notices file the build writes, the credits
 // section that links to it, and the license records kept in the Zen Maru Gothic subsets.
-import { test } from 'node:test';
+import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -151,19 +151,36 @@ test('the built notices cover the bundled libraries, fonts and stickers', { skip
   assert.match(readFileSync(built('about/index.html'), 'utf8'), /href="\/third-party-licenses\.txt"/);
 });
 
-test('the credits link to the notices and to the Twemoji license with its copyright holder', () => {
-  const pages = read('src/pages.tsx');
-  const credits = pages.slice(
-    pages.indexOf('id="credits"'),
-    pages.indexOf('</section>', pages.indexOf('id="credits"')),
+describe('the built credits on /about', { skip }, () => {
+  const html = readFileSync(built('about/index.html'), 'utf8');
+  const credits = html.slice(
+    html.indexOf('id="credits"'),
+    html.indexOf('</section>', html.indexOf('id="credits"')),
   );
-  assert.match(credits, /href="\/third-party-licenses\.txt"/);
-  assert.match(credits, /href="\/stamps\/LICENSE-GRAPHICS\.txt"/);
-  assert.match(credits, /© Twitter, Inc and other contributors/);
-  assert.match(credits, /Feather 由来で MIT/);
-  assert.match(credits, /Firebase（Apache-2\.0）/);
+  for (const [what, needle] of [
+    ['the third-party notices', 'href="/third-party-licenses.txt"'],
+    ['the Twemoji graphics license', 'href="/stamps/LICENSE-GRAPHICS.txt"'],
+    ["Twemoji's copyright holder", '© Twitter, Inc and other contributors'],
+    ["Lucide's Feather-derived MIT part", 'Feather 由来で MIT'],
+    ["Firebase's license", 'Firebase（Apache-2.0）'],
+  ])
+    test(`credit ${what}`, () => {
+      assert.ok(credits.includes(needle));
+    });
+});
+
+test('the Twemoji graphics license names its copyright holder', () => {
+  assert.match(
+    read('public/stamps/LICENSE-GRAPHICS.txt'),
+    /Copyright 2019 Twitter, Inc and other contributors/,
+  );
+});
+
+test('the Twemoji graphics license lists every sticker picture', () => {
   const graphics = read('public/stamps/LICENSE-GRAPHICS.txt');
-  assert.match(graphics, /Copyright 2019 Twitter, Inc and other contributors/);
-  for (const file of readdirSync(join(root, 'public/stamps')).filter((f) => f.endsWith('.svg')))
-    assert.match(graphics, new RegExp(`\\b${file.replace('.', '\\.')}\\b`), file);
+  const pictures = readdirSync(join(root, 'public/stamps')).filter((f) => f.endsWith('.svg'));
+  assert.deepEqual(
+    pictures.filter((file) => !graphics.includes(file)),
+    [],
+  );
 });

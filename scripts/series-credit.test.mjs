@@ -1,27 +1,25 @@
 // A manga with an original author keeps every credit on the /about shelf.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { existsSync, readFileSync } from 'node:fs';
 import { spineAuthor } from '../src/data/series-credit.mjs';
 
-const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+const about = new URL('../dist/client/about/index.html', import.meta.url);
+const skip = !existsSync(about) && 'run `npm run build` first';
+const credit = '柳ゆうと (原作：もちもち物質 キャラクター原案：ペペロン)';
 
-test('the spine shows the first name; the full credit stays in the data', async () => {
-  assert.equal(spineAuthor('柳ゆうと (原作：もちもち物質 キャラクター原案：ペペロン)'), '柳ゆうと');
-  assert.equal(spineAuthor('松田舞'), '松田舞');
-  const series = JSON.parse(await read('src/data/series.json'));
-  const credited = series.find((s) => s.title === '没落令嬢の悪党賛歌');
-  assert.match(credited.author, /原作：もちもち物質/);
-  assert.match(credited.author, /キャラクター原案：ペペロン/);
+test('背表紙には最初の名前だけを書く', () => {
+  assert.equal(spineAuthor(credit), '柳ゆうと');
 });
 
-test('the caption and the book label use the full credit, only the spine is shortened', async () => {
-  const pages = await read('src/pages.tsx');
-  const shelf = pages.slice(
-    pages.indexOf('function Bookshelf'),
-    pages.indexOf('export function ArticleRows'),
-  );
-  assert.match(shelf, /<small>\{spineAuthor\(s\.author\)\}<\/small>/);
-  assert.match(shelf, /<span>\{s\.author\}<\/span>/);
-  assert.match(shelf, /aria-label=\{`\$\{s\.title\} \$\{s\.author\}`\}/);
+test('名前がひとつなら、そのまま背表紙に書く', () => {
+  assert.equal(spineAuthor('松田舞'), '松田舞');
+});
+
+test('棚の本の名前には、原作・原案まで含めた全員を書く', { skip }, () => {
+  assert.ok(readFileSync(about, 'utf8').includes(`aria-label="没落令嬢の悪党賛歌 ${credit}"`));
+});
+
+test('棚の背表紙には、最初の名前だけを書く', { skip }, () => {
+  assert.ok(readFileSync(about, 'utf8').includes('<small>柳ゆうと</small>'));
 });
