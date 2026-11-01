@@ -19,6 +19,7 @@ import profile from './data/profile.json';
 import { localImage, coverImage } from './data/images';
 import { splitLinks } from './data/inline-links.mjs';
 import { nameParts } from './data/name-breaks.mjs';
+import { spineAuthor } from './data/series-credit.mjs';
 import tracks from './data/tracks.json';
 import series from './data/series.json';
 // GitHub's language colours, for the dot beside each repository.
@@ -46,7 +47,6 @@ const coverOf = (s: (typeof series)[number]) => {
 // Spines on a shelf; choosing one pulls that book out so its cover faces you.
 function Bookshelf() {
   const [open, setOpen] = createSignal(0);
-  const author = (s: (typeof series)[number]) => s.author.replace(/\s*[（(].*$/, '');
   let shelf!: HTMLDivElement;
   const keyboard = (e: KeyboardEvent) => {
     const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
@@ -63,7 +63,7 @@ function Bookshelf() {
           {(s, i) => (
             <button
               class="book"
-              aria-label={s.title}
+              aria-label={`${s.title} ${s.author}`}
               aria-expanded={open() === i() ? 'true' : 'false'}
               aria-controls="book-caption"
               tabindex={open() === i() ? 0 : -1}
@@ -81,7 +81,7 @@ function Bookshelf() {
               />
               <span class="book-spine" aria-hidden="true">
                 <strong>{s.title}</strong>
-                <small>{author(s)}</small>
+                <small>{spineAuthor(s.author)}</small>
               </span>
             </button>
           )}
@@ -95,7 +95,7 @@ function Bookshelf() {
                 {s.title}
                 <Icon name="ArrowUpRight" size={15} />
               </a>
-              <span>{author(s)}</span>
+              <span>{s.author}</span>
             </>
           )}
         </For>
