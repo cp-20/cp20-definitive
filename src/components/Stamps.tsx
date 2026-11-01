@@ -5,7 +5,7 @@ import { projectStamps } from '../data/stamp-optimistic.mjs';
 import { sheetStartsOpen } from '../data/sheet-start.mjs';
 import { focusAfterRemoval, stampAnnouncement, stampPlace } from '../data/stamp-a11y.mjs';
 import { STAMPS_PER_PAGE as LIMIT } from '../data/stamp-limits.mjs';
-import { saveOperation, writeDelay } from '../data/stamp-save.mjs';
+import { createSaveLedger, saveOperation, writeDelay } from '../data/stamp-save.mjs';
 import Icon from './Icon';
 import { STICKER_KINDS as kinds, StickerFace, gravatarUrl as gravatar, stickerName } from './sticker/kinds';
 import { anchorAt, centerOf as center, createAnchorMeasure, locate } from './sticker/dom';
@@ -59,7 +59,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     [fresh, setFresh] = createSignal<ReadonlyMap<string, { x: number; y: number; r: number }>>(new Map()),
     [leaving, setLeaving] = createSignal<ReadonlySet<string>>(new Set());
   const cache = new Map<string, PlacedStamp[]>(),
-    resolved = new Map<string, PlacedStamp>();
+    ledger = createSaveLedger();
   let clientPromise: Promise<typeof import('../stamps-client')> | undefined;
   const client = () =>
     (clientPromise ||= import('../stamps-client').catch((e) => {
@@ -337,14 +337,21 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     setMessage('');
     writes = writes
       .then(async () => {
+        // A retried save that a later move or peel already settled.
+        if (ledger.superseded(op)) {
+          setOperations((list) => list.filter((item) => item.id !== op.id));
+          return;
+        }
+        ledger.start(op);
+        setFailed((list) => list.filter((item) => !ledger.superseded(item)));
         const delay = writeDelay(lastWrite);
         if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
         const api = await client();
         const who = account();
         if (!who) throw Error('Signed out');
-        const { result, placed } = await saveOperation(api, op, who, (s) => resolved.get(s.id) || s);
+        const { result, placed } = await saveOperation(api, op, who, ledger.resolve);
         if (placed && op.type !== 'remove') {
-          resolved.set(op.stamp.id, placed);
+          ledger.saved(op, placed);
           setOperations((list) =>
             list.map((item) =>
               item.type !== 'add' && item.target.id === op.stamp.id ? { ...item, target: placed } : item,
@@ -364,6 +371,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         lastWrite = Date.now();
       })
       .catch(() => {
+        ledger.failed(op);
         setOperations((list) => list.filter((item) => item.id !== op.id));
         setFailed((list) => [...list, op]);
         // The status line sits in the sheet, which is inert while closed: say it from outside.
@@ -446,9 +454,11 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     if (leaving().has(key)) return;
     focusPastDeleteButton(target);
     say(stampAnnouncement('removed', nameOf(target.kind), remainingWithout(target)));
+    // The page may change while the sticker peels off; the removal belongs to this one.
+    const path = props.path;
     const commit = () => {
       setLeaving((set) => withoutKey(set, key));
-      enqueue({ type: 'remove', id: crypto.randomUUID(), path: props.path, target });
+      enqueue({ type: 'remove', id: crypto.randomUUID(), path, target });
       flush();
     };
     if (!animate || reducedMotion()) return commit();

@@ -1,7 +1,7 @@
 // The branches of saving one queued sticker operation, against a fake client.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { saveOperation, writeDelay } from '../src/data/stamp-save.mjs';
+import { createSaveLedger, saveOperation, writeDelay } from '../src/data/stamp-save.mjs';
 
 const who = { uid: 'u1', avatar: 'a'.repeat(64) };
 const sticker = (id, owner, extra = {}) => ({
@@ -103,7 +103,12 @@ test('a place or move whose saved record lacks the sticker fails', async () => {
   );
   const target = sticker('u1-0', 'u1');
   await assert.rejects(
-    saveOperation(api, { type: 'move', id: 'op', path: '/', target, stamp: sticker('l2', 'local') }, who, same),
+    saveOperation(
+      api,
+      { type: 'move', id: 'op', path: '/', target, stamp: sticker('l2', 'local') },
+      who,
+      same,
+    ),
     /does not hold the sticker/,
   );
 });
@@ -113,4 +118,99 @@ test('writes are spaced a little over the database interval', () => {
   assert.equal(writeDelay(5000, 5000), 1100);
   assert.equal(writeDelay(5000, 5600), 500);
   assert.equal(writeDelay(5000, 7000), 0);
+});
+
+// Runs operations the way the write queue in Stamps.tsx does, keeping the failed ones for a retry.
+async function runQueue(api, ledger, ops, failed = []) {
+  for (const op of ops) {
+    if (ledger.superseded(op)) continue;
+    ledger.start(op);
+    failed = failed.filter((item) => !ledger.superseded(item));
+    try {
+      const { placed } = await saveOperation(api, op, who, ledger.resolve);
+      if (placed && op.type !== 'remove') ledger.saved(op, placed);
+    } catch {
+      ledger.failed(op);
+      failed = [...failed, op];
+    }
+  }
+  return failed;
+}
+const failingOnce = (api, name) => {
+  let failed = false;
+  return {
+    ...api,
+    [name]: async (...args) => {
+      if (!failed) {
+        failed = true;
+        api.calls.push(['failed', name]);
+        throw Error('offline');
+      }
+      return api[name](...args);
+    },
+  };
+};
+
+test('a failed add that a later move placed afresh is not sent again by the retry', async () => {
+  const api = fakeApi();
+  const ledger = createSaveLedger();
+  const first = sticker('l1', 'local', { x: 0.6 });
+  const moved = sticker('l2', 'local', { x: 0.4 });
+  const ops = [
+    { type: 'add', id: 'a', path: '/', stamp: first },
+    { type: 'move', id: 'm', path: '/', target: first, stamp: moved },
+  ];
+  const failed = await runQueue(failingOnce(api, 'place'), ledger, ops);
+  assert.deepEqual(failed, []);
+  // Even a retry of the add sent before the ledger dropped it saves nothing.
+  await runQueue(api, ledger, [{ ...ops[0], id: 'retry' }]);
+  assert.deepEqual(
+    api.calls.map((c) => c[0]),
+    ['failed', 'place'],
+  );
+  assert.equal(api.calls[1][2].x, 0.4);
+});
+
+test('a failed add that was peeled off before the retry is not sent again', async () => {
+  const api = fakeApi();
+  const ledger = createSaveLedger();
+  const first = sticker('l1', 'local');
+  const ops = [
+    { type: 'add', id: 'a', path: '/', stamp: first },
+    { type: 'remove', id: 'r', path: '/', target: first },
+  ];
+  assert.deepEqual(await runQueue(failingOnce(api, 'place'), ledger, ops), []);
+  assert.deepEqual(api.calls, [['failed', 'place']]);
+});
+
+test('moving a sticker whose move failed moves the saved one it came from', async () => {
+  const api = fakeApi();
+  const ledger = createSaveLedger();
+  const saved = sticker('u1-0', 'u1');
+  const half = sticker('l1', 'local', { x: 0.3 });
+  const end = sticker('l2', 'local', { x: 0.8 });
+  const ops = [
+    { type: 'move', id: 'm1', path: '/', target: saved, stamp: half },
+    { type: 'move', id: 'm2', path: '/', target: half, stamp: end },
+  ];
+  assert.deepEqual(await runQueue(failingOnce(api, 'move'), ledger, ops), []);
+  assert.deepEqual(api.calls[1].slice(0, 3), ['move', '/', 'u1-0']);
+  assert.equal(api.calls[1][3].x, 0.8);
+});
+
+test('every failed save stays for the retry when nothing took it over', async () => {
+  const api = fakeApi();
+  const ledger = createSaveLedger();
+  const broken = { ...api, place: async () => Promise.reject(Error('offline')) };
+  const ops = [
+    { type: 'add', id: 'a', path: '/', stamp: sticker('l1', 'local') },
+    { type: 'add', id: 'b', path: '/', stamp: sticker('l2', 'local') },
+  ];
+  const failed = await runQueue(broken, ledger, ops);
+  assert.deepEqual(
+    failed.map((op) => op.id),
+    ['a', 'b'],
+  );
+  await runQueue(api, ledger, failed);
+  assert.equal(api.calls.length, 2);
 });

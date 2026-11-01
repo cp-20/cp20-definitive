@@ -44,6 +44,42 @@ export async function saveOperation(api, op, who, resolve) {
 }
 
 /**
+ * What the write queue remembers between operations, so a retried save cannot undo or repeat
+ * what later operations on the same sticker already did.
+ * - A sticker's saved version, once its place or move saved (`resolve`).
+ * - A sticker whose move failed keeps standing for the saved sticker it was moved from, so a
+ *   later move or removal of it acts on that one.
+ * - A sticker that a later move or removal took over (`superseded`): its own failed add or move
+ *   is then settled and must not be sent again. A failed add followed by a move that placed the
+ *   sticker afresh would otherwise save it twice.
+ */
+export function createSaveLedger() {
+  /** @type {Map<string, PlacedStamp>} */
+  const saved = new Map();
+  /** @type {Set<string>} */
+  const handled = new Set();
+  /** @param {PlacedStamp} stamp */
+  const resolve = (stamp) => saved.get(stamp.id) || stamp;
+  return {
+    resolve,
+    /** @param {Operation} op */
+    superseded: (op) => op.type !== 'remove' && handled.has(op.stamp.id),
+    /** Called as the queue starts sending `op`. @param {Operation} op */
+    start(op) {
+      if (op.type !== 'add') handled.add(op.target.id);
+    },
+    /** @param {Operation & { type: 'add' | 'move' }} op @param {PlacedStamp} placed */
+    saved(op, placed) {
+      saved.set(op.stamp.id, placed);
+    },
+    /** @param {Operation} op */
+    failed(op) {
+      if (op.type === 'move') saved.set(op.stamp.id, resolve(op.target));
+    },
+  };
+}
+
+/**
  * How long to wait before the next write so the database's interval is kept.
  * @param {number} lastWrite when the previous write finished (0: never)
  */
