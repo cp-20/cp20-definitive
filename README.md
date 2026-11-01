@@ -87,7 +87,7 @@ npm run build
 - 音楽・漫画：`tracks.json` / `series.json`（定期処理が更新）。選定は2026版の元データで変更できます。
 - 画像：`public/images/`、自動取得分は `public/media/`。92個の元URLを89ファイルに集約。`src/data/image-cache.json` が元URLとローカルファイルを対応付けます。漫画・YouTubeも事前保存し、ページに出典と著者・制作者を掲載。
 
-画像は収集時に形式と15MB上限を検査し、内容ハッシュをファイル名に使用。新規取得に失敗した場合（新しいOG画像がSVG・15MB超・一時的な取得失敗など）は、前回の画像URL・寸法・ファイルを維持します。画像を含めてActionsからコミットし、ブラウザは同一サイトのStatic Assetsを参照。`/media/*` は長期キャッシュし、画像が変わるとURLも変わります。OG画像には一覧のサムネイル用に幅320/640/960pxのWebP（縮小と再エンコードのみ）を `<元ファイル名>-<幅>w.webp` で作り、`srcset` で配信します（`node scripts/image-variants.mjs` で取得なしに再生成）。クライアントには `virtual:cp20-media`（`vite.config.ts`）としてローカルパスと寸法だけを渡します。SVGやHTMLを外部画像として保存しません。
+画像は収集時に形式と15MB上限を検査し、内容ハッシュをファイル名に使用。新規取得に失敗した場合（新しいOG画像がSVG・15MB超・一時的な取得失敗など）は、前回の画像URL・寸法・ファイルを維持します。画像を含めてActionsからコミットし、ブラウザは同一サイトのStatic Assetsを参照。`/media/*` は長期キャッシュし、画像が変わるとURLも変わります。OG画像と音楽・漫画のサムネイルには幅320/640/960pxのWebP（元より2割以上狭いもののみ。縮小と再エンコードだけ）を、作品アイコンには幅96pxのWebPを `<元ファイル名>-<幅>w.webp` で作ります（元ファイルより小さくならないものは捨てる）。`public/images/covers` の表紙には幅240pxと原寸のWebPを作ります。いずれも `srcset`/`sizes`（アイコンは小さいWebPを直接）で配信します（`node scripts/image-variants.mjs` で取得なしに再生成。表紙を追加したら実行）。クライアントには `virtual:cp20-media`（`vite.config.ts`）としてローカルパスと寸法だけを渡します。SVGやHTMLを外部画像として保存しません。
 
 `manual.json` の `articles` はURLで自動取得と合成、`overrides` はタイトル等を上書き、`exclude` は対象URLを非掲載、`projects` は作品を追加します。作品には `works.json` と同じフィールドを指定してください。
 

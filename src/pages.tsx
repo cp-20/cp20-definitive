@@ -14,7 +14,7 @@ import Projects from './components/Projects';
 import { articles, works, repos, formatDate, type Article } from './data/content';
 import { featuredIds, milestones, editions, mangaCovers } from './data/editorial';
 import profile from './data/profile.json';
-import { localImage } from './data/images';
+import { localImage, coverImage } from './data/images';
 import { splitLinks } from './data/inline-links.mjs';
 import tracks from './data/tracks.json';
 import series from './data/series.json';
@@ -35,7 +35,11 @@ const languageColors: Record<string, string> = {
   Jinja: '#a52a22',
 };
 const languageColor = (language: string) => languageColors[language] || 'transparent';
-const coverOf = (s: (typeof series)[number]) => mangaCovers[s.title]?.image ?? localImage(s.thumbnail);
+// The volume 1 cover (with its WebP copies) or, without one, the series thumbnail.
+const coverOf = (s: (typeof series)[number]) => {
+  const cover = mangaCovers[s.title]?.image;
+  return cover ? coverImage(cover) : localImage(s.thumbnail);
+};
 // Spines on a shelf; choosing one pulls that book out so its cover faces you.
 function Bookshelf() {
   const [open, setOpen] = createSignal(0);
@@ -63,7 +67,16 @@ function Bookshelf() {
               style={{ '--spine': mangaCovers[s.title]?.spine, '--spine-ink': mangaCovers[s.title]?.ink }}
               onClick={() => setOpen(i())}
             >
-              <img class="book-cover" src={coverOf(s)} alt="" width="480" height="682" loading="lazy" />
+              <img
+                class="book-cover"
+                src={coverOf(s)?.src}
+                srcset={coverOf(s)?.srcset}
+                sizes={coverOf(s)?.srcset ? sizes.bookCover : undefined}
+                alt=""
+                width="480"
+                height="682"
+                loading="lazy"
+              />
               <span class="book-spine" aria-hidden="true">
                 <strong>{s.title}</strong>
                 <small>{author(s)}</small>
@@ -169,7 +182,9 @@ export function Home() {
           <div class="home-favorites">
             <a href="/about#music">
               <img
-                src={localImage(tracks[0].thumbnail)}
+                src={localImage(tracks[0].thumbnail)?.src}
+                srcset={localImage(tracks[0].thumbnail)?.srcset}
+                sizes={localImage(tracks[0].thumbnail)?.srcset ? sizes.homeTrack : undefined}
                 alt={tracks[0].title}
                 width="120"
                 height="90"
@@ -178,7 +193,15 @@ export function Home() {
               <Icon name="Music" size={16} />
             </a>
             <a href="/about#manga">
-              <img src={coverOf(series[0])} alt={series[0].title} width="96" height="136" loading="lazy" />
+              <img
+                src={coverOf(series[0])?.src}
+                srcset={coverOf(series[0])?.srcset}
+                sizes={coverOf(series[0])?.srcset ? sizes.homeCover : undefined}
+                alt={series[0].title}
+                width="96"
+                height="136"
+                loading="lazy"
+              />
               <Icon name="BookOpen" size={16} />
             </a>
           </div>
@@ -322,7 +345,9 @@ export function About() {
               <a class="music-item" href={t.link}>
                 <div class="music-image">
                   <img
-                    src={localImage(t.thumbnail)}
+                    src={localImage(t.thumbnail)?.src}
+                    srcset={localImage(t.thumbnail)?.srcset}
+                    sizes={localImage(t.thumbnail)?.srcset ? sizes.track : undefined}
                     alt={`${t.title}の動画サムネイル`}
                     width="480"
                     height="360"

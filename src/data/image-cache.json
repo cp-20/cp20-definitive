@@ -1,23 +1,58 @@
 {
   "https://2023.cp20.dev/apple-touch-icon.png": {
     "file": "/media/77e35c5775a657273824c53b.png",
-    "checkedAt": "2026-10-26T04:53:11.525Z"
+    "checkedAt": "2026-10-26T04:53:11.525Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/77e35c5775a657273824c53b-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://2024.cp20.dev/apple-touch-icon.png": {
     "file": "/media/77e35c5775a657273824c53b.png",
-    "checkedAt": "2026-10-26T22:43:01.624Z"
+    "checkedAt": "2026-10-26T22:43:01.624Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/77e35c5775a657273824c53b-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://2025.cp20.dev/apple-touch-icon.png": {
     "file": "/media/77e35c5775a657273824c53b.png",
-    "checkedAt": "2026-10-26T04:53:11.047Z"
+    "checkedAt": "2026-10-26T04:53:11.047Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/77e35c5775a657273824c53b-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://2026.cp20.dev/apple-touch-icon.png": {
     "file": "/media/77e35c5775a657273824c53b.png",
-    "checkedAt": "2026-10-26T04:53:10.979Z"
+    "checkedAt": "2026-10-26T04:53:10.979Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/77e35c5775a657273824c53b-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://assets.st-note.com/poc-image/manual/note-common-images/production/icons/apple-touch-icon.png": {
     "file": "/media/67e8e5e8a08c3401c1730be0.png",
-    "checkedAt": "2026-10-26T04:53:11.838Z"
+    "checkedAt": "2026-10-26T04:53:11.838Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/67e8e5e8a08c3401c1730be0-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://assets.st-note.com/production/uploads/images/101030507/rectangle_large_type_2_38981e693953111bf02080b8db51ef50.png?fit=bounds&quality=85&width=1280": {
     "file": "/media/2e602bfe54ff0ce07740b7f7.png",
@@ -154,11 +189,33 @@
   },
   "https://cdn-img.comic-action.com/public/series-thumbnail/4856001361584720984-39e246cd9d55aa415a4849ba91de8a6e?1690953662": {
     "file": "/media/4d526e8afc3ae0c5e2831e69.jpg",
-    "checkedAt": "2026-10-26T04:53:13.417Z"
+    "checkedAt": "2026-10-26T04:53:13.417Z",
+    "width": 901,
+    "variants": [
+      {
+        "file": "/media/4d526e8afc3ae0c5e2831e69-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/4d526e8afc3ae0c5e2831e69-640w.webp",
+        "width": 640
+      }
+    ]
   },
   "https://cdn.comic-walker.com/integration/cdpf/resources/000933/1e18b5d1-a1e2-46f0-aa00-660bae11fc28.jpg": {
     "file": "/media/82d854a4c4a6021806f5ed4d.jpg",
-    "checkedAt": "2026-10-26T04:53:13.637Z"
+    "checkedAt": "2026-10-26T04:53:13.637Z",
+    "width": 960,
+    "variants": [
+      {
+        "file": "/media/82d854a4c4a6021806f5ed4d-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/82d854a4c4a6021806f5ed4d-640w.webp",
+        "width": 640
+      }
+    ]
   },
   "https://cdn.image.st-hatena.com/image/scale/d27c3aa7b8fe95a65823b4bea20757884bc549f8/backend=imagemagick;version=1;width=1300/https%3A%2F%2Fcdn-ak.f.st-hatena.com%2Fimages%2Ffotolife%2Fm%2Fm3tech%2F20250926%2F20250926170015.jpg": {
     "file": "/media/cbb15579f741e8def659b7c3.jpg",
@@ -181,7 +238,14 @@
   },
   "https://cdn.qiita.com/assets/favicons/public/apple-touch-icon-ec5ba42a24ae923f16825592efdc356f.png": {
     "file": "/media/0ee2666ec822ee5112a33246.png",
-    "checkedAt": "2026-10-26T04:53:12.992Z"
+    "checkedAt": "2026-10-26T04:53:12.992Z",
+    "width": 300,
+    "variants": [
+      {
+        "file": "/media/0ee2666ec822ee5112a33246-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://cp20.dev/og.png": {
     "file": "/media/bcfa2c911969d564ca532294.png",
@@ -209,15 +273,52 @@
   },
   "https://deliver.cdn.nicomanga.jp/ogp-images/comics/73554": {
     "file": "/media/e05d3e56a3b1f8cf5222819f.jpg",
-    "checkedAt": "2026-10-26T04:53:15.136Z"
+    "checkedAt": "2026-10-26T04:53:15.136Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/e05d3e56a3b1f8cf5222819f-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/e05d3e56a3b1f8cf5222819f-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/e05d3e56a3b1f8cf5222819f-960w.webp",
+        "width": 960
+      }
+    ]
   },
   "https://deliver.cdn.nicomanga.jp/ogp-images/comics/74042": {
     "file": "/media/61ac16229dd339a05e8bc8ba.jpg",
-    "checkedAt": "2026-10-26T04:53:15.318Z"
+    "checkedAt": "2026-10-26T04:53:15.318Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/61ac16229dd339a05e8bc8ba-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/61ac16229dd339a05e8bc8ba-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/61ac16229dd339a05e8bc8ba-960w.webp",
+        "width": 960
+      }
+    ]
   },
   "https://dicespec.app/apple-touch-icon.png": {
     "file": "/media/7ae41b75ee2cad38e5964530.png",
-    "checkedAt": "2026-10-26T04:53:11.174Z"
+    "checkedAt": "2026-10-26T04:53:11.174Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/7ae41b75ee2cad38e5964530-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://dicespec.app/ogp.png": {
     "file": "/media/02fed6616cc48ae4d8ba7c08.png",
@@ -240,51 +341,137 @@
   },
   "https://eh96lnrmau.user-space.cdn.idcfcloud.net/thumbnail/book/2060.jpg?auto=webp": {
     "file": "/media/2d9072555edf2ff075bab0b6.jpg",
-    "checkedAt": "2026-10-26T04:53:14.564Z"
+    "checkedAt": "2026-10-26T04:53:14.564Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/2d9072555edf2ff075bab0b6-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/2d9072555edf2ff075bab0b6-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/2d9072555edf2ff075bab0b6-960w.webp",
+        "width": 960
+      }
+    ]
   },
   "https://github.githubassets.com/favicons/favicon.png": {
     "file": "/media/74cf90ac2fe6624ab1056cac.png",
-    "checkedAt": "2026-10-26T04:53:11.028Z"
+    "checkedAt": "2026-10-26T04:53:11.028Z",
+    "width": 32
   },
   "https://i.ytimg.com/vi/ATBCJbb1RT0/hqdefault.jpg": {
     "file": "/media/e2344d3add1985eda017a69a.jpg",
-    "checkedAt": "2026-10-26T04:53:13.227Z"
+    "checkedAt": "2026-10-26T04:53:13.227Z",
+    "width": 480,
+    "variants": [
+      {
+        "file": "/media/e2344d3add1985eda017a69a-320w.webp",
+        "width": 320
+      }
+    ]
   },
   "https://i.ytimg.com/vi/cx8cSaUKINk/hqdefault.jpg": {
     "file": "/media/0b3e17277ce15d9fd470fbdc.jpg",
-    "checkedAt": "2026-10-26T04:53:13.279Z"
+    "checkedAt": "2026-10-26T04:53:13.279Z",
+    "width": 480,
+    "variants": [
+      {
+        "file": "/media/0b3e17277ce15d9fd470fbdc-320w.webp",
+        "width": 320
+      }
+    ]
   },
   "https://i.ytimg.com/vi/fXDhx1GtD1g/hqdefault.jpg": {
     "file": "/media/5f13f375a8885a24b4abb40a.jpg",
-    "checkedAt": "2026-10-26T04:53:13.310Z"
+    "checkedAt": "2026-10-26T04:53:13.310Z",
+    "width": 480,
+    "variants": [
+      {
+        "file": "/media/5f13f375a8885a24b4abb40a-320w.webp",
+        "width": 320
+      }
+    ]
   },
   "https://i.ytimg.com/vi/IUOkiMMn1S4/hqdefault.jpg": {
     "file": "/media/a3c87efc3e5b53a470f517a6.jpg",
-    "checkedAt": "2026-10-26T04:53:13.281Z"
+    "checkedAt": "2026-10-26T04:53:13.281Z",
+    "width": 480,
+    "variants": [
+      {
+        "file": "/media/a3c87efc3e5b53a470f517a6-320w.webp",
+        "width": 320
+      }
+    ]
   },
   "https://i.ytimg.com/vi/ocHivJOVQcs/hqdefault.jpg": {
     "file": "/media/a50239eec9db156df55f94ec.jpg",
-    "checkedAt": "2026-10-26T04:53:13.218Z"
+    "checkedAt": "2026-10-26T04:53:13.218Z",
+    "width": 480,
+    "variants": [
+      {
+        "file": "/media/a50239eec9db156df55f94ec-320w.webp",
+        "width": 320
+      }
+    ]
   },
   "https://i.ytimg.com/vi/Q2n-G_SMAEw/hqdefault.jpg": {
     "file": "/media/7224b51b2782fa324eb12ec3.jpg",
-    "checkedAt": "2026-10-26T04:53:13.213Z"
+    "checkedAt": "2026-10-26T04:53:13.213Z",
+    "width": 480,
+    "variants": [
+      {
+        "file": "/media/7224b51b2782fa324eb12ec3-320w.webp",
+        "width": 320
+      }
+    ]
   },
   "https://i.ytimg.com/vi/upUv8iWVs-I/hqdefault.jpg": {
     "file": "/media/9acb280437d593b3ace39f64.jpg",
-    "checkedAt": "2026-10-26T04:53:13.165Z"
+    "checkedAt": "2026-10-26T04:53:13.165Z",
+    "width": 480,
+    "variants": [
+      {
+        "file": "/media/9acb280437d593b3ace39f64-320w.webp",
+        "width": 320
+      }
+    ]
   },
   "https://i.ytimg.com/vi/yduc1fLK2us/hqdefault.jpg": {
     "file": "/media/ffed0164f7fb994a991df1a6.jpg",
-    "checkedAt": "2026-10-26T04:53:13.187Z"
+    "checkedAt": "2026-10-26T04:53:13.187Z",
+    "width": 480,
+    "variants": [
+      {
+        "file": "/media/ffed0164f7fb994a991df1a6-320w.webp",
+        "width": 320
+      }
+    ]
   },
   "https://i.ytimg.com/vi/yy3clMmk9u8/hqdefault.jpg": {
     "file": "/media/dcfd067d60faf350e40798d0.jpg",
-    "checkedAt": "2026-10-26T04:53:13.268Z"
+    "checkedAt": "2026-10-26T04:53:13.268Z",
+    "width": 480,
+    "variants": [
+      {
+        "file": "/media/dcfd067d60faf350e40798d0-320w.webp",
+        "width": 320
+      }
+    ]
   },
   "https://minna-no-monosashi.lolipop-now.app/apple-touch-icon.png?v=3": {
     "file": "/media/4bc6ef7f4e0cfe99e36b1750.png",
-    "checkedAt": "2026-10-26T04:53:12.056Z"
+    "checkedAt": "2026-10-26T04:53:12.056Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/4bc6ef7f4e0cfe99e36b1750-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://minna-no-monosashi.lolipop-now.app/og/default?v=4": {
     "file": "/media/59db2a77db08ceafc440c60c.png",
@@ -307,7 +494,14 @@
   },
   "https://mission.trap.games/apple-touch-icon.png": {
     "file": "/media/58003094a46e3cf62058c3af.png",
-    "checkedAt": "2026-10-26T04:53:11.643Z"
+    "checkedAt": "2026-10-26T04:53:11.643Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/58003094a46e3cf62058c3af-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://mission.trap.games/ogp.png": {
     "file": "/media/efdb3c6c6c5a6cc99c9baa9c.png",
@@ -330,7 +524,8 @@
   },
   "https://no-log-chat.vercel.app/favicons/apple-touch-icon-57x57.png": {
     "file": "/media/ddc52fd5c7ed9e8de65c8871.png",
-    "checkedAt": "2026-10-26T04:53:11.635Z"
+    "checkedAt": "2026-10-26T04:53:11.635Z",
+    "width": 57
   },
   "https://no-log-chat.vercel.app/ogp.png": {
     "file": "/media/1dfcc8b104f2f626c67bed6d.png",
@@ -387,7 +582,18 @@
   },
   "https://public.ynjn.jp/key_visual/3855/keyvisual_yamero_2512.png": {
     "file": "/media/e6228d51ffcff874ef8d0659.png",
-    "checkedAt": "2026-10-26T04:53:13.803Z"
+    "checkedAt": "2026-10-26T04:53:13.803Z",
+    "width": 1125,
+    "variants": [
+      {
+        "file": "/media/e6228d51ffcff874ef8d0659-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/e6228d51ffcff874ef8d0659-640w.webp",
+        "width": 640
+      }
+    ]
   },
   "https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-user-contents.imgix.net%2Fhttps%253A%252F%252Fcdn.qiita.com%252Fassets%252Fpublic%252Fadvent-calendar-ogp-background-7940cd1c8db80a7ec40711d90f43539e.jpg%3Fixlib%3Drb-4.1.1%26w%3D1200%26blend64%3DaHR0cHM6Ly9xaWl0YS11c2VyLXByb2ZpbGUtaW1hZ2VzLmltZ2l4Lm5ldC9odHRwcyUzQSUyRiUyRnFpaXRhLWltYWdlLXN0b3JlLnMzLmFwLW5vcnRoZWFzdC0xLmFtYXpvbmF3cy5jb20lMkYwJTJGMTkwOTE1NSUyRnByb2ZpbGUtaW1hZ2VzJTJGMTY1NTM3NTM1Mz9peGxpYj1yYi00LjEuMSZhcj0xJTNBMSZmaXQ9Y3JvcCZtYXNrPWVsbGlwc2UmYmc9RkZGRkZGJmZtPXBuZzMyJnM9MjU1Y2IwYWM0NGJkMmJhYmJmZmY1M2FkMWYwZDc3NzI%26blend-x%3D120%26blend-y%3D467%26blend-w%3D82%26blend-h%3D82%26blend-mode%3Dnormal%26s%3Dbb09f830d187783db853940f40a9eb85?ixlib=rb-4.1.1&w=1200&fm=jpg&mark64=aHR0cHM6Ly9xaWl0YS11c2VyLWNvbnRlbnRzLmltZ2l4Lm5ldC9-dGV4dD9peGxpYj1yYi00LjEuMSZ3PTk2MCZoPTMyNCZ0eHQ9JUU4JTg3JUFBJUU0JUJEJTlDJUUzJTgzJTk3JUUzJTgzJUFEJUUzJTgyJUIwJUUzJTgzJUE5JUUzJTgzJTlGJUUzJTgzJUIzJUUzJTgyJUIwJUU4JUE4JTgwJUU4JUFBJTlFTGF6ZSVFMyU4MSVBNyVFOCVCNiU4NSVFNyVCNCU5QSVFNyVBOSU4RCVFNSU4OCU4NiVFMyU4MiU5MiVFOCVBNyVBMyVFMyU4MSU4NCVFMyU4MSVBNiVFMyU4MSVCRiVFMyU4MSU5RiVFOCVBOSVCMSZ0eHQtYWxpZ249bGVmdCUyQ3RvcCZ0eHQtY29sb3I9JTIzM0EzQzNDJnR4dC1mb250PUhpcmFnaW5vJTIwU2FucyUyMFc2JnR4dC1zaXplPTU2JnR4dC1wYWQ9MCZzPTM3YTY2Y2I4MjY2ZTY0NWE1OWUxM2VkOTIzMThiMjU1&mark-x=120&mark-y=112&blend64=aHR0cHM6Ly9xaWl0YS11c2VyLWNvbnRlbnRzLmltZ2l4Lm5ldC9-dGV4dD9peGxpYj1yYi00LjEuMSZ3PTgzOCZoPTU4JnR4dD0lNDBjcDIwJnR4dC1jb2xvcj0lMjMzQTNDM0MmdHh0LWZvbnQ9SGlyYWdpbm8lMjBTYW5zJTIwVzYmdHh0LXNpemU9MzYmdHh0LXBhZD0wJnM9MGQ3ZWM2MTIzN2JiN2ZkOGMwZjExODU5NzYwMTdhNTQ&blend-x=242&blend-y=480&blend-w=838&blend-h=46&blend-fit=crop&blend-crop=left%2Cbottom&blend-mode=normal&s=0863641739ba91df8c4b9e3c0482d133": {
     "file": "/media/1c0e29c3b66bd3967714b7c9.jpg",
@@ -797,15 +1003,30 @@
   },
   "https://static.sizu.me/images/logo-favicon.png": {
     "file": "/media/092a2dea07b016e3f7d086cf.png",
-    "checkedAt": "2026-10-26T04:53:11.764Z"
+    "checkedAt": "2026-10-26T04:53:11.764Z",
+    "width": 168,
+    "variants": [
+      {
+        "file": "/media/092a2dea07b016e3f7d086cf-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://static.zenn.studio/images/logo-transparent.png": {
     "file": "/media/e6c38336be5beec59bb0ce2d.png",
-    "checkedAt": "2026-10-26T04:53:11.909Z"
+    "checkedAt": "2026-10-26T04:53:11.909Z",
+    "width": 315
   },
   "https://titech-lecture-list.vercel.app/apple-touch-icon.png": {
     "file": "/media/0e45b83a8cebf54aaca4f535.png",
-    "checkedAt": "2026-10-26T04:53:11.817Z"
+    "checkedAt": "2026-10-26T04:53:11.817Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/0e45b83a8cebf54aaca4f535-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://titech-lecture-list.vercel.app/ogp.png": {
     "file": "/media/5c89028ea7106601ca9171fe.png",
@@ -828,7 +1049,14 @@
   },
   "https://tokyo-tech-syllabus.cp20.dev/apple-touch-icon.png": {
     "file": "/media/66f2183cda737c23e691ea21.png",
-    "checkedAt": "2026-10-26T04:53:11.544Z"
+    "checkedAt": "2026-10-26T04:53:11.544Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/66f2183cda737c23e691ea21-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://tokyo-tech-syllabus.cp20.dev/ogp.png": {
     "file": "/media/7e10e0f4ebca21cf1146ae4a.png",
@@ -851,7 +1079,14 @@
   },
   "https://trap-conference.trap.show/apple-touch-icon.png": {
     "file": "/media/af079fa8dfe985f9c34aa79e.png",
-    "checkedAt": "2026-10-26T04:53:11.451Z"
+    "checkedAt": "2026-10-26T04:53:11.451Z",
+    "width": 300,
+    "variants": [
+      {
+        "file": "/media/af079fa8dfe985f9c34aa79e-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://trap-conference.trap.show/og.png": {
     "file": "/media/9c456693d5dae60af0ac2ac1.png",
@@ -1099,11 +1334,19 @@
   },
   "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png": {
     "file": "/media/cf3223d7ae3650c2448eb527.png",
-    "checkedAt": "2026-10-26T04:53:12.329Z"
+    "checkedAt": "2026-10-26T04:53:12.329Z",
+    "width": 190
   },
   "https://traqing.cp20.dev/apple-touch-icon.png": {
     "file": "/media/246cc2a1822d3e022b83f828.png",
-    "checkedAt": "2026-10-26T04:53:11.050Z"
+    "checkedAt": "2026-10-26T04:53:11.050Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/246cc2a1822d3e022b83f828-96w.webp",
+        "width": 96
+      }
+    ]
   },
   "https://traqing.cp20.dev/og.png": {
     "file": "/media/70ed48a51ddd4eaf3e6c5fe8.png",
@@ -1126,7 +1369,8 @@
   },
   "https://v1-dicespec.vercel.app/favicons/apple-touch-icon-57x57.png": {
     "file": "/media/dd9fcd6f3e23ef987f69b025.png",
-    "checkedAt": "2026-10-26T04:53:12.141Z"
+    "checkedAt": "2026-10-26T04:53:12.141Z",
+    "width": 57
   },
   "https://v1-dicespec.vercel.app/ogp.png": {
     "file": "/media/ec47e4aaab37d4d5f75a2294.png",
@@ -1145,6 +1389,7 @@
   },
   "https://www.m3tech.blog/icon/touch": {
     "file": "/media/ced5ed997e1265c84852d840.png",
-    "checkedAt": "2026-10-26T04:53:12.649Z"
+    "checkedAt": "2026-10-26T04:53:12.649Z",
+    "width": 114
   }
 }

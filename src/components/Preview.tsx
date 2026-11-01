@@ -1,13 +1,18 @@
 import { createSignal, Show } from 'solid-js';
 import { pages } from 'virtual:cp20-media';
 import { isIconImage } from '../data/icon-image.mjs';
-// Upper bounds of the rendered OG image widths (measured at 390-1920px wide viewports; see the
-// --thumb and grid rules in app.css).
+// Upper bounds of the rendered image widths (measured at 360-1920px wide viewports; see the
+// --thumb, grid, .bookshelf, .music-list and .home-favorites rules in app.css).
 export const sizes = {
   articleRow: '(max-width: 760px) 104px, 144px',
   workGrid: '(max-width: 760px) 72vw, 340px',
   featured: '(max-width: 900px) 72vw, 466px',
   workHero: '(max-width: 1100px) 70vw, 924px',
+  // The open book on the /about shelf (spines show a strip of the same image).
+  bookCover: '(max-width: 760px) calc(100vw - 230px), 216px',
+  homeCover: '92px',
+  homeTrack: '134px',
+  track: '(max-width: 760px) calc(100vw - 88px), (max-width: 1100px) calc(50vw - 160px), 292px',
 };
 // Works in the first row of the works grid (three columns on wide screens) skip lazy loading.
 export const firstRowWorks = 3;

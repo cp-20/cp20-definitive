@@ -2,7 +2,7 @@
 // cache headers and build-only files.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { access, cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { access, cp, mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -10,7 +10,7 @@ import sharp from 'sharp';
 import subsetFont from 'subset-font';
 import { plannedWidths, variantFile, isVariantFile } from './image-variants.mjs';
 import { collectCharacters, fontHead, weights } from './fonts.mjs';
-import { clientMedia } from '../src/data/client-media.mjs';
+import { clientMedia, coverSrcsets } from '../src/data/client-media.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFile(join(root, path), 'utf8');
@@ -29,30 +29,55 @@ test('variants are only planned when they are a real reduction', () => {
   assert.ok(isVariantFile('/media/abc-320w.webp') && !isVariantFile('/media/abc.png'));
 });
 
-test('addVariants writes smaller WebP copies and records them for OG images only', async () => {
+test('addVariants writes smaller WebP copies for thumbnails and icons only, and only when they are smaller', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'cp20-variants-'));
   try {
     await cp(join(root, 'scripts'), join(dir, 'scripts'), { recursive: true });
+    await mkdir(join(dir, 'src/data'), { recursive: true });
+    await cp(join(root, 'src/data/variant-names.mjs'), join(dir, 'src/data/variant-names.mjs'));
     await symlink(join(root, 'node_modules'), join(dir, 'node_modules'));
     await mkdir(join(dir, 'public/media'), { recursive: true });
     const png = await readFile(join(root, 'public/images/avatar.png')); // 512px
     await writeFile(join(dir, 'public/media/og.png'), png);
     await writeFile(join(dir, 'public/media/icon.png'), png);
+    await writeFile(join(dir, 'public/media/unused.png'), png);
+    // A flat logo (from the real cache) is smaller as PNG than as WebP: no copy is kept for it.
+    await cp(join(root, 'public/media/e6c38336be5beec59bb0ce2d.png'), join(dir, 'public/media/flat.png'));
     const { addVariants } = await import(pathToFileURL(join(dir, 'scripts/image-variants.mjs')).href);
     const cache = {
       'https://example.com/og.png': { file: '/media/og.png', checkedAt: 'x' },
-      'https://example.com/icon.png': { file: '/media/icon.png', checkedAt: 'x', variants: [] },
+      'https://example.com/icon.png': { file: '/media/icon.png', checkedAt: 'x' },
+      'https://example.com/flat.png': { file: '/media/flat.png', checkedAt: 'x' },
+      'https://example.com/unused.png': { file: '/media/unused.png', checkedAt: 'x', variants: [] },
     };
-    await addVariants(cache, new Set(['https://example.com/og.png']));
+    await addVariants(
+      cache,
+      new Set(['https://example.com/og.png']),
+      new Set(['https://example.com/icon.png', 'https://example.com/flat.png']),
+    );
     assert.deepEqual(cache['https://example.com/og.png'], {
       file: '/media/og.png',
       checkedAt: 'x',
       width: 512,
       variants: [{ file: '/media/og-320w.webp', width: 320 }],
     });
-    assert.deepEqual(cache['https://example.com/icon.png'], { file: '/media/icon.png', checkedAt: 'x' });
+    assert.deepEqual(cache['https://example.com/icon.png'], {
+      file: '/media/icon.png',
+      checkedAt: 'x',
+      width: 512,
+      variants: [{ file: '/media/icon-96w.webp', width: 96 }],
+    });
+    assert.deepEqual(cache['https://example.com/flat.png'], {
+      file: '/media/flat.png',
+      checkedAt: 'x',
+      width: 315,
+    });
+    assert.ok(!(await exists(join(dir, 'public/media/flat-96w.webp'))));
+    assert.deepEqual(cache['https://example.com/unused.png'], { file: '/media/unused.png', checkedAt: 'x' });
     const meta = await sharp(join(dir, 'public/media/og-320w.webp')).metadata();
     assert.deepEqual([meta.format, meta.width, meta.height], ['webp', 320, 320]);
+    const icon = await sharp(join(dir, 'public/media/icon-96w.webp')).metadata();
+    assert.deepEqual([icon.format, icon.width], ['webp', 96]);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -67,6 +92,68 @@ test('every committed OG image wider than 400px has its thumbnail variants on di
     assert.ok(entry.variants?.length, `${entry.file} has no variants`);
     for (const v of entry.variants) assert.ok(await exists(join(root, 'public', v.file)), v.file);
   }
+});
+
+test('every music and manga thumbnail and site icon has its WebP copies on disk', async () => {
+  const cache = JSON.parse(await read('src/data/image-cache.json'));
+  const previews = JSON.parse(await read('src/data/previews.json'));
+  const items = [
+    ...JSON.parse(await read('src/data/tracks.json')),
+    ...JSON.parse(await read('src/data/series.json')),
+  ];
+  for (const source of [...items.map((i) => i.thumbnail), ...Object.values(previews).map((p) => p.icon)]) {
+    const entry = source && cache[source];
+    if (!entry || /\.(gif|ico|svg)$/.test(entry.file)) continue;
+    assert.ok(entry.width > 0, `${entry.file} has no recorded width`);
+    for (const v of entry.variants ?? []) assert.ok(await exists(join(root, 'public', v.file)), v.file);
+  }
+  for (const { thumbnail } of items) {
+    const entry = cache[thumbnail];
+    if (entry?.width >= 400) assert.ok(entry.variants?.length, `${entry.file} has no variants`);
+  }
+});
+
+test('every manga cover has WebP copies whose srcset descriptors are their real widths', async () => {
+  const editorial = await read('src/data/editorial.ts');
+  const covers = [...editorial.matchAll(/image: '(\/images\/covers\/[^']+)'/g)].map((m) => m[1]);
+  assert.equal(covers.length, 6);
+  const srcsets = coverSrcsets(await readdir(join(root, 'public/images/covers')));
+  for (const image of covers) {
+    const { width } = await sharp(join(root, 'public', image)).metadata();
+    const candidates = srcsets[image]?.split(', ').map((c) => c.split(' ')) ?? [];
+    assert.ok(candidates.length, `${image} has no WebP copies`);
+    // The largest copy is the full-size one, so the shelf never shows a blurrier cover than before.
+    assert.equal(candidates.at(-1)?.[1], `${width}w`, image);
+    for (const [file, descriptor] of candidates) {
+      const copy = await sharp(join(root, 'public', file)).metadata();
+      assert.deepEqual([copy.format, `${copy.width}w`], ['webp', descriptor], file);
+    }
+  }
+  assert.deepEqual(
+    coverSrcsets(['a.jpg', 'a-240w.webp', 'a-480w.webp', 'a-b.jpg', 'b.png', 'notes.txt'], '/c/'),
+    {
+      '/c/a.jpg': '/c/a-240w.webp 240w, /c/a-480w.webp 480w',
+    },
+  );
+});
+
+test('covers, music thumbnails and icons are offered at their shown size', async () => {
+  const pages = await read('src/pages.tsx');
+  for (const name of ['bookCover', 'homeCover', 'homeTrack', 'track'])
+    assert.match(pages, new RegExp(`sizes=\\{[^}]*sizes\\.${name}\\b`), name);
+  assert.equal((pages.match(/srcset=\{/g) ?? []).length, 4);
+});
+
+test('articles are merged and validated at build time, and dates share one formatter', async () => {
+  const content = await read('src/data/content.ts');
+  assert.ok(content.includes("from 'virtual:cp20-articles'"));
+  assert.ok(
+    !/mergeArticles|normalize\.mjs/.test(content),
+    'content.ts must not merge articles in the browser',
+  );
+  assert.ok(!/=>\s*new Intl\.DateTimeFormat/.test(content), 'formatDate must not build a formatter per call');
+  const config = await read('vite.config.ts');
+  assert.match(config, /mergeArticles\(snapshot\.articles, \[\], manual\)/);
 });
 
 test('the client media table keeps only local paths, srcset candidates and sizes', () => {
@@ -92,21 +179,38 @@ test('the client media table keeps only local paths, srcset candidates and sizes
           { file: '/media/og-640w.webp', width: 640 },
         ],
       },
-      'https://cdn.example.com/icon.png': { file: '/media/icon.png', checkedAt: 'x' },
-      'https://i.ytimg.com/vi/a/hq.jpg': { file: '/media/yt.jpg', checkedAt: 'x' },
+      'https://cdn.example.com/icon.png': {
+        file: '/media/icon.png',
+        checkedAt: 'x',
+        width: 180,
+        variants: [{ file: '/media/icon-96w.webp', width: 96 }],
+      },
+      'https://i.ytimg.com/vi/a/hq.jpg': {
+        file: '/media/yt.jpg',
+        checkedAt: 'x',
+        width: 480,
+        variants: [{ file: '/media/yt-320w.webp', width: 320 }],
+      },
+      'https://i.ytimg.com/vi/b/hq.jpg': { file: '/media/yt-b.jpg', checkedAt: 'x' },
       'https://unused.example.com/a.png': { file: '/media/unused.png', checkedAt: 'x' },
     },
-    ['https://i.ytimg.com/vi/a/hq.jpg', null],
+    ['https://i.ytimg.com/vi/a/hq.jpg', 'https://i.ytimg.com/vi/b/hq.jpg', null],
   );
   assert.deepEqual(pages[page], {
     width: 1200,
     height: 630,
     image: '/media/og.png',
     srcset: '/media/og-320w.webp 320w, /media/og-640w.webp 640w, /media/og.png 1200w',
-    icon: '/media/icon.png',
+    icon: '/media/icon-96w.webp',
   });
   assert.deepEqual(pages['https://example.com/none'], { width: 1200, height: 630 });
-  assert.deepEqual(images, { 'https://i.ytimg.com/vi/a/hq.jpg': '/media/yt.jpg' });
+  assert.deepEqual(images, {
+    'https://i.ytimg.com/vi/a/hq.jpg': {
+      src: '/media/yt.jpg',
+      srcset: '/media/yt-320w.webp 320w, /media/yt.jpg 480w',
+    },
+    'https://i.ytimg.com/vi/b/hq.jpg': { src: '/media/yt-b.jpg' },
+  });
   const serialized = JSON.stringify({ pages, images });
   assert.ok(!serialized.includes('checkedAt') && !serialized.includes('cdn.example.com'));
 });

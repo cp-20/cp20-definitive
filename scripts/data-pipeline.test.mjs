@@ -21,7 +21,8 @@ async function sandbox(data, media = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'cp20-pipeline-'));
   await cp(join(root, 'scripts'), join(dir, 'scripts'), { recursive: true });
   await mkdir(join(dir, 'src/data'), { recursive: true });
-  await cp(join(root, 'src/data/normalize.mjs'), join(dir, 'src/data/normalize.mjs'));
+  for (const file of ['normalize.mjs', 'variant-names.mjs'])
+    await cp(join(root, 'src/data', file), join(dir, 'src/data', file));
   await mkdir(join(dir, 'public/media'), { recursive: true });
   await symlink(join(root, 'node_modules'), join(dir, 'node_modules'));
   for (const [name, value] of Object.entries(data))
