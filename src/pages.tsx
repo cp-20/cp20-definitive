@@ -15,6 +15,7 @@ import { articles, works, repos, formatDate, type Article } from './data/content
 import { featuredIds, milestones, editions, mangaCovers } from './data/editorial';
 import profile from './data/profile.json';
 import { localImage } from './data/images';
+import { splitLinks } from './data/inline-links.mjs';
 import tracks from './data/tracks.json';
 import series from './data/series.json';
 // GitHub's language colours, for the dot beside each repository.
@@ -640,7 +641,17 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
             <p class="meta">制作当時の記録です。利用人数などは当時の記載です。</p>
           </Show>
           {w.comments.map((c) => (
-            <p>{c}</p>
+            <p>
+              {splitLinks(c).map((part) =>
+                'href' in part ? (
+                  <a class="inline-link" href={part.href}>
+                    {part.label}
+                  </a>
+                ) : (
+                  part.text
+                ),
+              )}
+            </p>
           ))}
           <Show when={w.relatedArticles.length > 0}>
             <h2>関連する記事</h2>

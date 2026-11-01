@@ -1825,6 +1825,11 @@
     text-decoration-thickness: 6px;
     text-underline-offset: 2px;
   }
+  /* Links inside a sentence keep wrapping with the text. */
+  .work-detail-copy > p > a.inline-link {
+    display: inline;
+    text-underline-offset: 4px;
+  }
 
   /* ── About ── */
   .profile-header {

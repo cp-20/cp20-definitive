@@ -93,7 +93,7 @@ npm run build
 
 **作品の追加方法**
 
-1. `src/data/works.json`（または `manual.json` の `projects`）に作品を追加します。フィールドは既存の作品と同じです。`id` はURL（`/works/<id>`）とシールの保存先（`pages/works--<id>`）になるため、英小文字・数字を1つずつのハイフンでつないだ形（例 `my-app-2`）にしてください。大文字・`.`・`--`・重複は `npm run build` と `npm run rules` がエラーで止めます。
+1. `src/data/works.json`（または `manual.json` の `projects`）に作品を追加します。フィールドは既存の作品と同じです。`comments` の中のリンクは `[ラベル](https://…)` や `[ラベル](/works/<id>)` の形で書くとリンクになります（URLをそのまま書くと `npm test` が失敗します）。`id` はURL（`/works/<id>`）とシールの保存先（`pages/works--<id>`）になるため、英小文字・数字を1つずつのハイフンでつないだ形（例 `my-app-2`）にしてください。大文字・`.`・`--`・重複は `npm run build` と `npm run rules` がエラーで止めます。
 2. `npm run rules` で `database.rules.json` を再生成し、作品の追加と一緒にコミットします。忘れると `npm test` とPRの `Firebase rules` ワークフローが失敗します（新しいページではシールを保存できないため）。
 3. `main` にマージすると、サイトはCloudflareが、ルールは `Firebase rules` ワークフローが自動でデプロイします。
 
