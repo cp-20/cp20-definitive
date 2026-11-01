@@ -132,6 +132,8 @@ export function createNavigation() {
       transition?.skipTransition();
       const update = () => {
         if (ticket !== version) return;
+        // From now on pages arrive with the turn alone: the first page's entrance is not repeated.
+        document.documentElement.dataset.turned = '';
         setPath(normalizePath(url.pathname));
         flush();
         const info = pageInfo(path());

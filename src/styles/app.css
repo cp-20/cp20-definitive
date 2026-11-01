@@ -1096,23 +1096,24 @@
     opacity: 0;
     translate: var(--shift) 0;
     transition:
-      opacity 420ms var(--ease),
-      translate 520ms var(--ease),
-      visibility 0s 520ms;
+      opacity var(--t-hover) var(--ease),
+      translate var(--t-state) var(--ease),
+      visibility 0s var(--t-state);
   }
+  /* --away: how far a work steps aside, further when a swipe throws it (Projects.tsx). */
   .featured-project[data-pos='prev'] {
-    --shift: -48px;
+    --shift: calc(var(--away, 32px) * -1);
   }
   .featured-project[data-pos='next'] {
-    --shift: 48px;
+    --shift: var(--away, 32px);
   }
   .featured-project[data-pos='active'] {
     --shift: var(--drag, 0px);
     visibility: visible;
     opacity: 1;
     transition:
-      opacity 420ms var(--ease) 80ms,
-      translate 520ms var(--ease);
+      opacity var(--t-hover) var(--ease) 60ms,
+      translate var(--t-state) var(--ease);
   }
   .project-deck[data-dragging] .featured-project {
     transition: none;
@@ -1830,7 +1831,6 @@
     right: -24px;
     top: auto;
     bottom: -40px;
-    animation: postmark-in 700ms var(--ease) 300ms both;
   }
   .work-detail-layout {
     display: grid;
@@ -2929,10 +2929,10 @@
     backface-visibility: hidden;
   }
   :root[data-flip='fade']::view-transition-old(root) {
-    animation: page-out 160ms var(--ease) both;
+    animation: page-out var(--t-hover) var(--ease) both;
   }
   :root[data-flip='fade']::view-transition-new(root) {
-    animation: page-in 240ms var(--ease) both;
+    animation: page-in var(--t-hover) var(--ease) both;
   }
   :root[data-flip='forward']::view-transition-old(root) {
     z-index: 1;
@@ -2940,7 +2940,7 @@
       var(--flip-old-top) var(--flip-old-right) var(--flip-old-bottom) var(--flip-old-left) round 26px
     );
     transform-origin: var(--flip-old-left) 50%;
-    animation: turn-away 640ms cubic-bezier(0.55, 0, 0.3, 1) both;
+    animation: turn-away var(--t-page) var(--ease-turn) both;
   }
   /* The new image already paints above the old one; a z-index here hides the old image in Chromium. */
   :root[data-flip='back']::view-transition-new(root) {
@@ -2948,10 +2948,10 @@
       var(--flip-new-top) var(--flip-new-right) var(--flip-new-bottom) var(--flip-new-left) round 26px
     );
     transform-origin: var(--flip-new-left) 50%;
-    animation: turn-back 640ms cubic-bezier(0.55, 0, 0.3, 1) both;
+    animation: turn-back var(--t-page) var(--ease-turn) both;
   }
   :root[data-flip='back']::view-transition-old(root) {
-    animation: covered 640ms var(--ease) both;
+    animation: covered var(--t-page) var(--ease-turn) both;
   }
   @keyframes turn-away {
     to {
@@ -2970,49 +2970,32 @@
       filter: brightness(0.94);
     }
   }
-  /* Each route settles onto the paper with a short stagger. */
-  .route-frame > .wrap > :nth-child(-n + 3) {
-    animation: rise 520ms var(--ease) both;
+  /* Only the page the visit starts on settles onto the paper, and its stamps are pressed on.
+     Every later page arrives with the turn itself (data-turned, navigation.ts), which is enough. */
+  :root:not([data-turned]) .route-frame > .wrap > :nth-child(-n + 2) {
+    animation: rise var(--t-enter) var(--ease) both;
   }
-  .route-frame > .wrap > :nth-child(2) {
-    animation-delay: 60ms;
+  :root:not([data-turned]) .route-frame > .wrap > :nth-child(2) {
+    animation-delay: 50ms;
   }
-  .route-frame > .wrap > :nth-child(3) {
-    animation-delay: 120ms;
+  :root:not([data-turned]) .avatar-stamp {
+    animation: sticker-on var(--t-enter) var(--spring) 80ms both;
   }
-  .avatar-stamp {
-    animation: sticker-on 700ms var(--bounce) 120ms both;
+  :root:not([data-turned]) :is(.identity, .profile-intro) h1 > span {
+    animation: seal var(--t-enter) var(--spring) 200ms both;
   }
-  .identity h1 > span,
-  .profile-intro h1 > span {
-    animation: seal 620ms cubic-bezier(0.2, 0.9, 0.3, 1) 380ms both;
+  :root:not([data-turned]) .work-detail-hero .postmark {
+    animation: postmark-in var(--t-enter) var(--spring) 200ms both;
   }
-  /* Only the first rows shown settle in: rows further down are off screen, and animating all of
-     them made every filter or sort change restyle the whole list for half a second. */
-  .article-results .article-row:nth-child(-n + 10 of :not([hidden])) {
-    animation: rise 420ms var(--ease) calc(var(--i, 0) * 28ms) both;
-  }
-  /* The copy of the newly selected work settles in line by line. */
+  /* The copy of the newly selected work trails the image a little. */
   .featured-copy > * {
-    transition: translate 520ms var(--ease);
+    transition: translate var(--t-state) var(--ease);
   }
   .featured-project[data-pos='prev'] .featured-copy > * {
     translate: -12px 0;
   }
   .featured-project[data-pos='next'] .featured-copy > * {
     translate: 12px 0;
-  }
-  .featured-project[data-pos='active'] .featured-copy > :nth-child(2) {
-    transition-delay: 30ms;
-  }
-  .featured-project[data-pos='active'] .featured-copy > :nth-child(3) {
-    transition-delay: 60ms;
-  }
-  .featured-project[data-pos='active'] .featured-copy > :nth-child(4) {
-    transition-delay: 90ms;
-  }
-  .featured-project[data-pos='active'] .featured-copy > :nth-child(5) {
-    transition-delay: 120ms;
   }
   /* Screen only: when printing, items outside the viewport would stay at the first frame. */
   @media screen {
@@ -3024,7 +3007,7 @@
       .home-profile {
         animation: reveal linear both;
         animation-timeline: view();
-        animation-range: entry 0% entry 40%;
+        animation-range: entry 0% entry 30%;
       }
     }
   }
@@ -3032,32 +3015,26 @@
   @keyframes rise {
     from {
       opacity: 0;
-      transform: translateY(18px);
+      transform: translateY(12px);
     }
   }
   @keyframes reveal {
     from {
       opacity: 0;
-      transform: translateY(26px) rotate(-2deg);
+      transform: translateY(16px);
     }
   }
   @keyframes sticker-on {
     from {
       opacity: 0;
-      transform: scale(0.6) rotate(-20deg);
+      transform: scale(0.8) rotate(-12deg);
     }
   }
+  /* Pressed down from above: the spring's one overshoot is the hanko squashing onto the paper. */
   @keyframes seal {
-    0% {
+    from {
       opacity: 0;
-      transform: scale(2.2);
-    }
-    45% {
-      opacity: 1;
-      transform: scale(0.88);
-    }
-    70% {
-      transform: scale(1.06);
+      transform: scale(1.6);
     }
   }
   @keyframes page-out {

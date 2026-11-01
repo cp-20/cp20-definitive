@@ -7,12 +7,7 @@ import { formatDate, type Article } from '../data/content';
  * neither rebuilds the list nor detaches images (see /articles).
  */
 export function ArticleRows(props: { items: Article[]; shown?: (a: Article) => boolean }) {
-  // Position of each row among the visible ones, for the stagger of the rows settling in.
-  const position = createMemo(() => {
-    const at = new Map<Article, number>();
-    for (const a of props.items) if (!props.shown || props.shown(a)) at.set(a, at.size);
-    return at;
-  });
+  const visible = createMemo(() => new Set(props.shown ? props.items.filter(props.shown) : props.items));
   return (
     <div class="article-list">
       <For each={props.items}>
@@ -20,8 +15,7 @@ export function ArticleRows(props: { items: Article[]; shown?: (a: Article) => b
           <a
             href={a.url}
             class="article-row"
-            hidden={!position().has(a)}
-            style={{ '--i': Math.min(position().get(a) ?? 0, 10) }}
+            hidden={!visible().has(a)}
             data-stamp-anchor={articleAnchor(a.url)}
             data-article
             data-date={a.date}
