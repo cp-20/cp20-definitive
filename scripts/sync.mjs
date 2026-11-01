@@ -113,6 +113,8 @@ const providers = {
   'note.com': async () => parseFeed(await request('https://note.com/cp20/rss', 'xml'), 'note.com'),
   'trap.jp': () => fetchTrapPosts(request, article),
   'sizu.me': async () => parseFeed(await request('https://sizu.me/cp20/rss', 'xml'), 'sizu.me'),
+  'blog.cp20.dev': async () =>
+    parseFeed(await request('https://blog.cp20.dev/rss.xml', 'xml'), 'blog.cp20.dev'),
   'github.com': () =>
     paginated(
       (page) => request(`https://api.github.com/users/cp-20/repos?per_page=100&sort=updated&page=${page}`),
