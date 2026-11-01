@@ -12,6 +12,9 @@ permissions:
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+env:
+  # Same pinned CLI as .github/workflows/firebase-rules.yml (scripts/workflows.test.mjs checks).
+  FIREBASE_TOOLS: firebase-tools@15.34.2
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -63,3 +66,29 @@ jobs:
             .qa/
             wrangler.log
           if-no-files-found: ignore
+  # The database rules against the Realtime Database emulator (scripts/stamps-rules.mjs), on every
+  # pull request: a change to the client's write format that the rules do not follow passes
+  # verify, and would otherwise fail only the rules deploy after merging while Cloudflare still
+  # publishes the new client. The emulator runs locally and needs no credentials. Make
+  # "CI / rules" required too. (The Firebase rules workflow repeats this before deploying.)
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .node-version
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+      # These scripts only import node built-ins and dependency-free modules in src/data.
+      - name: Rules match the page list
+        run: node scripts/rules.mjs --check
+      - name: Rules integration test (emulator)
+        run: >-
+          npx --yes "$FIREBASE_TOOLS" emulators:exec --project cp20-platform --only database
+          "STAMPS_RULES_EMULATOR=127.0.0.1:9000 node scripts/stamps-rules.mjs"

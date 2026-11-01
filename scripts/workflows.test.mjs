@@ -46,6 +46,32 @@ test('CI runs the browser check against the built site with the mock database', 
   assert.doesNotMatch(job, /secrets\./);
 });
 
+test('CI tests the rules on the emulator for every pull request, with the deploy CLI', () => {
+  const ci = read('.github/workflows/ci.yml');
+  const start = ci.indexOf('\n  rules:\n');
+  assert.ok(start > 0, 'job name used as the required check');
+  const job = ci.slice(start);
+  const order = ['setup-java', 'run: node scripts/rules.mjs --check', 'node scripts/stamps-rules.mjs'].map(
+    (s) => job.indexOf(s),
+  );
+  assert.ok(
+    order.every((i, n) => i > 0 && (n === 0 || i > order[n - 1])),
+    'java, rules check, then the emulator test',
+  );
+  assert.match(job, /emulators:exec --project cp20-platform --only database/);
+  // Only the local emulator: no credentials and no deploy in a pull request check.
+  assert.doesNotMatch(job, /secrets\.|deploy --only/);
+  const pin = (text) => text.match(/FIREBASE_TOOLS: (firebase-tools@\S+)\n/)?.[1];
+  const workflow = read('.github/workflows/firebase-rules.yml');
+  assert.ok(pin(ci));
+  assert.equal(pin(ci), pin(workflow), 'the same Firebase CLI as the deploy');
+  // Pull requests are tested by CI; a paths-filtered pull_request trigger here could never be a
+  // required check, so it must not come back in place of the CI job.
+  const on = workflow.slice(workflow.indexOf('\non:'), workflow.indexOf('\npermissions:'));
+  assert.doesNotMatch(on, /pull_request/);
+  assert.match(read('README.md'), /`rules`/);
+});
+
 test('README tells Cloudflare to build with verify', () => {
   assert.match(read('README.md'), /Build command：`npm run verify`/);
 });
