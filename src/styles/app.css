@@ -1218,7 +1218,7 @@
   .article-row {
     --perf: 8px;
     --perf-hole: 2.4px;
-    --thumb: 144px;
+    --thumb: 232px;
     position: relative;
     display: grid;
     grid-template-columns: var(--thumb) minmax(0, 1fr) 36px;
@@ -1302,7 +1302,8 @@
     rotate: 0deg;
   }
   .home-writing .article-row {
-    --thumb: 124px;
+    --thumb: 168px;
+    gap: 32px;
   }
   /* A sticky note stuck on the page. */
   .home-profile {
@@ -3142,9 +3143,9 @@
       gap: 40px;
     }
     .home-writing .article-row {
-      --thumb: 104px;
+      --thumb: 136px;
       grid-template-columns: var(--thumb) minmax(0, 1fr) 32px;
-      gap: 34px;
+      gap: 26px;
     }
     .work-grid,
     .music-list {
@@ -3302,27 +3303,53 @@
       gap: 34px;
       padding: 10px 0 56px;
     }
+    /* The avatar beside the name, as on wide screens, and the tagline below speaking from it. */
     .identity {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 26px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: 16px;
+    }
+    .identity > div {
+      display: contents;
     }
     .identity .avatar-stamp {
-      width: 120px;
-      margin-left: 6px;
+      grid-row: 1 / 3;
+      width: 104px;
+      margin-left: 2px;
+    }
+    .identity .eyebrow {
+      grid-area: 1 / 2;
+      justify-self: start;
+      align-self: end;
+    }
+    .identity h1 {
+      grid-area: 2 / 2;
+      align-self: start;
+      gap: 2px 14px;
+      margin-top: 4px;
+      font-size: 2.75rem;
+    }
+    .identity h1 > span {
+      padding: 2px 10px;
+      font-size: 1.0625rem;
     }
     .identity > div > p:last-child {
+      grid-area: 3 / 1 / 4 / 3;
+      justify-self: start;
+      margin-top: 12px;
       font-size: 0.9375rem;
     }
     .identity > div > p:last-child::before {
-      left: 26px;
+      left: 38px;
       top: -11px;
       margin: 0;
       rotate: 135deg;
     }
     .intro-profile {
-      justify-content: space-between;
-      margin-inline: 6px;
+      align-self: flex-end;
+      margin-right: 4px;
+      padding: 18px 16px 12px 18px;
+      font-size: 0.8125rem;
     }
     .featured-selector {
       gap: 4px;
@@ -3359,9 +3386,9 @@
     }
     .article-row,
     .home-writing .article-row {
-      --thumb: 104px;
+      --thumb: 136px;
       grid-template-columns: var(--thumb) minmax(0, 1fr);
-      gap: 30px;
+      gap: 20px;
       padding: 14px 0;
     }
     .article-row .article-arrow {
@@ -3553,25 +3580,17 @@
     }
   }
   @media (max-width: 380px) {
-    .bookshelf {
-      --spine-width: 22px;
-      --shelf-height: 190px;
-      gap: 3px;
-    }
-    .book-spine strong {
-      font-size: 0.625rem;
-      letter-spacing: 0.02em;
-    }
     .wrap {
       padding-inline: 14px;
     }
     .article-row,
     .home-writing .article-row {
-      --thumb: 84px;
+      --thumb: 124px;
       grid-template-columns: var(--thumb) minmax(0, 1fr);
+      gap: 16px;
     }
     .identity h1 {
-      font-size: 2.75rem;
+      font-size: 2.5rem;
     }
   }
   /* Without JavaScript the filters and the work switcher cannot do anything; every article
