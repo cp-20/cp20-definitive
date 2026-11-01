@@ -23,16 +23,23 @@ export type Spring = {
   base?: number;
   scale: number;
   ts: number;
+  // How high it is held off the paper (0 lying on it, 1 in hand), which its shadow shows, and
+  // how high it is headed.
+  lift?: number;
+  tl?: number;
 };
 
-export const MAX_TILT = 18;
+export const MAX_TILT = 7;
 // How quickly the sticker catches up (rad/s). In hand it trails the pointer by about 2/40 s;
 // let go, it flies home more loosely, so the speed it was thrown with shows in its path.
 export const HELD = 40;
 export const FLYING = 22;
 // The sideways speed (px/s) at which it leans about three quarters of the way to MAX_TILT; it
 // nears the limit smoothly, so a faster drag still leans a little further.
-const LEAN_SPEED = 1500;
+const LEAN_SPEED = 1200;
+// How quickly the lean follows the speed (rad/s): slower than the position, so the frame-to-frame
+// unevenness of pointer events does not make the sticker shiver.
+const LEAN_RATE = 12;
 
 /**
  * Moves one axis of a critically damped spring `dt` seconds on, exactly, so it moves the same
@@ -59,14 +66,47 @@ export function springStep(m: Spring, dt: number, k = HELD): boolean {
   [m.y, m.vy] = follow(m.y, m.vy, m.ty, dt, k);
   const ease = 1 - Math.exp(-k * dt);
   const base = m.base ?? 0;
-  m.tilt += (base + MAX_TILT * Math.tanh(m.vx / LEAN_SPEED) - m.tilt) * ease;
+  m.tilt += (base + MAX_TILT * Math.tanh(m.vx / LEAN_SPEED) - m.tilt) * (1 - Math.exp(-LEAN_RATE * dt));
   m.scale += (m.ts - m.scale) * ease;
+  const tl = m.tl ?? 0;
+  m.lift = (m.lift ?? tl) + (tl - (m.lift ?? tl)) * ease;
   return (
     Math.hypot(m.tx - m.x, m.ty - m.y) < 0.5 &&
     Math.hypot(m.vx, m.vy) < 5 &&
     Math.abs(m.tilt - base) < 1 &&
-    Math.abs(m.ts - m.scale) < 0.005
+    Math.abs(m.ts - m.scale) < 0.005 &&
+    Math.abs(tl - m.lift) < 0.02
   );
+}
+
+// How far a sticker let go of while moving slides on before it settles: the distance it would
+// cover in this many seconds at the speed it was let go with, up to THROW_MAX px.
+const THROW_TIME = 0.05,
+  THROW_MAX = 120;
+// Only the pointer's last moments count towards that speed (ms); one held still before it was
+// let go is not thrown at all.
+const THROW_WINDOW = 80;
+
+type Sample = { x: number; y: number; t: number };
+/**
+ * How fast the pointer was moving when let go (px/s), from where it was over the last few
+ * moments (`samples`, oldest first, `t` in ms), or nothing if it had stopped by `now`.
+ */
+export function releaseVelocity(samples: readonly Sample[], now: number) {
+  const last = samples.at(-1);
+  if (!last || now - last.t > THROW_WINDOW / 2) return { vx: 0, vy: 0 };
+  const first = samples.find((s) => last.t - s.t <= THROW_WINDOW) ?? last;
+  const dt = (last.t - first.t) / 1000;
+  if (dt <= 0) return { vx: 0, vy: 0 };
+  return { vx: (last.x - first.x) / dt, vy: (last.y - first.y) / dt };
+}
+
+/** How far (px) a sticker let go at this speed (px/s) slides on, in the direction it was going. */
+export function throwCarry(vx: number, vy: number) {
+  const speed = Math.hypot(vx, vy);
+  if (speed < 1) return { x: 0, y: 0 };
+  const length = Math.min(speed * THROW_TIME, THROW_MAX);
+  return { x: (vx / speed) * length, y: (vy / speed) * length };
 }
 
 // How long a finger rests on your sticker before it can be dragged.

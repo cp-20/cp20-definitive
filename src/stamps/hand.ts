@@ -4,7 +4,7 @@
 // input.ts.
 import { createSignal, flush } from 'solid-js';
 import type { PlacedStamp } from './types.ts';
-import { FLYING, clamp, springStep } from './spring.ts';
+import { FLYING, clamp, releaseVelocity, springStep, throwCarry } from './spring.ts';
 import { OVER_SHEET, stampAnnouncement } from './a11y.ts';
 import { STICKER_RADIUS, visualKey } from './layout.ts';
 import { overSheetAt, placeAt } from './placement.ts';
@@ -59,13 +59,21 @@ export function createHand(options: {
     base: 0,
     scale: 1,
     ts: 1,
+    lift: 0,
+    tl: 0,
+    // Where the pointer holds it, from its center: the same spot stays under the pointer.
+    ox: 0,
+    oy: 0,
     // Called once the sticker has flown to where it was sent.
     home: null as null | (() => void),
   };
   let raf = 0;
+  // Where the pointer has been lately, for the speed a sticker is let go with.
+  let trail: { x: number; y: number; t: number }[] = [];
   function paint() {
-    if (ghost)
-      ghost.style.transform = `translate(${motion.x}px, ${motion.y}px) rotate(${motion.tilt}deg) scale(${motion.scale})`;
+    if (!ghost) return;
+    ghost.style.transform = `translate(${motion.x}px, ${motion.y}px) rotate(${motion.tilt}deg) scale(${motion.scale})`;
+    ghost.style.setProperty('--lift', motion.lift.toFixed(3));
   }
   function animate() {
     cancelAnimationFrame(raf);
@@ -94,6 +102,7 @@ export function createHand(options: {
     motion.tx = point.x;
     motion.ty = point.y;
     motion.ts = scale;
+    motion.tl = 0;
     motion.home = done;
     animate();
   }
@@ -115,14 +124,23 @@ export function createHand(options: {
     motion.y = start.y;
     motion.vx = 0;
     motion.vy = 0;
-    motion.tx = pointer.x;
-    motion.ty = pointer.y;
+    motion.scale = next.from === 'sheet' ? options.slotCenter(next.kind).scale : 1;
+    motion.ts = next.mode === 'press' ? 1.06 : 1.12;
+    // A pointer holds it where it pressed, that spot growing with the sticker; the keys aim its
+    // center.
+    const grow = motion.ts / motion.scale;
+    motion.ox = next.pointer === 'keys' ? 0 : (pointer.x - start.x) * grow;
+    motion.oy = next.pointer === 'keys' ? 0 : (pointer.y - start.y) * grow;
+    motion.tx = pointer.x - motion.ox;
+    motion.ty = pointer.y - motion.oy;
+    trail = [];
     // One of yours keeps its own slant; a new one from the sheet takes a slight random one as it
     // comes up, so it is set down at the angle it is seen at.
     motion.tilt = next.target?.angle ?? 0;
     motion.base = next.target?.angle ?? Math.round(Math.random() * 16 - 8);
-    motion.scale = next.from === 'sheet' ? options.slotCenter(next.kind).scale : 1;
-    motion.ts = next.mode === 'press' ? 1.06 : 1.12;
+    // Pressed, it only just comes off the paper; it is lifted clear once moved or clicked up.
+    motion.lift = 0;
+    motion.tl = next.mode === 'press' ? 0.35 : 1;
     flush();
     paint();
     animate();
@@ -131,9 +149,21 @@ export function createHand(options: {
   function lift(h: Held, mode: 'drag' | 'aim') {
     if (h.mode !== mode) setHeld({ ...h, mode });
     motion.ts = 1.12;
+    motion.tl = 1;
+    // A tapped sticker floats clear of the finger, and the next tap puts its center there.
+    if (mode === 'aim' && h.pointer !== 'mouse') motion.ox = motion.oy = 0;
     if (h.from === 'page' && h.target) setLifted(visualKey(h.target));
   }
+  // Follow the pointer, held where it was pressed.
   function moveTo(x: number, y: number) {
+    motion.tx = x - motion.ox;
+    motion.ty = y - motion.oy;
+    const t = performance.now();
+    trail.push({ x, y, t });
+    if (trail.length > 12) trail.shift();
+  }
+  // Send its center to a point (the keys, or keeping it on screen).
+  function aimAt(x: number, y: number) {
     motion.tx = x;
     motion.ty = y;
   }
@@ -200,17 +230,23 @@ export function createHand(options: {
       finish();
     }
   }
-  // Set the sticker in hand down at a point on screen.
-  function drop(x: number, y: number) {
+  // Set the sticker in hand down where the pointer lets go of it (x, y).
+  function drop(px: number, py: number) {
     const h = held();
     if (!h) return;
-    if (overSheetAt(x, y)) {
+    if (overSheetAt(px, py)) {
       // Putting one of your stickers back on the sheet peels it off the page.
       if (h.from === 'page' && h.target) options.erase(h.target, false);
       else if (h.pointer === 'keys') say(stampAnnouncement('returned', nameOf(h.kind), options.remaining()));
       letGo(h);
       return flyHome(h);
     }
+    // It lands under the spot it is held by; let go while moving, it slides on a little.
+    const thrown =
+      h.mode === 'drag' && !reducedMotion() ? releaseVelocity(trail, performance.now()) : { vx: 0, vy: 0 };
+    const carry = throwCarry(thrown.vx, thrown.vy);
+    const x = clamp(px - motion.ox + carry.x, STICKER_RADIUS, innerWidth - STICKER_RADIUS),
+      y = clamp(py - motion.oy + carry.y, STICKER_RADIUS, innerHeight - STICKER_RADIUS);
     // Set down where it was picked up: nothing changes. A finger cannot aim as finely as a
     // mouse, and a tapped sticker floats away from its spot, so a tap on either puts it back.
     // The keys always set it down under the sticker in hand, so only its old spot counts there.
@@ -281,6 +317,7 @@ export function createHand(options: {
     begin,
     lift,
     moveTo,
+    aimAt,
     drop,
     returnHeld,
     cancel,

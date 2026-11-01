@@ -49,7 +49,6 @@ export function InHand(props: {
         ref={props.setGhost}
         class="sticker-ghost"
         data-active={props.ghostKind >= 0 ? 'true' : undefined}
-        data-dragging={props.held?.mode === 'drag' || aiming() ? 'true' : undefined}
         aria-hidden="true"
       >
         <Show when={props.ghostKind >= 0}>

@@ -149,7 +149,7 @@ export function createInput(
     if (h.pointer !== 'mouse') {
       // It floats clear of the finger, but never off screen or under the hint bar.
       const spot = liftedSpot(motion.x, motion.y, innerWidth, innerHeight, AIM_BAR_BOTTOM);
-      hand.moveTo(spot.x, spot.y);
+      hand.aimAt(spot.x, spot.y);
     }
   }
   // Your stickers let a swipe scroll the page (touch-action in app.css); once one is held long
@@ -196,7 +196,7 @@ export function createInput(
         // Shift takes big steps, so crossing the screen is a handful of presses rather than dozens.
         const step = e.shiftKey ? KEY_JUMP : KEY_STEP;
         const [dx, dy] = ARROWS[e.key];
-        hand.moveTo(
+        hand.aimAt(
           clamp(motion.tx + dx * step, 25, innerWidth - 25),
           clamp(motion.ty + dy * step, 25, innerHeight - 25),
         );
@@ -245,7 +245,7 @@ export function createInput(
     const keepInView = () => {
       if (held()?.mode !== 'aim') return;
       const spot = keptOnScreen(motion.tx, motion.ty, innerWidth, innerHeight, byKeys() ? 0 : AIM_BAR_BOTTOM);
-      hand.moveTo(spot.x, spot.y);
+      hand.aimAt(spot.x, spot.y);
       if (byKeys()) hand.placeSoon();
     };
     // A second finger makes it a pinch: the sticker under the first one stays where it was.

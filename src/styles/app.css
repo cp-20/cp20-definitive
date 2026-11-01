@@ -4,6 +4,12 @@
   ink outlines, stickers, highlighter and hanko. Visitors' stamps land on the same paper.
 */
 @layer reset, base, layout, components, motion, responsive;
+/* Registered so a sticker's height (.sticker) eases in the animations. */
+@property --lift {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
 
 @font-face {
   font-family: 'IBM Plex Mono';
@@ -2400,9 +2406,16 @@
      Visitors' stickers are die-cut: a white outline that follows the motif and a soft shadow.
      The sheet stays on screen; stickers peel off it by dragging and stick where they are dropped. */
   .sticker {
+    /* The die-cut edge, and the shadow it casts at a height --lift (0 on the paper, 1 in hand):
+       further off, the shadow falls further away, softer and lighter. */
+    --sticker-edge: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
+      drop-shadow(0 -1.6px 0 #fff);
     display: block;
-    filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
-      drop-shadow(0 -1.6px 0 #fff) drop-shadow(1px 2px 1.2px rgb(45 42 51 / 0.3));
+    filter: var(--sticker-edge)
+      drop-shadow(
+        calc(1px + 6px * var(--lift)) calc(2px + 12px * var(--lift)) calc(1.2px + 4.8px * var(--lift))
+          rgb(45 42 51 / calc(0.3 - 0.1 * var(--lift)))
+      );
   }
   .sticker img {
     width: 40px;
@@ -2457,10 +2470,12 @@
   .placed-stamp[data-pending] > .sticker {
     opacity: 0.9;
   }
-  /* Set down from where it was let go: it glides onto the paper, is pressed a little flat and
-     comes to rest. */
+  /* Set down from where it was let go: it slides to its spot, slowing as it goes, while it comes
+     down onto the paper and is pressed into it. */
   .placed-stamp[data-fresh] > .sticker {
-    animation: stick var(--t-state) var(--ease) both;
+    animation:
+      stick-slide var(--t-state) cubic-bezier(0.12, 0.8, 0.3, 1) both,
+      stick-press var(--t-state) linear both;
   }
   .placed-stamp[data-lifted] {
     visibility: hidden;
@@ -2542,13 +2557,9 @@
     display: grid;
     will-change: transform;
   }
-  /* One sticker only, so its raised shadow can ease in as it is picked up. */
+  /* Its height (--lift) is set with its transform. */
   .sticker-ghost .sticker {
-    transition: filter var(--t-hover) var(--ease);
-  }
-  .sticker-ghost[data-dragging] .sticker {
-    filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
-      drop-shadow(0 -1.6px 0 #fff) drop-shadow(8px 16px 6px rgb(45 42 51 / 0.22));
+    --lift: inherit;
   }
   .stamp-overlay {
     position: fixed;
@@ -3050,18 +3061,30 @@
       transform: translateX(-2px);
     }
   }
-  /* Starts where and as large as it was in hand (scale 1.12 in hand.ts), speeds up into the
-     paper, is pressed a little flat and comes to rest. translate and scale (not transform) so the
-     offset is applied before the sticker's own rotate, in the page's frame like --from. */
-  @keyframes stick {
+  /* Starts where and as large and high as it was in hand (scale 1.12 in hand.ts). It keeps the
+     speed it was let go with and slows to its spot (stick-slide), while it comes down, faster as
+     it nears the paper, is pressed a touch flat and rests (stick-press). translate and scale (not
+     transform) so the offset is applied before the sticker's own rotate, in the page's frame like
+     --from. */
+  @keyframes stick-slide {
     from {
       translate: var(--from-x) var(--from-y);
-      scale: 1.12;
-      /* --ease-exit: var() is not resolved in a keyframe's timing function. */
-      animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
     }
-    45% {
-      scale: 0.98;
+  }
+  @keyframes stick-press {
+    from {
+      scale: 1.12;
+      --lift: 1;
+      animation-timing-function: cubic-bezier(0.45, 0, 0.9, 0.55);
+    }
+    55% {
+      scale: 0.985;
+      --lift: 0;
+      animation-timing-function: cubic-bezier(0.2, 0, 0.3, 1);
+    }
+    to {
+      scale: 1;
+      --lift: 0;
     }
   }
   @keyframes peel {

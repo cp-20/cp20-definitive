@@ -7,7 +7,9 @@ import {
   MAX_TILT,
   keptOnScreen,
   liftedSpot,
+  releaseVelocity,
   springStep,
+  throwCarry,
   waitsForHold,
   type Spring,
 } from './spring.ts';
@@ -57,7 +59,7 @@ describe('springStep', () => {
 
   test('横へ動く向きに傾くが、上限より傾かない', () => {
     const { widest } = settle(far());
-    assert.ok(widest > 10 && widest <= MAX_TILT, String(widest));
+    assert.ok(widest > MAX_TILT / 2 && widest <= MAX_TILT, String(widest));
   });
 
   test('右へ動くと時計回りに、左へ動くと反時計回りに傾く', () => {
@@ -124,6 +126,52 @@ describe('springStep', () => {
     const spring = { x: 5, y: 5, vx: 0, vy: 0, tx: 5, ty: 5, tilt: 0, scale: 1, ts: 1 };
     assert.equal(springStep(spring, FRAME), true);
     assert.deepEqual([spring.x, spring.y], [5, 5]);
+  });
+});
+
+describe('throwing', () => {
+  // Moved 20px right every 16ms, the last move at t = 160.
+  const steady = Array.from({ length: 11 }, (_, i) => ({ x: i * 20, y: 0, t: i * 16 }));
+
+  test('動かしながら離すと、その速さで投げられる', () => {
+    const { vx, vy } = releaseVelocity(steady, 170);
+    assert.equal(Math.round(vx), 1250);
+    assert.equal(vy, 0);
+  });
+
+  test('止めてから離すと、投げられない', () => {
+    assert.deepEqual(releaseVelocity(steady, 300), { vx: 0, vy: 0 });
+    assert.deepEqual(releaseVelocity([], 0), { vx: 0, vy: 0 });
+  });
+
+  test('投げたシールは進んでいた向きに少し滑り、強く投げても滑りすぎない', () => {
+    const gentle = throwCarry(1000, 0),
+      hard = throwCarry(0, -20000);
+    assert.ok(gentle.x > 20 && gentle.x < 80 && gentle.y === 0, JSON.stringify(gentle));
+    assert.ok(hard.y < -60 && hard.y >= -120 && hard.x === 0, JSON.stringify(hard));
+    assert.deepEqual(throwCarry(0, 0), { x: 0, y: 0 });
+  });
+});
+
+describe('springStep の高さ', () => {
+  test('持ち上げると素早く浮き、止まるころには目標の高さになる', () => {
+    const spring: Spring = {
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      tx: 0,
+      ty: 0,
+      tilt: 0,
+      scale: 1,
+      ts: 1,
+      lift: 0,
+      tl: 1,
+    };
+    for (let i = 0; i < 6; i++) springStep(spring, FRAME);
+    assert.ok(spring.lift! > 0.9, String(spring.lift));
+    settle(spring);
+    assert.ok(Math.abs(spring.lift! - 1) < 0.02, String(spring.lift));
   });
 });
 
