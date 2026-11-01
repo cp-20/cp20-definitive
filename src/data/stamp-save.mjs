@@ -9,8 +9,8 @@ import { WRITE_SPACING_MS } from './stamp-limits.mjs';
 /** @typedef {{ owner: string; stamps: PlacedStamp[] }} SavedRecord */
 /**
  * @typedef {{
- *   place(path: string, stamp: StampData, account: Account): Promise<SavedRecord & { placed: PlacedStamp }>;
- *   move(path: string, target: PlacedStamp, stamp: StampData, account: Account): Promise<SavedRecord & { placed: PlacedStamp }>;
+ *   place(path: string, stamp: StampData, account: Account): Promise<SavedRecord & { placed?: PlacedStamp }>;
+ *   move(path: string, target: PlacedStamp, stamp: StampData, account: Account): Promise<SavedRecord & { placed?: PlacedStamp }>;
  *   remove(path: string, target: PlacedStamp, account: Account): Promise<SavedRecord>;
  * }} SaveApi
  */
@@ -18,7 +18,9 @@ import { WRITE_SPACING_MS } from './stamp-limits.mjs';
 /**
  * Sends one operation. `resolve` maps a sticker the queue placed earlier to its saved version.
  * A sticker whose own placement never saved (owner 'local') is placed afresh when moved, and
- * removing one needs no request at all (`result` is null).
+ * removing one needs no request at all (`result` is null). A place or move whose saved record
+ * does not hold the sticker counts as failed, like a failed request: the queue then offers a
+ * retry, and later operations on that sticker still see its unsaved local version.
  * @param {SaveApi} api
  * @param {Operation} op
  * @param {Account} who
@@ -37,6 +39,7 @@ export async function saveOperation(api, op, who, resolve) {
     target && target.owner !== 'local'
       ? await api.move(op.path, target, { anchor, x, y, kind, angle }, who)
       : await api.place(op.path, { anchor, x, y, kind, angle }, who);
+  if (!added.placed) throw Error('The saved record does not hold the sticker');
   return { result: added, placed: added.placed };
 }
 

@@ -212,7 +212,7 @@ export async function place(path: string, stamp: Omit<Stamp, 'createdAt'>, accou
     return recordOf(account, edit.stamps);
   });
   const stamps = placed(account.uid, data);
-  return { owner: account.uid, stamps, placed: stamps.find((s) => s.slot === slot)! };
+  return { owner: account.uid, stamps, placed: stamps.find((s) => s.slot === slot) };
 }
 export async function remove(path: string, target: PlacedStamp, account: Account) {
   // Does nothing if the slot now holds a newer stamp placed by another tab.
@@ -233,5 +233,5 @@ export async function move(
     return recordOf(account, edit.stamps);
   });
   const stamps = placed(account.uid, data);
-  return { owner: account.uid, stamps, placed: stamps.find((s) => s.slot === slot)! };
+  return { owner: account.uid, stamps, placed: stamps.find((s) => s.slot === slot) };
 }

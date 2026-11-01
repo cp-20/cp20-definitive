@@ -94,6 +94,20 @@ test('a failed request is passed on to the queue', async () => {
   );
 });
 
+test('a place or move whose saved record lacks the sticker fails', async () => {
+  const lacking = async () => ({ owner: who.uid, stamps: [] });
+  const api = { ...fakeApi(), place: lacking, move: lacking };
+  await assert.rejects(
+    saveOperation(api, { type: 'add', id: 'op', path: '/', stamp: sticker('l1', 'local') }, who, same),
+    /does not hold the sticker/,
+  );
+  const target = sticker('u1-0', 'u1');
+  await assert.rejects(
+    saveOperation(api, { type: 'move', id: 'op', path: '/', target, stamp: sticker('l2', 'local') }, who, same),
+    /does not hold the sticker/,
+  );
+});
+
 test('writes are spaced a little over the database interval', () => {
   assert.equal(writeDelay(0, 5000), 0);
   assert.equal(writeDelay(5000, 5000), 1100);
