@@ -2301,7 +2301,9 @@
     width: 46px;
     height: 46px;
     margin: -23px 0 0 -23px;
-    pointer-events: auto;
+    /* Other visitors' stickers never take a click, a modifier click or a context menu away from
+       the link or control under them; their avatar shows from a hit test in Stamps.tsx. */
+    pointer-events: none;
   }
   .placed-stamp > .sticker {
     rotate: var(--angle, 0deg);

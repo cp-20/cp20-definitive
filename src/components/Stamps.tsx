@@ -23,6 +23,8 @@ type Held = {
 const visualKey = (s: Pick<PlacedStamp, 'anchor' | 'x' | 'y' | 'kind' | 'angle'>) =>
   `${s.anchor}|${s.x}|${s.y}|${s.kind}|${s.angle}`;
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+// Half of a placed sticker's 46px box (.placed-stamp in app.css).
+const STICKER_RADIUS = 23;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 // A copy of a map or set without one key.
 function withoutKey<V>(map: ReadonlyMap<string, V>, key: string): ReadonlyMap<string, V>;
@@ -106,12 +108,19 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     revision();
     if (hidden()) return ((shown = new Map()), []);
     const boxOf = createAnchorMeasure();
+    // The index tabs hang off the page's right edge; a sticker written there directly (the UI never
+    // places one on them) is pulled back so it cannot cover them.
+    const right = () => {
+      const page = boxOf('page');
+      // A tilted sticker reaches a little past its box; keep its corners off the tabs as well.
+      return page ? page.x + page.w - STICKER_RADIUS - 8 : Infinity;
+    };
     const next = new Map<string, Shown>();
     const list = projected().flatMap((stamp) => {
       const box = boxOf(stamp.anchor);
       if (!box) return [];
       const key = visualKey(stamp),
-        left = box.x + box.w * stamp.x,
+        left = Math.min(box.x + box.w * stamp.x, right()),
         top = box.y + box.h * stamp.y,
         before = shown.get(key);
       const item =
@@ -205,6 +214,24 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && held()) cancelHeld(true);
     };
+    // Other visitors' stickers let the pointer through, so their avatar is found by position:
+    // shown while a mouse is over one, and for a moment after a tap on one.
+    let hovered = '';
+    const hover = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      const id = held() ? '' : othersAt(e.clientX, e.clientY)?.id || '';
+      if (id === hovered) return;
+      if (hovered && peek() === hovered) setPeek('');
+      hovered = id;
+      if (id) showAvatar(id);
+    };
+    const tap = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse' || held()) return;
+      const other = othersAt(e.clientX, e.clientY);
+      if (other) showAvatar(other.id, 2400);
+    };
+    document.addEventListener('pointermove', hover, { passive: true });
+    document.addEventListener('pointerdown', tap, { passive: true });
     document.addEventListener('keydown', key);
     window.addEventListener('resize', measureCover);
     const covered = new ResizeObserver(measureCover);
@@ -218,6 +245,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       clearTimeout(peekTimer);
       window.removeEventListener('resize', reposition);
       document.removeEventListener('keydown', key);
+      document.removeEventListener('pointermove', hover);
+      document.removeEventListener('pointerdown', tap);
       window.removeEventListener('resize', measureCover);
       covered.disconnect();
       document.documentElement.style.removeProperty('--stamp-cover');
@@ -367,10 +396,17 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       sheet.focus();
     }
   }
-  // Stickers by other visitors sit on top of the page; a click goes through to what is under it.
-  function passThrough(e: MouseEvent) {
-    const below = document.elementsFromPoint(e.clientX, e.clientY).find((el) => !el.closest('.stamp-layer'));
-    below?.closest<HTMLElement>('a[href], button, summary, label, [role="tab"]')?.click();
+  // Stickers by other visitors take no pointer events, so every click, modifier click, middle
+  // click and context menu reaches the page under them. Their avatar shows from a hit test instead.
+  function othersAt(x: number, y: number) {
+    const page = document.body.getBoundingClientRect(),
+      px = x - page.left,
+      py = y - page.top;
+    const list = visible();
+    for (let i = list.length - 1; i >= 0; i--) {
+      const s = list[i];
+      if (!isOwn(s) && Math.hypot(s.left - px, s.top - py) <= STICKER_RADIUS) return s;
+    }
   }
   function showAvatar(id: string, linger = 0) {
     clearTimeout(peekTimer);
@@ -611,16 +647,10 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
               onPointerLeave={(e) => {
                 if (e.pointerType === 'mouse' && peek() === s().id) setPeek('');
               }}
-              onPointerDown={(e) => {
-                if (isOwn(s())) grab(e, { kind: s().kind, from: 'page', target: s() });
-                else if (e.pointerType !== 'mouse') showAvatar(s().id, 2400);
-              }}
+              onPointerDown={(e) => grab(e, { kind: s().kind, from: 'page', target: s() })}
               onPointerMove={follow}
               onPointerUp={release}
               onPointerCancel={() => cancelHeld(true)}
-              onClick={(e) => {
-                if (!isOwn(s())) passThrough(e);
-              }}
             >
               <span class="sticker" data-kind={s().kind}>
                 <StickerFace kind={s().kind} />

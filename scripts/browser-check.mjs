@@ -418,6 +418,70 @@ try {
   }
   await second.close();
   db.pages.delete('about');
+  // Another visitor's stickers aimed at controls (or written onto the index tabs through the REST
+  // API) leave every click, modifier click and the tabs to the page under them.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(origin + '/articles');
+  await settle();
+  const targets = await page.evaluate(() => {
+    const body = document.querySelector('[data-stamp-anchor=page]').getBoundingClientRect();
+    const at = (el, fx = 0.5) => {
+      const r = el.getBoundingClientRect();
+      return {
+        x: (r.left + r.width * fx - body.left) / body.width,
+        y: (r.top + 30 - body.top) / body.height,
+      };
+    };
+    return [
+      at(document.querySelector('#article-sort')),
+      at(document.querySelector('.site-header a[href="/"]')),
+      { ...at(document.querySelector('.rail nav a')), x: 1 },
+    ];
+  });
+  db.pages.set('articles', {
+    'other-visitor': {
+      avatar: 'b'.repeat(64),
+      stamps: Object.fromEntries(
+        targets.map((t, i) => [i, { anchor: 'page', ...t, kind: 1, angle: 0, createdAt: 1700000000000 + i }]),
+      ),
+    },
+  });
+  await expect(page.locator('.placed-stamp')).toHaveCount(3);
+  const covered = await page.evaluate(() =>
+    [
+      '#article-sort',
+      '.site-header a[href="/"]',
+      ...[0, 1, 2, 3].map((i) => `.rail nav a:nth-child(${i + 1})`),
+    ]
+      .map((sel) => {
+        const r = document.querySelector(sel).getBoundingClientRect();
+        return [sel, document.elementFromPoint(r.left + r.width * 0.2, r.top + 30)?.closest('.placed-stamp')];
+      })
+      .filter(([, hit]) => hit)
+      .map(([sel]) => sel),
+  );
+  if (covered.length) throw Error(`Another visitor's sticker takes the pointer from ${covered}`);
+  const rail = await page.locator('.rail').boundingBox(),
+    onTab = await page.locator('.placed-stamp').nth(2).boundingBox();
+  if (onTab.x + onTab.width > rail.x) throw Error("Another visitor's sticker drawn over the index tabs");
+  const logo = await page.locator('.placed-stamp').nth(1).boundingBox();
+  await page.mouse.move(logo.x + 23, logo.y + 23, { steps: 3 });
+  await expect(page.locator('.sticker-avatar')).toHaveCount(1);
+  const opened = context.waitForEvent('page');
+  await page.keyboard.down('Control');
+  await page.mouse.click(logo.x + 23, logo.y + 23);
+  await page.keyboard.up('Control');
+  await (await opened).close();
+  if (new URL(page.url()).pathname !== '/articles') throw Error('Ctrl+click under a sticker left the page');
+  const sort = await page.locator('.placed-stamp').nth(0).boundingBox();
+  await page.mouse.click(sort.x + 23, sort.y + 23);
+  await expect(page.locator('#article-sort')).toBeFocused();
+  await page.keyboard.press('Escape');
+  db.pages.delete('articles');
+  await expect(page.locator('.placed-stamp')).toHaveCount(0);
+  report.interactions.push(
+    "other visitors' stickers let clicks, modifier clicks and the select through, keep off the index tabs and show their avatar on hover",
+  );
   report.interactions.push(
     'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift and peel; moving one of five stickers keeps the rest; two tabs placing at once; responsive anchors',
   );
