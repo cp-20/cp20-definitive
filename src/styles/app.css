@@ -940,21 +940,9 @@
     height: 10px;
     background: color-mix(in srgb, var(--yellow) 70%, transparent);
   }
-  .intro-profile svg {
-    width: 34px;
-    height: 34px;
-    padding: 7px;
-    border: 2px solid var(--edge);
-    border-radius: 50%;
-    background: var(--paper);
-    transition: transform var(--t-hover) var(--ease);
-  }
   @media (hover: hover) {
     .intro-profile:hover {
       box-shadow: 4px 9px 0 -1px color-mix(in srgb, var(--drop) 20%, transparent);
-    }
-    .intro-profile:hover svg {
-      transform: rotate(45deg);
     }
   }
 

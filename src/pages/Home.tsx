@@ -35,7 +35,6 @@ export default function Home() {
             <br />
             プロフィール・経歴
           </span>
-          <Icon name="ArrowUpRight" size={18} />
         </a>
       </section>
       <Projects />

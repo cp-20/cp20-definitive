@@ -1,5 +1,4 @@
 import { For, Show } from 'solid-js';
-import Icon from '../components/Icon.tsx';
 import {
   OGImage,
   OriginalIcon,
@@ -88,7 +87,6 @@ export default function Works() {
           <a class="under-link" href="https://github.com/cp-20?tab=repositories">
             <Brand url="https://github.com" />
             GitHub
-            <Icon name="ArrowUpRight" size={16} />
           </a>
         </div>
         {/* A ledger: one line per repository, columns aligned for scanning. */}

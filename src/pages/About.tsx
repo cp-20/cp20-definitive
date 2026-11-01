@@ -40,7 +40,6 @@ export default function About() {
                 <a href={l.url}>
                   <Brand url={l.url} />
                   {l.name}
-                  <Icon name="ArrowUpRight" size={14} />
                 </a>
               )}
             </For>

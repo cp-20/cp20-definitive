@@ -47,22 +47,18 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
             <a href="https://github.com/cp-20">
               <Brand url="https://github.com/cp-20" />
               GitHub
-              <Icon name="ArrowUpRight" size={14} />
             </a>
             <a href="https://twitter.com/__cp20__">
               <Brand url="https://twitter.com/__cp20__" />
               X / Twitter
-              <Icon name="ArrowUpRight" size={14} />
             </a>
             <a href="https://mixi.social/@cp20">
               <Brand url="https://mixi.social/@cp20" />
               mixi2
-              <Icon name="ArrowUpRight" size={14} />
             </a>
             <a href="/feed.xml">
               <Brand url="/feed.xml" />
               RSS
-              <Icon name="ArrowUpRight" size={14} />
             </a>
           </div>
           <div class="footer-bottom">
