@@ -1,7 +1,7 @@
 // The public sticker stream: applying Firebase's events, rendering bursts, and keeping it open.
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyStreamEvent, coalesce, keepStream } from '../src/data/stamp-stream.mjs';
+import { applyStreamEvent, coalesce, keepStream, RETRY_MS } from '../src/data/stamp-stream.mjs';
 
 describe('applyStreamEvent', () => {
   test('ルートへの put は全体を置き換える', () => {
@@ -123,8 +123,8 @@ describe('coalesce', () => {
   });
 });
 
-// A fake browser for keepStream: EventSources that the test opens, errors and closes by hand,
-// and timers that only run when the test moves the clock.
+// A fake browser for keepStream: EventSources that the test errors and closes by hand, and
+// timers that only run when the test moves the clock.
 function fakeBrowser() {
   const sources = [];
   const { clock, advance } = fakeClock();
@@ -154,8 +154,6 @@ function fakeBrowser() {
     }
   }
   const doc = Object.assign(new EventTarget(), { hidden: false });
-  const win = new EventTarget();
-  const env = { EventSource: FakeSource, document: doc, window: win, ...clock };
   const seen = { restarts: 0, events: [], failures: 0 };
   const stop = keepStream(
     'https://db.example/pages/home.json',
@@ -164,7 +162,7 @@ function fakeBrowser() {
       receive: (type, e) => seen.events.push([type, JSON.parse(e.data)]),
       fail: () => seen.failures++,
     },
-    env,
+    { EventSource: FakeSource, document: doc, ...clock },
   );
   const open = () => sources.filter((s) => s.readyState !== 2);
   const latest = () => sources.at(-1);
@@ -172,8 +170,7 @@ function fakeBrowser() {
     doc.hidden = hidden;
     doc.dispatchEvent(new Event('visibilitychange'));
   };
-  const goOnline = () => win.dispatchEvent(new Event('online'));
-  return { sources, open, latest, advance, seen, stop, setHidden, goOnline };
+  return { sources, open, latest, advance, seen, stop, setHidden };
 }
 
 describe('keepStream', () => {
@@ -188,76 +185,32 @@ describe('keepStream', () => {
     assert.deepEqual(browser.seen.events, [['put', { path: '/', data: {} }]]);
   });
 
-  test('ブラウザが諦めたストリームは失敗を伝え、2秒後に開き直す', () => {
+  test('ブラウザが諦めたストリームは、失敗を伝える', () => {
     const browser = fakeBrowser();
     browser.latest().fail();
-    browser.advance(1999);
-    assert.deepEqual([browser.seen.failures, browser.open().length], [1, 0]);
-    browser.advance(1);
-    assert.equal(browser.open().length, 1);
-  });
-
-  test('続けて失敗すると、開き直すまでの間隔が延びる', () => {
-    const browser = fakeBrowser();
-    browser.latest().fail();
-    browser.advance(2000);
-    browser.latest().fail();
-    browser.advance(3999);
-    assert.equal(browser.open().length, 0);
-    browser.advance(1);
-    assert.equal(browser.open().length, 1);
-  });
-
-  test('put が届けば、次の失敗の間隔は2秒に戻る', () => {
-    const browser = fakeBrowser();
-    browser.latest().fail();
-    browser.advance(2000);
-    browser.latest().emit('put', { path: '/', data: {} });
-    browser.latest().fail();
-    browser.advance(2000);
-    assert.equal(browser.open().length, 1);
-  });
-
-  test('cancel されたストリームも閉じて開き直す', () => {
-    const browser = fakeBrowser();
-    browser.latest().emit('cancel', null);
-    assert.equal(browser.open().length, 0);
-    browser.advance(2000);
-    assert.equal(browser.open().length, 1);
-  });
-
-  test('ブラウザが自分でつなぎ直している間は、8秒たつまで失敗を伝えない', () => {
-    const browser = fakeBrowser();
-    browser.latest().onerror();
-    browser.advance(7999);
-    assert.equal(browser.seen.failures, 0);
-    browser.advance(1);
     assert.equal(browser.seen.failures, 1);
   });
 
-  test('つなぎ直しが間に合えば、失敗を伝えない', () => {
-    const browser = fakeBrowser();
-    const source = browser.latest();
-    source.onerror();
-    source.readyState = 1;
-    source.onopen();
-    browser.advance(10000);
-    assert.equal(browser.seen.failures, 0);
-  });
-
-  test('オンラインに戻ったら、待たずに開き直す', () => {
+  test(`ブラウザが諦めたストリームは、${RETRY_MS}ms たってから開き直す`, () => {
     const browser = fakeBrowser();
     browser.latest().fail();
-    browser.goOnline();
+    browser.advance(RETRY_MS - 1);
+    assert.equal(browser.open().length, 0);
+    browser.advance(1);
     assert.equal(browser.open().length, 1);
   });
 
-  test('オンラインで開き直したら、待っていた再接続は取り消す', () => {
+  test('cancel されたストリームも、閉じて失敗を伝える', () => {
     const browser = fakeBrowser();
-    browser.latest().fail();
-    browser.goOnline();
-    browser.advance(60000);
-    assert.equal(browser.sources.length, 2);
+    browser.latest().emit('cancel', null);
+    assert.deepEqual([browser.open().length, browser.seen.failures], [0, 1]);
+  });
+
+  test('ブラウザが自分でつなぎ直している間は、失敗を伝えず開き直しもしない', () => {
+    const browser = fakeBrowser();
+    browser.latest().onerror();
+    browser.advance(RETRY_MS * 10);
+    assert.deepEqual([browser.seen.failures, browser.sources.length], [0, 1]);
   });
 
   test('ページが隠れている間はストリームを閉じ、見えたら開き直す', () => {
@@ -268,7 +221,25 @@ describe('keepStream', () => {
     assert.equal(browser.open().length, 1);
   });
 
-  test('止めたら閉じて、待っている描画を取り消す', () => {
+  test('開き直したあとに古いストリームから届いたエラーは無視する', () => {
+    const browser = fakeBrowser();
+    const first = browser.latest();
+    browser.setHidden(true);
+    browser.setHidden(false);
+    first.fail();
+    browser.advance(RETRY_MS);
+    assert.deepEqual([browser.seen.failures, browser.open().length, browser.sources.length], [0, 1, 2]);
+  });
+
+  test('隠れている間は、待っていた開き直しもしない', () => {
+    const browser = fakeBrowser();
+    browser.latest().fail();
+    browser.setHidden(true);
+    browser.advance(RETRY_MS);
+    assert.equal(browser.sources.length, 1);
+  });
+
+  test('止めたら閉じて、restart を1回呼ぶ（待っている描画を取り消すため）', () => {
     const browser = fakeBrowser();
     const restarts = browser.seen.restarts;
     browser.stop();
@@ -277,10 +248,10 @@ describe('keepStream', () => {
 
   test('止めたあとは、何があっても開き直さない', () => {
     const browser = fakeBrowser();
+    browser.latest().fail();
     browser.stop();
-    browser.goOnline();
     browser.setHidden(false);
-    browser.advance(60000);
+    browser.advance(RETRY_MS * 10);
     assert.equal(browser.open().length, 0);
   });
 });

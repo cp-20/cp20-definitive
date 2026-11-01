@@ -3,9 +3,7 @@
 // so the sign-in popup can open within the click.
 import { createSignal, onSettled } from 'solid-js';
 import type { Account } from '../../data/stamp-types';
-import { deadline } from '../../data/resilience.mjs';
 import { signInMessage } from '../../data/stamp-a11y.mjs';
-import { SIGN_IN_TIMEOUT_MS } from '../../data/stamp-limits.mjs';
 import { ACCOUNT_KEY, readPref, writePref } from './prefs';
 type Client = typeof import('../../stamps-client');
 // Creates signals: call it synchronously inside the component that owns them.
@@ -45,8 +43,8 @@ export function createStampAccount(options: {
     setSigningIn(true);
     onMessage('');
     try {
-      const api = await deadline(client(), SIGN_IN_TIMEOUT_MS);
-      await deadline(connect(), SIGN_IN_TIMEOUT_MS);
+      const api = await client();
+      await connect();
       if (!account()) {
         const next = await api.signIn();
         if (next) setAccount(next);

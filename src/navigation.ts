@@ -1,7 +1,7 @@
 import { createSignal, onSettled, flush } from 'solid-js';
 import { currentUrl, pageInfo } from './route';
 import { works } from './data/content';
-import { SCROLL_KEY, readPositions, writePositions } from './data/resilience.mjs';
+import { SCROLL_KEY, readPositions, writePositions } from './data/scroll-positions.mjs';
 import { canonicalUrl, normalizePath, sitePaths, tabIndex } from './data/site-pages.mjs';
 const paths = new Set(sitePaths(works));
 function flipDirection(from: string, to: string) {

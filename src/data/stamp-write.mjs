@@ -5,8 +5,9 @@
 // each account to one write a second, and its `prev` field must match the value read before the
 // write: a compare-and-swap that makes a second tab's concurrent write fail instead of
 // overwriting this one. A failed write is not retried; the sticker UI undoes the change.
-import { REQUEST_TIMEOUT_MS } from './stamp-limits.mjs';
 
+/** Each request gives up after this; so does restoring a returning visitor's session. */
+export const REQUEST_TIMEOUT_MS = 15000;
 /** Stands for the database's own clock in a write. */
 export const SERVER_TIME = { '.sv': 'timestamp' };
 export const throttlePath = (uid) => `throttle/${uid}`;

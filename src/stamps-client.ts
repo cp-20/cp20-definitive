@@ -1,14 +1,8 @@
 import config from './data/firebase.json';
 import { applyStreamEvent, coalesce, keepStream } from './data/stamp-stream.mjs';
 import { moveIn, nextRecord, placeIn, recordStamps, removeFrom } from './data/stamp-record.mjs';
-import { deadline } from './data/resilience.mjs';
-import { SERVER_TIME, writeRecord } from './data/stamp-write.mjs';
+import { REQUEST_TIMEOUT_MS, SERVER_TIME, writeRecord } from './data/stamp-write.mjs';
 import { pageKey } from './data/site-pages.mjs';
-import {
-  AUTH_TIMEOUT_MS as AUTH_TIMEOUT,
-  REQUEST_TIMEOUT_MS as REQUEST_TIMEOUT,
-  SIGN_IN_TIMEOUT_MS as SIGN_IN_TIMEOUT,
-} from './data/stamp-limits.mjs';
 import type { Auth, User } from 'firebase/auth';
 import type { Account, PlacedStamp, Stamp } from './data/stamp-types';
 // The sticker client, loaded once the page needs stickers: the public stream of a page's
@@ -39,6 +33,14 @@ export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void
 }
 
 // ── Accounts ──
+// Rejects with the code 'timeout' (see signInMessage) if `work` has not settled within `ms`.
+const deadline = <T>(work: Promise<T>, ms: number) =>
+  Promise.race([
+    work,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(Object.assign(Error('Timed out'), { code: 'timeout' })), ms),
+    ),
+  ]);
 // Stickers can only be placed with a Google account; reading stays public.
 // The auth module is kept once loaded so the sign-in popup opens within the click.
 let auth: Promise<{ auth: Auth; sdk: typeof import('firebase/auth') }> | undefined;
@@ -51,7 +53,7 @@ function loadAuth() {
     const app = getApps().find((a) => a.name === 'cp20-portfolio') || initializeApp(config, 'cp20-portfolio');
     const instance = sdk.getAuth(app);
     // A hung token refresh would otherwise keep a returning visitor waiting for 30 seconds.
-    await deadline(instance.authStateReady(), AUTH_TIMEOUT);
+    await deadline(instance.authStateReady(), REQUEST_TIMEOUT_MS);
     return { auth: instance, sdk };
   })().catch((error) => {
     auth = undefined;
@@ -74,21 +76,9 @@ export async function watchAccount(receive: (account: Account | null) => void) {
   return sdk.onAuthStateChanged(auth, (user) => void toAccount(user).then(receive));
 }
 export async function signIn() {
-  const { auth, sdk } = await deadline(loadAuth(), SIGN_IN_TIMEOUT);
-  // Once the popup opens the page loses focus and the wait is the visitor's, not the network's.
-  let opened!: () => void;
-  const popup = new Promise<void>((resolve) => (opened = resolve));
-  window.addEventListener('blur', opened, { once: true });
-  try {
-    const result = await deadline(
-      sdk.signInWithPopup(auth, new sdk.GoogleAuthProvider()),
-      SIGN_IN_TIMEOUT,
-      popup,
-    );
-    return toAccount(result.user);
-  } finally {
-    window.removeEventListener('blur', opened);
-  }
+  const { auth, sdk } = await loadAuth();
+  const result = await sdk.signInWithPopup(auth, new sdk.GoogleAuthProvider());
+  return toAccount(result.user);
 }
 export async function signOut() {
   const { auth, sdk } = await loadAuth();
@@ -113,7 +103,7 @@ async function save(
   placing: boolean,
 ) {
   const user = await currentUser();
-  const token = await deadline(user.getIdToken(), REQUEST_TIMEOUT);
+  const token = await user.getIdToken();
   let slot = '';
   const record = (await writeRecord(
     { fetch, databaseURL: config.databaseURL, token, page: pageKey(path), uid: user.uid },
