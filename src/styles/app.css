@@ -2200,7 +2200,6 @@
     color: var(--on-color);
     box-shadow: 3px 3px 0 var(--drop);
     opacity: 0;
-    transform: scale(0.9);
   }
   .play-symbol svg {
     fill: currentColor;
@@ -2212,14 +2211,13 @@
   .music-item:nth-child(even) {
     rotate: 0.8deg;
   }
-  /* As in the article list, only the way in is animated. */
+  /* As in the article list, only the way in is animated. The play button only fades: a moving
+     layer is assumed to overlap the title below it, which Chromium then draws as a separate
+     (tilted) layer and the text goes soft until the hover ends. */
   @media (hover: hover) {
     .music-item:hover .play-symbol {
       opacity: 1;
-      transform: none;
-      transition:
-        opacity var(--t-hover) var(--ease),
-        transform var(--t-state) var(--ease);
+      transition: opacity var(--t-hover) var(--ease);
     }
     .music-item:hover h4 {
       background-size: 100% 100%;
