@@ -116,7 +116,7 @@ Firebase Auth（Googleのポップアップログイン）でログインしたU
 
 Web標準のEventSourceでFirebase RESTストリームへ直接接続。非表示タブでは購読を休止し、再表示時に最新データへ接続します。Auth SDKはシール帳に触れたとき（以前ログインした人はページ表示後）に遅延読込し、ログインのポップアップがクリック内で開けるようにしています。保存はレコードと `throttle/$uid`（最終書込時刻）を同時に更新するRESTのマルチパスPATCHで、`throttle` の前回値を照合（compare-and-swap）して同時編集を検出します。受信したストリームの描画は最大で毎秒4回にまとめ、シールの位置は基準要素ごとに1回だけ測ります。配置と取り消しはネットワーク応答を待たず即時反映し、書き込みはDBの間隔制限に合わせて順番に送信。遷移中もキューを維持し、保存失敗時は該当操作を戻して再試行を表示します。購読を休止しても保存は独立して完了し、15秒の通信タイムアウトを設けています。ページ遷移・記事の絞り込み・作品切替はブラウザ内、定期収集はGitHub Actions、HTML/CSS/JSはStatic Assetsで完結し、サイト独自のWorker APIはありません。
 
-ルールの更新：Firebase CLIで対象アカウントにログイン後、`npm run firebase:rules`。`.firebaserc` は専用DBだけを指します。レコードの管理・削除はFirebase Consoleの専用DBから行えます。
+ルールの更新：`main` で `database.rules.json` が変わると、GitHub Actionsの `Firebase rules` ワークフローがエミュレーターでルールを検証したうえで専用DBへデプロイします（PRでは検証のみ）。事前にリポジトリのSecretsへ `FIREBASE_SERVICE_ACCOUNT`（cp20-platformの「Firebase Realtime Database 管理者」ロールを持つサービスアカウントのJSONキー）を登録し、Environment `firebase-production` を作成してください（必須レビュアーを付ければ承認制にできます）。手動では、Firebase CLIで対象アカウントにログイン後に `npm run firebase:rules`。サイト（Cloudflare）とルールは別々にデプロイされるため、書込形式が変わるルール変更ではマージ直後の数分間、古いクライアントと新しいルール（またはその逆）の組み合わせでシールの保存が失敗することがあります。`.firebaserc` は専用DBだけを指します。レコードの管理・削除はFirebase Consoleの専用DBから行えます。
 
 ## UI / Web標準
 
