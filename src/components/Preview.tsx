@@ -1,5 +1,6 @@
 import { createSignal, Show } from 'solid-js';
 import { pages } from 'virtual:cp20-media';
+import { isIconImage } from '../data/icon-image.mjs';
 // Upper bounds of the rendered OG image widths (measured at 390-1920px wide viewports; see the
 // --thumb and grid rules in app.css).
 export const sizes = {
@@ -46,12 +47,17 @@ export function OGImage(props: {
   sizes?: string;
 }) {
   const [failed, setFailed] = createSignal(false);
+  const icon = () => isIconImage(previewFor(props.url));
   return (
     <div
-      class={['og-image', { unavailable: !previewFor(props.url)?.image || failed() }]}
-      style={{
-        '--image-ratio': `${previewFor(props.url)?.width || 1200} / ${previewFor(props.url)?.height || 630}`,
-      }}
+      class={['og-image', { unavailable: !previewFor(props.url)?.image || failed(), icon: icon() }]}
+      style={
+        icon()
+          ? { '--icon-size': `${previewFor(props.url)?.width}px` }
+          : {
+              '--image-ratio': `${previewFor(props.url)?.width || 1200} / ${previewFor(props.url)?.height || 630}`,
+            }
+      }
     >
       <Show
         when={previewFor(props.url)?.image && !failed()}
@@ -59,8 +65,8 @@ export function OGImage(props: {
       >
         <img
           src={previewFor(props.url)?.image}
-          srcset={props.sizes ? previewFor(props.url)?.srcset : undefined}
-          sizes={props.sizes && previewFor(props.url)?.srcset ? props.sizes : undefined}
+          srcset={props.sizes && !icon() ? previewFor(props.url)?.srcset : undefined}
+          sizes={props.sizes && !icon() && previewFor(props.url)?.srcset ? props.sizes : undefined}
           alt={props.alt}
           width={previewFor(props.url)?.width || 1200}
           height={previewFor(props.url)?.height || 630}

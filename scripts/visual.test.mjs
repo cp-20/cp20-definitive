@@ -46,7 +46,29 @@ test('every manga spine keeps its title and author legible (4.5:1) and authors i
 });
 
 test('Japanese headings and short copy break between phrases, not mid-word', () => {
-  assert.match(css, /:lang\(ja\)\s+:is\([^)]*h3[^)]*\.project-name[^)]*\)\s*\{\s*word-break: auto-phrase;/);
+  const phrase = css.match(/:lang\(ja\)\s+:is\(([^)]*)\):not\(([^)]*)\)\s*\{\s*word-break: auto-phrase;/);
+  assert.ok(phrase, 'missing the auto-phrase rule');
+  assert.match(phrase[1], /h3[^)]*\.project-name/);
+  // Narrow article titles and the 404 heading wrap normally: auto-phrase only added lines there.
+  assert.match(phrase[2], /\.article-row h3/);
+  assert.match(phrase[2], /\.not-found h1/);
+});
+
+test('manga spines shrink to fit the shelf; the open book keeps its cover width', () => {
+  assert.match(rule('.book'), /flex: 0 1 var\(--spine-width\);/);
+  assert.match(rule(".book[aria-expanded='true']"), /flex-shrink: 0;/);
+});
+
+test('an icon-only work image sits on the placeholder pattern at no more than its own size', async () => {
+  const { isIconImage } = await import('../src/data/icon-image.mjs');
+  assert.equal(isIconImage({ width: 256, height: 256 }), true);
+  assert.equal(isIconImage({ width: 1200, height: 630 }), false);
+  assert.equal(isIconImage(undefined), false);
+  const previews = JSON.parse(await readFile(new URL('../src/data/previews.json', import.meta.url), 'utf8'));
+  const foodmoji = previews['https://marketplace.visualstudio.com/items?itemName=cp20.foodmoji-vscode'];
+  if (foodmoji?.width) assert.equal(isIconImage(foodmoji), true);
+  assert.match(rule('.og-image.icon img'), /height: min\(var\(--icon-size\), \d+%\);/);
+  assert.match(css, /\.og-image\.unavailable::after,\s*\.og-image\.icon::after \{/);
 });
 
 test('credits read as running text; only the cover list is laid out as items', async () => {

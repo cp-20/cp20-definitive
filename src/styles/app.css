@@ -82,9 +82,21 @@
     overflow-wrap: anywhere;
     text-wrap: pretty;
   }
-  /* Japanese has no spaces, so balance/wrapping would split words mid-phrase; break between phrases instead. */
+  /* Japanese has no spaces, so balance/wrapping would split words mid-phrase; break between phrases instead.
+     Not in narrow columns (article titles) or for long words the dictionary cannot split (見つかりません):
+     there it gives up mid-word anyway and only adds lines, leaving fragments like 「ん。」 alone. */
   :lang(ja)
-    :is(h1, h2, h3, h4, .identity p, .project-name, .project-description, .timeline-item p, .intro-profile) {
+    :is(
+      h1,
+      h2,
+      h3,
+      h4,
+      .identity p,
+      .project-name,
+      .project-description,
+      .timeline-item p,
+      .intro-profile
+    ):not(.article-row h3, .not-found h1) {
     word-break: auto-phrase;
   }
   input,
@@ -667,7 +679,17 @@
     object-fit: contain;
     background: #fff;
   }
-  .og-image.unavailable::after {
+  /* An app icon instead of an OG image: centred on the placeholder pattern, never above its own size. */
+  .og-image.icon img {
+    top: 50%;
+    left: 50%;
+    width: auto;
+    height: min(var(--icon-size), 64%);
+    translate: -50% -50%;
+    background: none;
+  }
+  .og-image.unavailable::after,
+  .og-image.icon::after {
     content: '';
     position: absolute;
     z-index: -1;
@@ -2143,9 +2165,11 @@
     border-radius: 0 0 3px 3px;
     box-shadow: 0 10px 0 -4px rgb(45 42 51 / 0.12);
   }
+  /* Spines give way when the shelf is narrower than six full spines plus the open cover
+     (761-833px wide viewports, e.g. a portrait iPad), instead of running off the page. */
   .book {
     position: relative;
-    flex: 0 0 var(--spine-width);
+    flex: 0 1 var(--spine-width);
     height: calc(var(--shelf-height) * var(--h, 0.94));
     overflow: hidden;
     border: 2px solid var(--edge);
@@ -2165,6 +2189,7 @@
   .book[aria-expanded='true'] {
     --h: 1;
     flex-basis: var(--open);
+    flex-shrink: 0;
     cursor: default;
   }
   .book:focus-visible {
