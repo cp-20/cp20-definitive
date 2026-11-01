@@ -1,5 +1,5 @@
 // Repository names wrap between words, not in the middle of one.
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { nameParts } from '../src/data/name-breaks.mjs';

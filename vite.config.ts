@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig, type Plugin } from 'vite';
 import solid from '@solidjs/vite-plugin';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -78,4 +79,6 @@ export default defineConfig({
     // refused by the font-src 'self' content security policy.
     assetsInlineLimit: (file) => (isFontFile(file) ? false : undefined),
   },
+  // The tests check logic and build output in Node; none of them needs a DOM.
+  test: { environment: 'node' },
 });

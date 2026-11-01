@@ -1,6 +1,6 @@
 // YouTube thumbnails are 4:3 files around a 16:9 video, sometimes with the video's own black bars
 // or pillars as well; the pages show only the 16:9 picture cut out of those bands.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';

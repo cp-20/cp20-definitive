@@ -8,7 +8,7 @@
     "build": "vite build && node scripts/prerender.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 4321",
     "sync": "node --env-file-if-exists=.env.sync scripts/sync.mjs",
-    "test": "node --test scripts/*.test.mjs",
+    "test": "vitest run",
     "check": "tsc --noEmit",
     "verify": "npm run check && npm run build && npm test",
     "deploy": "npm run verify && wrangler deploy",
@@ -38,6 +38,7 @@
     "subset-font": "^2.9.0",
     "typescript": "^6.0.3",
     "vite": "8.1.2",
+    "vitest": "5.0.5",
     "wrangler": "^4.141.0"
   }
 }

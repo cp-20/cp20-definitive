@@ -1,5 +1,5 @@
 // What crawlers see: the RSS feed, and the built pages' heads and heading structure.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -63,7 +63,7 @@ const headings = (html) =>
     ([, level, text]) => ({ level: +level, text: text.replace(/<[^>]+>|<!--.*?-->/g, '').trim() }),
   );
 
-test('ビルドしたページは、フィードをその名前でリンクする', { skip }, () => {
+test.skipIf(skip)('ビルドしたページは、フィードをその名前でリンクする', () => {
   const head = readFileSync(built('index.html'), 'utf8').split('</head>')[0];
   assert.ok(head.includes(`title="${feedTitle}"`));
 });
@@ -76,15 +76,15 @@ const skipped = (page) =>
     .map((h) => `h${h.level} ${h.text}`);
 const h1 = (page) => headings(readFileSync(built(page), 'utf8')).find((h) => h.level === 1).text;
 
-test('404 ページは、検索エンジンに載せないよう求める', { skip }, () => {
+test.skipIf(skip)('404 ページは、検索エンジンに載せないよう求める', () => {
   assert.match(head('404.html'), /<meta\b[^>]*name="robots" content="noindex"/);
 });
 
-test('404 ページは、正規 URL を名乗らない', { skip }, () => {
+test.skipIf(skip)('404 ページは、正規 URL を名乗らない', () => {
   assert.doesNotMatch(head('404.html'), /rel="canonical"|property="og:url"/);
 });
 
-test('トップページは、正規 URL を名乗り、検索エンジンに載せてよい', { skip }, () => {
+test.skipIf(skip)('トップページは、正規 URL を名乗り、検索エンジンに載せてよい', () => {
   assert.deepEqual(
     [
       /<link\b[^>]*rel="canonical" href="https:\/\/cp20\.dev\/"/.test(head('index.html')),
@@ -95,11 +95,11 @@ test('トップページは、正規 URL を名乗り、検索エンジンに載
 });
 
 for (const page of ['index.html', 'about/index.html', 'articles/index.html', 'works/index.html'])
-  test(`${page} の見出しは、レベルを飛ばさない`, { skip }, () => {
+  test.skipIf(skip)(`${page} の見出しは、レベルを飛ばさない`, () => {
     assert.deepEqual(skipped(page), []);
   });
 
-test('/ と /about の h1 は別の文で、/about のものはプロフィールを名乗る', { skip }, () => {
+test.skipIf(skip)('/ と /about の h1 は別の文で、/about のものはプロフィールを名乗る', () => {
   assert.deepEqual(
     [h1('index.html') !== h1('about/index.html'), h1('about/index.html').includes('プロフィール')],
     [true, true],

@@ -1,5 +1,5 @@
 // Colours and image kinds the pages are drawn with.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { mangaCovers } from '../src/data/manga-covers.mjs';

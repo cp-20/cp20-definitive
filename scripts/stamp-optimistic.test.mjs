@@ -1,5 +1,5 @@
 // Optimistic updates: what is drawn while your changes wait, and how they are saved one at a time.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { createPendingSaves, projectStamps, serialWrites } from '../src/data/stamp-optimistic.mjs';
 

@@ -1,5 +1,5 @@
 // A swipe across the featured works: which way it turns the deck.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { TURN_AT, coastDistance, fingerSpeed, swipeTurn } from '../src/data/deck-swipe.mjs';
 

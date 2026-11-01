@@ -1,5 +1,5 @@
 // The page list and what is derived from it: page keys, tabs and the stamp database rules.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
@@ -129,10 +129,9 @@ describe('パスとページキー', () => {
     });
 });
 
-test(
+// The scheduled refresh only warns here (see refresh.yml); commits and PRs stay strict.
+test.skipIf(process.env.RELATED_ARTICLES === 'warn' && 'related-article check set to warn')(
   '作品の関連記事は、どれも記事一覧にある（記事名つきで表示できる）',
-  // The scheduled refresh only warns here (see refresh.yml); commits and PRs stay strict.
-  { skip: process.env.RELATED_ARTICLES === 'warn' && 'related-article check set to warn' },
   () => {
     assert.deepEqual(missingRelatedArticles(works, mergeArticles(snapshot.articles, [], manual)), []);
   },

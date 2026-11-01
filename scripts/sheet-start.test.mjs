@@ -1,5 +1,5 @@
 // Whether the sticker sheet starts open.
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { SHEET_DESK_SPACE, sheetStartsOpen } from '../src/data/sheet-start.mjs';
 

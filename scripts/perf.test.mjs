@@ -1,5 +1,5 @@
 // Page weight: thumbnail variants, the client media table and font subsetting.
-import { after, before, describe, test } from 'node:test';
+import { afterAll, beforeAll, describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { access, cp, mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -62,7 +62,7 @@ describe('addVariants', () => {
     'https://example.com/flat.png': { file: '/media/flat.png', checkedAt: 'x' },
     'https://example.com/unused.png': { file: '/media/unused.png', checkedAt: 'x', variants: [] },
   };
-  before(async () => {
+  beforeAll(async () => {
     dir = await mkdtemp(join(tmpdir(), 'cp20-variants-'));
     await cp(join(root, 'scripts'), join(dir, 'scripts'), { recursive: true });
     await mkdir(join(dir, 'src/data'), { recursive: true });
@@ -85,7 +85,7 @@ describe('addVariants', () => {
       new Set(['https://example.com/icon.png', 'https://example.com/flat.png']),
     );
   });
-  after(() => rm(dir, { recursive: true, force: true }));
+  afterAll(() => rm(dir, { recursive: true, force: true }));
 
   test('サムネイルには、320px の WebP の縮小版を作って記録する', async () => {
     const meta = await sharp(join(dir, 'public/media/og-320w.webp')).metadata();

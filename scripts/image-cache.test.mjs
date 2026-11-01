@@ -1,5 +1,5 @@
 // Only verified raster images enter the image cache.
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { rasterExtension } from './cache-images.mjs';

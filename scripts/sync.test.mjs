@@ -1,6 +1,6 @@
 // Collecting the article list: feeds, merging with the archive and the editor's overrides, and
 // keeping the last snapshot of a source that is down.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { collect, mergeArticles, paginated, parseFeed, safeUrl } from './sync.mjs';
 

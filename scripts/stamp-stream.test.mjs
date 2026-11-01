@@ -1,5 +1,5 @@
 // The public sticker stream: applying Firebase's events, rendering bursts, and keeping it open.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { applyStreamEvent, coalesce, keepStream, RETRY_MS } from '../src/data/stamp-stream.mjs';
 

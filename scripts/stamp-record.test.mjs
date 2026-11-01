@@ -1,5 +1,5 @@
 // A visitor's sticker record and the edits behind placing, moving and peeling.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
   moveIn,

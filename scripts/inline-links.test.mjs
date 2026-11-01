@@ -1,5 +1,5 @@
 // Links written inside work descriptions are rendered as links, not as bare URLs.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { splitLinks } from '../src/data/inline-links.mjs';

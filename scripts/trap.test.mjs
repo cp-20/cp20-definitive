@@ -1,4 +1,4 @@
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { fetchTrapPosts, nextPage, parseAuthorPage } from './trap.mjs';
 import { article, collect } from './sync.mjs';

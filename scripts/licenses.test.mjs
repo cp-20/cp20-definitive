@@ -1,6 +1,6 @@
 // Regression tests for the third-party notices: the notices file the build writes, the credits
 // section that links to it, and the license records kept in the Zen Maru Gothic subsets.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -91,7 +91,7 @@ describe('Zen Maru Gothic の絞り込み', async () => {
   });
 });
 
-describe('ビルドした Zen Maru Gothic', { skip }, () => {
+describe.skipIf(skip)('ビルドした Zen Maru Gothic', () => {
   const fonts = skip
     ? []
     : readdirSync(built('assets')).filter((f) => /^zen-maru-gothic-\d+-.*\.woff2$/.test(f));
@@ -175,7 +175,7 @@ describe('formatNotices', () => {
   });
 });
 
-describe('ビルドした第三者ライセンス表示', { skip }, () => {
+describe.skipIf(skip)('ビルドした第三者ライセンス表示', () => {
   const text = skip ? '' : readFileSync(built(licensesPath), 'utf8');
   for (const [what, needle] of [
     ['@firebase/app', /^@firebase\/app@\S+ \(Apache-2\.0\)/m],
@@ -202,7 +202,7 @@ describe('ビルドした第三者ライセンス表示', { skip }, () => {
   });
 });
 
-describe('the built credits on /about', { skip }, () => {
+describe.skipIf(skip)('the built credits on /about', () => {
   const html = skip ? '' : readFileSync(built('about/index.html'), 'utf8');
   const credits = html.slice(
     html.indexOf('id="credits"'),

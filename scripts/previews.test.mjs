@@ -1,5 +1,5 @@
 // Reading a page's preview image and icon from its HTML.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { parsePreview, keepReferenced } from './previews.mjs';

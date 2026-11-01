@@ -1,5 +1,5 @@
 // The sticker in hand: its spring, and how a finger handles your stickers on the page.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
   FLYING,

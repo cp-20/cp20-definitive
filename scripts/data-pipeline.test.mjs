@@ -1,5 +1,5 @@
 // Regression tests for hostile or malformed third-party data entering the content pipeline.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';

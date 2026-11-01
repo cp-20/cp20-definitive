@@ -1,5 +1,5 @@
 // Where placed stickers are drawn on the page.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { STICKER_RADIUS, layoutStamps, spotIn, stampAt, visualKey } from '../src/data/stamp-layout.mjs';
 

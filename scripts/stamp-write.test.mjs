@@ -1,5 +1,5 @@
 // One read-modify-write of your own sticker record through the REST API, against a fake fetch.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { SERVER_TIME, writeBody, writeRecord } from '../src/data/stamp-write.mjs';
 

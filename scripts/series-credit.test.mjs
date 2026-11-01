@@ -1,5 +1,5 @@
 // A manga with an original author keeps every credit on the /about shelf.
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { spineAuthor } from '../src/data/series-credit.mjs';
@@ -16,10 +16,10 @@ test('名前がひとつなら、そのまま背表紙に書く', () => {
   assert.equal(spineAuthor('松田舞'), '松田舞');
 });
 
-test('棚の本の名前には、原作・原案まで含めた全員を書く', { skip }, () => {
+test.skipIf(skip)('棚の本の名前には、原作・原案まで含めた全員を書く', () => {
   assert.ok(readFileSync(about, 'utf8').includes(`aria-label="没落令嬢の悪党賛歌 ${credit}"`));
 });
 
-test('棚の背表紙には、最初の名前だけを書く', { skip }, () => {
+test.skipIf(skip)('棚の背表紙には、最初の名前だけを書く', () => {
   assert.ok(readFileSync(about, 'utf8').includes('<small>柳ゆうと</small>'));
 });

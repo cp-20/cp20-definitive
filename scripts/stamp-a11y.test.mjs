@@ -1,5 +1,5 @@
 // What the sticker sheet says out loud, and where keyboard focus goes.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { focusAfterRemoval, signInMessage, stampAnnouncement, stampPlace } from '../src/data/stamp-a11y.mjs';
 

@@ -1,5 +1,5 @@
 // Scroll positions kept per history entry across reloads.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readPositions, writePositions } from '../src/data/scroll-positions.mjs';
 

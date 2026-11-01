@@ -1,5 +1,5 @@
 // The response headers Cloudflare serves from public/_headers, and the files a build publishes.
-import { describe, test } from 'node:test';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 
@@ -40,9 +40,8 @@ describe('public/_headers', () => {
 });
 
 const built = new URL('../dist/client/', import.meta.url);
-test(
+test.skipIf(!existsSync(new URL('404.html', built)) && 'run `npm run build` first')(
   'ビルド用のマニフェストは公開しない',
-  { skip: !existsSync(new URL('404.html', built)) && 'run `npm run build` first' },
   () => {
     assert.equal(existsSync(new URL('.vite', built)), false);
   },
