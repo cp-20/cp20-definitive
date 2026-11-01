@@ -247,7 +247,7 @@ export async function cacheImages(force = false, previousPreviews?: Record<strin
 }
 
 // ── Smaller copies ──
-export const variantWidths = [320, 640, 960];
+export const variantWidths = [320, 480, 640, 960];
 /**
  * Widths worth generating for an image `naturalWidth` px wide: only real reductions (at least 20%
  * narrower than the original), so the original remains the sharpest candidate.
