@@ -9,7 +9,7 @@
 // loaded into a throwaway namespace and unsigned Google tokens stand in for real sign-ins.
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
-import { writeBody } from '../src/data/stamp-write.mjs';
+import { throttlePath, writeBody } from '../src/data/stamp-write.mjs';
 import { mergeWorks, stampPageKeys } from '../src/data/site-pages.mjs';
 const emulator = process.env.STAMPS_RULES_EMULATOR;
 if (process.env.STAMPS_LIVE_TEST !== '1' && !emulator)
@@ -160,15 +160,20 @@ if (google) {
       401,
       'partial stamp update denied',
     );
+    // Only the child path is wrong here: the throttle entry carries the prev just read.
+    const current = await (await request(`throttle/${uid}`, 'GET', undefined, google)).json();
     await expect(
       request(
         '',
         'PATCH',
-        { [`pages/home/${uid}/stamps/0/x`]: 0.5, ...writeBody('x', uid, 0, null) },
+        {
+          [`pages/home/${uid}/stamps/0/x`]: 0.5,
+          [throttlePath(uid)]: writeBody('home', uid, null, current)[throttlePath(uid)],
+        },
         google,
       ),
       401,
-      'child write with a forged throttle entry denied',
+      'child write with a valid throttle entry denied',
     );
     await expect(put(record({ ...stamp, x: 0.4 })), 200, 'update after the interval accepted');
     await expect(request(`pages/home/${uid}`, 'DELETE', undefined, google), 200, 'own stamp removable');

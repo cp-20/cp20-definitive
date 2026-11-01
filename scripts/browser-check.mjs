@@ -500,6 +500,35 @@ try {
       if (route === '/') await page.screenshot({ path: `${outputDir}/preview-${suffix}.png` });
     }
   }
+  // Every `sizes` is at least the width its image is laid out at, so no smaller candidate is upscaled.
+  await page.goto(origin + '/works');
+  const workPage = await page.locator('a[href^="/works/"]').first().getAttribute('href');
+  for (const width of [360, 380, 450, 600, 760, 761, 900, 901, 1100, 1101, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const route of ['/', '/works', '/about', workPage]) {
+      await page.goto(origin + route);
+      const short = await page.evaluate(() =>
+        [...document.querySelectorAll('img[sizes]')].flatMap((img) => {
+          const rule =
+            img
+              .getAttribute('sizes')
+              .split(/,\s*(?![^()]*\))/)
+              .map((part) => part.match(/^(\(.+?\))\s+(.+)$/) || [, , part])
+              .find(([, query]) => !query || matchMedia(query).matches) || [];
+          const probe = document.body.appendChild(document.createElement('div'));
+          probe.style.width = rule[2];
+          const slot = probe.getBoundingClientRect().width;
+          probe.remove();
+          return img.offsetWidth > slot + 0.5
+            ? [`${img.getAttribute('sizes')}: ${img.offsetWidth} > ${slot}`]
+            : [];
+        }),
+      );
+      if (short.length)
+        throw Error(`sizes below the rendered width at ${width}px ${route}: ${short.join('; ')}`);
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
   const nojs = await browser.newContext({ javaScriptEnabled: false });
   const plain = await nojs.newPage();
   await plain.goto(origin + '/articles');
@@ -527,6 +556,14 @@ try {
   await clover.focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.stamp-overlay')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(clover).toBeFocused();
+  // Aiming at the desk outside the page is announced as a spot where nothing can go.
+  const spoken = page.locator('p.visually-hidden[role=status]');
+  await page.keyboard.press('Enter');
+  await expect(spoken).toHaveText(/の上$/);
+  for (let i = 0; i < 50; i++) await page.keyboard.press('ArrowLeft');
+  await expect(spoken).toHaveText('ここには貼れません');
   await page.keyboard.press('Escape');
   await expect(clover).toBeFocused();
   await page.keyboard.press('Enter');

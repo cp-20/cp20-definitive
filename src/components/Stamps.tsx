@@ -8,7 +8,7 @@ import { STAMPS_PER_PAGE as LIMIT } from '../data/stamp-limits.mjs';
 import { createSaveLedger, saveOperation, writeDelay } from '../data/stamp-save.mjs';
 import Icon from './Icon';
 import { STICKER_KINDS as kinds, StickerFace, gravatarUrl as gravatar, stickerName } from './sticker/kinds';
-import { anchorAt, centerOf as center, createAnchorMeasure, locate } from './sticker/dom';
+import { centerOf as center, createAnchorMeasure, locate } from './sticker/dom';
 import { createHand } from './sticker/hand';
 import { createStampAccount } from './sticker/account';
 import { ACCOUNT_KEY, HIDE_KEY, SHEET_KEY, readPref, writePref } from './sticker/prefs';
@@ -633,15 +633,15 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   function announcePlace() {
     const h = held();
     if (!h || h.mode !== 'aim') return;
-    const { below, anchor } = anchorAt(motion.tx, motion.ty);
-    if (!anchor) return;
-    const labelledBy = anchor.getAttribute('aria-labelledby');
+    // Same test as drop(): only a spot locate() accepts is announced as a place.
+    const spot = locate(motion.tx, motion.ty);
+    const anchor =
+      spot && document.querySelector<HTMLElement>(`[data-stamp-anchor="${CSS.escape(spot.anchor)}"]`);
+    const labelledBy = anchor?.getAttribute('aria-labelledby');
     const label =
-      anchor.querySelector('h1, h2, h3')?.textContent ||
+      anchor?.querySelector('h1, h2, h3')?.textContent ||
       (labelledBy && document.getElementById(labelledBy)?.textContent);
-    const place = below?.closest('.rail')
-      ? 'ここには貼れません'
-      : stampPlace(anchor.dataset.stampAnchor || '', label);
+    const place = spot ? stampPlace(spot.anchor, label) : 'ここには貼れません';
     if (place === lastPlace) return;
     lastPlace = place;
     say(place);

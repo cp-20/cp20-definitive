@@ -1,14 +1,13 @@
 import config from './data/firebase.json';
-import { applyStreamEvent, coalesce } from './data/stamp-stream.mjs';
+import { applyStreamEvent, coalesce, keepStream } from './data/stamp-stream.mjs';
 import { moveIn, placeIn, removeFrom, stampEntries } from './data/stamp-record.mjs';
-import { deadline, reconnectDelay } from './data/resilience.mjs';
+import { deadline } from './data/resilience.mjs';
 import { recordPath, throttlePath, writeBody, writeWithRetry } from './data/stamp-write.mjs';
 import { pageKey } from './data/site-pages.mjs';
 import {
   AUTH_TIMEOUT_MS as AUTH_TIMEOUT,
   REQUEST_TIMEOUT_MS as REQUEST_TIMEOUT,
   SIGN_IN_TIMEOUT_MS as SIGN_IN_TIMEOUT,
-  STREAM_STALL_MS,
 } from './data/stamp-limits.mjs';
 import type { Auth, User } from 'firebase/auth';
 import type { Account, PlacedStamp, Stamp } from './data/stamp-types';
@@ -27,7 +26,6 @@ export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void
   const url = new URL(`${config.databaseURL}/pages/${pageKey(path)}.json`);
   url.searchParams.set('orderBy', '"updatedAt"');
   url.searchParams.set('limitToLast', '100');
-  let stream: EventSource | undefined;
   let records: Record<string, RecordData> = {};
   // Events are applied as they arrive but rendered at most four times a second.
   const render = coalesce(() => {
@@ -37,7 +35,7 @@ export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void
       fail();
     }
   }, 250);
-  const change = (event: MessageEvent, type: string) => {
+  const change = (type: string, event: MessageEvent) => {
     try {
       records = applyStreamEvent(records, type, JSON.parse(event.data));
       render.schedule();
@@ -45,68 +43,7 @@ export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void
       fail();
     }
   };
-  // EventSource retries network drops by itself, but closes for good on an HTTP error or a
-  // wrong content type (a captive portal's HTML page). Those, and a cancelled listener, are
-  // retried here with a backoff, and straight away once the device comes back online.
-  // While the browser is reconnecting by itself nothing is reported, unless it takes a while.
-  let attempts = 0,
-    retry: ReturnType<typeof setTimeout> | undefined,
-    stalled: ReturnType<typeof setTimeout> | undefined;
-  const lost = (source: EventSource) => {
-    if (source !== stream) return;
-    if (source.readyState !== EventSource.CLOSED) {
-      stalled ??= setTimeout(() => {
-        stalled = undefined;
-        if (source === stream && source.readyState !== EventSource.OPEN) fail();
-      }, STREAM_STALL_MS);
-      return;
-    }
-    fail();
-    source.close();
-    stream = undefined;
-    clearTimeout(retry);
-    retry = setTimeout(resume, reconnectDelay(attempts++));
-  };
-  const resume = () => {
-    clearTimeout(retry);
-    clearTimeout(stalled);
-    retry = stalled = undefined;
-    render.cancel();
-    stream?.close();
-    stream = undefined;
-    if (document.hidden) return;
-    const source = new EventSource(url);
-    stream = source;
-    source.onopen = () => {
-      clearTimeout(stalled);
-      stalled = undefined;
-    };
-    source.addEventListener('put', (e) => {
-      attempts = 0;
-      change(e as MessageEvent, 'put');
-    });
-    source.addEventListener('patch', (e) => change(e as MessageEvent, 'patch'));
-    source.addEventListener('cancel', () => {
-      source.close();
-      lost(source);
-    });
-    source.onerror = () => lost(source);
-  };
-  const online = () => {
-    attempts = 0;
-    resume();
-  };
-  resume();
-  document.addEventListener('visibilitychange', resume);
-  window.addEventListener('online', online);
-  return () => {
-    clearTimeout(retry);
-    clearTimeout(stalled);
-    render.cancel();
-    stream?.close();
-    document.removeEventListener('visibilitychange', resume);
-    window.removeEventListener('online', online);
-  };
+  return keepStream(url, { restart: render.cancel, receive: change, fail });
 }
 
 // ── Accounts ──

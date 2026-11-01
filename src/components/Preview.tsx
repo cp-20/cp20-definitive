@@ -1,15 +1,16 @@
 import { createSignal, Show } from 'solid-js';
 import { pages } from 'virtual:cp20-media';
 import { isIconImage } from '../data/icon-image.mjs';
-// Upper bounds of the rendered image widths (measured at 360-1920px wide viewports; see the
-// --thumb, grid, .bookshelf, .music-list and .home-favorites rules in app.css).
+// Upper bounds of the laid-out image widths (measured at 320-1920px wide viewports, and checked
+// by browser-check.mjs; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
 export const sizes = {
   articleRow: '(max-width: 760px) 104px, 144px',
-  workGrid: '(max-width: 760px) 72vw, 340px',
-  featured: '(max-width: 900px) 72vw, 466px',
-  workHero: '(max-width: 1100px) 70vw, 924px',
+  workGrid: '(max-width: 760px) calc(100vw - 100px), (max-width: 1100px) calc(50vw - 170px), 290px',
+  featured:
+    '(max-width: 760px) calc(100vw - 104px), (max-width: 900px) calc(100vw - 300px), (max-width: 1100px) calc(55vw - 200px), 470px',
+  workHero: '(max-width: 760px) calc(100vw - 120px), (max-width: 1100px) calc(100vw - 300px), 930px',
   // The open book on the /about shelf (spines show a strip of the same image).
-  bookCover: '(max-width: 760px) calc(100vw - 230px), 216px',
+  bookCover: '(max-width: 460px) 230px, (max-width: 760px) calc(100vw - 230px), 216px',
   homeCover: '92px',
   homeTrack: '134px',
   track: '(max-width: 760px) calc(100vw - 88px), (max-width: 1100px) calc(50vw - 160px), 292px',
