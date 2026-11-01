@@ -2,11 +2,18 @@ import { readFile, writeFile, rename, appendFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { syncMedia } from './media.mjs';
-import { fetchGhostPosts } from './ghost.mjs';
+import { mergeWorks } from '../src/data/site-pages.mjs';
+import { fetchTrapPosts } from './trap.mjs';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 
 const dataPath = new URL('../src/data/generated.json', import.meta.url);
-const parser = new XMLParser({ ignoreAttributes: false, processEntities: true });
+// Tag values stay strings ('2024', '1e3', 'true' are valid titles); numeric/hex references are decoded.
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  processEntities: true,
+  htmlEntities: true,
+  parseTagValue: false,
+});
 import { safeUrl, article, mergeArticles } from '../src/data/normalize.mjs';
 export { safeUrl, article, mergeArticles } from '../src/data/normalize.mjs';
 export function parseFeed(xml, source) {
@@ -14,38 +21,65 @@ export function parseFeed(xml, source) {
   const data = parser.parse(xml);
   const items = data.rss?.channel?.item;
   if (!items) throw new Error('Feed contained no articles');
-  return [items]
-    .flat()
-    .map((i) => article(typeof i.title === 'object' ? i.title['#text'] : i.title, i.link, i.pubDate, source));
+  const rows = [];
+  for (const i of [items].flat()) {
+    try {
+      rows.push(
+        article(typeof i?.title === 'object' ? i.title['#text'] : i?.title, i?.link, i?.pubDate, source),
+      );
+    } catch {
+      // One malformed item must not hide the rest of the feed.
+      console.warn(`::warning::${source}: skipped an invalid feed item`);
+    }
+  }
+  if (!rows.length) throw new Error('Feed contained no valid articles');
+  return rows;
 }
-export async function request(url, format = 'json', fetcher = fetch, extraHeaders = {}) {
+/**
+ * @param {{maxBytes?: number, truncate?: boolean}} [options] truncate keeps the first maxBytes instead of failing.
+ */
+export async function request(
+  url,
+  format = 'json',
+  fetcher = fetch,
+  extraHeaders = {},
+  { maxBytes = 5_000_000, truncate = false } = {},
+) {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const headers = {
         'User-Agent': 'cp20-definitive-content-sync',
-        Accept: format === 'json' ? 'application/json' : 'application/rss+xml, application/xml',
+        Accept:
+          format === 'json'
+            ? 'application/json'
+            : format === 'html'
+              ? 'text/html'
+              : 'application/rss+xml, application/xml',
       };
       if (new URL(url).hostname === 'api.github.com' && process.env.GITHUB_TOKEN)
         headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
       const response = await fetcher(url, {
         headers: { ...headers, ...extraHeaders },
-        redirect: extraHeaders.Authorization ? 'manual' : 'follow',
+        redirect: 'follow',
         signal: AbortSignal.timeout(20000),
       });
-      if (extraHeaders.Authorization && response.status >= 300 && response.status < 400)
-        throw Object.assign(new Error('Admin API requires SSO authentication'), { code: 'AUTH_REDIRECT' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok)
+        throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status });
       let size = 0;
       const chunks = [];
       for await (const chunk of response.body) {
+        if (size + chunk.length > maxBytes) {
+          if (!truncate) throw new Error(`Response exceeds ${maxBytes} bytes`);
+          chunks.push(chunk.subarray(0, maxBytes - size));
+          break;
+        }
         size += chunk.length;
-        if (size > 5_000_000) throw new Error('Response exceeds 5 MB');
         chunks.push(chunk);
       }
       const text = Buffer.concat(chunks).toString('utf8');
       return format === 'json' ? JSON.parse(text) : text;
     } catch (error) {
-      if (attempt === 1 || error.code === 'AUTH_REDIRECT') throw error;
+      if (attempt === 1 || error.status === 404) throw error;
       await new Promise((resolve) => setTimeout(resolve, 800));
     }
   }
@@ -77,7 +111,7 @@ const providers = {
       (_, rows) => rows.length === 100,
     ),
   'note.com': async () => parseFeed(await request('https://note.com/cp20/rss', 'xml'), 'note.com'),
-  'trap.jp': () => fetchGhostPosts(request, article),
+  'trap.jp': () => fetchTrapPosts(request, article),
   'sizu.me': async () => parseFeed(await request('https://sizu.me/cp20/rss', 'xml'), 'sizu.me'),
   'github.com': () =>
     paginated(
@@ -100,12 +134,33 @@ const providers = {
       (_, rows) => rows.length === 100,
     ),
 };
-export async function collect(previous, loaders = providers, now = new Date().toISOString()) {
+export async function collect(
+  previous,
+  loaders = providers,
+  now = new Date().toISOString(),
+  allowShrink = process.env.ALLOW_TRAP_SHRINK === '1',
+  pinned = new Set(),
+) {
   const next = structuredClone(previous);
   const incoming = [];
   let successes = 0;
   let retained = previous.articles;
   const results = await Promise.allSettled(Object.values(loaders).map((load) => load()));
+  // trap.jp replaces its previous articles, so a sudden large drop is treated as a failure unless confirmed.
+  const trapIndex = Object.keys(loaders).indexOf('trap.jp');
+  const trapBefore = previous.articles.filter((a) => a.source === 'trap.jp').length;
+  if (
+    trapIndex >= 0 &&
+    !allowShrink &&
+    results[trapIndex].status === 'fulfilled' &&
+    trapBefore >= 4 &&
+    results[trapIndex].value.length * 2 < trapBefore
+  ) {
+    console.warn(
+      `::warning::trap.jp: ${results[trapIndex].value.length} of ${trapBefore} posts returned; set ALLOW_TRAP_SHRINK=1 to accept`,
+    );
+    results[trapIndex] = { status: 'rejected', reason: Error('Unconfirmed trap.jp shrink') };
+  }
   Object.keys(loaders).forEach((source, index) => {
     const result = results[index];
     if (result.status === 'fulfilled' && (result.value.length || source === 'trap.jp')) {
@@ -115,8 +170,17 @@ export async function collect(previous, loaders = providers, now = new Date().to
           .filter((r) => !r.fork && !r.archived)
           .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       else {
-        // A complete Admin API snapshot is authoritative: remove unpublished or deleted posts.
-        if (source === 'trap.jp') retained = retained.filter((a) => a.source !== 'trap.jp');
+        // A complete author-page listing is authoritative: remove unpublished or deleted posts.
+        // Posts a work links as related are kept, so the build's related-article check cannot jam every source.
+        if (source === 'trap.jp') {
+          const returned = new Set(result.value.map((a) => a.url));
+          retained = retained.filter((a) => {
+            if (a.source !== 'trap.jp') return true;
+            if (!pinned.has(a.url) || returned.has(a.url)) return false;
+            console.warn(`::warning::trap.jp: ${a.url} is linked by a work but was not returned; keeping it`);
+            return true;
+          });
+        }
         incoming.push(...result.value);
       }
       next.sources[source] = { status: 'ok', lastSuccess: now, count: result.value.length };
@@ -124,12 +188,10 @@ export async function collect(previous, loaders = providers, now = new Date().to
       next.sources[source] = {
         ...previous.sources[source],
         status: 'stale',
-        reason:
-          result.status === 'rejected' && result.reason?.code === 'AUTH_REDIRECT'
-            ? 'sso_required'
-            : 'unavailable',
+        reason: 'unavailable',
       };
-      console.warn(`::warning::${source}: fetch failed; keeping last successful data`);
+      const why = result.status === 'rejected' ? result.reason?.message : 'no items returned';
+      console.warn(`::warning::${source}: fetch failed (${why}); keeping last successful data`);
     }
   });
   if (!successes) throw new Error('All sources failed; snapshot was not changed');
@@ -142,16 +204,22 @@ export async function collect(previous, loaders = providers, now = new Date().to
 }
 async function main() {
   const previous = JSON.parse(await readFile(dataPath, 'utf8'));
-  const next = await collect(previous);
+  const load = async (name) => JSON.parse(await readFile(new URL(`./${name}.json`, dataPath), 'utf8'));
+  const [works, manual] = await Promise.all([load('works'), load('manual')]);
+  const pinned = new Set(mergeWorks(works, manual).flatMap((w) => w.relatedArticles ?? []));
+  const next = await collect(previous, providers, undefined, undefined, pinned);
   const mediaChanged = await syncMedia(request);
 
   const tmp = new URL('./generated.json.tmp', dataPath);
   await writeFile(tmp, JSON.stringify(next, null, 2) + '\n');
   await rename(tmp, dataPath);
+  const previewsPath = new URL('./previews.json', dataPath);
+  const previousPreviews = JSON.parse(await readFile(previewsPath, 'utf8').catch(() => '{}'));
   const { syncPreviews } = await import('./previews.mjs');
   const previewChanged = await syncPreviews(request);
   const { cacheImages } = await import('./cache-images.mjs');
-  const imagesChanged = await cacheImages();
+  // A new OG image that cannot be cached falls back to the page's previous image and file.
+  const imagesChanged = await cacheImages(false, previousPreviews);
   const changed =
     imagesChanged ||
     previewChanged ||

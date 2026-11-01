@@ -5,7 +5,13 @@ export function safeUrl(value) {
   ['utm_source', 'utm_medium', 'utm_campaign', 'ref'].forEach((k) => u.searchParams.delete(k));
   return u.href;
 }
+// Characters that XML 1.0 forbids (C0 controls except tab/LF/CR, DEL, U+FFFE/U+FFFF, lone surrogates).
+const invalidText =
+  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+/** @param {string} value */
+export const stripInvalidText = (value) => value.replace(invalidText, '');
 export function article(title, url, date, source) {
+  if (typeof title === 'string') title = stripInvalidText(title);
   if (typeof title !== 'string' || !title.trim() || title.length > 1000 || !Number.isFinite(Date.parse(date)))
     throw new Error(`Invalid article from ${source}`);
   const normalizedUrl = safeUrl(url);

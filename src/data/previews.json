@@ -6,13 +6,6 @@
     "height": 630,
     "checkedAt": "2026-10-26T04:52:59.769Z"
   },
-  "https://marketplace.visualstudio.com/items?itemName=seatonjiang.gitmoji-vscode": {
-    "image": "https://seatonjiang.gallerycdn.vsassets.io/extensions/seatonjiang/gitmoji-vscode/2026.3.6/1772774226964/Microsoft.VisualStudio.Services.Icons.Default",
-    "icon": null,
-    "width": 200,
-    "height": 200,
-    "checkedAt": "2026-10-26T04:52:58.754Z"
-  },
   "https://2026.cp20.dev": {
     "image": "https://cp20.dev/og.png",
     "icon": "https://2026.cp20.dev/apple-touch-icon.png",
@@ -502,5 +495,145 @@
     "width": 1200,
     "height": 630,
     "checkedAt": "2026-11-01T13:32:00.909Z"
+  },
+  "https://marketplace.visualstudio.com/items?itemName=cp20.foodmoji-vscode": {
+    "image": "https://cp20.gallerycdn.vsassets.io/extensions/cp20/foodmoji-vscode/1.0.0/1732020741627/Microsoft.VisualStudio.Services.Icons.Default",
+    "icon": null,
+    "width": 256,
+    "height": 256,
+    "checkedAt": "2026-10-31T16:53:39.408Z"
+  },
+  "https://trap.jp/post/2313/": {
+    "image": "https://trap.jp/content/images/2024/08/1000015504.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 777,
+    "checkedAt": "2026-11-01T10:57:28.625Z"
+  },
+  "https://trap.jp/post/2287/": {
+    "image": "https://trap.jp/content/images/2024/07/frame-46.jpg",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 767,
+    "checkedAt": "2026-11-01T10:57:28.650Z"
+  },
+  "https://trap.jp/post/2255/": {
+    "image": "https://trap.jp/content/images/2024/06/----------2024-06-19-134953.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 681,
+    "height": 257,
+    "checkedAt": "2026-11-01T10:57:29.101Z"
+  },
+  "https://trap.jp/post/2249/": {
+    "image": "https://trap.jp/content/images/2024/06/goes24xa8aa7v9p.jpeg",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 768,
+    "checkedAt": "2026-11-01T10:57:30.569Z"
+  },
+  "https://trap.jp/post/2245/": {
+    "image": "https://trap.jp/content/images/2024/05/frame-43.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 538,
+    "checkedAt": "2026-11-01T10:57:30.593Z"
+  },
+  "https://trap.jp/post/2154/": {
+    "image": "https://trap.jp/content/images/2024/03/frame-32-1.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 538,
+    "checkedAt": "2026-11-01T10:57:30.887Z"
+  },
+  "https://trap.jp/post/2136/": {
+    "image": "https://trap.jp/content/images/2024/03/upload_437630f5bdf2540d5fe66d1f085c26f7.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 868,
+    "height": 160,
+    "checkedAt": "2026-11-01T10:57:31.076Z"
+  },
+  "https://trap.jp/post/2248/": {
+    "image": "https://trap.jp/content/images/2024/05/git-------.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 576,
+    "checkedAt": "2026-11-01T10:57:31.270Z"
+  },
+  "https://trap.jp/post/2195/": {
+    "image": "https://trap.jp/content/images/2024/04/--------------------og-image.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 538,
+    "checkedAt": "2026-11-01T10:57:31.419Z"
+  },
+  "https://trap.jp/post/2184/": {
+    "image": "https://trap.jp/content/images/2024/04/pxl_20240330_104841824-1.jpg",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 576,
+    "checkedAt": "2026-11-01T10:57:32.431Z"
+  },
+  "https://trap.jp/post/2115/": {
+    "image": "https://trap.jp/content/images/2024/04/trap-------------10-.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 538,
+    "checkedAt": "2026-11-01T10:57:32.737Z"
+  },
+  "https://trap.jp/post/2170/": {
+    "image": "https://trap.jp/content/images/2024/03/1_web_speed_hackathon_2024.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 960,
+    "height": 540,
+    "checkedAt": "2026-11-01T10:57:33.111Z"
+  },
+  "https://trap.jp/post/2058/": {
+    "image": "https://trap.jp/content/images/2023/12/image.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 558,
+    "checkedAt": "2026-11-01T10:57:33.172Z"
+  },
+  "https://trap.jp/post/1956/": {
+    "image": "https://trap.jp/content/images/2024/04/----------2024-04-03-000931.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 844,
+    "height": 660,
+    "checkedAt": "2026-11-01T10:57:33.197Z"
+  },
+  "https://trap.jp/post/2097/": {
+    "image": "https://trap.jp/content/images/2023/12/traq---1-------.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 538,
+    "checkedAt": "2026-11-01T10:57:33.204Z"
+  },
+  "https://trap.jp/post/2017/": {
+    "image": "https://trap.jp/content/images/2023/10/f7ubub5aoaadmfk-2.jpeg",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 768,
+    "checkedAt": "2026-11-01T10:57:34.261Z"
+  },
+  "https://trap.jp/post/2067/": {
+    "image": "https://trap.jp/content/images/2023/12/pxl_20231201_093118383.portrait.jpg",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 768,
+    "checkedAt": "2026-11-01T10:57:34.347Z"
+  },
+  "https://trap.jp/post/1909/": {
+    "image": "https://trap.jp/content/images/2023/06/--166_20230619132801.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 538,
+    "checkedAt": "2026-11-01T10:57:35.061Z"
+  },
+  "https://trap.jp/post/2003/": {
+    "image": "https://trap.jp/content/images/2023/09/--------------4-.png",
+    "icon": "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png",
+    "width": 1024,
+    "height": 538,
+    "checkedAt": "2026-11-01T10:57:35.284Z"
   }
 }

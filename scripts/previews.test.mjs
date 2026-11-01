@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePreview } from './previews.mjs';
+import { readFile } from 'node:fs/promises';
+import { parsePreview, keepReferenced } from './previews.mjs';
 
 test('original OG image dimensions, relative icons and query parameters are preserved', () => {
   assert.deepEqual(
@@ -43,4 +44,35 @@ test('secure OG and Twitter fallback; missing or unsafe URLs never become images
     );
   }
   assert.equal(parsePreview('<html></html>', 'https://example.com').image, null);
+});
+
+test('metadata for pages the site no longer links to is dropped, keeping the existing order', () => {
+  const previews = {
+    'https://a.example/': { image: 'a' },
+    'https://old.example/': { image: 'o' },
+    'https://b.example/': {},
+  };
+  assert.deepEqual(
+    keepReferenced(previews, ['https://b.example/', 'https://a.example/', 'https://new.example/']),
+    {
+      'https://a.example/': { image: 'a' },
+      'https://b.example/': {},
+    },
+  );
+});
+
+test("works never link to or take their preview from another publisher's Marketplace listing", async () => {
+  const works = JSON.parse(await readFile(new URL('../src/data/works.json', import.meta.url), 'utf8'));
+  const previews = JSON.parse(await readFile(new URL('../src/data/previews.json', import.meta.url), 'utf8'));
+  for (const work of works) {
+    const url = new URL(work.url);
+    if (url.hostname !== 'marketplace.visualstudio.com') continue;
+    assert.equal(url.searchParams.get('itemName')?.split('.')[0], 'cp20', work.id);
+    const image = previews[work.url]?.image;
+    if (image) assert.match(new URL(image).hostname, /^cp20\.gallerycdn\.vsassets\.io$/, work.id);
+  }
+  assert.equal(
+    works.find((w) => w.id === 'foodmoji').url,
+    'https://marketplace.visualstudio.com/items?itemName=cp20.foodmoji-vscode',
+  );
 });

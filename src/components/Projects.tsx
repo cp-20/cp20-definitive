@@ -1,17 +1,21 @@
 import { createSignal, For } from 'solid-js';
 import Icon from './Icon';
-import { OGImage, OriginalIcon, Postmark, postmarkDate } from './Preview';
+import { isIconImage } from '../data/icon-image.mjs';
+import { OGImage, OriginalIcon, Postmark, postmarkDate, sizes } from './Preview';
 import { works } from '../data/content';
 import { featuredIds } from '../data/editorial';
 export const projects = featuredIds.map((id) => works.find((w) => w.id === id)!);
 export default function Projects() {
   const [selected, setSelected] = createSignal(0);
+  // Read out when the arrows or a swipe turn the deck; the tabs announce themselves on focus.
+  const [spoken, setSpoken] = createSignal('');
   let tabs!: HTMLDivElement;
-  function choose(i: number, focus = false) {
+  function choose(i: number, focus = false, speak = !focus) {
     const next = (i + 3) % 3;
     if (next === selected()) return focus && (tabs.children[next] as HTMLButtonElement).focus();
     setSelected(next);
     if (focus) (tabs.children[next] as HTMLButtonElement).focus();
+    if (speak) setSpoken(`0${next + 1} / 03 ${projects[next].title}`);
   }
   const keyboard = (e: KeyboardEvent) => {
     if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) {
@@ -23,11 +27,18 @@ export default function Projects() {
     }
   };
   // Touch swipe: the card follows the finger, then settles on the next work or springs back.
-  // Vertical scrolling stays native (touch-action: pan-y).
+  // Vertical scrolling and pinch zoom stay native (touch-action: pan-y pinch-zoom); a second
+  // finger means a pinch, so it cancels the swipe.
   const [drag, setDrag] = createSignal(0);
   let swipe = { x: 0, y: 0, id: -1 };
+  const swipeCancel = () => {
+    swipe.id = -1;
+    setDrag(0);
+  };
   const swipeStart = (e: PointerEvent) => {
-    if (e.pointerType !== 'mouse' && e.isPrimary) swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    if (e.pointerType === 'mouse') return;
+    if (e.isPrimary) swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    else swipeCancel();
   };
   const swipeMove = (e: PointerEvent) => {
     if (e.pointerId !== swipe.id) return;
@@ -75,7 +86,7 @@ export default function Projects() {
               aria-selected={selected() === i() ? 'true' : 'false'}
               aria-controls={`project-${i()}`}
               tabindex={selected() === i() ? 0 : -1}
-              onClick={() => choose(i())}
+              onClick={() => choose(i(), false, false)}
               data-project-tab={i()}
             >
               <span class="project-spot">
@@ -95,10 +106,7 @@ export default function Projects() {
         onPointerDown={swipeStart}
         onPointerMove={swipeMove}
         onPointerUp={swipeEnd}
-        onPointerCancel={() => {
-          swipe.id = -1;
-          setDrag(0);
-        }}
+        onPointerCancel={swipeCancel}
       >
         <For each={projects}>
           {(p, i) => (
@@ -113,7 +121,13 @@ export default function Projects() {
               inert={selected() !== i()}
             >
               <div class="featured-image">
-                <OGImage url={p.url} alt={`${p.title}のOG画像`} priority={i() === 0} />
+                <OGImage
+                  url={p.url}
+                  alt={`${p.title}のOG画像`}
+                  icon={isIconImage(p)}
+                  sizes={sizes.featured}
+                  priority={i() === 0}
+                />
                 <Postmark date={postmarkDate(p.productionTime)} top="CP20.DEV" bottom={`No.0${i() + 1}`} />
               </div>
               <div class="featured-copy">
@@ -148,6 +162,9 @@ export default function Projects() {
       <div class="featured-bottom">
         <span class="project-page">
           0{selected() + 1} <span>/ 03</span>
+        </span>
+        <span class="visually-hidden" role="status">
+          {spoken()}
         </span>
         <div class="deck-arrows">
           <button class="icon-button" aria-label="前の作品" onClick={() => choose(selected() - 1)}>

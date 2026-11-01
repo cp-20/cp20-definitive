@@ -1,0 +1,41 @@
+# Deploys database.rules.json to the stamps database when it changes on main,
+# after checking it on the Realtime Database emulator.
+name: Firebase rules
+on:
+  push:
+    branches: [main]
+    paths: [database.rules.json]
+  pull_request:
+    paths: [database.rules.json]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency: firebase-rules-${{ github.ref }}
+env:
+  FIREBASE_TOOLS: firebase-tools@15.34.2
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .node-version
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Test on the emulator
+        run: >-
+          npx --yes "$FIREBASE_TOOLS" emulators:exec --project cp20-platform --only database
+          "STAMPS_RULES_EMULATOR=127.0.0.1:9000 node scripts/stamps-rules.mjs"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Deploy
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: npx --yes "$FIREBASE_TOOLS" deploy --only database:portfolio-stamps --project cp20-platform --non-interactive

@@ -52,3 +52,25 @@ test('rapid pending operations roll the oldest of five own stamps and can be und
   );
   assert.equal(remote.length, 6);
 });
+test('moving one of five own stamps keeps the other four, including the oldest', () => {
+  const remote = [
+    ...Array.from({ length: 5 }, (_, i) => ({ ...stamp(`me-${i}`, 'me', i), slot: String(i) })),
+    stamp('other', 'visitor'),
+  ];
+  const target = remote[3];
+  const moved = { ...stamp('local-move', 'local', target.createdAt), x: 0.57, y: 0.01, angle: 3 };
+  const result = projectStamps(remote, [{ type: 'move', target, stamp: moved }], 'me');
+  assert.deepEqual(result.map((s) => s.id).sort(), ['local-move', 'me-0', 'me-1', 'me-2', 'me-4', 'other']);
+  assert.equal(result.find((s) => s.id === 'local-move').createdAt, 3);
+  // The stream echoes the moved sticker in its own slot before the response: still one copy.
+  const echoed = remote.map((s) => (s.id === 'me-3' ? { ...s, x: 0.57, y: 0.01, angle: 3 } : s));
+  assert.equal(projectStamps(echoed, [{ type: 'move', target, stamp: moved }], 'me').length, 6);
+  // Moving a sticker another tab already peeled places it as a new one.
+  const gone = remote.filter((s) => s.id !== 'me-3');
+  assert.deepEqual(
+    projectStamps(gone, [{ type: 'move', target, stamp: moved }], 'me')
+      .map((s) => s.id)
+      .sort(),
+    ['local-move', 'me-0', 'me-1', 'me-2', 'me-4', 'other'],
+  );
+});

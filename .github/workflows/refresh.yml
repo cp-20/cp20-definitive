@@ -7,8 +7,14 @@ on:
   schedule:
     - cron: '17 */6 * * *'
   workflow_dispatch:
+    inputs:
+      allow_trap_shrink:
+        description: Accept a trap.jp snapshot that lost more than half of its posts
+        type: boolean
+        default: false
+# Third-party code (npm packages) only runs in the read-only job; the job that can push runs none.
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: cp20-production
   cancel-in-progress: false
@@ -16,31 +22,69 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      changed: ${{ steps.sync.outputs.changed }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      - run: npm test
+      # Install scripts are not needed (firebase/protobufjs postinstalls only tune optional defaults).
+      - run: npm ci --ignore-scripts
+      # No test run before sync: tests read the snapshot, so one broken snapshot on main would
+      # otherwise stop every later run before it could collect a fixed one.
       - name: Gather independent public sources
         id: sync
         run: npm run sync
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          TRAP_GHOST_ADMIN_KEY: ${{ secrets.TRAP_GHOST_ADMIN_KEY }}
-      # Validate the new snapshot here so a broken one never reaches main (and Cloudflare's build).
-      - name: Check and build
+          ALLOW_TRAP_SHRINK: ${{ inputs.allow_trap_shrink && '1' || '' }}
+      # Validate the new snapshot with Cloudflare's build command (type check, build, then the
+      # tests, which read the snapshot and dist) so a broken one never reaches main.
+      - name: Verify the new snapshot
         if: steps.sync.outputs.changed == 'true' || github.event_name != 'schedule'
-        run: npm run check && npm run build
-      # Content changes are committed without [skip ci] so Cloudflare Workers Builds redeploys them.
-      # A run that only updates checkedAt (kept so the schedule is not disabled for inactivity)
-      # is marked [skip ci]. Pushes made with GITHUB_TOKEN do not start another workflow run.
+        run: npm run verify
+        env:
+          # A source dropping an article a work links only warns here (CI stays strict), so it
+          # cannot fail every refresh and stop the other sources from updating.
+          RELATED_ARTICLES: warn
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: snapshot
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            src/data/generated.json
+            src/data/tracks.json
+            src/data/series.json
+            src/data/previews.json
+            src/data/image-cache.json
+            public/media/
+  # Content changes are committed without [skip ci] so Cloudflare Workers Builds redeploys them.
+  # A run that only updates checkedAt (kept so the schedule is not disabled for inactivity)
+  # is marked [skip ci]. Pushes made with GITHUB_TOKEN do not start another workflow run.
+  persist:
+    needs: refresh
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      # Mirror the validated snapshot exactly, including deleted media files.
+      - run: rm -rf public/media
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: snapshot
+          path: .
       - name: Persist last-known-good content and collection health
         env:
-          CONTENT_CHANGED: ${{ steps.sync.outputs.changed }}
+          CONTENT_CHANGED: ${{ needs.refresh.outputs.changed }}
         run: |
+          mkdir -p public/media
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A src/data/generated.json src/data/tracks.json src/data/series.json src/data/previews.json src/data/image-cache.json public/media
@@ -52,3 +96,6 @@ jobs:
             fi
             git push
           fi
+      # Runs after the push so the last-known-good snapshot is saved either way.
+      - name: Fail when a source has been failing for over 48 hours
+        run: node scripts/source-health.mjs

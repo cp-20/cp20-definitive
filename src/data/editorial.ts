@@ -1,6 +1,12 @@
 export const featuredIds = ['dice-spec-v2', 'c-compiler', 'minna-no-monosashi'];
 export const milestones: { year: string; grade: string; title: string; text: string; url?: string }[] = [
   {
+    year: '2026.09',
+    grade: '大学4年',
+    title: 'LayerX インターン',
+    text: 'バクラクの Enabling チーム。プロダクト横断で開発基盤を支える。',
+  },
+  {
     year: '2026.03',
     grade: '大学3年',
     title: 'フィックスターズ インターン',
@@ -23,15 +29,15 @@ export const milestones: { year: string; grade: string; title: string; text: str
   {
     year: '2024.04',
     grade: '大学2年',
-    title: 'Flatt Security インターン開始',
-    text: 'Shisho Cloud Team / Software Engineering',
+    title: 'Flatt Security インターン',
+    text: 'Shisho Cloud Team / Software Engineering（2024.04〜2025.09）',
   },
   {
     year: '2024.03',
     grade: '大学1年',
     title: 'Web Speed Hackathon 2024 優勝',
     text: 'Webアプリケーションのパフォーマンス改善。',
-    url: 'https://github.com/CyberAgentHack/web-speed-hackathon-2024',
+    url: 'https://trap.jp/post/2170/',
   },
   {
     year: '2023.08',
@@ -45,13 +51,13 @@ export const milestones: { year: string; grade: string; title: string; text: str
     grade: '大学1年',
     title: 'SecHack365 採択',
     text: '技術記事の未読消化をサポートするReadStackを開発。',
-    url: 'https://sechack365.nict.go.jp/',
+    url: 'https://sechack365.nict.go.jp/achievement/2023/#area_24dn',
   },
   {
     year: '2023.04',
     grade: '大学1年',
     title: '東京工業大学 入学',
-    text: '情報理工学院（現在の東京科学大学）。',
+    text: '東京工業大学（現 東京科学大学）情報理工学院。',
     url: 'https://note.com/cp20/n/n3be2d294a6f3',
   },
   {
@@ -75,53 +81,4 @@ export const editions = [
   { year: '2025', tech: 'SolidJS', image: '2025-portfolio' },
   { year: '2026', tech: 'Hono + xterm.js', image: null },
 ];
-// Volume 1 covers of the featured manga, saved under public/images/covers.
-// The series list itself comes from the 2026 edition; titles without a cover fall back to its thumbnail.
-// spine / ink: the colours of each book's spine on the shelf, picked from its cover.
-export const mangaCovers: Record<
-  string,
-  { image: string; source: string; url: string; spine: string; ink: string }
-> = {
-  放課後帰宅びより: {
-    image: '/images/covers/houkago-kitaku-biyori.jpg',
-    spine: '#f3a6b8',
-    ink: '#5b3a86',
-    source: 'webアクション（双葉社）',
-    url: 'https://comic-action.com/episode/4856001361584756651',
-  },
-  やめろ好きになってしまう: {
-    image: '/images/covers/yamesuki.jpg',
-    spine: '#f27aa6',
-    ink: '#2d2a33',
-    source: '集英社',
-    url: 'https://www.shueisha.co.jp/books/items/contents.html?isbn=978-4-08-893745-8',
-  },
-  妹は知っている: {
-    image: '/images/covers/imouto-wa-shitteiru.jpg',
-    spine: '#f08a3c',
-    ink: '#ffffff',
-    source: 'BOOK☆WALKER',
-    url: 'https://bookwalker.jp/de2b0a8fbc-ca4b-46cc-b482-5287aedb0079/',
-  },
-  没落令嬢の悪党賛歌: {
-    image: '/images/covers/botsuraku-reijou.jpg',
-    spine: '#3b1f2b',
-    ink: '#e8c66a',
-    source: 'BOOK☆WALKER',
-    url: 'https://bookwalker.jp/de6a461693-6f23-466a-8db4-99ade8de468f/',
-  },
-  寿司ガキ: {
-    image: '/images/covers/sushi-gaki.jpg',
-    spine: '#e2493b',
-    ink: '#ffffff',
-    source: 'カドコミ（KADOKAWA）',
-    url: 'https://comic-walker.com/detail/KC_000933_S',
-  },
-  ざこのみなさんお大事に: {
-    image: '/images/covers/zako-no-minasan.jpg',
-    spine: '#5fc9cf',
-    ink: '#2d2a33',
-    source: 'BOOK☆WALKER',
-    url: 'https://bookwalker.jp/de29709146-f9fd-4e74-979a-8c178c167f77/',
-  },
-};
+export { mangaCovers, shownSeriesThumbnail } from './manga-covers.mjs';

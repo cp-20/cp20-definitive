@@ -1,14 +1,28 @@
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { handleRequest } from '../dist/server/server.js';
 import { mergeArticles } from '../src/data/normalize.mjs';
+import {
+  assertRelatedArticles,
+  canonicalUrl,
+  mergeWorks,
+  missingRelatedArticles,
+  sitePaths,
+} from '../src/data/site-pages.mjs';
+import { buildFeed } from './feed.mjs';
+import { subsetSiteFonts } from './fonts.mjs';
 const load = async (name) =>
   JSON.parse(await readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8'));
 const [baseWorks, manual, snapshot] = await Promise.all(['works', 'manual', 'generated'].map(load));
-const works = [...baseWorks, ...manual.projects],
+const works = mergeWorks(baseWorks, manual),
   articles = mergeArticles(snapshot.articles, [], manual);
-const paths = ['/', '/about', '/articles', '/works', ...works.map((w) => `/works/${w.id}`), '/404'];
+// Strict for commits (CI); the scheduled refresh only warns, because a source dropping a linked
+// article must not fail every later refresh. The work page then leaves that link out.
+if (process.env.RELATED_ARTICLES === 'warn')
+  for (const message of missingRelatedArticles(works, articles)) console.warn(`::warning::${message}`);
+else assertRelatedArticles(works, articles);
+const paths = [...sitePaths(works), '/404'];
 for (const path of paths) {
-  const response = await handleRequest(new Request(`https://cp20.dev${path}`));
+  const response = await handleRequest(new Request(canonicalUrl(path)));
   if (response.status !== (path === '/404' ? 404 : 200)) throw Error(`Prerender ${path}: ${response.status}`);
   const output =
     path === '/'
@@ -19,23 +33,18 @@ for (const path of paths) {
   await mkdir(output.slice(0, output.lastIndexOf('/')), { recursive: true });
   await writeFile(output, await response.text());
 }
-const escape = (s) =>
-  s.replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]);
 await writeFile(
   'dist/client/sitemap.xml',
   `<?xml version="1.0" encoding="utf-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths
     .filter((p) => p !== '/404')
-    .map((p) => `<url><loc>https://cp20.dev${p === '/' ? '' : p}</loc></url>`)
+    .map((p) => `<url><loc>${canonicalUrl(p === '/' ? '' : p)}</loc></url>`)
     .join('')}</urlset>`,
 );
-await writeFile(
-  'dist/client/feed.xml',
-  `<?xml version="1.0" encoding="utf-8"?><rss version="2.0"><channel><title>cp20.dev — Writing</title><link>https://cp20.dev/articles</link><description>しーぴーの記事</description><language>ja</language>${articles
-    .slice(0, 50)
-    .map(
-      (a) =>
-        `<item><title>${escape(a.title)}</title><link>${escape(a.url)}</link><guid isPermaLink="true">${escape(a.url)}</guid><pubDate>${new Date(a.date).toUTCString()}</pubDate></item>`,
-    )
-    .join('')}</channel></rss>`,
-);
+await writeFile('dist/client/feed.xml', buildFeed(articles));
+// The Vite manifest is only for the build; dist/client is published as-is.
+await rm('dist/client/.vite', { recursive: true, force: true });
+const fonts = await subsetSiteFonts('dist/client');
 console.log(`Prerendered ${paths.length} pages, RSS and sitemap → dist/client`);
+console.log(
+  `Fonts: ${fonts.characters} characters, ${fonts.files.map((f) => `${f.weight} ${(f.size / 1024).toFixed(0)} kB`).join(', ')}`,
+);

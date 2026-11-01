@@ -1,41 +1,34 @@
 import { For } from 'solid-js';
 import type { JSX } from '@solidjs/web';
 import Icon, { type IconName } from './Icon';
-const navigation: { href: string; label: string; icon: IconName }[] = [
-  { href: '/', label: 'ホーム', icon: 'Grid2x2' },
-  { href: '/works', label: '作品', icon: 'Folder' },
-  { href: '/articles', label: '記事', icon: 'FileText' },
-  { href: '/about', label: 'プロフィール', icon: 'UserRound' },
-];
+import { TAB_PATHS, sectionName, tabIndex } from '../data/site-pages.mjs';
+// The index tabs, in TAB_PATHS order.
+const tabs: Record<(typeof TAB_PATHS)[number], { label: string; icon: IconName }> = {
+  '/': { label: 'ホーム', icon: 'Grid2x2' },
+  '/works': { label: '作品', icon: 'Folder' },
+  '/articles': { label: '記事', icon: 'FileText' },
+  '/about': { label: 'プロフィール', icon: 'UserRound' },
+};
 export default function Shell(props: { path: string; children: JSX.Element }) {
-  const section = () =>
-    props.path === '/' ? 'home' : props.path.startsWith('/works') ? 'works' : props.path.slice(1) || 'home';
   return (
     <>
       <a class="skip-link" href="#main">
         本文へスキップ
       </a>
-      <div class="site-body" data-stamp-anchor="page" data-section={section()}>
+      <div class="site-body" data-stamp-anchor="page" data-section={sectionName(props.path)}>
         <aside class="rail">
           <nav aria-label="メインナビゲーション">
-            <For each={navigation}>
-              {(n) => {
-                const tab = n.href === '/' ? 'home' : n.href.slice(1);
-                return (
-                  <a
-                    href={n.href}
-                    data-tab={tab}
-                    aria-current={
-                      (n.href === '/' ? props.path === '/' : props.path.startsWith(n.href))
-                        ? 'page'
-                        : undefined
-                    }
-                  >
-                    <Icon name={n.icon} size={18} />
-                    <span>{n.label}</span>
-                  </a>
-                );
-              }}
+            <For each={TAB_PATHS}>
+              {(href, i) => (
+                <a
+                  href={href}
+                  data-tab={sectionName(href)}
+                  aria-current={tabIndex(props.path) === i() ? 'page' : undefined}
+                >
+                  <Icon name={tabs[href].icon} size={18} />
+                  <span>{tabs[href].label}</span>
+                </a>
+              )}
             </For>
           </nav>
         </aside>

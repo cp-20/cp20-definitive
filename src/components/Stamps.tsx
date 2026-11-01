@@ -1,21 +1,25 @@
 import { createSignal, createMemo, createEffect, onSettled, flush, For, Show } from 'solid-js';
 import type { JSX } from '@solidjs/web';
-import type { Account, PlacedStamp } from '../stamps-client';
+import type { Operation, PlacedStamp } from '../data/stamp-types';
 import { projectStamps } from '../data/stamp-optimistic.mjs';
+import { sheetStartsOpen } from '../data/sheet-start.mjs';
+import { OVER_SHEET, focusAfterRemoval, stampAnnouncement, stampPlace } from '../data/stamp-a11y.mjs';
+import { STAMPS_PER_PAGE as LIMIT } from '../data/stamp-limits.mjs';
+import {
+  HOLD_MS,
+  HOLD_SLOP,
+  TAPPABLE,
+  keptOnScreen,
+  liftedSpot,
+  waitsForHold,
+} from '../data/stamp-touch.mjs';
+import { createSaveLedger, saveOperation, writeDelay } from '../data/stamp-save.mjs';
 import Icon from './Icon';
-const kinds = [
-  { symbol: 'clover', name: 'クローバー' },
-  { symbol: 'thumb', name: 'いいね' },
-  { symbol: 'sparkles', name: 'きらきら' },
-  { symbol: 'eyes', name: '見てる' },
-  { symbol: 'heart', name: 'ハート' },
-  { symbol: '', name: 'しーぴー' },
-];
-const LIMIT = 5;
-type Operation = { id: string; path: string } & (
-  | { type: 'add'; stamp: PlacedStamp }
-  | { type: 'remove'; target: PlacedStamp }
-);
+import { STICKER_KINDS as kinds, StickerFace, gravatarUrl as gravatar, stickerName } from './sticker/kinds';
+import { centerOf as center, createAnchorMeasure, locate, pageElementAt, spokenText } from './sticker/dom';
+import { createHand } from './sticker/hand';
+import { createStampAccount } from './sticker/account';
+import { ACCOUNT_KEY, HIDE_KEY, SHEET_KEY, readPref, writePref } from './sticker/prefs';
 // A sticker in hand: pressed (not moved yet), dragged, or aimed (click-to-place / keyboard).
 type Held = {
   kind: number;
@@ -27,43 +31,42 @@ type Held = {
 const visualKey = (s: Pick<PlacedStamp, 'anchor' | 'x' | 'y' | 'kind' | 'angle'>) =>
   `${s.anchor}|${s.x}|${s.y}|${s.kind}|${s.angle}`;
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+// Half of a placed sticker's 46px box (.placed-stamp in app.css).
+const STICKER_RADIUS = 23;
+// How far one arrow key press moves the sticker aimed with the keys, and with Shift held.
+const KEY_STEP = 16,
+  KEY_JUMP = 96;
+// The hint bar shown while a tapped sticker waits for its spot (.stamp-aim-bar in app.css) ends
+// about this far down; a sticker floating up from under it goes below the finger instead.
+const AIM_BAR_BOTTOM = 80;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-const gravatar = (hash: string, size = 64) => `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
-// Layout position relative to <body>, ignoring transforms and scroll.
-function layoutBox(el: HTMLElement) {
-  let x = 0,
-    y = 0,
-    node: HTMLElement | null = el;
-  while (node && node !== document.body) {
-    x += node.offsetLeft;
-    y += node.offsetTop;
-    node = node.offsetParent as HTMLElement | null;
-  }
-  return { x, y, w: el.offsetWidth, h: el.offsetHeight };
-}
-function StickerFace(props: { kind: number }) {
-  return (
-    <img
-      src={props.kind === 5 ? '/images/avatar.png' : `/stamps/${kinds[props.kind]?.symbol || 'clover'}.svg`}
-      alt=""
-      width="40"
-      height="40"
-      draggable={false}
-    />
-  );
+// The phone layout in app.css: tabs along the bottom edge and the sheet pinned across the screen.
+const PHONE_LAYOUT = '(max-width: 760px)';
+// A copy of a map or set without one key.
+function withoutKey<V>(map: ReadonlyMap<string, V>, key: string): ReadonlyMap<string, V>;
+function withoutKey(set: ReadonlySet<string>, key: string): ReadonlySet<string>;
+function withoutKey(
+  items: ReadonlyMap<string, unknown> | ReadonlySet<string>,
+  key: string,
+): ReadonlyMap<string, unknown> | ReadonlySet<string> {
+  const next = items instanceof Map ? new Map(items) : new Set(items as ReadonlySet<string>);
+  next.delete(key);
+  return next;
 }
 export function StampProvider(props: { path: string; enabled: boolean; children: JSX.Element }) {
   const [remote, setRemote] = createSignal<PlacedStamp[]>([]),
     [operations, setOperations] = createSignal<Operation[]>([]),
     // null until the stored preference is read, so neither the sheet nor its tab flashes.
     [open, setOpen] = createSignal<boolean | null>(null),
-    [kind, setKind] = createSignal(0),
     [hidden, setHidden] = createSignal(false),
     [message, setMessage] = createSignal(''),
-    [failed, setFailed] = createSignal<Operation | null>(null),
+    // Spoken only: where the sticker in hand is, and what placing or peeling it did.
+    [spoken, setSpoken] = createSignal(''),
+    // The sticker stream's state, kept apart so it never hides a sign-in or saving message.
+    [connection, setConnection] = createSignal(''),
+    // Saves that failed, oldest first; one retry sends them all again in order.
+    [failed, setFailed] = createSignal<readonly Operation[]>([]),
     [revision, setRevision] = createSignal(0),
-    [account, setAccount] = createSignal<Account | null>(null),
-    [signingIn, setSigningIn] = createSignal(false),
     [nudge, setNudge] = createSignal(0),
     [held, setHeld] = createSignal<Held | null>(null),
     [ghostKind, setGhostKind] = createSignal(-1),
@@ -72,7 +75,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     [fresh, setFresh] = createSignal<ReadonlyMap<string, { x: number; y: number; r: number }>>(new Map()),
     [leaving, setLeaving] = createSignal<ReadonlySet<string>>(new Set());
   const cache = new Map<string, PlacedStamp[]>(),
-    resolved = new Map<string, PlacedStamp>();
+    ledger = createSaveLedger();
   let clientPromise: Promise<typeof import('../stamps-client')> | undefined;
   const client = () =>
     (clientPromise ||= import('../stamps-client').catch((e) => {
@@ -83,9 +86,23 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     peekTimer = 0,
     overlay: HTMLDivElement | undefined,
     sheet: HTMLElement | undefined,
+    tab: HTMLButtonElement | undefined,
     ghost: HTMLDivElement | undefined,
     writes = Promise.resolve(),
     lastWrite = 0;
+  // ── Account ── (see sticker/account.ts)
+  const {
+    account,
+    signingIn,
+    restoring,
+    connect: connectAccount,
+    signIn,
+    signOut,
+  } = createStampAccount({
+    client,
+    onMessage: setMessage,
+    beforeSignOut: () => cancelHeld(false),
+  });
   const owner = () => account()?.uid || '';
   const projected = createMemo<PlacedStamp[]>(() =>
     projectStamps(
@@ -101,17 +118,46 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       .filter(isOwn)
       .sort((a, b) => b.createdAt - a.createdAt),
   );
+  // Anchor boxes are measured once per anchor (not per sticker), and unchanged stickers keep
+  // their previous object so a remote update only touches the stickers that actually moved.
+  type Shown = PlacedStamp & { key: string; left: number; top: number };
+  let shown = new Map<string, Shown>();
   const visible = createMemo(() => {
     revision();
-    if (hidden()) return [];
-    return projected().flatMap((stamp) => {
-      const anchor = document.querySelector<HTMLElement>(`[data-stamp-anchor="${CSS.escape(stamp.anchor)}"]`);
-      if (!anchor || anchor.closest('[inert]') || getComputedStyle(anchor).visibility === 'hidden') return [];
-      const box = layoutBox(anchor);
-      return box.w && box.h
-        ? [{ ...stamp, key: visualKey(stamp), left: box.x + box.w * stamp.x, top: box.y + box.h * stamp.y }]
-        : [];
+    if (hidden()) return ((shown = new Map()), []);
+    const boxOf = createAnchorMeasure();
+    // The index tabs hang off the page's right edge; a sticker written there directly (the UI never
+    // places one on them) is pulled back so it cannot cover them. On phones the tabs are fixed to
+    // the bottom of the screen and painted above the stamp layer instead (app.css).
+    const right = () => {
+      const page = boxOf('page');
+      // A tilted sticker reaches a little past its box; keep its corners off the tabs as well.
+      return page ? page.x + page.w - STICKER_RADIUS - 8 : Infinity;
+    };
+    const next = new Map<string, Shown>();
+    const list = projected().flatMap((stamp) => {
+      const box = boxOf(stamp.anchor);
+      if (!box) return [];
+      const key = visualKey(stamp),
+        left = Math.min(box.x + box.w * stamp.x, right()),
+        top = box.y + box.h * stamp.y,
+        before = shown.get(key);
+      const item =
+        before &&
+        before.left === left &&
+        before.top === top &&
+        before.id === stamp.id &&
+        before.owner === stamp.owner &&
+        before.slot === stamp.slot &&
+        before.avatar === stamp.avatar &&
+        before.createdAt === stamp.createdAt
+          ? before
+          : { ...stamp, key, left, top };
+      next.set(key, item);
+      return [item];
     });
+    shown = next;
+    return list;
   });
   const reposition = () => {
     if (!frame)
@@ -122,7 +168,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   };
   const receive = (path: string, stamps: PlacedStamp[]) => {
     cache.set(path, stamps);
-    if (message().startsWith('シールに接続')) setMessage('');
+    setConnection('');
     if (props.path === path) {
       setRemote(stamps);
       reposition();
@@ -145,10 +191,10 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           stop = api.subscribe(
             path,
             (stamps) => receive(path, stamps),
-            () => setMessage('シールに接続できません'),
+            () => setConnection('シールに接続できません'),
           );
         } catch {
-          setMessage('シールに接続できません');
+          setConnection('シールに接続できません');
         }
       }, 200);
       return () => {
@@ -159,186 +205,279 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     },
   );
 
-  // ── Account ──
-  // Anyone can see the stickers; placing them needs a Google account. The auth SDK is loaded
-  // once the visitor reaches for the sheet (or straight away if they signed in before),
-  // so the sign-in popup can open within the click.
-  let watching: Promise<void> | undefined;
-  function connectAccount() {
-    return (watching ||= client()
-      .then((api) =>
-        api.watchAccount((next) => {
-          setAccount(next);
-          try {
-            if (next) localStorage.setItem('cp20-sticker-account', '1');
-            else localStorage.removeItem('cp20-sticker-account');
-          } catch {}
-        }),
-      )
-      .then(() => {})
-      .catch(() => {
-        watching = undefined;
-      }));
-  }
-  async function signIn() {
-    if (signingIn()) return;
-    setSigningIn(true);
-    setMessage('');
-    try {
-      const api = await client();
-      await connectAccount();
-      if (!account()) {
-        const next = await api.signIn();
-        if (next) setAccount(next);
-        else setMessage('Google アカウントでログインしてください');
-      }
-    } catch (e) {
-      const code = (e as { code?: string }).code || '';
-      setMessage(
-        code.includes('popup-closed') || code.includes('cancelled-popup')
-          ? ''
-          : code.includes('popup-blocked')
-            ? 'ポップアップが開けませんでした。もう一度押してください'
-            : 'ログインできませんでした',
-      );
-    } finally {
-      setSigningIn(false);
-    }
-  }
-  async function signOut() {
-    cancelHeld(false);
-    try {
-      await (await client()).signOut();
-    } catch {
-      setMessage('ログアウトできませんでした');
-    }
-  }
   // A locked sticker was reached for: point at the sign-in button instead.
   function askToSignIn() {
     setMessage('');
     setNudge((n) => n + 1);
+    say('シールを貼るには Google でログインしてください');
     if (!open()) toggle();
     void connectAccount();
   }
 
   onSettled(() => {
-    let stored: string | null = null;
-    try {
-      setHidden(localStorage.getItem('cp20-hide-stamps') === 'true');
-      stored = localStorage.getItem('cp20-sticker-sheet');
-      setKind(Number(localStorage.getItem('cp20-stamp-kind')) || 0);
-      if (localStorage.getItem('cp20-sticker-account')) void connectAccount();
-    } catch {}
-    // Phones start with the sheet tucked away so it does not cover the page.
-    setOpen(stored ? stored !== 'closed' : !matchMedia('(max-width: 760px)').matches);
+    setHidden(readPref(HIDE_KEY) === 'true');
+    const stored = readPref(SHEET_KEY);
+    if (readPref(ACCOUNT_KEY)) void connectAccount();
+    // Start with the sheet tucked away unless it fits on the desk beside the page, so it never covers content.
+    const page = document.querySelector('.site-body')?.getBoundingClientRect();
+    setOpen(sheetStartsOpen(stored, document.documentElement.clientWidth, page ? page.right : Infinity));
     window.addEventListener('resize', reposition);
     const resize = new ResizeObserver(reposition);
     resize.observe(document.querySelector('.site-body')!);
     const mutations = new MutationObserver(reposition);
     mutations.observe(document.querySelector('main')!, {
       attributes: true,
-      attributeFilter: ['class', 'inert'],
+      attributeFilter: ['class', 'inert', 'hidden'],
       childList: true,
       subtree: true,
     });
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && held()) cancelHeld(true);
     };
+    const scrolled = () => {
+      const h = held();
+      if (h?.mode === 'aim' && h.pointer === 'keys') placeSoon();
+    };
+    window.addEventListener('scroll', scrolled, { passive: true });
+    // A phone turned on its side while a sticker waits for its spot: keep the sticker in view.
+    const keepHeldInView = () => {
+      const h = held();
+      if (h?.mode !== 'aim') return;
+      const spot = keptOnScreen(motion.tx, motion.ty, innerWidth, innerHeight, byKeys() ? 0 : AIM_BAR_BOTTOM);
+      motion.tx = spot.x;
+      motion.ty = spot.y;
+      if (byKeys()) placeSoon();
+    };
+    window.addEventListener('resize', keepHeldInView);
+    // Other visitors' stickers let the pointer through, so their avatar is found by position:
+    // shown while a mouse is over one, and for a moment after a tap on one.
+    let hovered = '';
+    const hover = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      const id = held() ? '' : othersAt(e.clientX, e.clientY)?.id || '';
+      if (id === hovered) return;
+      if (hovered && peek() === hovered) setPeek('');
+      hovered = id;
+      if (id) showAvatar(id);
+    };
+    const tap = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse' || held()) return;
+      const other = othersAt(e.clientX, e.clientY);
+      if (other) showAvatar(other.id, 2400);
+    };
+    document.addEventListener('pointermove', hover, { passive: true });
+    document.addEventListener('pointerdown', tap, { passive: true });
+    // A second finger makes it a pinch: the sticker under the first one stays where it was.
+    const pinch = (e: PointerEvent) => {
+      const h = held();
+      if (e.isPrimary || !h || h.pointer !== e.pointerType || (h.mode !== 'press' && h.mode !== 'drag'))
+        return;
+      cancelHeld(h.mode === 'drag');
+    };
+    document.addEventListener('pointerdown', pinch, true);
     document.addEventListener('keydown', key);
+    // Saves lost to a dropped connection are sent again as soon as it is back.
+    const online = () => {
+      if (failed().length && account()) retryFailed();
+    };
+    window.addEventListener('online', online);
+    window.addEventListener('resize', measureCover);
+    const covered = new ResizeObserver(measureCover);
+    if (sheet) covered.observe(sheet);
+    if (tab) covered.observe(tab);
     return () => {
       resize.disconnect();
       mutations.disconnect();
       cancelAnimationFrame(frame);
-      cancelAnimationFrame(motion.raf);
+      hand.stop();
       clearTimeout(peekTimer);
       window.removeEventListener('resize', reposition);
       document.removeEventListener('keydown', key);
+      window.removeEventListener('scroll', scrolled);
+      window.removeEventListener('resize', keepHeldInView);
+      stopCatchingClick?.();
+      window.removeEventListener('online', online);
+      document.removeEventListener('pointermove', hover);
+      document.removeEventListener('pointerdown', tap);
+      document.removeEventListener('pointerdown', pinch, true);
+      window.removeEventListener('resize', measureCover);
+      covered.disconnect();
+      cover = '';
+      document.documentElement.style.removeProperty('scroll-padding-bottom');
+      document.body.style.removeProperty('padding-bottom');
     };
   });
+  // The sheet (or its tab) is pinned over the bottom of the screen. Its height goes straight into
+  // scroll-padding-bottom, so whatever gets keyboard focus is scrolled clear of it, and on a phone
+  // into the body's bottom padding, so the last links can scroll above it. Only those two elements
+  // are restyled (a custom property on <html> would restyle every element), and only on a change.
+  let cover = '';
+  function measureCover() {
+    const el = open() ? sheet : open() === false ? tab : undefined;
+    const px = Math.round(
+      el?.isConnected && props.enabled ? el.offsetHeight + (parseFloat(getComputedStyle(el).bottom) || 0) : 0,
+    );
+    const phone = matchMedia(PHONE_LAYOUT).matches;
+    if (cover === `${px} ${phone}`) return;
+    cover = `${px} ${phone}`;
+    const root = document.documentElement.style,
+      body = document.body.style;
+    if (px) root.setProperty('scroll-padding-bottom', `calc(max(${px}px, var(--tabs-cover)) + 16px)`);
+    else root.removeProperty('scroll-padding-bottom');
+    if (px && phone) body.setProperty('padding-bottom', `max(96px, ${px + 16}px)`);
+    else body.removeProperty('padding-bottom');
+  }
+  createEffect(
+    () => [open(), props.enabled] as const,
+    () => measureCover(),
+  );
+  // The first control the sheet offers, for focus to land on when it opens or its header changes.
+  const sheetStart = () =>
+    sheet?.querySelector<HTMLElement>('.sticker-sheet-head :is(a[href], button:not(:disabled))');
   function toggle() {
     const next = !open();
+    // The tab and the sheet each turn inert as the other appears; focus follows to the other one.
+    const active = document.activeElement;
+    const hadFocus = !!active && (!!tab?.contains(active) || !!sheet?.contains(active));
     setOpen(next);
     if (!next && held()?.from === 'sheet') cancelHeld(false);
     if (next) void connectAccount();
-    try {
-      localStorage.setItem('cp20-sticker-sheet', next ? 'open' : 'closed');
-    } catch {}
+    writePref(SHEET_KEY, next ? 'open' : 'closed');
+    if (!hadFocus) return;
+    flush();
+    focusOnceShown(next ? sheetStart() || sheetFocus() : tab);
   }
+  // The sheet and the tab turn visible through a transition (a very short one with reduced
+  // motion), and focus() does nothing until they are: try again over the next few frames.
+  // A newer call replaces one still waiting.
+  let focusFrame = 0;
+  function focusOnceShown(el: HTMLElement | undefined, tries = 10) {
+    cancelAnimationFrame(focusFrame);
+    if (!el?.isConnected) return;
+    el.focus({ preventScroll: true });
+    const active = document.activeElement;
+    // Focus still on the control that just turned inert (or already dropped to the page).
+    const lost = !active || active === document.body || !!active.closest('[inert]');
+    if (active !== el && lost && tries > 0)
+      focusFrame = requestAnimationFrame(() => focusOnceShown(el, tries - 1));
+  }
+  // Signing in or out swaps the sheet's header (the sign-in button for the avatar and back), and a
+  // sign-in disables its button while it waits. Focus that was on one of them would fall to the page.
+  let focusInSheet = false;
+  onSettled(() => {
+    const track = (e: FocusEvent) => {
+      focusInSheet = !!sheet?.contains(e.target as Node);
+    };
+    document.addEventListener('focusin', track);
+    return () => document.removeEventListener('focusin', track);
+  });
+  // While a sign-in is pending, focus waits on the sheet itself, then moves on to what it brought.
+  let parked: HTMLElement | undefined;
+  createEffect(
+    () => [!!account(), signingIn() || restoring()] as const,
+    ([, busy]) => {
+      queueMicrotask(() => {
+        const active = document.activeElement;
+        const lost = !active || active === document.body || !active.isConnected;
+        if (!focusInSheet || !open() || !(lost || (parked && active === parked))) return;
+        const target = busy ? sheetFocus() : sheetStart() || sheetFocus();
+        parked = busy ? target : undefined;
+        focusOnceShown(target);
+      });
+    },
+  );
   function setHide(value: boolean) {
     setHidden(value);
-    try {
-      localStorage.setItem('cp20-hide-stamps', String(value));
-    } catch {}
+    writePref(HIDE_KEY, String(value));
   }
-  function enqueue(op: Operation) {
+  function enqueue(draft: Operation) {
+    const op: Operation = { ...draft, uid: draft.uid ?? owner() };
+    // Changes made while signed in to another account (or signed out since) are dropped
+    // rather than saved to, or failed on, whoever is signed in now.
+    const mine = () => !!op.uid && op.uid === owner();
+    const drop = () => void setOperations((list) => list.filter((item) => item.id !== op.id));
     setOperations((list) => [...list, op]);
     setMessage('');
-    setFailed(null);
     writes = writes
       .then(async () => {
-        const delay = Math.max(0, 1100 - (Date.now() - lastWrite));
+        // A retried save that a later move or peel already settled.
+        if (ledger.superseded(op) || !mine()) return drop();
+        ledger.start(op);
+        setFailed((list) => list.filter((item) => !ledger.superseded(item)));
+        const delay = writeDelay(lastWrite);
         if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
         const api = await client();
         const who = account();
-        if (!who) throw Error('Signed out');
-        let result: { owner: string; stamps: PlacedStamp[] };
-        if (op.type === 'add') {
-          const { anchor, x, y, kind, angle } = op.stamp;
-          const added = await api.place(op.path, { anchor, x, y, kind, angle }, who);
-          result = added;
-          resolved.set(op.stamp.id, added.placed);
+        if (!who || !mine()) return drop();
+        const { result, placed } = await saveOperation(api, op, who, ledger.resolve);
+        if (placed && op.type !== 'remove') {
+          ledger.saved(op, placed);
           setOperations((list) =>
             list.map((item) =>
-              item.type === 'remove' && item.target.id === op.stamp.id
-                ? { ...item, target: added.placed }
-                : item,
+              item.type !== 'add' && item.target.id === op.stamp.id ? { ...item, target: placed } : item,
             ),
           );
-        } else {
-          const target = resolved.get(op.target.id) || op.target;
-          if (target.owner === 'local') {
-            setOperations((list) => list.filter((item) => item.id !== op.id));
-            return;
-          }
-          result = await api.remove(op.path, target, who);
+        }
+        if (!result) {
+          // Removing a sticker that never saved needs no request.
+          drop();
+          return retried(op);
         }
         receive(op.path, [
           ...(cache.get(op.path) || []).filter((s) => s.owner !== result.owner),
           ...result.stamps,
         ]);
-        setOperations((list) => list.filter((item) => item.id !== op.id));
-        lastWrite = Date.now();
+        drop();
+        lastWrite = performance.now();
+        retried(op);
       })
       .catch(() => {
-        setOperations((list) => list.filter((item) => item.id !== op.id));
-        setFailed(op);
-        setMessage('保存できませんでした');
+        drop();
+        // Signed out mid-request: nothing to retry for the account now signed in (if any).
+        if (!mine()) return;
+        ledger.failed(op);
+        setFailed((list) => [...list, op]);
+        // Said from outside the sheet (inert while closed), naming the sticker that went back.
+        // The sheet's own line shows the failure without repeating it.
+        say(stampAnnouncement('failed', nameOf(opKind(op)), 0));
       });
   }
-  // Where a point on screen lands on the page: the innermost anchor that contains it.
-  function locate(x: number, y: number) {
-    const below = document
-      .elementsFromPoint(x, y)
-      .find((el) => !el.closest('.sticker-sheet,.sticker-tab,.stamp-overlay,.stamp-layer,.sticker-ghost'));
-    let anchor =
-      below?.closest<HTMLElement>('[data-stamp-anchor]') ||
-      document.querySelector<HTMLElement>('[data-stamp-anchor="page"]');
-    if (!anchor || below?.closest('.rail') || anchor.closest('[inert]')) return null;
-    // Page coordinates follow the document, so stickers scroll natively with the content.
-    const page = document.body.getBoundingClientRect(),
-      px = x - page.left,
-      py = y - page.top;
-    let box = layoutBox(anchor);
-    while (px < box.x || px > box.x + box.w || py < box.y || py > box.y + box.h) {
-      anchor = anchor.parentElement?.closest<HTMLElement>('[data-stamp-anchor]') || null;
-      if (!anchor) return null;
-      box = layoutBox(anchor);
-    }
-    return { anchor: anchor.dataset.stampAnchor!, x: (px - box.x) / box.w, y: (py - box.y) / box.h };
+  const opKind = (op: Operation) => (op.type === 'remove' ? op.target.kind : op.stamp.kind);
+  // A retried save that went through says so; the retry button it was pressed on is gone.
+  function retried(op: Operation) {
+    if (!op.retry) return;
+    const name = nameOf(opKind(op));
+    say(
+      op.type === 'remove'
+        ? stampAnnouncement('removed', name, remainingWithout())
+        : stampAnnouncement('saved', name, 0),
+    );
   }
-  function put(x: number, y: number, stickerKind: number, angle: number, from?: { x: number; y: number }) {
+  function retryFailed() {
+    const list = failed();
+    // The button goes away with the failures: keep focus on the sheet.
+    if (document.activeElement?.matches('.stamp-retry')) sheetFocus()?.focus({ preventScroll: true });
+    setFailed([]);
+    for (const op of list) enqueue({ ...op, id: crypto.randomUUID(), retry: true });
+  }
+  // Failed saves belong to the account that made them.
+  createEffect(owner, () => {
+    setFailed([]);
+  });
+  const failure = () => {
+    const count = failed().length;
+    return count > 1 ? `${count}件保存できませんでした` : count ? '保存できませんでした' : '';
+  };
+  function put(
+    x: number,
+    y: number,
+    stickerKind: number,
+    angle: number,
+    from?: { x: number; y: number },
+    target?: PlacedStamp,
+  ) {
     const spot = locate(x, y);
-    if (!spot) return false;
+    if (!spot) return '';
     const id = crypto.randomUUID();
     const stamp: PlacedStamp = {
       id,
@@ -347,34 +486,56 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       ...spot,
       kind: stickerKind,
       angle,
-      createdAt: Date.now(),
+      createdAt: target?.createdAt ?? Date.now(),
     };
     // The new sticker starts where the one in hand was, then settles onto the paper.
     const key = visualKey(stamp);
     setFresh((map) => new Map(map).set(key, { x: (from?.x ?? x) - x, y: (from?.y ?? y) - y, r: 0 }));
-    setTimeout(
-      () =>
-        setFresh((map) => {
-          const next = new Map(map);
-          next.delete(key);
-          return next;
-        }),
-      700,
+    setTimeout(() => setFresh((map) => withoutKey(map, key)), 700);
+    // Moving one of your stickers rewrites it in place, so it never pushes out another one.
+    if (target) enqueue({ type: 'move', id, path: props.path, target, stamp });
+    else enqueue({ type: 'add', id, path: props.path, stamp });
+    return id;
+  }
+  const nameOf = stickerName;
+  // Stickers you could still place here once `without` is gone.
+  const remainingWithout = (without?: PlacedStamp) =>
+    LIMIT - own().filter((s) => s.id !== without?.id && !leaving().has(visualKey(s))).length;
+  function say(text: string) {
+    // Clearing first makes a repeated sentence count as a change for screen readers.
+    setSpoken('');
+    queueMicrotask(() => setSpoken(text));
+  }
+  // Somewhere on the sheet that stays put, for when the focused control goes away. The undo
+  // button only while one of your stickers stays after `without` is peeled off (else it disables).
+  function sheetFocus(without?: PlacedStamp) {
+    if (!open()) return tab;
+    const undoButton = sheet?.querySelector<HTMLButtonElement>('.stamp-undo');
+    if (undoButton && !undoButton.disabled && remainingWithout(without) < LIMIT) return undoButton;
+    if (sheet) sheet.tabIndex = -1;
+    return sheet;
+  }
+  // A sticker's "peel off" button disappears with it: move on to the next one of yours.
+  function focusPastDeleteButton(target: PlacedStamp) {
+    const buttons = [...document.querySelectorAll<HTMLElement>('.stamp-layer .stamp-delete')];
+    const mine = buttons.find(
+      (b) => b.closest<HTMLElement>('[data-stamp-id]')?.dataset.stampId === target.id,
     );
-    enqueue({ type: 'add', id, path: props.path, stamp });
-    return true;
+    if (!mine || document.activeElement !== mine) return;
+    const next = focusAfterRemoval(buttons, mine);
+    (next || sheetFocus(target))?.focus({ preventScroll: !next });
   }
   function erase(target: PlacedStamp, animate = true) {
     if (!isOwn(target)) return;
     const key = visualKey(target);
     if (leaving().has(key)) return;
+    focusPastDeleteButton(target);
+    say(stampAnnouncement('removed', nameOf(target.kind), remainingWithout(target)));
+    // The page may change while the sticker peels off; the removal belongs to this one.
+    const path = props.path;
     const commit = () => {
-      setLeaving((set) => {
-        const next = new Set(set);
-        next.delete(key);
-        return next;
-      });
-      enqueue({ type: 'remove', id: crypto.randomUUID(), path: props.path, target });
+      setLeaving((set) => withoutKey(set, key));
+      enqueue({ type: 'remove', id: crypto.randomUUID(), path, target });
       flush();
     };
     if (!animate || reducedMotion()) return commit();
@@ -384,12 +545,26 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   }
   function undo() {
     const target = own().find((s) => !leaving().has(visualKey(s)));
-    if (target) erase(target);
+    if (!target) return;
+    const undoButton = document.activeElement;
+    erase(target);
+    // The button turns disabled with the last sticker gone; keep focus on the sheet.
+    if (remainingWithout() >= LIMIT && undoButton?.matches('.stamp-undo') && sheet) {
+      sheet.tabIndex = -1;
+      sheet.focus();
+    }
   }
-  // Stickers by other visitors sit on top of the page; a click goes through to what is under it.
-  function passThrough(e: MouseEvent) {
-    const below = document.elementsFromPoint(e.clientX, e.clientY).find((el) => !el.closest('.stamp-layer'));
-    below?.closest<HTMLElement>('a[href], button, summary, label, [role="tab"]')?.click();
+  // Stickers by other visitors take no pointer events, so every click, modifier click, middle
+  // click and context menu reaches the page under them. Their avatar shows from a hit test instead.
+  function othersAt(x: number, y: number) {
+    const page = document.body.getBoundingClientRect(),
+      px = x - page.left,
+      py = y - page.top;
+    const list = visible();
+    for (let i = list.length - 1; i >= 0; i--) {
+      const s = list[i];
+      if (!isOwn(s) && Math.hypot(s.left - px, s.top - py) <= STICKER_RADIUS) return s;
+    }
   }
   function showAvatar(id: string, linger = 0) {
     clearTimeout(peekTimer);
@@ -399,44 +574,13 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
 
   // ── The sticker in hand ──
   // Its position follows the pointer with a spring and leans into the direction of travel.
-  // Updated outside Solid on every frame so dragging stays smooth.
-  const motion = {
-    x: 0,
-    y: 0,
-    tx: 0,
-    ty: 0,
-    tilt: 0,
-    scale: 1,
-    ts: 1,
-    raf: 0,
-    home: null as null | (() => void),
-  };
-  let press = { x: 0, y: 0 };
-  function paint() {
-    if (!ghost) return;
-    ghost.style.transform = `translate(${motion.x}px, ${motion.y}px) rotate(${motion.tilt}deg) scale(${motion.scale})`;
-  }
-  function animate() {
-    cancelAnimationFrame(motion.raf);
-    const step = () => {
-      const dx = motion.tx - motion.x,
-        dy = motion.ty - motion.y;
-      motion.x += dx * 0.32;
-      motion.y += dy * 0.32;
-      motion.tilt += (clamp(dx * 0.5, -22, 22) - motion.tilt) * 0.2;
-      motion.scale += (motion.ts - motion.scale) * 0.25;
-      paint();
-      const settled = Math.abs(dx) < 0.4 && Math.abs(dy) < 0.4 && Math.abs(motion.tilt) < 0.3;
-      if (motion.home && settled) {
-        const done = motion.home;
-        motion.home = null;
-        done();
-        return;
-      }
-      if (held() || motion.home) motion.raf = requestAnimationFrame(step);
-    };
-    motion.raf = requestAnimationFrame(step);
-  }
+  const hand = createHand(
+    () => ghost,
+    () => !!held(),
+  );
+  const { m: motion, paint, animate } = hand;
+  let press = { x: 0, y: 0 },
+    holdTimer = 0;
   function slotCenter(stickerKind: number) {
     const slot = (
       open() ? sheet?.querySelector(`[data-sticker-kind="${stickerKind}"]`) : null
@@ -456,6 +600,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   }
   function begin(next: Held, start: { x: number; y: number }, pointer: { x: number; y: number }) {
     setPeek('');
+    refocus = undefined;
     setHeld(next);
     setGhostKind(next.kind);
     motion.home = null;
@@ -467,12 +612,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     motion.scale = 1;
     motion.ts = next.mode === 'press' ? 1.08 : 1.18;
     press = pointer;
-    if (next.from === 'sheet') {
-      setKind(next.kind);
-      try {
-        localStorage.setItem('cp20-stamp-kind', String(next.kind));
-      } catch {}
-    }
     flush();
     paint();
     animate();
@@ -483,7 +622,13 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   function track(x: number, y: number) {
     const h = held();
     if (!h) return;
-    if (h.mode === 'press' && Math.hypot(x - press.x, y - press.y) > 6) {
+    const moved = Math.hypot(x - press.x, y - press.y);
+    if (h.mode === 'press' && waitsForHold(h)) {
+      // A finger that moves before the long press is scrolling: the sticker stays where it is.
+      if (moved > HOLD_SLOP) cancelHeld(false);
+      return;
+    }
+    if (h.mode === 'press' && moved > 6) {
       setHeld({ ...h, mode: 'drag' });
       motion.ts = 1.18;
       lift(h);
@@ -491,51 +636,81 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     motion.tx = x;
     motion.ty = y;
   }
-  // Let go of the sticker: it flies back to the sheet (or to where it was) and disappears.
-  function returnHeld(h: Held) {
-    const point = homeOf(h);
+  // Put the sticker in hand down. The keyboard overlay goes with it, so focus returns to the
+  // sheet sticker it was taken from (or the tab when the sheet has been closed).
+  // A sticker moved with the keys hands focus to its own move button, where it now lies (`movedTo`).
+  function letGo(h: Held, movedTo?: string) {
+    clearTimeout(holdTimer);
+    const hadFocus = !!overlay?.isConnected && document.activeElement === overlay;
     setHeld(null);
+    if (!hadFocus) return;
+    flush();
+    const id = h.from === 'page' ? movedTo || h.target?.id : undefined;
+    const moved = id
+      ? document.querySelector<HTMLElement>(`[data-stamp-id="${CSS.escape(id)}"] .stamp-move`)
+      : null;
+    // A sticker going back where it was stays hidden under the one in hand until that lands.
+    if (moved?.closest('[data-lifted]')) return void (refocus = moved);
+    const origin =
+      moved ||
+      (open() ? sheet?.querySelector<HTMLElement>(`[data-sticker-kind="${h.kind}"]`) : null) ||
+      (h.from === 'page' && open() ? sheetFocus() : tab);
+    origin?.focus({ preventScroll: true });
+  }
+  let refocus: HTMLElement | undefined;
+  // Let go of the sticker: it flies back to the sheet (or to where it was) and disappears.
+  function returnHeld(h: Held, blocked = false) {
+    const point = homeOf(h);
+    if (h.pointer === 'keys' || blocked) {
+      // One of yours from the page goes back where it was, not to the sheet.
+      const page = h.from === 'page';
+      const event = blocked ? (page ? 'blocked-kept' : 'blocked') : page ? 'kept' : 'returned';
+      say(stampAnnouncement(event, nameOf(h.kind), remainingWithout()));
+    }
+    letGo(h);
     if (reducedMotion()) return finish();
-    motion.tx = point.x;
-    motion.ty = point.y;
-    motion.ts = 1;
-    motion.home = finish;
-    animate();
+    hand.flyTo(point, 1, finish);
   }
   function finish() {
     setGhostKind(-1);
     setLifted('');
+    const next = refocus;
+    refocus = undefined;
+    if (!next?.isConnected || (document.activeElement && document.activeElement !== document.body)) return;
+    flush();
+    next.focus({ preventScroll: true });
   }
   function cancelHeld(animate: boolean) {
     const h = held();
     if (!h) return;
     if (animate) returnHeld(h);
     else {
-      setHeld(null);
+      letGo(h);
       finish();
     }
   }
   function drop(x: number, y: number) {
     const h = held();
     if (!h) return;
-    const overSheet = document
-      .elementsFromPoint(x, y)
-      .some((el) => el.closest('.sticker-sheet[data-open], .sticker-tab[data-open]'));
-    if (overSheet) {
+    if (overSheetAt(x, y)) {
       // Putting one of your stickers back on the sheet peels it off the page.
       if (h.from === 'page' && h.target) erase(h.target, false);
-      setHeld(null);
-      const home = slotCenter(h.kind);
-      motion.tx = home.x;
-      motion.ty = home.y;
-      motion.ts = 0.6;
-      motion.home = finish;
-      return animate();
+      else if (h.pointer === 'keys') say(stampAnnouncement('returned', nameOf(h.kind), remainingWithout()));
+      letGo(h);
+      return hand.flyTo(slotCenter(h.kind), 0.6, finish);
     }
-    // Set down where it was picked up: nothing changes.
+    // Set down where it was picked up: nothing changes. A finger cannot aim as finely as a
+    // mouse, and a tapped sticker floats away from its spot, so a tap on either puts it back.
+    // The keys always set it down under the sticker in hand, so only its old spot counts there.
     if (h.from === 'page') {
-      const home = homeOf(h);
-      if (Math.hypot(x - home.x, y - home.y) < 6) return returnHeld(h);
+      const home = homeOf(h),
+        reach = h.pointer === 'mouse' ? 6 : STICKER_RADIUS,
+        tapped = h.mode === 'aim' && h.pointer !== 'mouse' && h.pointer !== 'keys';
+      if (
+        Math.hypot(x - home.x, y - home.y) < reach ||
+        (tapped && Math.hypot(x - motion.x, y - motion.y) < reach)
+      )
+        return returnHeld(h);
     }
     const lean = Math.round(clamp(motion.tilt, -14, 14));
     const angle =
@@ -545,14 +720,65 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           ? lean
           : Math.round(Math.random() * 16 - 8);
     const from = { x: motion.x, y: motion.y };
-    if (!put(x, y, h.kind, angle, from)) return returnHeld(h);
-    if (h.from === 'page' && h.target) erase(h.target, false);
+    const moving = h.from === 'page' && h.target && isOwn(h.target) ? h.target : undefined;
+    const before = own();
+    const place = placeAt(x, y);
+    const placed = put(x, y, h.kind, angle, from, moving);
+    if (!placed) return returnHeld(h, true);
     if (h.pointer === 'touch') navigator.vibrate?.(10);
-    setHeld(null);
+    letGo(h, placed);
     finish();
-    cancelAnimationFrame(motion.raf);
+    flush();
+    // A sticker over the limit pushes your oldest one off the page.
+    const pushedOut = before.find((s) => s.id !== moving?.id && !own().some((o) => o.id === s.id));
+    say(
+      stampAnnouncement(
+        'placed',
+        nameOf(h.kind),
+        remainingWithout(),
+        pushedOut ? nameOf(pushedOut.kind) : undefined,
+        place,
+      ),
+    );
+    hand.stop();
+  }
+  // The sheet (or the tab) under a point: a sticker set down there goes back instead.
+  const overSheetAt = (x: number, y: number) =>
+    document
+      .elementsFromPoint(x, y)
+      .some((el) => el.closest('.sticker-sheet[data-open], .sticker-tab[data-open]'));
+  // What the page under a point is called, when a sticker can go there (same test as put()).
+  function placeAt(x: number, y: number) {
+    const spot = locate(x, y);
+    if (!spot) return undefined;
+    const anchor = document.querySelector<HTMLElement>(`[data-stamp-anchor="${CSS.escape(spot.anchor)}"]`);
+    const labelledBy = anchor?.getAttribute('aria-labelledby');
+    const heading = anchor?.querySelector('h1, h2, h3');
+    const named = labelledBy ? document.getElementById(labelledBy) : null;
+    const label = (heading && spokenText(heading).trim()) || (named && spokenText(named));
+    return stampPlace(spot.anchor, label);
+  }
+  // While aiming with the keyboard, say what the sticker is over once it stops moving.
+  let placeTimer = 0,
+    lastPlace = '';
+  function announcePlace() {
+    const h = held();
+    if (!h || h.mode !== 'aim') return;
+    // Same tests, in the same order, as drop(): the sheet first, then a spot locate() accepts.
+    const place = overSheetAt(motion.tx, motion.ty)
+      ? OVER_SHEET
+      : placeAt(motion.tx, motion.ty) || 'ここには貼れません';
+    if (place === lastPlace) return;
+    lastPlace = place;
+    say(place);
+  }
+  // Scrolling (PageDown, a wheel) moves the page under a sticker held still with the keys too.
+  function placeSoon(wait = 350) {
+    clearTimeout(placeTimer);
+    placeTimer = window.setTimeout(announcePlace, wait);
   }
   function aimWithKeys(stickerKind: number) {
+    lastPlace = '';
     if (!account()) return askToSignIn();
     const center = { x: innerWidth / 2, y: innerHeight / 2 };
     begin(
@@ -561,31 +787,45 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       center,
     );
     overlay?.focus();
+    // Where it starts, once the overlay's own name has been read.
+    placeSoon(450);
+  }
+  // The keyboard's way to move one of your stickers: lift it where it lies, then aim as above.
+  function moveWithKeys(target: PlacedStamp, button: HTMLElement) {
+    lastPlace = '';
+    if (!account()) return askToSignIn();
+    if (!isOwn(target) || leaving().has(visualKey(target))) return;
+    const from = center(button.closest('.placed-stamp') || button);
+    const start = { x: clamp(from.x, 25, innerWidth - 25), y: clamp(from.y, 25, innerHeight - 25) };
+    const next: Held = { kind: target.kind, from: 'page', target, mode: 'aim', pointer: 'keys' };
+    begin(next, from, start);
+    lift(next);
+    overlay?.focus();
+    placeSoon(450);
   }
   function keyboard(e: KeyboardEvent) {
     const h = held();
     if (!h || h.mode !== 'aim') return;
     const deltas: Record<string, [number, number]> = {
-      ArrowLeft: [-16, 0],
-      ArrowRight: [16, 0],
-      ArrowUp: [0, -16],
-      ArrowDown: [0, 16],
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
     };
     if (deltas[e.key]) {
       e.preventDefault();
-      const [dx, dy] = deltas[e.key];
+      // Shift takes big steps, so crossing the screen is a handful of presses rather than dozens.
+      const step = e.shiftKey ? KEY_JUMP : KEY_STEP;
+      const [dx, dy] = deltas[e.key].map((d) => d * step);
       motion.tx = clamp(motion.tx + dx, 25, innerWidth - 25);
       motion.ty = clamp(motion.ty + dy, 25, innerHeight - 25);
+      placeSoon();
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       drop(motion.tx, motion.ty);
     }
   }
   // Pointer handlers shared by sheet stickers and your own stickers on the page.
-  const center = (el: Element) => {
-    const r = el.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-  };
   function grab(e: PointerEvent, next: Omit<Held, 'mode' | 'pointer'>) {
     if (e.button !== 0 || !e.isPrimary) return;
     if (!account()) return askToSignIn();
@@ -599,24 +839,106 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     }
     const el = e.currentTarget as Element;
     el.setPointerCapture(e.pointerId);
-    begin({ ...next, mode: 'press', pointer: e.pointerType }, center(el), { x: e.clientX, y: e.clientY });
+    const pressed: Held = { ...next, mode: 'press', pointer: e.pointerType };
+    begin(pressed, center(el), { x: e.clientX, y: e.clientY });
+    // A finger held still on your sticker picks it up to drag.
+    clearTimeout(holdTimer);
+    if (waitsForHold(pressed))
+      holdTimer = window.setTimeout(() => {
+        if (held() !== pressed) return;
+        setHeld({ ...pressed, mode: 'drag' });
+        motion.ts = 1.18;
+        lift(pressed);
+        navigator.vibrate?.(10);
+      }, HOLD_MS);
   }
   const follow = (e: PointerEvent) => track(e.clientX, e.clientY);
+  // The click that follows a tap which put the sticker in hand down (or back) would land on
+  // whatever lies under the finger once the sticker or the overlay is gone, such as a link.
+  // Catch that one click; `then` runs in its place, or after a moment if no click comes.
+  let stopCatchingClick: (() => void) | undefined;
+  function catchNextClick(then?: () => void) {
+    stopCatchingClick?.();
+    let timer = 0;
+    const stop = () => {
+      clearTimeout(timer);
+      window.removeEventListener('click', caught, true);
+      window.removeEventListener('pointerdown', stop, true);
+      if (stopCatchingClick === stop) stopCatchingClick = undefined;
+    };
+    const caught = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      stop();
+      then?.();
+    };
+    window.addEventListener('click', caught, true);
+    // A new press means the click never came; that press starts something else.
+    window.addEventListener('pointerdown', stop, true);
+    timer = window.setTimeout(() => {
+      stop();
+      then?.();
+    }, 600);
+    stopCatchingClick = stop;
+  }
   // A click (press without moving) keeps the sticker in hand; the next click sticks it.
   const release = (e: PointerEvent) => {
     const h = held();
     if (!h) return;
-    if (h.mode === 'drag') return drop(e.clientX, e.clientY);
+    if (h.mode === 'drag') {
+      // A finger lets go where it pressed after a long press too, and that tap's click would
+      // follow the link under the sticker as it flies back or lands.
+      if (h.pointer !== 'mouse') catchNextClick();
+      return drop(e.clientX, e.clientY);
+    }
     if (h.mode !== 'press') return;
+    // A tap on your sticker lying over a link or button presses that instead of lifting it.
+    const control = waitsForHold(h)
+      ? pageElementAt(e.clientX, e.clientY)?.closest<HTMLElement>(TAPPABLE)
+      : null;
+    if (control) {
+      cancelHeld(false);
+      if (!control.matches('input, select, textarea')) return control.click();
+      // A form field is used once the tap's own click is over, or that click would take its
+      // focus (and close a list it opened). A select opens its list: click() does not do that.
+      return catchNextClick(() => {
+        control.focus();
+        if (control instanceof HTMLSelectElement && 'showPicker' in control)
+          try {
+            return control.showPicker();
+          } catch {
+            // Not allowed without a recent tap (the click never came): focus is left on it.
+            return;
+          }
+        control.click();
+      });
+    }
     setHeld({ ...h, mode: 'aim' });
     lift(h);
     motion.ts = 1.18;
+    // The hint bar is the only guide for a pointer; read it once as it appears.
+    say(`${aimHint(h)}。やめるボタンで戻せます`);
     if (h.pointer !== 'mouse') {
-      motion.tx = motion.x;
-      motion.ty = motion.y - 70;
+      // It floats clear of the finger, but never off screen or under the hint bar.
+      const spot = liftedSpot(motion.x, motion.y, innerWidth, innerHeight, AIM_BAR_BOTTOM);
+      motion.tx = spot.x;
+      motion.ty = spot.y;
     }
   };
+  const aimHint = (h: Held) =>
+    `${h.pointer === 'mouse' ? 'クリック' : 'タップ'}した場所に${h.from === 'page' ? '移動します' : '貼ります'}`;
   let aimDown = { x: 0, y: 0, id: -1 };
+  // Your stickers let a swipe scroll the page (touch-action in app.css); once one is held long
+  // enough to drag, the finger moves it instead. Only a listener that is not passive can stop that.
+  const byKeys = () => held()?.pointer === 'keys';
+  const pinScroll = (el: HTMLElement) =>
+    el.addEventListener(
+      'touchmove',
+      (e) => {
+        if (held()?.mode === 'drag' && e.cancelable) e.preventDefault();
+      },
+      { passive: false },
+    );
   return (
     <>
       {props.children}
@@ -624,6 +946,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         <For each={visible()} keyed={(s) => s.key}>
           {(s, i) => (
             <span
+              ref={pinScroll}
               class="placed-stamp"
               data-stamp-id={s().id}
               data-owned={isOwn(s()) ? 'true' : undefined}
@@ -645,15 +968,13 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
               onPointerLeave={(e) => {
                 if (e.pointerType === 'mouse' && peek() === s().id) setPeek('');
               }}
-              onPointerDown={(e) => {
-                if (isOwn(s())) grab(e, { kind: s().kind, from: 'page', target: s() });
-                else if (e.pointerType !== 'mouse') showAvatar(s().id, 2400);
-              }}
+              onPointerDown={(e) => grab(e, { kind: s().kind, from: 'page', target: s() })}
               onPointerMove={follow}
               onPointerUp={release}
-              onPointerCancel={() => cancelHeld(true)}
-              onClick={(e) => {
-                if (!isOwn(s())) passThrough(e);
+              // The page started to scroll under a finger that had not picked the sticker up yet.
+              onPointerCancel={() => cancelHeld(held()?.mode !== 'press')}
+              onContextMenu={(e) => {
+                if (held() && held()!.pointer !== 'mouse') e.preventDefault();
               }}
             >
               <span class="sticker" data-kind={s().kind}>
@@ -670,9 +991,16 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
                 />
               </Show>
               <Show when={isOwn(s()) && !leaving().has(s().key)}>
+                {/* The keyboard's counterpart to picking the sticker up: only shown while focused. */}
+                <button
+                  class="stamp-move"
+                  aria-label={`${stickerName(s().kind)}のシールを動かす`}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => moveWithKeys(s(), e.currentTarget)}
+                />
                 <button
                   class="stamp-delete"
-                  aria-label={`${kinds[s().kind]?.name || 'しーぴー'}のシールをはがす`}
+                  aria-label={`${stickerName(s().kind)}のシールをはがす`}
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => erase(s())}
                 >
@@ -689,10 +1017,26 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         <div
           ref={overlay}
           class="stamp-overlay"
-          tabindex="0"
-          role="group"
-          aria-label="シールを貼る場所を選択。矢印キーで移動、Enterで貼る、Escapeでやめる"
+          // Only the keys aim from the overlay itself; a pointer is guided by the hint bar.
+          tabindex={byKeys() ? 0 : undefined}
+          role={byKeys() ? 'application' : undefined}
+          aria-roledescription={byKeys() ? 'シールの配置' : undefined}
+          aria-label={
+            byKeys()
+              ? `シールを${held()!.from === 'page' ? '動かす' : '貼る'}場所を選択。矢印キーで移動（Shiftを押しながらで大きく移動）、Enterで貼る、EscapeかTabでやめる`
+              : undefined
+          }
+          aria-hidden={byKeys() ? undefined : 'true'}
           onKeyDown={keyboard}
+          onFocusOut={(e) => {
+            // Tabbing away puts the sticker back. Focus that just leaves the window keeps it.
+            if (!e.relatedTarget) return;
+            queueMicrotask(() => {
+              const h = held();
+              if (h?.mode === 'aim' && h.pointer === 'keys' && document.activeElement !== overlay)
+                cancelHeld(true);
+            });
+          }}
           onPointerMove={(e) => {
             if (e.pointerType === 'mouse') track(e.clientX, e.clientY);
           }}
@@ -704,11 +1048,22 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
               motion.tx = e.clientX;
               motion.ty = e.clientY;
               drop(e.clientX, e.clientY);
+              // The overlay is gone before the tap's click, which would reach the page under it.
+              catchNextClick();
             }
             aimDown.id = -1;
           }}
           onPointerCancel={() => (aimDown.id = -1)}
         />
+      </Show>
+      {/* A pointer has no Escape key: say what the next tap does, and offer a way out. */}
+      <Show when={held()?.mode === 'aim' && held()!.pointer !== 'keys'}>
+        <div class="stamp-aim-bar stamp-ui">
+          <span>{aimHint(held()!)}</span>
+          <button type="button" onClick={() => cancelHeld(true)}>
+            やめる
+          </button>
+        </div>
       </Show>
       <div
         ref={ghost}
@@ -724,11 +1079,16 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         </Show>
       </div>
       <Show when={props.enabled}>
+        <p class="visually-hidden" role="status">
+          {spoken()}
+        </p>
         <button
+          ref={tab}
           class="sticker-tab stamp-ui"
           data-open={open() === false ? 'true' : undefined}
+          data-failed={failed().length ? 'true' : undefined}
           inert={open() !== false}
-          aria-label={`シール帳を開く（このページのシール${projected().length}枚）`}
+          aria-label={`シール帳を開く（このページのシール${projected().length}枚${failure() ? `、${failure()}` : ''}）`}
           onPointerEnter={() => void connectAccount()}
           onClick={(e) => {
             const h = held();
@@ -769,12 +1129,12 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
                 <button
                   class="sticker-login"
                   data-nudge={nudge() % 2 ? 'a' : nudge() ? 'b' : undefined}
-                  disabled={signingIn()}
+                  disabled={signingIn() || restoring()}
                   onPointerDown={() => void connectAccount()}
                   onClick={signIn}
                 >
                   <Icon name="LogIn" size={15} />
-                  Google でログイン
+                  {restoring() ? 'ログインしています…' : 'Google でログイン'}
                 </button>
               }
             >
@@ -837,8 +1197,11 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
                 <button
                   class="sheet-sticker"
                   data-sticker-kind={i()}
-                  aria-label={account() ? item.name : `${item.name}（ログインすると貼れます）`}
-                  aria-pressed={account() && kind() === i() ? 'true' : 'false'}
+                  aria-label={
+                    account()
+                      ? `${item.name}のシールを貼る${remainingWithout() > 0 ? '' : '（一番古いシールと入れ替わります）'}`
+                      : `${item.name}のシール（ログインすると貼れます）`
+                  }
                   data-taken={held()?.from === 'sheet' && ghostKind() === i() ? 'true' : undefined}
                   onPointerDown={(e) => grab(e, { kind: i(), from: 'sheet' })}
                   onPointerMove={follow}
@@ -855,21 +1218,23 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
               )}
             </For>
           </div>
-          {/* Only problems are spelled out; saving shows on the pips and the sticker itself. */}
-          <p class="stamp-status" role="status" data-idle={message() ? undefined : 'true'}>
-            {message()}
-            <Show when={failed()}>
-              <button
-                class="stamp-retry"
-                onClick={() => {
-                  const op = failed();
-                  if (op) enqueue({ ...op, id: crypto.randomUUID() });
-                }}
-              >
+          {/* Only problems are spelled out here; saving shows on the pips and the sticker itself,
+              and placing or peeling is spoken through the status line next to the overlay. */}
+          <div class="stamp-status" data-idle={message() || failure() || connection() ? undefined : 'true'}>
+            <p role="status">
+              {message() || (failure() ? '' : connection())}
+              {/* A failure is spoken from the live line outside the sheet, naming the sticker. */}
+              <Show when={!message() && failure()}>
+                <span aria-hidden="true">{failure()}</span>
+              </Show>
+            </p>
+            {/* Beside the live line, not in it: appearing there would read the failure again. */}
+            <Show when={failed().length}>
+              <button class="stamp-retry" aria-label={`${failure()}。再試行`} onClick={retryFailed}>
                 再試行
               </button>
             </Show>
-          </p>
+          </div>
         </section>
       </Show>
     </>

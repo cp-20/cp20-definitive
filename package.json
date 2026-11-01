@@ -10,9 +10,11 @@
     "sync": "node --env-file-if-exists=.env.sync scripts/sync.mjs",
     "test": "node --test scripts/*.test.mjs",
     "check": "tsc --noEmit",
-    "deploy": "npm run build && wrangler deploy",
+    "verify": "npm run check && npm run build && npm test",
+    "deploy": "npm run verify && wrangler deploy",
     "dev:worker": "wrangler dev --ip 0.0.0.0 --port 8787",
-    "firebase:rules": "firebase deploy --only database:portfolio-stamps --project cp20-platform",
+    "rules": "node scripts/rules.mjs",
+    "firebase:rules": "node scripts/rules.mjs --check && firebase deploy --only database:portfolio-stamps --project cp20-platform",
     "cache:images": "node scripts/cache-images.mjs"
   },
   "dependencies": {
@@ -32,6 +34,8 @@
     "@solidjs/vite-plugin": "3.0.0-next.46",
     "@types/node": "^26.6.3",
     "prettier": "3.8.3",
+    "sharp": "^0.35.4",
+    "subset-font": "^2.9.0",
     "typescript": "^6.0.3",
     "vite": "8.1.2",
     "wrangler": "^4.141.0"

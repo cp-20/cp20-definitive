@@ -1,14 +1,29 @@
 import { createSignal, createStore, createMemo, createEffect, onSettled, For, Show } from 'solid-js';
 import { httpStatus } from '@solidjs/web';
 import Icon from './components/Icon';
-import { OGImage, OriginalIcon, Postmark, articleAnchor, postmarkDate } from './components/Preview';
+import { isIconImage } from './data/icon-image.mjs';
+import {
+  OGImage,
+  OriginalIcon,
+  Postmark,
+  articleAnchor,
+  postmarkDate,
+  sizes,
+  responsive,
+  firstRowWorks,
+} from './components/Preview';
 import Projects from './components/Projects';
 import { articles, works, repos, formatDate, type Article } from './data/content';
-import { featuredIds, milestones, editions, mangaCovers } from './data/editorial';
+import { featuredIds, milestones, editions, mangaCovers, shownSeriesThumbnail } from './data/editorial';
 import profile from './data/profile.json';
-import { localImage } from './data/images';
+import { localImage, coverImage } from './data/images';
+import { splitLinks } from './data/inline-links.mjs';
+import { nameParts } from './data/name-breaks.mjs';
+import { spineAuthor } from './data/series-credit.mjs';
 import tracks from './data/tracks.json';
 import series from './data/series.json';
+/* U+2060 WORD JOINER: no line break between a link's last character and its trailing arrow. */
+const WORD_JOINER = '\u2060';
 // GitHub's language colours, for the dot beside each repository.
 const languageColors: Record<string, string> = {
   TypeScript: '#3178c6',
@@ -26,44 +41,65 @@ const languageColors: Record<string, string> = {
   Jinja: '#a52a22',
 };
 const languageColor = (language: string) => languageColors[language] || 'transparent';
-const coverOf = (s: (typeof series)[number]) => mangaCovers[s.title]?.image ?? localImage(s.thumbnail);
-// Spines on a shelf; choosing one pulls that book out so its cover faces you.
+// The volume 1 cover (with its WebP copies) or, without one, the series thumbnail.
+const coverOf = (s: (typeof series)[number]) => {
+  const cover = mangaCovers[s.title]?.image;
+  return cover ? coverImage(cover) : localImage(shownSeriesThumbnail(s));
+};
+// Spines on a shelf; choosing one pulls that book out so its cover faces you. The shelf is a
+// tablist like the featured works: one stop for Tab, the arrow keys (and Home/End) move along it,
+// and the caption below is the panel. The chosen book's name is read on focus, so the caption
+// is not a live region (it would read the title a second time).
 function Bookshelf() {
   const [open, setOpen] = createSignal(0);
-  const author = (s: (typeof series)[number]) => s.author.replace(/\s*[（(].*$/, '');
   let shelf!: HTMLDivElement;
   const keyboard = (e: KeyboardEvent) => {
-    const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
-    if (!step) return;
+    const last = series.length - 1;
+    const next = {
+      ArrowRight: open() === last ? 0 : open() + 1,
+      ArrowLeft: open() === 0 ? last : open() - 1,
+      Home: 0,
+      End: last,
+    }[e.key];
+    if (next === undefined) return;
     e.preventDefault();
-    const next = (open() + step + series.length) % series.length;
     setOpen(next);
     (shelf.children[next] as HTMLElement).focus();
   };
   return (
     <>
-      <div class="bookshelf" ref={shelf} role="group" aria-label="本棚" onKeyDown={keyboard}>
+      <div class="bookshelf" ref={shelf} role="tablist" aria-label="本棚" onKeyDown={keyboard}>
         <For each={series}>
           {(s, i) => (
             <button
+              id={`book-${i()}`}
               class="book"
-              aria-label={s.title}
-              aria-expanded={open() === i() ? 'true' : 'false'}
+              role="tab"
+              aria-label={`${s.title} ${s.author}`}
+              aria-selected={open() === i() ? 'true' : 'false'}
               aria-controls="book-caption"
               tabindex={open() === i() ? 0 : -1}
               style={{ '--spine': mangaCovers[s.title]?.spine, '--spine-ink': mangaCovers[s.title]?.ink }}
               onClick={() => setOpen(i())}
             >
-              <img class="book-cover" src={coverOf(s)} alt="" width="480" height="682" loading="lazy" />
+              <img
+                class="book-cover"
+                src={coverOf(s)?.src}
+                {...responsive(coverOf(s)?.srcset, sizes.bookCover)}
+                alt=""
+                width="480"
+                height="682"
+                loading="lazy"
+              />
               <span class="book-spine" aria-hidden="true">
                 <strong>{s.title}</strong>
-                <small>{author(s)}</small>
+                <small>{spineAuthor(s.author)}</small>
               </span>
             </button>
           )}
         </For>
       </div>
-      <p id="book-caption" class="book-caption" aria-live="polite">
+      <p id="book-caption" class="book-caption" role="tabpanel" aria-labelledby={`book-${open()}`}>
         <For each={[series[open()]]}>
           {(s) => (
             <>
@@ -71,7 +107,7 @@ function Bookshelf() {
                 {s.title}
                 <Icon name="ArrowUpRight" size={15} />
               </a>
-              <span>{author(s)}</span>
+              <span>{s.author}</span>
             </>
           )}
         </For>
@@ -79,20 +115,31 @@ function Bookshelf() {
     </>
   );
 }
-export function ArticleRows(props: { items: Article[] }) {
+/**
+ * With `shown`, every row stays in the DOM and rows it rejects are only hidden, so filtering
+ * neither rebuilds the list nor detaches images (see /articles).
+ */
+export function ArticleRows(props: { items: Article[]; shown?: (a: Article) => boolean }) {
+  // Position of each row among the visible ones, for the stagger of the rows settling in.
+  const position = createMemo(() => {
+    const at = new Map<Article, number>();
+    for (const a of props.items) if (!props.shown || props.shown(a)) at.set(a, at.size);
+    return at;
+  });
   return (
     <div class="article-list">
       <For each={props.items}>
-        {(a, i) => (
+        {(a) => (
           <a
             href={a.url}
             class="article-row"
-            style={{ '--i': Math.min(i(), 10) }}
+            hidden={!position().has(a)}
+            style={{ '--i': Math.min(position().get(a) ?? 0, 10) }}
             data-stamp-anchor={articleAnchor(a.url)}
             data-article
             data-date={a.date}
           >
-            <OGImage url={a.url} alt="" />
+            <OGImage url={a.url} alt="" sizes={sizes.articleRow} />
             <div class="article-text">
               <div class="article-meta">
                 <time datetime={a.date}>{formatDate(a.date)}</time>
@@ -114,7 +161,7 @@ export function Home() {
         <div class="identity">
           <span class="avatar-stamp">
             <img
-              src="/images/avatar.png"
+              src="/images/avatar-384.webp"
               alt="しーぴーのアイコン"
               width="88"
               height="88"
@@ -160,7 +207,8 @@ export function Home() {
           <div class="home-favorites">
             <a href="/about#music">
               <img
-                src={localImage(tracks[0].thumbnail)}
+                src={localImage(tracks[0].thumbnail)?.src}
+                {...responsive(localImage(tracks[0].thumbnail)?.srcset, sizes.homeTrack)}
                 alt={tracks[0].title}
                 width="120"
                 height="90"
@@ -169,7 +217,14 @@ export function Home() {
               <Icon name="Music" size={16} />
             </a>
             <a href="/about#manga">
-              <img src={coverOf(series[0])} alt={series[0].title} width="96" height="136" loading="lazy" />
+              <img
+                src={coverOf(series[0])?.src}
+                {...responsive(coverOf(series[0])?.srcset, sizes.homeCover)}
+                alt={series[0].title}
+                width="96"
+                height="136"
+                loading="lazy"
+              />
               <Icon name="BookOpen" size={16} />
             </a>
           </div>
@@ -205,7 +260,7 @@ export function About() {
         <div class="profile-avatar">
           <span class="avatar-stamp">
             <img
-              src="/images/avatar.png"
+              src="/images/avatar-384.webp"
               width="208"
               height="208"
               alt="しーぴーのアイコン"
@@ -216,6 +271,7 @@ export function About() {
         <div class="profile-intro">
           <p class="eyebrow">PROFILE / WEB ENGINEER</p>
           <h1>
+            <small class="visually-hidden">プロフィール：</small>
             しーぴー<span>cp20</span>
           </h1>
 
@@ -312,8 +368,9 @@ export function About() {
               <a class="music-item" href={t.link}>
                 <div class="music-image">
                   <img
-                    src={localImage(t.thumbnail)}
-                    alt={`${t.title}の動画サムネイル`}
+                    src={localImage(t.thumbnail)?.src}
+                    {...responsive(localImage(t.thumbnail)?.srcset, sizes.track)}
+                    alt=""
                     width="480"
                     height="360"
                     loading="lazy"
@@ -354,7 +411,7 @@ export function About() {
             から。サムネイルは YouTube（各動画の投稿者）
           </dd>
           <dt>漫画の表紙</dt>
-          <dd>
+          <dd class="credits-list">
             <For each={series}>
               {(s) => (
                 <span>
@@ -368,9 +425,15 @@ export function About() {
           <dd>各作品・記事の公開ページの OG 画像</dd>
           <dt>素材</dt>
           <dd>
-            <a href="https://lucide.dev">Lucide</a>（ISC）、シールの絵柄は{' '}
-            <a href="https://github.com/jdecked/twemoji">Twemoji</a>（CC BY 4.0）、フォントは Zen Maru Gothic
-            / IBM Plex Mono（SIL OFL）
+            <a href="https://lucide.dev">Lucide</a>（ISC、一部は Feather 由来で MIT）、シールの絵柄は{' '}
+            <a href="https://github.com/jdecked/twemoji">Twemoji</a>（© Twitter, Inc and other contributors、
+            <a href="/stamps/LICENSE-GRAPHICS.txt">CC BY 4.0</a>
+            ）、フォントは Zen Maru Gothic / IBM Plex Mono（SIL OFL 1.1）
+          </dd>
+          <dt>ライブラリ</dt>
+          <dd>
+            SolidJS（MIT）、Firebase（Apache-2.0）ほか。
+            <a href="/third-party-licenses.txt">ライセンス全文</a>
           </dd>
         </dl>
         <p class="meta">画像・楽曲の権利は各権利者に帰属します。</p>
@@ -405,17 +468,19 @@ export function Articles() {
       history.replaceState(history.state, '', location.pathname + (params.size ? '?' + params : ''));
     },
   );
-  const filtered = createMemo(() => {
-    const list = articles.filter((a) => !filters.source || a.source === filters.source);
-    return filters.order === 'oldest' ? [...list].reverse() : list;
-  });
+  const ordered = createMemo(() => (filters.order === 'oldest' ? [...articles].reverse() : articles));
+  const shown = (a: Article) => !filters.source || a.source === filters.source;
+  const count = createMemo(() => articles.filter(shown).length);
   return (
     <div class="wrap">
       <header data-stamp-anchor="heading" class="page-heading">
         <p class="eyebrow">WRITING</p>
         <h1>記事</h1>
       </header>
-      <section aria-label="記事一覧">
+      <section aria-labelledby="article-list-title">
+        <h2 id="article-list-title" class="visually-hidden">
+          記事一覧
+        </h2>
         <div class="article-toolbar">
           <div class="source-filters" role="group" aria-label="掲載先で絞り込む">
             <For each={['', ...names]}>
@@ -439,7 +504,7 @@ export function Articles() {
           </div>
           <div class="article-sort-row">
             <p id="filter-count" class="meta" role="status">
-              {filtered().length} 件
+              {count()} 件
             </p>
             <div class="sort-control">
               <label for="article-sort">並び順</label>
@@ -462,18 +527,13 @@ export function Articles() {
           </div>
         </div>
         <div class="article-results">
-          <Show
-            when={filtered().length}
-            fallback={
-              <p id="article-empty" class="empty-state">
-                記事がありません。
-              </p>
-            }
-          >
-            {/* Remount on filter change so the new list settles in with a short stagger. */}
-            <For each={[`${filters.source}|${filters.order}`]}>
-              {() => <ArticleRows items={filtered()} />}
-            </For>
+          {/* The rows stay mounted: filtering hides them and sorting moves them (keyed), so the
+              list is never rebuilt and only the rows that newly come into view settle in. */}
+          <ArticleRows items={ordered()} shown={shown} />
+          <Show when={!count()}>
+            <p id="article-empty" class="empty-state">
+              記事がありません。
+            </p>
           </Show>
         </div>
       </section>
@@ -495,7 +555,7 @@ export function Works() {
       </header>
       <section class="work-grid" aria-label="制作した作品">
         <For each={projects}>
-          {(w) => (
+          {(w, i) => (
             <article class="work-index-item" data-stamp-anchor={`work-${w.id}`}>
               <div>
                 <Show when={featuredIds.includes(w.id)}>
@@ -503,7 +563,7 @@ export function Works() {
                 </Show>
                 <h2>
                   <a href={`/works/${w.id}`}>
-                    <OriginalIcon url={w.url} name={w.title} />
+                    <OriginalIcon url={w.url} name={w.title} placeholder />
                     {w.title}
                     <Icon name="ArrowUpRight" size={18} />
                   </a>
@@ -520,7 +580,14 @@ export function Works() {
               </div>
               <Show when={true}>
                 <a class="work-thumbnail" href={`/works/${w.id}`} tabindex="-1" aria-hidden="true">
-                  <OGImage url={w.url} alt="" />
+                  <OGImage
+                    url={w.url}
+                    alt=""
+                    icon={isIconImage(w)}
+                    sizes={sizes.workGrid}
+                    priority={i() === 0}
+                    eager={i() < firstRowWorks}
+                  />
                   <Postmark date={postmarkDate(w.productionTime)} top="CP20.DEV" bottom="WORKS" />
                 </a>
               </Show>
@@ -546,7 +613,7 @@ export function Works() {
               <li>
                 <a href={r.url}>
                   <span class="repo-name">
-                    {r.name}
+                    {nameParts(r.name).map((part, i) => (i ? [<wbr />, part] : part))}
                     <Show when={r.stars > 0}>
                       <small aria-label={`スター ${r.stars}`}>☆{r.stars}</small>
                     </Show>
@@ -569,6 +636,8 @@ export function Works() {
 }
 export function WorkDetail(props: { work: (typeof works)[number] }) {
   const w = props.work;
+  // Only articles still in the list: the scheduled refresh keeps building when a source drops one.
+  const related = w.relatedArticles.flatMap((url) => articles.filter((a) => a.url === url));
   return (
     <div class="wrap">
       <header data-stamp-anchor="heading" class="page-heading work-heading">
@@ -577,7 +646,9 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
           作品一覧
         </a>
         <p class="eyebrow">{w.tags.join(' / ')}</p>
-        <h1>{w.title}</h1>
+        <h1>
+          <span class="work-title">{w.title}</span>
+        </h1>
         <p class="intro">{w.description}</p>
         <div class="work-heading-actions">
           <a class="primary-button" href={w.url}>
@@ -587,14 +658,20 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
         </div>
       </header>
       <div class="work-detail-hero" data-stamp-anchor="work-image">
-        <OGImage url={w.url} alt={`${w.title}のOG画像`} priority />
+        <OGImage
+          url={w.url}
+          alt={`${w.title}のOG画像`}
+          icon={isIconImage(w)}
+          sizes={sizes.workHero}
+          priority
+        />
         <Postmark date={postmarkDate(w.productionTime)} top="CP20.DEV" bottom="WORKS" />
       </div>
       <div class="work-detail-layout">
         <aside>
           <dl class="work-facts">
             <dt>制作時期</dt>
-            <dd>{w.productionTime.replace('now', '（元サイト記載時点）')}</dd>
+            <dd>{w.productionTime.replace('now', '現在')}</dd>
             <dt>使用技術</dt>
             <dd>
               {w.techStack.map((t) => (
@@ -609,6 +686,7 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
                 ) : (
                   <a href={r}>
                     {r.replace('https://github.com/', '')}
+                    {WORD_JOINER}
                     <Icon name="ArrowUpRight" size={13} />
                   </a>
                 ),
@@ -622,14 +700,25 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
             <p class="meta">制作当時の記録です。利用人数などは当時の記載です。</p>
           </Show>
           {w.comments.map((c) => (
-            <p>{c}</p>
+            <p>
+              {splitLinks(c).map((part) =>
+                'href' in part ? (
+                  <a class="inline-link" href={part.href}>
+                    {part.label}
+                  </a>
+                ) : (
+                  part.text
+                ),
+              )}
+            </p>
           ))}
-          <Show when={w.relatedArticles.length > 0}>
+          <Show when={related.length > 0}>
             <h2>関連する記事</h2>
-            {w.relatedArticles.map((url) => (
+            {related.map((a) => (
               <p>
-                <a href={url}>
-                  {articles.find((a) => a.url === url)?.title || url}
+                <a href={a.url}>
+                  {a.title}
+                  {WORD_JOINER}
                   <Icon name="ArrowUpRight" size={16} />
                 </a>
               </p>

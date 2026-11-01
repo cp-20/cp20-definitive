@@ -149,9 +149,12 @@ try {
   await expect(page.locator('main h1')).toHaveText('みんなのものさし');
   await page.locator('.rail nav a[href="/articles"]').click();
   await page.getByRole('button', { name: /^zenn.dev/ }).click();
-  await expect(page.locator('[data-article]')).toHaveCount(11);
+  // Filtering hides rows instead of rebuilding the list, so only the rows shown are counted.
+  await expect(page.locator('[data-article]:not([hidden])')).toHaveCount(11);
   await page.locator('#article-sort').selectOption('oldest');
-  const dates = await page.locator('[data-article]').evaluateAll((rows) => rows.map((r) => r.dataset.date));
+  const dates = await page
+    .locator('[data-article]:not([hidden])')
+    .evaluateAll((rows) => rows.map((r) => r.dataset.date));
   if (dates.join() !== [...dates].sort().join()) throw Error('Sort order');
   await page.evaluate(() => scrollTo({ top: 900, behavior: 'instant' }));
   await page.waitForTimeout(100);
@@ -159,7 +162,7 @@ try {
   await page.locator('.rail nav a[href="/about"]').click();
   await expect(page.locator('main h1')).toContainText('しーぴー');
   await page.goBack();
-  await expect(page.locator('[data-article]')).toHaveCount(11);
+  await expect(page.locator('[data-article]:not([hidden])')).toHaveCount(11);
   await expect(page.locator('#article-sort')).toHaveValue('oldest');
   if (Math.abs((await page.evaluate(() => scrollY)) - scroll) > 2) throw Error('Back scroll restoration');
   if (
@@ -185,6 +188,26 @@ try {
     throw Error('Stale Firebase subscription after navigation');
   report.interactions.push(
     'zero document reloads across navigation, persistent header, back/forward, scroll and filters restored, cross-page anchor, one active Firebase stream',
+  );
+  // Reloading, and coming back from another document, return to where the visitor was.
+  {
+    const other = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await other.route(/firebaseio\.com|firebasedatabase\.app|googleapis\.com/, (route) => route.abort());
+    const tab = await other.newPage();
+    await tab.goto(origin + '/articles');
+    await tab.evaluate(() => scrollTo({ top: 2500, behavior: 'instant' }));
+    await tab.waitForTimeout(200);
+    await tab.reload();
+    await tab.waitForTimeout(800);
+    if (Math.abs((await tab.evaluate(() => scrollY)) - 2500) > 2) throw Error('Reload scroll restoration');
+    await tab.goto(origin + '/feed.xml');
+    await tab.goBack();
+    await tab.waitForTimeout(800);
+    if (Math.abs((await tab.evaluate(() => scrollY)) - 2500) > 2) throw Error('Cross-document back scroll');
+    await other.close();
+  }
+  report.interactions.push(
+    'scroll position restored after a reload and after coming back from another document',
   );
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
@@ -252,12 +275,16 @@ try {
   await mockFirebase(guestContext, { db });
   const guest = await guestContext.newPage();
   await guest.goto(origin + '/');
+  // At 1440px the sheet would cover the page, so it starts as the closed tab (sheet-start.mjs).
+  await guest.locator('.sticker-tab').click();
   await expect(guest.getByRole('button', { name: 'Google でログイン' })).toBeVisible();
   await guest.getByRole('button', { name: /^クローバー/ }).click();
   await expect(guest.locator('.stamp-overlay')).toHaveCount(0);
   await expect(guest.locator('.sticker-login')).toHaveAttribute('data-nudge', 'a');
   await beginLayout('main,.site-header,.site-footer');
-  // The sticker sheet is open by default on wide screens.
+  // At 1440px the sheet starts closed so it never covers the page; open it from the tab.
+  await expect(page.locator('.sticker-sheet')).toBeHidden();
+  await page.locator('.sticker-tab').click();
   await expect(page.locator('.sticker-sheet')).toBeVisible();
   await expect(page.locator('.account-avatar img')).toHaveAttribute(
     'src',
@@ -270,7 +297,7 @@ try {
   releaseWrite = unblock;
   let held = false;
   const hold = async (route) => {
-    if (route.request().method() === 'PUT' && !held) {
+    if (route.request().method() === 'PATCH' && !held) {
       held = true;
       await gate;
     }
@@ -278,7 +305,7 @@ try {
   };
   await page.route('https://**.firebasedatabase.app/**', hold);
   // Click a sticker to hold it, then click the page to stick it.
-  await page.getByRole('button', { name: 'しーぴー', exact: true }).click();
+  await page.getByRole('button', { name: 'しーぴーのシールを貼る', exact: true }).click();
   await expect(page.locator('.stamp-overlay')).toBeVisible();
   const anchor = await page.locator('[data-stamp-anchor=intro]').boundingBox();
   await beginLayout('main,.site-header,.site-footer');
@@ -335,10 +362,114 @@ try {
   // A second visitor places, lifts and peels a sticker using actual touch events.
   await visitor.locator('.sticker-tab').tap();
   await expect(visitor.locator('.sticker-sheet')).toBeVisible();
-  await visitor.getByRole('button', { name: 'ハート', exact: true }).tap();
+  await visitor.getByRole('button', { name: 'ハートのシールを貼る', exact: true }).tap();
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('[data-pending=true]')).toHaveCount(1);
   await expect(visitor.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
+  // A swipe that starts on your own sticker scrolls the page and leaves the sticker where it was.
+  const writesBeforeSwipe = db.writes;
+  const cdp = await visitorContext.newCDPSession(visitor);
+  const finger = (type, y) =>
+    cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x: 160, y }] });
+  await finger('touchStart', 190);
+  for (let y = 170; y >= 10; y -= 20) await finger('touchMove', y);
+  // Rest before lifting the finger, so no fling keeps the page moving afterwards.
+  await visitor.waitForTimeout(300);
+  await finger('touchEnd');
+  await expect.poll(() => visitor.evaluate(() => scrollY)).toBeGreaterThan(100);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(0);
+  await visitor.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  await expect.poll(() => visitor.evaluate(() => scrollY)).toBe(0);
+  if (db.writes !== writesBeforeSwipe) throw Error('A swipe over your sticker moved it');
+  // In a second tab: a long press let go without moving puts the sticker back and clicks
+  // nothing under it, and a pinch that starts on it zooms instead of dragging it.
+  {
+    const tab = await visitorContext.newPage();
+    await tab.goto(origin + '/');
+    const mine = tab.locator('.placed-stamp[data-owned]');
+    await expect(mine).toHaveCount(1);
+    await tab.evaluate(() => {
+      window.__pageClicks = 0;
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.stamp-ui, .placed-stamp, .stamp-overlay')) window.__pageClicks++;
+      });
+    });
+    const touch = await visitorContext.newCDPSession(tab);
+    const touches = (type, points) => touch.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+    const b = await mine.boundingBox(),
+      x = b.x + b.width / 2,
+      y = b.y + b.height / 2;
+    await touches('touchStart', [{ x, y }]);
+    await tab.waitForTimeout(600);
+    await expect(tab.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
+    await touches('touchEnd', []);
+    await expect(tab.locator('.placed-stamp[data-lifted]')).toHaveCount(0, { timeout: 3000 });
+    await tab.waitForTimeout(700);
+    if (await tab.evaluate(() => window.__pageClicks)) throw Error('A long press let go clicked the page');
+    await touches('touchStart', [{ x, y, id: 1 }]);
+    await tab.waitForTimeout(500);
+    for (let d = 0; d <= 200; d += 20)
+      await touches('touchMove', [
+        { x, y: y - d / 2, id: 1 },
+        { x, y: y + 60 + d, id: 2 },
+      ]);
+    await touches('touchEnd', []);
+    await expect.poll(() => tab.evaluate(() => visualViewport.scale)).toBeGreaterThan(1);
+    await tab.waitForTimeout(700);
+    if (db.writes !== writesBeforeSwipe) throw Error('A long press or pinch on your sticker moved it');
+    await tab.close();
+  }
+  // A tapped sticker can be put back without a keyboard.
+  await visitor.touchscreen.tap(160, 190);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
+  await visitor.getByRole('button', { name: 'やめる' }).tap();
+  await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(0, { timeout: 3000 });
+  if (db.writes !== writesBeforeSwipe) throw Error('Putting a tapped sticker back saved it');
+  // A tap that puts the sticker in hand back (on the floating sticker, on its old spot, or on a
+  // spot it cannot go) ends there: its click never reaches the link or page under the finger.
+  await visitor.evaluate(() => {
+    window.__pageClicks = 0;
+    // The tap that lifts a sticker clicks the overlay that appears under it; that is not the page.
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.stamp-ui, .placed-stamp, .stamp-overlay')) window.__pageClicks++;
+    });
+  });
+  await visitor.touchscreen.tap(160, 190);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
+  await visitor.waitForTimeout(400);
+  const floating = await visitor.locator('.sticker-ghost').boundingBox();
+  await visitor.touchscreen.tap(floating.x + floating.width / 2, floating.y + floating.height / 2);
+  await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(0, { timeout: 3000 });
+  await visitor.touchscreen.tap(160, 190);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
+  await visitor.touchscreen.tap(160, 190);
+  await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
+  await visitor.waitForTimeout(700);
+  await visitor.getByRole('button', { name: 'クローバーのシールを貼る', exact: true }).tap();
+  const worksTab = await visitor.locator('.rail nav a[data-tab=works]').boundingBox();
+  await visitor.touchscreen.tap(worksTab.x + worksTab.width / 2, worksTab.y + worksTab.height / 2);
+  await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
+  await visitor.waitForTimeout(700);
+  if (new URL(visitor.url()).pathname !== '/')
+    throw Error('A tap that placed nothing followed the link under it');
+  if (await visitor.evaluate(() => window.__pageClicks))
+    throw Error('A tap that put a sticker back clicked the page');
+  if (db.writes !== writesBeforeSwipe) throw Error('Putting a tapped sticker back saved it');
+  // A phone turned on its side keeps the sticker waiting for its spot on screen.
+  await visitor.getByRole('button', { name: 'ハートのシールを貼る', exact: true }).tap();
+  await visitor.setViewportSize({ width: 844, height: 390 });
+  await expect
+    .poll(async () => {
+      const box = await visitor.locator('.sticker-ghost').boundingBox();
+      return box.y >= 0 && box.y + box.height <= 390 && box.x >= 0 && box.x + box.width <= 844;
+    })
+    .toBe(true);
+  await visitor.getByRole('button', { name: 'やめる' }).tap();
+  await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
+  await visitor.setViewportSize({ width: 390, height: 844 });
+  await visitor.waitForTimeout(700);
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
   const backing = await visitor.locator('.sticker-sheet').boundingBox();
@@ -349,8 +480,189 @@ try {
   await expect(visitor.locator('.sticker-sheet')).toBeHidden();
   await expect(visitor.locator('.sticker-tab')).toBeVisible();
   if (Object.keys(db.pages.get('home') || {}).length) throw Error('Test stickers left in the mock database');
+  // With all five stickers placed, moving one keeps the other four (the oldest included), and
+  // two tabs of one account placing at once both keep their sticker.
+  await page.goto(origin + '/about');
+  await settle();
+  const second = await context.newPage();
+  await second.goto(origin + '/about');
+  const stick = async (tab, fx) => {
+    if (!(await tab.locator('.sticker-sheet').isVisible())) await tab.locator('.sticker-tab').click();
+    const box = await tab.locator('[data-stamp-anchor=profile]').boundingBox();
+    await tab.getByRole('button', { name: 'しーぴーのシールを貼る', exact: true }).click();
+    await tab.mouse.click(box.x + box.width * fx, box.y + Math.min(box.height, 400) * 0.5);
+  };
+  for (const fx of [0.1, 0.25, 0.4, 0.55, 0.7]) await stick(page, fx);
+  await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
+  const five = () => db.pages.get('about')?.[user.uid]?.stamps || {};
+  const beforeMove = structuredClone(five());
+  if (Object.keys(beforeMove).length !== 5) throw Error('Five stickers not saved');
+  const lift = await page.locator(`[data-stamp-id="${user.uid}-3"]`).boundingBox();
+  await page.mouse.click(lift.x + lift.width / 2, lift.y + lift.height / 2);
+  await page.mouse.move(lift.x + 40, lift.y + 140, { steps: 6 });
+  await page.mouse.click(lift.x + 40, lift.y + 140);
+  await expect(page.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
+  await expect(page.locator(`[data-stamp-id^="${user.uid}-"]`)).toHaveCount(5);
+  const afterMove = five();
+  if (
+    Object.keys(afterMove).length !== 5 ||
+    ['0', '1', '2', '4'].some(
+      (slot) => JSON.stringify(afterMove[slot]) !== JSON.stringify(beforeMove[slot]),
+    ) ||
+    afterMove[3].createdAt !== beforeMove[3].createdAt ||
+    afterMove[3].y === beforeMove[3].y
+  )
+    throw Error('Moving one of five stickers changed the others');
+  db.pages.delete('about');
+  await expect(page.locator(`[data-stamp-id^="${user.uid}-"]`)).toHaveCount(0);
+  await Promise.all([stick(page, 0.3), stick(second, 0.6)]);
+  for (const tab of [page, second])
+    await expect(tab.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
+  if (Object.keys(five()).length !== 2) throw Error('Concurrent tabs lost a sticker');
+  for (const tab of [page, second]) {
+    await expect(tab.locator('.stamp-retry')).toHaveCount(0);
+    await expect(tab.locator(`[data-stamp-id^="${user.uid}-"]`)).toHaveCount(2);
+  }
+  await second.close();
+  db.pages.delete('about');
+  // Another visitor's stickers aimed at controls (or written onto the index tabs through the REST
+  // API) leave every click, modifier click and the tabs to the page under them.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(origin + '/articles');
+  await settle();
+  const targets = await page.evaluate(() => {
+    const body = document.querySelector('[data-stamp-anchor=page]').getBoundingClientRect();
+    const at = (el, fx = 0.5) => {
+      const r = el.getBoundingClientRect();
+      return {
+        x: (r.left + r.width * fx - body.left) / body.width,
+        y: (r.top + 30 - body.top) / body.height,
+      };
+    };
+    return [
+      at(document.querySelector('#article-sort')),
+      at(document.querySelector('.site-header a[href="/"]')),
+      { ...at(document.querySelector('.rail nav a')), x: 1 },
+    ];
+  });
+  db.pages.set('articles', {
+    'other-visitor': {
+      avatar: 'b'.repeat(64),
+      stamps: Object.fromEntries(
+        targets.map((t, i) => [i, { anchor: 'page', ...t, kind: 1, angle: 0, createdAt: 1700000000000 + i }]),
+      ),
+    },
+  });
+  await expect(page.locator('.placed-stamp')).toHaveCount(3);
+  const covered = await page.evaluate(() =>
+    [
+      '#article-sort',
+      '.site-header a[href="/"]',
+      ...[0, 1, 2, 3].map((i) => `.rail nav a:nth-child(${i + 1})`),
+    ]
+      .map((sel) => {
+        const r = document.querySelector(sel).getBoundingClientRect();
+        return [sel, document.elementFromPoint(r.left + r.width * 0.2, r.top + 30)?.closest('.placed-stamp')];
+      })
+      .filter(([, hit]) => hit)
+      .map(([sel]) => sel),
+  );
+  if (covered.length) throw Error(`Another visitor's sticker takes the pointer from ${covered}`);
+  const rail = await page.locator('.rail').boundingBox(),
+    onTab = await page.locator('.placed-stamp').nth(2).boundingBox();
+  if (onTab.x + onTab.width > rail.x) throw Error("Another visitor's sticker drawn over the index tabs");
+  const logo = await page.locator('.placed-stamp').nth(1).boundingBox();
+  await page.mouse.move(logo.x + 23, logo.y + 23, { steps: 3 });
+  await expect(page.locator('.sticker-avatar')).toHaveCount(1);
+  const opened = context.waitForEvent('page');
+  await page.keyboard.down('Control');
+  await page.mouse.click(logo.x + 23, logo.y + 23);
+  await page.keyboard.up('Control');
+  await (await opened).close();
+  if (new URL(page.url()).pathname !== '/articles') throw Error('Ctrl+click under a sticker left the page');
+  const sort = await page.locator('.placed-stamp').nth(0).boundingBox();
+  await page.mouse.click(sort.x + 23, sort.y + 23);
+  await expect(page.locator('#article-sort')).toBeFocused();
+  await page.keyboard.press('Escape');
+  db.pages.delete('articles');
+  await expect(page.locator('.placed-stamp')).toHaveCount(0);
   report.interactions.push(
-    'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift and peel; responsive anchors',
+    "other visitors' stickers let clicks, modifier clicks and the select through, keep off the index tabs and show their avatar on hover",
+  );
+  // On phones the tabs are fixed to the bottom of the screen; stickers scrolling under them
+  // (another visitor's or your own) must not be painted over the tab labels.
+  await visitor.goto(origin + '/articles');
+  await visitor.evaluate(() => scrollTo({ top: 300, behavior: 'instant' }));
+  await visitor.waitForTimeout(200);
+  const tabTargets = await visitor.evaluate(() => {
+    const body = document.querySelector('[data-stamp-anchor=page]').getBoundingClientRect();
+    return [...document.querySelectorAll('.rail nav a')].map((a) => {
+      const r = a.getBoundingClientRect();
+      return {
+        x: (r.left + r.width / 2 - body.left) / body.width,
+        y: (r.top + r.height / 2 - body.top) / body.height,
+      };
+    });
+  });
+  const stampsAt = (targets) =>
+    Object.fromEntries(
+      targets.map((t, i) => [i, { anchor: 'page', ...t, kind: 1, angle: 0, createdAt: 1700000000000 + i }]),
+    );
+  db.pages.set('articles', {
+    'other-visitor': { avatar: 'b'.repeat(64), stamps: stampsAt(tabTargets.slice(0, 2)) },
+    'mock-visitor': { avatar: 'c'.repeat(64), stamps: stampsAt(tabTargets.slice(2)) },
+  });
+  await expect(visitor.locator('.placed-stamp')).toHaveCount(tabTargets.length);
+  const overTabs = await visitor.evaluate(() => {
+    // Hit testing skips elements without pointer events (other visitors' stickers); turn them on
+    // briefly so elementsFromPoint follows paint order.
+    const probe = document.head.appendChild(document.createElement('style'));
+    probe.textContent = '.placed-stamp, .placed-stamp * { pointer-events: auto !important; }';
+    const result = [...document.querySelectorAll('.rail nav a')]
+      .map((a, i) => {
+        const r = a.getBoundingClientRect(),
+          x = r.left + r.width / 2,
+          y = r.top + r.height / 2;
+        const onStamp = [...document.querySelectorAll('.placed-stamp')].some((s) => {
+          const b = s.getBoundingClientRect();
+          return x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
+        });
+        if (!onStamp) return `tab ${i + 1} has no sticker under it`;
+        const top = document.elementsFromPoint(x, y).find((el) => el.closest('.rail, .placed-stamp'));
+        return top?.closest('.rail') ? null : `tab ${i + 1}`;
+      })
+      .filter(Boolean);
+    probe.remove();
+    return result;
+  });
+  if (overTabs.length) throw Error(`Stickers painted over the mobile tabs: ${overTabs}`);
+  db.pages.delete('articles');
+  await expect(visitor.locator('.placed-stamp')).toHaveCount(0);
+  report.interactions.push('stickers scrolling under the fixed mobile tabs stay below them');
+  // A tap on your own sticker lying over a select opens the select and leaves focus on it.
+  await visitor.evaluate(() => document.querySelector('#article-sort').scrollIntoView({ block: 'center' }));
+  await visitor.waitForTimeout(200);
+  if (!(await visitor.locator('.sticker-sheet').isVisible())) await visitor.locator('.sticker-tab').tap();
+  const sortBox = await visitor.locator('#article-sort').boundingBox();
+  await visitor.getByRole('button', { name: 'ハートのシールを貼る', exact: true }).tap();
+  await visitor.touchscreen.tap(sortBox.x + sortBox.width / 2, sortBox.y + sortBox.height / 2);
+  await expect(visitor.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
+  await visitor.getByRole('button', { name: 'シール帳を閉じる' }).tap();
+  await expect(visitor.locator('.sticker-sheet')).toBeHidden();
+  const onSort = await visitor.locator('.placed-stamp').boundingBox();
+  await visitor.touchscreen.tap(onSort.x + onSort.width / 2, onSort.y + onSort.height / 2);
+  await expect(visitor.locator('#article-sort')).toBeFocused();
+  await expect
+    .poll(() => visitor.evaluate(() => document.querySelector('#article-sort').matches(':open')))
+    .toBe(true);
+  await visitor.keyboard.press('Escape');
+  db.pages.delete('articles');
+  await expect(visitor.locator('.placed-stamp')).toHaveCount(0);
+  report.interactions.push(
+    'taps that put a sticker back never click the page; a turned phone keeps the held sticker on screen; your sticker over a select opens it',
+  );
+  report.interactions.push(
+    'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift, put back and peel; swipes over your sticker scroll; a long press let go or a pinch on it leaves it and the page alone; moving one of five stickers keeps the rest; two tabs placing at once; responsive anchors',
   );
   for (const [width, height] of [
     [390, 844],
@@ -367,10 +679,42 @@ try {
       if (route === '/') await page.screenshot({ path: `${outputDir}/preview-${suffix}.png` });
     }
   }
+  // Every `sizes` is at least the width its image is laid out at, so no smaller candidate is upscaled.
+  await page.goto(origin + '/works');
+  const workPage = await page.locator('a[href^="/works/"]').first().getAttribute('href');
+  for (const width of [360, 380, 450, 600, 760, 761, 900, 901, 1100, 1101, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const route of ['/', '/works', '/about', workPage]) {
+      await page.goto(origin + route);
+      const short = await page.evaluate(() =>
+        [...document.querySelectorAll('img[sizes]')].flatMap((img) => {
+          const rule =
+            img
+              .getAttribute('sizes')
+              .split(/,\s*(?![^()]*\))/)
+              .map((part) => part.match(/^(\(.+?\))\s+(.+)$/) || [, , part])
+              .find(([, query]) => !query || matchMedia(query).matches) || [];
+          const probe = document.body.appendChild(document.createElement('div'));
+          probe.style.width = rule[2];
+          const slot = probe.getBoundingClientRect().width;
+          probe.remove();
+          return img.offsetWidth > slot + 0.5
+            ? [`${img.getAttribute('sizes')}: ${img.offsetWidth} > ${slot}`]
+            : [];
+        }),
+      );
+      if (short.length)
+        throw Error(`sizes below the rendered width at ${width}px ${route}: ${short.join('; ')}`);
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(origin + '/articles');
+  const allArticles = await page.locator('[data-article]:not([hidden])').count();
   const nojs = await browser.newContext({ javaScriptEnabled: false });
   const plain = await nojs.newPage();
   await plain.goto(origin + '/articles');
-  await expect(plain.locator('[data-article]')).toHaveCount(54);
+  // Without JS every article is listed, as many as the full list with JS.
+  await expect(plain.locator('[data-article]')).toHaveCount(allArticles);
   await plain.goto(origin + '/');
   await expect(plain.locator('noscript a')).toHaveCount(3);
   await nojs.close();
@@ -384,21 +728,142 @@ try {
   )
     throw Error('Reduced motion');
   await page.route('https://**.firebasedatabase.app/**', async (route) => {
-    if (route.request().method() === 'PUT') {
+    if (route.request().method() === 'PATCH') {
       await new Promise((r) => setTimeout(r, 800));
       await route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Test outage"}' });
     } else await route.fallback();
   });
-  await page.getByRole('button', { name: 'クローバー', exact: true }).focus();
+  const clover = page.getByRole('button', { name: 'クローバーのシールを貼る', exact: true });
+  // Escape puts the sticker back and focus returns to the sheet sticker it came from.
+  await clover.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.stamp-overlay')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(clover).toBeFocused();
+  // Aiming at the desk outside the page is announced as a spot where nothing can go.
+  const spoken = page.locator('p.visually-hidden[role=status]');
+  await page.keyboard.press('Enter');
+  await expect(spoken).toHaveText(/の上$/);
+  for (let i = 0; i < 50; i++) await page.keyboard.press('ArrowLeft');
+  await expect(spoken).toHaveText('ここには貼れません');
+  await page.keyboard.press('Escape');
+  await expect(clover).toBeFocused();
   await page.keyboard.press('Enter');
   await page.keyboard.press('ArrowUp');
   await page.keyboard.press('Enter');
+  await expect(clover).toBeFocused();
+  await expect(page.locator('p.visually-hidden[role=status]')).toHaveText(
+    /^クローバーを(?:.+の上に)?貼りました。残り\d枚$/,
+  );
   await expect(page.locator('[data-pending=true]')).toHaveCount(1);
   await expect(page.locator('.stamp-status')).toContainText('保存できませんでした', { timeout: 20000 });
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '再試行' })).toBeVisible();
+  // A second failure while the first is waiting keeps both, and one retry sends both again.
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.stamp-status')).toContainText('2件保存できませんでした', { timeout: 20000 });
+  await page.unroute('https://**.firebasedatabase.app/**');
+  const writesBeforeRetry = db.writes;
+  await page.getByRole('button', { name: '再試行' }).click();
+  await expect(page.locator('.stamp-retry')).toHaveCount(0);
+  await expect(page.locator('[data-pending=true]')).toHaveCount(0, { timeout: 20000 });
+  await expect.poll(() => db.writes - writesBeforeRetry, { timeout: 20000 }).toBe(2);
+  await expect(page.locator('.stamp-status')).not.toContainText('保存できませんでした');
+  // A peel that failed (the sticker comes back) and is then peeled again clears the failure.
+  {
+    const ownStickers = page.locator(`[data-stamp-id^="${user.uid}-"]`);
+    const before = await ownStickers.count();
+    const outage = (route) =>
+      route.request().method() === 'PATCH'
+        ? route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Test outage"}' })
+        : route.fallback();
+    await page.route('https://**.firebasedatabase.app/**', outage);
+    const undo = page.getByRole('button', { name: '最後に貼ったシールをはがす', exact: true });
+    await undo.click();
+    await expect(page.locator('.stamp-status')).toContainText('保存できませんでした', { timeout: 20000 });
+    await expect(ownStickers).toHaveCount(before);
+    await page.unroute('https://**.firebasedatabase.app/**', outage);
+    const writesBeforePeel = db.writes;
+    await undo.click();
+    await expect.poll(() => db.writes - writesBeforePeel, { timeout: 20000 }).toBe(1);
+    await expect(ownStickers).toHaveCount(before - 1);
+    await expect(page.locator('.stamp-retry')).toHaveCount(0);
+    await expect(page.locator('.stamp-status')).not.toContainText('保存できませんでした');
+    await expect(page.locator('.sticker-tab')).not.toHaveAttribute('aria-label', /保存できませんでした/);
+  }
+  // An in-app link to a section moves focus to that section, so the next Tab continues there.
+  await page.goto(origin + '/');
+  await page.locator('a[href="/about#credits"]').first().focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#credits h2')).toBeFocused();
+  // Back returns focus to the link that was followed with the keyboard, not to an off-screen h1.
+  await page.goto(origin + '/works');
+  const lastWork = page.locator('main a[href^="/works/"]:not([tabindex="-1"])').last();
+  await lastWork.focus();
+  const lastHref = await lastWork.getAttribute('href');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(origin + lastHref);
+  await page.goBack();
+  await expect(lastWork).toBeFocused();
+  // Opening and closing the sticker sheet from the keyboard keeps focus on the sheet controls.
+  if (!(await page.locator('.sticker-tab[data-open]').count()))
+    await page.getByRole('button', { name: 'シール帳を閉じる' }).click();
+  await expect(page.locator('.sticker-tab')).toBeVisible();
+  await page.locator('.sticker-tab').focus();
+  await expect(page.locator('.sticker-tab')).toBeFocused();
+  await page.keyboard.press('Enter');
+  // The avatar, or the first header control while the sign-in is still being restored.
+  await expect(page.locator('.sticker-sheet-head :focus')).toHaveCount(1);
+  await page.getByRole('button', { name: 'シール帳を閉じる' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.sticker-tab')).toBeFocused();
+  // Pages swapped out and rows filtered away are released: after a warm-up lap the DOM node
+  // count (after GC) stays flat. Chromium kept every client-rendered srcset image, and with it
+  // its whole page, while srcset was set during the build (see responsive() in Preview.tsx).
+  {
+    const leak = await context.newPage();
+    const cdp = await context.newCDPSession(leak);
+    await cdp.send('Performance.enable');
+    const nodes = async () => {
+      for (let i = 0; i < 3; i++) await cdp.send('HeapProfiler.collectGarbage');
+      const { metrics } = await cdp.send('Performance.getMetrics');
+      return metrics.find((m) => m.name === 'Nodes').value;
+    };
+    const follow = async (href) => {
+      await leak.evaluate((href) => {
+        const a = Object.assign(document.createElement('a'), { href });
+        document.querySelector('main').append(a);
+        a.click();
+        a.remove();
+      }, href);
+      await leak.waitForTimeout(250);
+    };
+    const lap = async () => {
+      for (const href of ['/works', '/about', '/articles', '/works/dice-spec-v2', '/']) await follow(href);
+      await follow('/articles');
+      for (let i = 0; i < 6; i++)
+        await leak
+          .locator('.source-chip')
+          .nth(i % 2 ? 0 : 1)
+          .click();
+      await leak.locator('#article-sort').selectOption('oldest');
+      await leak.locator('#article-sort').selectOption('newest');
+      await follow('/');
+    };
+    await leak.goto(origin + '/');
+    await lap();
+    const warm = await nodes();
+    await lap();
+    await lap();
+    const after = await nodes();
+    if (after > warm + 100) throw Error(`Detached pages kept in memory: ${warm} → ${after} DOM nodes`);
+    await leak.close();
+  }
+  report.interactions.push('swapped-out pages and filtered rows are released from memory');
   report.interactions.push(
-    'failed saves roll back and expose retry; keyboard placement; reduced motion; complete static content without JS',
+    'failed saves roll back and expose retry; keyboard placement with focus return and spoken result; section links move focus; reduced motion; complete static content without JS',
   );
   if (errors.length || externalImages.length || report.pages.some((p) => p.violations.length))
     throw Error(
