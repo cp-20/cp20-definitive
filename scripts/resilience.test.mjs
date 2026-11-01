@@ -223,7 +223,16 @@ test('print and no-script styles reveal content and hide controls that cannot wo
   const screen = css.lastIndexOf('@media screen', reveal);
   assert.ok(screen > 0 && !css.slice(screen, reveal).includes('\n  }\n'), 'view() reveal is screen-only');
   const print = css.slice(css.indexOf('@media print'));
-  for (const selector of ['.skip-link', '.stamp-ui', '.stamp-layer']) assert.ok(print.includes(selector));
+  for (const selector of [
+    '.skip-link',
+    '.stamp-ui',
+    '.stamp-layer',
+    '.featured-selector',
+    '.featured-bottom',
+  ])
+    assert.ok(print.includes(selector));
+  // Every featured work is printed, not only the one selected on screen.
+  assert.match(print, /\.featured-project \{[^}]*visibility: visible;[^}]*opacity: 1;/);
   const noScript = css.slice(css.indexOf('@media (scripting: none)'));
   for (const selector of ['.source-filters', '.sort-control', '.featured-selector', '.featured-bottom'])
     assert.ok(noScript.includes(selector));

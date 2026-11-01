@@ -172,6 +172,18 @@ export function createNavigation() {
         requestAnimationFrame(settleAim);
       }
     };
+    // While a page turns, the transition's snapshots take every hit and a click lands on <html>.
+    // The new page is already in place underneath, so end the turn and hand the click to it.
+    const relay = (e: MouseEvent) => {
+      const root = document.documentElement;
+      if (e.target !== root || !root.dataset.flip || !transition) return;
+      transition.skipTransition();
+      delete root.dataset.flip;
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      if (!el || el === root) return;
+      e.stopImmediatePropagation();
+      el.dispatchEvent(new MouseEvent('click', e));
+    };
     const click = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
       const a = (e.target as Element).closest<HTMLAnchorElement>('a[href]');
@@ -199,12 +211,14 @@ export function createNavigation() {
       key = e.state?.cp20Entry || crypto.randomUUID();
       move(new URL(location.href), positions.get(key), false, e.state?.cp20Focus);
     };
+    document.addEventListener('click', relay, true);
     document.addEventListener('click', click);
     window.addEventListener('scroll', remember, { passive: true });
     window.addEventListener('popstate', pop);
     window.addEventListener('pagehide', persist);
     return () => {
       transition?.skipTransition();
+      document.removeEventListener('click', relay, true);
       document.removeEventListener('click', click);
       window.removeEventListener('scroll', remember);
       window.removeEventListener('popstate', pop);

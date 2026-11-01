@@ -3533,13 +3533,31 @@
       background: CanvasText;
     }
   }
-  /* Paper copies: the sticker tools and the skip link only make sense on screen. */
+  /* Paper copies: the sticker tools, the skip link, the tabs and the work switcher only make
+     sense on screen. The three works are printed one after another instead. */
   @media print {
     .skip-link,
     .stamp-ui,
     .stamp-layer,
-    .stamp-overlay {
+    .stamp-overlay,
+    .rail nav,
+    .featured-selector,
+    .featured-bottom {
       display: none !important;
+    }
+    .project-deck {
+      gap: 40px;
+    }
+    .featured-project {
+      grid-area: auto;
+      visibility: visible;
+      opacity: 1;
+      translate: none;
+      transition: none;
+      break-inside: avoid;
+    }
+    .featured-copy > * {
+      translate: none;
     }
   }
 }
