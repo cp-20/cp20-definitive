@@ -64,7 +64,7 @@ export function StampLayer(props: {
   return (
     <div class="stamp-layer" data-holding={props.held ? 'true' : undefined}>
       <For each={props.stamps} keyed={(s) => s.key}>
-        {(s, i) => (
+        {(s) => (
           <span
             ref={input.pinScroll}
             class="placed-stamp"
@@ -78,7 +78,6 @@ export function StampLayer(props: {
             style={{
               translate: `${s().left}px ${s().top}px`,
               '--angle': `${s().angle}deg`,
-              '--delay': `${(i() % 8) * 35}ms`,
               '--from-x': `${props.settlesFrom(s().key)?.x ?? 0}px`,
               '--from-y': `${props.settlesFrom(s().key)?.y ?? 0}px`,
             }}

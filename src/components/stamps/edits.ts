@@ -10,7 +10,7 @@ import { stickerName } from './kinds';
 import { reducedMotion } from './prefs';
 // How long the peel-off and settle animations in app.css take, a little rounded up.
 const PEEL_MS = 220,
-  SETTLE_MS = 700;
+  SETTLE_MS = 300;
 // Creates signals: call it synchronously inside the component that owns them.
 export function createEdits(options: {
   path: () => string;

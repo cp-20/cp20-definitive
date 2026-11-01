@@ -123,7 +123,9 @@ export default function Projects() {
             <article
               id={`project-${i()}`}
               class={['featured-project', { active: selected() === i() }]}
-              data-pos={i() < selected() ? 'prev' : i() > selected() ? 'next' : 'active'}
+              // Around the ring of three: the work after the selected one waits on the right, the
+              // one before on the left, so turning past the last comes in from the same side.
+              data-pos={i() === selected() ? 'active' : (i() - selected() + 3) % 3 === 1 ? 'next' : 'prev'}
               data-stamp-anchor={`work-${p.id}`}
               role="tabpanel"
               aria-labelledby={`project-tab-${i()}`}

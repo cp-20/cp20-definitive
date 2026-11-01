@@ -52,6 +52,8 @@ export function createHand(options: {
     tx: 0,
     ty: 0,
     tilt: 0,
+    // The angle it rests at in hand, and is set down at when held still.
+    base: 0,
     scale: 1,
     ts: 1,
     // Called once the sticker has flown to where it was sent.
@@ -111,7 +113,10 @@ export function createHand(options: {
     motion.vy = 0;
     motion.tx = pointer.x;
     motion.ty = pointer.y;
+    // One of yours keeps its own slant; a new one from the sheet takes a slight random one as it
+    // comes up, so it is set down at the angle it is seen at.
     motion.tilt = next.target?.angle ?? 0;
+    motion.base = next.target?.angle ?? Math.round(Math.random() * 16 - 8);
     motion.scale = 1;
     motion.ts = next.mode === 'press' ? 1.06 : 1.12;
     flush();
@@ -171,6 +176,8 @@ export function createHand(options: {
     }
     letGo(h);
     if (reducedMotion()) return finish();
+    // Back on the sheet it lies straight, as the ones there do.
+    if (!(h.from === 'page' && h.target)) motion.base = 0;
     flyTo(point, 1, finish);
   }
   function cancel(animated: boolean) {
@@ -191,6 +198,7 @@ export function createHand(options: {
       if (h.from === 'page' && h.target) options.erase(h.target, false);
       else if (h.pointer === 'keys') say(stampAnnouncement('returned', nameOf(h.kind), options.remaining()));
       letGo(h);
+      motion.base = 0;
       return flyTo(options.slotCenter(h.kind), 0.6, finish);
     }
     // Set down where it was picked up: nothing changes. A finger cannot aim as finely as a
@@ -206,15 +214,8 @@ export function createHand(options: {
       )
         return returnHeld(h);
     }
-    // It keeps the lean it was dropped with; one of yours set down still keeps its own tilt,
-    // and a new one gets a slight random one.
-    const lean = Math.round(clamp(motion.tilt, -14, 14));
-    const angle =
-      h.from === 'page' && h.target && Math.abs(lean) <= 2
-        ? h.target.angle
-        : Math.abs(lean) > 2
-          ? lean
-          : Math.round(Math.random() * 16 - 8);
+    // It is set down at the angle it is in hand, so it does not twist as it touches the paper.
+    const angle = Math.round(clamp(motion.tilt, -14, 14));
     const from = { x: motion.x, y: motion.y };
     const moving = h.from === 'page' && h.target && options.isOwn(h.target) ? h.target : undefined;
     const before = options.own();

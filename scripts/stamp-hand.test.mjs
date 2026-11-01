@@ -67,10 +67,36 @@ describe('springStep', () => {
     assert.deepEqual([right.tilt > 0, left.tilt < 0], [true, true]);
   });
 
-  test('止まるころには、まっすぐに戻っている', () => {
-    const spring = far();
-    settle(spring);
-    assert.ok(Math.abs(spring.tilt) < 0.3, String(spring.tilt));
+  test('止まるころには、もとの角度（base）に戻っている', () => {
+    const straight = far(),
+      slanted = { ...far(), tilt: 7, base: 7 };
+    settle(straight);
+    settle(slanted);
+    assert.ok(Math.abs(straight.tilt) < 1, String(straight.tilt));
+    assert.ok(Math.abs(slanted.tilt - 7) < 1, String(slanted.tilt));
+  });
+
+  test('止まったまま持っているシールは、自分の角度を保つ', () => {
+    const spring = { x: 5, y: 5, vx: 0, vy: 0, tx: 5, ty: 5, tilt: 7, base: 7, scale: 1, ts: 1 };
+    for (let i = 0; i < 30; i++) springStep(spring, FRAME);
+    assert.equal(spring.tilt, 7);
+  });
+
+  test('傾きは速さに応じて増え、普通の速さでは上限に張り付かない', () => {
+    // Dragged sideways at a steady speed (px/s) for half a second.
+    const lean = (speed) => {
+      const spring = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, tilt: 0, scale: 1, ts: 1 };
+      for (let i = 0; i < 30; i++) {
+        spring.tx += speed * FRAME;
+        springStep(spring, FRAME);
+      }
+      return spring.tilt;
+    };
+    const slow = lean(300),
+      usual = lean(1000),
+      fast = lean(3000);
+    assert.ok(slow < usual && usual < fast && fast < MAX_TILT, `${slow} / ${usual} / ${fast}`);
+    assert.ok(usual < MAX_TILT * 0.75, String(usual));
   });
 
   test('手から離れて飛ぶシールは、投げられた勢いを保ったまま向きを変える', () => {

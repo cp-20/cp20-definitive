@@ -11,8 +11,9 @@
 export const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
 /**
- * Where the sticker is, where it is headed, and how fast it is going (px/s).
- * @typedef {{ x: number; y: number; vx: number; vy: number; tx: number; ty: number; tilt: number; scale: number; ts: number }} Spring
+ * Where the sticker is, where it is headed, and how fast it is going (px/s). `base` is the angle
+ * it rests at (deg): a sticker keeps its own slant in hand instead of straightening up.
+ * @typedef {{ x: number; y: number; vx: number; vy: number; tx: number; ty: number; tilt: number; base?: number; scale: number; ts: number }} Spring
  */
 
 export const MAX_TILT = 18;
@@ -20,8 +21,9 @@ export const MAX_TILT = 18;
 // let go, it flies home more loosely, so the speed it was thrown with shows in its path.
 export const HELD = 40;
 export const FLYING = 22;
-// How far it leans (deg) for each px/s it travels sideways.
-const LEAN = 0.02;
+// The sideways speed (px/s) at which it leans about three quarters of the way to MAX_TILT; it
+// nears the limit smoothly, so a faster drag still leans a little further.
+const LEAN_SPEED = 1500;
 
 /**
  * Moves one axis of a critically damped spring `dt` seconds on, exactly, so it moves the same
@@ -43,7 +45,7 @@ function follow(x, v, to, dt, k) {
 /**
  * Moves the spring `dt` seconds on toward its target (tx, ty, ts) in place. It keeps its speed
  * when the target changes, so a sticker let go flies on into its way home, and it leans by how
- * fast it moves sideways, standing up again once it stops. A long step lands it at once.
+ * fast it moves sideways, coming back to its own angle once it stops. A long step lands it at once.
  * @param {Spring} m
  * @param {number} dt seconds
  * @param {number} [k] stiffness: HELD or FLYING
@@ -53,12 +55,13 @@ export function springStep(m, dt, k = HELD) {
   [m.x, m.vx] = follow(m.x, m.vx, m.tx, dt, k);
   [m.y, m.vy] = follow(m.y, m.vy, m.ty, dt, k);
   const ease = 1 - Math.exp(-k * dt);
-  m.tilt += (clamp(m.vx * LEAN, -MAX_TILT, MAX_TILT) - m.tilt) * ease;
+  const base = m.base ?? 0;
+  m.tilt += (base + MAX_TILT * Math.tanh(m.vx / LEAN_SPEED) - m.tilt) * ease;
   m.scale += (m.ts - m.scale) * ease;
   return (
     Math.hypot(m.tx - m.x, m.ty - m.y) < 0.5 &&
     Math.hypot(m.vx, m.vy) < 5 &&
-    Math.abs(m.tilt) < 0.3 &&
+    Math.abs(m.tilt - base) < 1 &&
     Math.abs(m.ts - m.scale) < 0.005
   );
 }

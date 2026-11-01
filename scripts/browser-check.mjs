@@ -126,6 +126,13 @@ try {
   await expect(page.locator('input[type=search],#search-dialog,.search-trigger')).toHaveCount(0);
   await expect(page.locator('#project-0 .featured-image img')).toHaveAttribute('src', /^\/media\//);
   await expect(page.locator('#project-0 .original-icon')).toHaveAttribute('src', /^\/media\//);
+  // The three works form a ring: turning on past the last brings the first in from the right
+  // (the side the deck is turning toward) and sends the last off to the left.
+  await page.locator('[data-project-tab="2"]').click();
+  await expect(page.locator('#project-0')).toHaveAttribute('data-pos', 'next');
+  await page.getByRole('button', { name: '次の作品' }).click();
+  await expect(page.locator('#project-2')).toHaveAttribute('data-pos', 'prev');
+  await page.locator('[data-project-tab="0"]').click();
   if (
     await page
       .locator('main')
@@ -156,6 +163,15 @@ try {
     .locator('[data-article]:not([hidden])')
     .evaluateAll((rows) => rows.map((r) => r.dataset.date));
   if (dates.join() !== [...dates].sort().join()) throw Error('Sort order');
+  // Focusing the controls above may have started a smooth scroll (scroll-behavior: smooth); let
+  // it finish, or it carries on past the position set below.
+  await page.waitForFunction(
+    () =>
+      new Promise((done) => {
+        const y = scrollY;
+        setTimeout(() => done(scrollY === y), 150);
+      }),
+  );
   await page.evaluate(() => scrollTo({ top: 900, behavior: 'instant' }));
   await page.waitForTimeout(100);
   const scroll = await page.evaluate(() => scrollY);
@@ -164,7 +180,7 @@ try {
   await page.goBack();
   await expect(page.locator('[data-article]:not([hidden])')).toHaveCount(11);
   await expect(page.locator('#article-sort')).toHaveValue('oldest');
-  if (Math.abs((await page.evaluate(() => scrollY)) - scroll) > 2) throw Error('Back scroll restoration');
+  if (Math.abs((await page.evaluate(() => scrollY)) - scroll) > 2) throw Error(`Back scroll restoration`);
   if (
     documents.length !== navigationBefore ||
     !(await page.evaluate(

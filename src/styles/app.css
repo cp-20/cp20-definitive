@@ -145,7 +145,7 @@
     /* Motion: paper and controls ease out and never overshoot; only stickers (and stamps pressed
        onto the paper) spring. Five durations, from a press to a page turn. */
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
-    --ease-turn: cubic-bezier(0.6, 0, 0.25, 1);
+    --ease-turn: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-exit: cubic-bezier(0.4, 0, 1, 1);
     --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
     --t-press: 80ms;
@@ -1096,8 +1096,10 @@
     visibility: hidden;
     opacity: 0;
     translate: var(--shift) 0;
+    /* The work leaving fades slowly at first and the one coming in at once, so the deck never
+       goes blank between them. */
     transition:
-      opacity var(--t-hover) var(--ease),
+      opacity var(--t-hover) var(--ease-exit),
       translate var(--t-state) var(--ease),
       visibility 0s var(--t-state);
   }
@@ -1113,7 +1115,7 @@
     visibility: visible;
     opacity: 1;
     transition:
-      opacity var(--t-hover) var(--ease) 60ms,
+      opacity var(--t-hover) var(--ease),
       translate var(--t-state) var(--ease);
   }
   .project-deck[data-dragging] .featured-project {
@@ -1271,7 +1273,6 @@
     line-height: 1.7;
     background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
       no-repeat 0 0 / 0% 100%;
-    transition: background-size var(--t-state) var(--ease);
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
   }
@@ -1282,16 +1283,19 @@
     border: 2px solid transparent;
     border-radius: 50%;
     color: var(--muted);
-    transition:
-      transform var(--t-hover) var(--ease),
-      background var(--t-hover) var(--ease),
-      border-color var(--t-hover) var(--ease);
   }
+  /* Only the way in is animated: leaving a row clears it at once, so scanning down the list
+     leaves no trail of markers and arrows winding back. */
   @media (hover: hover) {
     .article-row:hover h3 {
       background-size: 100% 100%;
+      transition: background-size var(--t-state) var(--ease);
     }
     .article-row:hover .article-arrow {
+      transition:
+        transform var(--t-hover) var(--ease),
+        background var(--t-hover) var(--ease),
+        border-color var(--t-hover) var(--ease);
       border-color: var(--edge);
       background: var(--hi);
       color: var(--on-color);
@@ -1410,7 +1414,8 @@
     rotate: -2deg;
     transition:
       rotate var(--t-state) var(--ease),
-      transform var(--t-state) var(--ease);
+      transform var(--t-state) var(--ease),
+      filter var(--t-hover) var(--ease);
   }
   .edition-list > a::after {
     content: '';
@@ -2438,12 +2443,9 @@
   }
   .placed-stamp > .sticker {
     rotate: var(--angle, 0deg);
-    transition:
-      transform var(--t-hover) var(--ease),
-      opacity var(--t-hover) var(--ease);
-    /* Backwards only: holding the last frame would keep every placed sticker on its own
-       compositor layer long after it has landed (the keyframes only have a from). */
-    animation: sticker-pop var(--t-enter) var(--spring) var(--delay, 0ms) backwards;
+    /* Stickers already on the page arrive with it, like the rest of the paper; only the one you
+       set down or peel off moves. */
+    transition: opacity var(--t-hover) var(--ease);
   }
   /* A swipe that starts on your sticker still scrolls the page and a pinch still zooms; a finger
      drags it only after a long press (stamp-touch.mjs), which neither selects text nor opens a
@@ -2457,11 +2459,6 @@
   }
   .stamp-layer[data-holding] .placed-stamp {
     pointer-events: none;
-  }
-  @media (hover: hover) {
-    .placed-stamp[data-owned]:hover > .sticker {
-      transform: translateY(-2px) scale(1.06);
-    }
   }
   .placed-stamp[data-pending] > .sticker {
     opacity: 0.9;
@@ -2826,7 +2823,7 @@
     background: var(--paper);
     box-shadow: 1px 2px 3px rgb(45 42 51 / 0.3);
     pointer-events: none;
-    animation: avatar-peek var(--t-hover) var(--spring) both;
+    animation: avatar-peek var(--t-hover) var(--ease) both;
   }
   /* Closed sheet: a small tab at the bottom right. */
   .sticker-tab {
@@ -2962,9 +2959,10 @@
       filter: brightness(0.86);
     }
   }
+  /* Starts just short of edge-on, so its edge shows from the first frame. */
   @keyframes turn-back {
     from {
-      transform: perspective(3200px) rotateY(-96deg);
+      transform: perspective(3200px) rotateY(-88deg);
       filter: brightness(0.86);
     }
   }
@@ -3000,31 +2998,11 @@
   .featured-project[data-pos='next'] .featured-copy > * {
     translate: 12px 0;
   }
-  /* Screen only: when printing, items outside the viewport would stay at the first frame. */
-  @media screen {
-    @supports (animation-timeline: view()) {
-      .work-index-item,
-      .timeline-item,
-      .music-item,
-      .edition-list > a,
-      .home-profile {
-        animation: reveal linear both;
-        animation-timeline: view();
-        animation-range: entry 0% entry 30%;
-      }
-    }
-  }
 
   @keyframes rise {
     from {
       opacity: 0;
       transform: translateY(12px);
-    }
-  }
-  @keyframes reveal {
-    from {
-      opacity: 0;
-      transform: translateY(16px);
     }
   }
   @keyframes sticker-on {
@@ -3058,7 +3036,7 @@
   @keyframes avatar-peek {
     from {
       opacity: 0;
-      transform: translate(-6px, -6px) scale(0.6);
+      transform: scale(0.9);
     }
   }
   @keyframes nudge-a {
@@ -3083,20 +3061,18 @@
       transform: translateX(-2px);
     }
   }
-  @keyframes sticker-pop {
-    from {
-      opacity: 0;
-      transform: scale(0.7);
-    }
-  }
-  /* Starts as large as it was in hand (scale 1.12 in hand.ts); only transform moves, the shadow
-     settles at once as it touches the paper. */
+  /* Starts where and as large as it was in hand (scale 1.12 in hand.ts), with the raised shadow
+     of .sticker-ghost[data-dragging]. It speeds up into the paper, is pressed a little flat and
+     comes to rest; the shadow settles with it. */
   @keyframes stick {
     from {
       transform: translate(var(--from-x), var(--from-y)) scale(1.12);
+      filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
+        drop-shadow(0 -1.6px 0 #fff) drop-shadow(8px 16px 6px rgb(45 42 51 / 0.22));
+      animation-timing-function: var(--ease-exit);
     }
     45% {
-      transform: scale(0.96);
+      transform: scale(0.98);
     }
   }
   @keyframes peel {
