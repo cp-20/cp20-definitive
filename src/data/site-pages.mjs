@@ -85,19 +85,31 @@ export function validateWorks(works) {
 export const mergeWorks = (base, manual) => validateWorks([...base, ...(manual.projects ?? [])]);
 
 /**
+ * Related-article links whose article is not in the article list, as
+ * "Work \"id\" links url" messages. A work page only shows related articles it
+ * can title, so these would silently disappear from the page.
+ * @param {readonly { id: string, relatedArticles?: readonly string[] }[]} works
+ * @param {readonly { url: string }[]} articles
+ * @returns {string[]}
+ */
+export function missingRelatedArticles(works, articles) {
+  const known = new Set(articles.map((a) => a.url));
+  return works.flatMap((work) =>
+    (work.relatedArticles ?? [])
+      .filter((url) => !known.has(url))
+      .map((url) => `Work "${work.id}" links ${url}, which is not in the article list`),
+  );
+}
+
+/**
  * Fails when a work links a related article that the article list does not
- * hold, so a work page never shows a bare URL in place of the article title.
+ * hold, so a change to works.json or manual.json cannot drop one unnoticed.
  * @param {readonly { id: string, relatedArticles?: readonly string[] }[]} works
  * @param {readonly { url: string }[]} articles
  */
 export function assertRelatedArticles(works, articles) {
-  const known = new Set(articles.map((a) => a.url));
-  for (const work of works)
-    for (const url of work.relatedArticles ?? [])
-      if (!known.has(url))
-        throw Error(
-          `Work "${work.id}" links ${url}, which is not in the article list: add it to manual.json articles`,
-        );
+  const [first] = missingRelatedArticles(works, articles);
+  if (first) throw Error(`${first}: add it to manual.json articles`);
 }
 
 /**

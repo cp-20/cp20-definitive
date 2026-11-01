@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import {
   TAB_PATHS,
   assertRelatedArticles,
+  missingRelatedArticles,
   mergeWorks,
   normalizePath,
   pageKey,
@@ -83,17 +84,28 @@ test('paths, page keys, tabs and sections', () => {
   }
 });
 
-test('every related article of a work is in the article list, so it shows with its title', () => {
-  const articles = mergeArticles(snapshot.articles, [], manual);
-  assertRelatedArticles(works, articles);
-  // The C compiler write-up is the main explanation of a headline work.
-  assert.equal(
-    articles.find((a) => a.url === 'https://trap.jp/post/2313/')?.title,
-    'Cコンパイラを作ろうとしてみた',
-  );
-  assert.throws(
-    () => assertRelatedArticles([{ id: 'a', relatedArticles: ['https://example.com/x'] }], articles),
-    /Work "a" links https:\/\/example\.com\/x/,
-  );
+test(
+  'every related article of a work is in the article list, so it shows with its title',
+  // The scheduled refresh only warns here (see refresh.yml); commits and PRs stay strict.
+  { skip: process.env.RELATED_ARTICLES === 'warn' && 'related-article check set to warn' },
+  () => {
+    const articles = mergeArticles(snapshot.articles, [], manual);
+    assertRelatedArticles(works, articles);
+    // The C compiler write-up is the main explanation of a headline work.
+    assert.equal(
+      articles.find((a) => a.url === 'https://trap.jp/post/2313/')?.title,
+      'Cコンパイラを作ろうとしてみた',
+    );
+  },
+);
+
+test('a missing related article is reported with its work, and assert throws on it', () => {
+  const articles = [{ url: 'https://example.com/known' }];
+  const linked = [{ id: 'a', relatedArticles: ['https://example.com/known', 'https://example.com/x'] }];
+  assert.deepEqual(missingRelatedArticles(linked, articles), [
+    'Work "a" links https://example.com/x, which is not in the article list',
+  ]);
+  assert.throws(() => assertRelatedArticles(linked, articles), /Work "a" links https:\/\/example\.com\/x/);
+  assert.deepEqual(missingRelatedArticles([{ id: 'a' }], []), []);
   assertRelatedArticles([{ id: 'a' }], []);
 });

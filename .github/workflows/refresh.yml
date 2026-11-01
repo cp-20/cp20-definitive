@@ -48,6 +48,10 @@ jobs:
       - name: Verify the new snapshot
         if: steps.sync.outputs.changed == 'true' || github.event_name != 'schedule'
         run: npm run verify
+        env:
+          # A source dropping an article a work links only warns here (CI stays strict), so it
+          # cannot fail every refresh and stop the other sources from updating.
+          RELATED_ARTICLES: warn
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: snapshot

@@ -636,6 +636,8 @@ export function Works() {
 }
 export function WorkDetail(props: { work: (typeof works)[number] }) {
   const w = props.work;
+  // Only articles still in the list: the scheduled refresh keeps building when a source drops one.
+  const related = w.relatedArticles.flatMap((url) => articles.filter((a) => a.url === url));
   return (
     <div class="wrap">
       <header data-stamp-anchor="heading" class="page-heading work-heading">
@@ -710,12 +712,12 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
               )}
             </p>
           ))}
-          <Show when={w.relatedArticles.length > 0}>
+          <Show when={related.length > 0}>
             <h2>関連する記事</h2>
-            {w.relatedArticles.map((url) => (
+            {related.map((a) => (
               <p>
-                <a href={url}>
-                  {articles.find((a) => a.url === url)?.title || url}
+                <a href={a.url}>
+                  {a.title}
                   {WORD_JOINER}
                   <Icon name="ArrowUpRight" size={16} />
                 </a>
