@@ -51,15 +51,7 @@ export const recordStamps = (owner, record) =>
       typeof record?.avatar === 'string' && gravatarPattern.test(record.avatar) ? record.avatar : undefined,
   }));
 
-const visual = ['anchor', 'x', 'y', 'kind', 'angle'];
-const pick = (stamp) => Object.fromEntries(visual.map((k) => [k, stamp[k]]));
-// The stored sticker in `target`'s slot is still the one the visitor saw (not a newer one a
-// second tab put in the same slot).
-const holds = (stamps, target) => {
-  const stored = stamps[target.slot];
-  return !!stored && stored.createdAt === target.createdAt && visual.every((k) => stored[k] === target[k]);
-};
-
+const pick = (stamp) => Object.fromEntries(['anchor', 'x', 'y', 'kind', 'angle'].map((k) => [k, stamp[k]]));
 // Each edit takes the stored record and returns the slot it wrote and the new stamps
 // (undefined when there is nothing to do). `createdAt` is the time given to a new sticker.
 
@@ -73,22 +65,20 @@ export function placeIn(record, stamp, createdAt) {
   return { slot, stamps };
 }
 
-/** Peels `target` off, unless its slot now holds another sticker. */
+// Peeling and moving work on the slot the page showed. A view made stale by another tab is
+// rare, and the stream puts the page right afterwards.
+
+/** Peels `target` off: empties its slot. */
 export function removeFrom(record, target) {
   const stamps = Object.fromEntries(stampEntries(record));
-  if (!holds(stamps, target)) return { slot: target.slot, stamps: undefined };
   delete stamps[target.slot];
   return { slot: target.slot, stamps };
 }
 
-/**
- * Rewrites `target` in its own slot and keeps its age, so moving never pushes out another
- * sticker. If it is gone (peeled in another tab), the sticker is placed where it was dropped.
- */
-export function moveIn(record, target, stamp, createdAt) {
+/** Rewrites `target`'s slot and keeps its age, so moving never pushes out another sticker. */
+export function moveIn(record, target, stamp) {
   const stamps = Object.fromEntries(stampEntries(record));
-  if (!holds(stamps, target)) return placeIn(record, stamp, createdAt);
-  stamps[target.slot] = { ...pick(stamp), createdAt: stamps[target.slot].createdAt };
+  stamps[target.slot] = { ...pick(stamp), createdAt: target.createdAt };
   return { slot: target.slot, stamps };
 }
 

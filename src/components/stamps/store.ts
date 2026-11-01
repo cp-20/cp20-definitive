@@ -5,7 +5,6 @@ import { createEffect, createMemo, createSignal } from 'solid-js';
 import type { Account, Change, Operation, PlacedStamp } from '../../data/stamp-types';
 import { createPendingSaves, projectStamps } from '../../data/stamp-optimistic.mjs';
 type Client = typeof import('../../stamps-client');
-type Saved = { owner: string; stamps: PlacedStamp[]; placed?: PlacedStamp };
 // Creates signals: call it synchronously inside the component that owns them.
 export function createStampStore(options: {
   path: () => string;
@@ -70,20 +69,18 @@ export function createStampStore(options: {
       };
     },
   );
-  // Each request is made for the account the change was made with, and dropped if that account
-  // has signed out since. The saved record replaces yours in the page's stickers.
-  const request = async (op: Operation, call: (api: Client, who: Account) => Promise<Saved>) => {
-    const who = account();
-    if (!who || who.uid !== op.uid) return null;
-    const saved = await call(await client(), who);
-    receive(op.path, [...(cache.get(op.path) || []).filter((s) => s.owner !== saved.owner), ...saved.stamps]);
-    return saved;
-  };
   const pending = createPendingSaves({
-    send: {
-      place: (op) => request(op, (api, who) => api.place(op.path, op.stamp, who)),
-      move: (op, target) => request(op, (api, who) => api.move(op.path, target, op.stamp, who)),
-      remove: (op, target) => request(op, (api, who) => api.remove(op.path, target, who)),
+    // Each change is saved for the account it was made with, and dropped if that account has
+    // signed out since. The saved record replaces yours in the page's stickers.
+    send: async (op, target) => {
+      const who = account();
+      if (!who || who.uid !== op.uid) return null;
+      const saved = await (await client()).save(op, target, who);
+      receive(op.path, [
+        ...(cache.get(op.path) || []).filter((s) => s.owner !== saved.owner),
+        ...saved.stamps,
+      ]);
+      return saved;
     },
     wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     changed: setOperations,

@@ -13,3 +13,5 @@ export type Change = { id: string; path: string } & (
 // A change waiting to be saved, with the account it was made with (`uid`); it is never saved
 // for another one.
 export type Operation = Change & { uid: string };
+// Your record on a page as saved: your stickers, and the one a place or move wrote.
+export type SavedRecord = { owner: string; stamps: PlacedStamp[]; placed?: PlacedStamp };

@@ -69,6 +69,14 @@ describe('projectStamps', () => {
     ]);
   });
 
+  test('6枚目を貼ると、配列の順ではなく作成時刻が一番古い自分のシールが押し出される', () => {
+    const remote = [50, 10, 40, 20, 30].map((createdAt, i) =>
+      stamp(`me-${i}`, 'me', { x: i / 10, createdAt }),
+    );
+    const local = stamp('l1', 'local', { x: 0.9, createdAt: 99 });
+    assert.deepEqual(ids(projectStamps(remote, [add(local)], 'me')), ['l1', 'me-0', 'me-2', 'me-3', 'me-4']);
+  });
+
   test('貼ってすぐはがしたシールは、押し出したシールを戻さない', () => {
     const a = stamp('a', 'local', { x: 0.8, createdAt: 10 });
     const b = stamp('b', 'local', { x: 0.9, createdAt: 11 });
@@ -88,6 +96,18 @@ describe('projectStamps', () => {
     const local = stamp('l1', 'local', { x: 0.9 });
     const echoed = stamp('me-0', 'me', { x: 0.9, createdAt: 100 });
     assert.deepEqual(ids(projectStamps([echoed], [add(local)], 'me')), ['l1']);
+  });
+
+  test('同じ位置でも絵柄が違う自分の保存済みシールは消さない', () => {
+    const local = stamp('l1', 'local', { x: 0.9 });
+    const other = stamp('me-0', 'me', { x: 0.9, kind: 1 });
+    assert.deepEqual(ids(projectStamps([other], [add(local)], 'me')), ['l1', 'me-0']);
+  });
+
+  test('見た目が同じでも、ほかの人のシールは消さない', () => {
+    const local = stamp('l1', 'local', { x: 0.9 });
+    const theirs = stamp('someone-0', 'someone', { x: 0.9 });
+    assert.deepEqual(ids(projectStamps([theirs], [add(local)], 'me')), ['l1', 'someone-0']);
   });
 
   test('ほかのタブではがされていたシールを動かすと、新しいシールとして描く', () => {
@@ -147,6 +167,20 @@ describe('serialWrites', () => {
     assert.equal(second, true);
   });
 
+  test('失敗した書き込みのあとも、指定の間隔だけ待ってから次を始める', async () => {
+    const pause = deferred();
+    const waits = [];
+    const write = serialWrites((ms) => (waits.push(ms), pause.promise), 1100);
+    let second = false;
+    await assert.rejects(write(() => Promise.reject(Error('denied'))));
+    write(async () => (second = true));
+    await flush();
+    assert.deepEqual([waits, second], [[1100], false]);
+    pause.resolve();
+    await flush();
+    assert.equal(second, true);
+  });
+
   test('失敗した書き込みのあとも、続く書き込みを送る', async () => {
     const write = serialWrites(async () => {});
     await assert.rejects(write(() => Promise.reject(Error('denied'))));
@@ -158,15 +192,15 @@ describe('serialWrites', () => {
 function pendingSaves() {
   const calls = [];
   const replies = [];
-  const answer = (name) => (op, target) => {
-    calls.push([name, op.id, target?.id]);
+  const send = (op, target) => {
+    calls.push([op.id, target?.id]);
     const reply = deferred();
     replies.push(reply);
     return reply.promise;
   };
   const shown = { pending: [] };
   const saves = createPendingSaves({
-    send: { place: answer('place'), move: answer('move'), remove: answer('remove') },
+    send,
     wait: async () => {},
     changed: (pending) => (shown.pending = pending),
   });
@@ -222,22 +256,21 @@ describe('createPendingSaves', () => {
     saves.add(add(stamp('b', 'local')));
     await flush();
     assert.deepEqual(
-      calls.map((c) => c[1]),
+      calls.map((c) => c[0]),
       ['add-a'],
     );
     await reply((r) => r.resolve(saved(stamp('me-0'))));
     assert.deepEqual(
-      calls.map((c) => c[1]),
+      calls.map((c) => c[0]),
       ['add-a', 'add-b'],
     );
   });
 
-  test('保存済みのシールを動かす操作は move として送る', async () => {
+  test('保存済みのシールを動かす操作は、そのシールを対象にして送る', async () => {
     const { saves, calls } = pendingSaves();
-    const target = stamp('me-2');
-    saves.add(move(target, stamp('l1', 'local')));
+    saves.add(move(stamp('me-2'), stamp('l1', 'local')));
     await flush();
-    assert.deepEqual(calls, [['move', 'move-l1', 'me-2']]);
+    assert.deepEqual(calls, [['move-l1', 'me-2']]);
   });
 
   test('保存前のシールをはがす操作は、リクエストなしで終わる', async () => {
@@ -253,7 +286,7 @@ describe('createPendingSaves', () => {
     saves.add(remove(local));
     await reply((r) => r.resolve(saved(stamp('me-3'))));
     await flush();
-    assert.deepEqual(calls.at(-1), ['remove', 'remove-l1', 'me-3']);
+    assert.deepEqual(calls.at(-1), ['remove-l1', 'me-3']);
   });
 
   test('貼ったシールが保存されると、保存待ちの操作の対象も保存済みのシールになる', async () => {
@@ -265,14 +298,22 @@ describe('createPendingSaves', () => {
     assert.equal(shown.pending[0].target.id, 'me-3');
   });
 
-  test('貼るのに失敗したシールを動かすと、新しく貼り直す', async () => {
-    const { saves, calls, reply } = pendingSaves();
+  test('貼るのに失敗したら、そのシールへの保存待ちの操作も一覧から外す', async () => {
+    const { saves, shown, reply } = pendingSaves();
     const local = stamp('l1', 'local');
     saves.add(add(local)).catch(() => {});
     saves.add(move(local, stamp('l2', 'local')));
     await reply((r) => r.reject(Error('offline')));
-    await flush();
-    assert.deepEqual(calls.at(-1), ['place', 'move-l2', undefined]);
+    assert.deepEqual(shown.pending, []);
+  });
+
+  test('貼るのに失敗したシールへの続く操作は、何も送らない', async () => {
+    const { saves, calls, reply } = pendingSaves();
+    const local = stamp('l1', 'local');
+    saves.add(add(local)).catch(() => {});
+    const moved = saves.add(move(local, stamp('l2', 'local')));
+    await reply((r) => r.reject(Error('offline')));
+    assert.deepEqual([await moved, calls.length], [null, 1]);
   });
 
   test('動かすのに失敗したシールへの続く操作は、動かす前の保存済みのシールに対して送る', async () => {
@@ -283,6 +324,6 @@ describe('createPendingSaves', () => {
     saves.add(remove(moved));
     await reply((r) => r.reject(Error('offline')));
     await flush();
-    assert.deepEqual(calls.at(-1), ['remove', 'remove-l1', 'me-1']);
+    assert.deepEqual(calls.at(-1), ['remove-l1', 'me-1']);
   });
 });

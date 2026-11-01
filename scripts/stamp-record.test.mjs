@@ -66,13 +66,14 @@ describe('recordStamps', () => {
     assert.deepEqual([stamp.id, stamp.owner, stamp.slot], ['alice-3', 'alice', '3']);
   });
 
-  test('Gravatar のハッシュとして正しいアバターだけを持たせる', () => {
+  test('Gravatar のハッシュのアバターを持たせる', () => {
     const hash = 'ab'.repeat(32);
     assert.equal(recordStamps('a', { avatar: hash, stamps: { 0: sticker() } })[0].avatar, hash);
-    assert.equal(
-      recordStamps('a', { avatar: 'https://evil.example/x.png', stamps: { 0: sticker() } })[0].avatar,
-      undefined,
-    );
+  });
+
+  test('Gravatar のハッシュでないアバター（URL など）は持たせない', () => {
+    const avatar = 'https://evil.example/x.png';
+    assert.equal(recordStamps('a', { avatar, stamps: { 0: sticker() } })[0].avatar, undefined);
   });
 });
 
@@ -94,23 +95,22 @@ describe('placeIn', () => {
 });
 
 describe('removeFrom', () => {
-  test('見ていたシールをスロットから外す', () => {
+  test('見ていたシールのスロットを空ける', () => {
     const record = fullRecord();
     assert.deepEqual(Object.keys(removeFrom(record, seen(record, '3')).stamps), ['0', '1', '2', '4']);
   });
 
-  test('別のタブが同じスロットに貼り直していたら何もしない', () => {
+  test('保存済みのレコードを書き換えない', () => {
     const record = fullRecord();
-    const target = seen(record, '3');
-    record.stamps['3'] = sticker({ createdAt: 99 });
-    assert.equal(removeFrom(record, target).stamps, undefined);
+    removeFrom(record, seen(record, '3'));
+    assert.equal(Object.keys(record.stamps).length, 5);
   });
 });
 
 describe('moveIn', () => {
   test('自分のスロットを書き換え、ほかの4枚はそのまま残す', () => {
     const record = fullRecord();
-    const edit = moveIn(record, seen(record, '3'), sticker({ x: 0.57, y: 0.01 }), TS);
+    const edit = moveIn(record, seen(record, '3'), sticker({ x: 0.57, y: 0.01 }));
     assert.equal(edit.slot, '3');
     assert.deepEqual(
       ['0', '1', '2', '4'].map((slot) => edit.stamps[slot]),
@@ -118,24 +118,16 @@ describe('moveIn', () => {
     );
   });
 
-  test('動かしたシールは元の作成時刻を保つ', () => {
+  test('動かしたシールは、新しい位置と元の作成時刻で保存する', () => {
     const record = fullRecord();
-    const edit = moveIn(record, seen(record, '3'), sticker({ x: 0.57 }), TS);
-    assert.equal(edit.stamps['3'].createdAt, 13);
+    const edit = moveIn(record, seen(record, '3'), sticker({ x: 0.57 }));
+    assert.deepEqual(edit.stamps['3'], sticker({ x: 0.57, createdAt: 13 }));
   });
 
   test('保存済みのレコードを書き換えない', () => {
     const record = fullRecord();
-    moveIn(record, seen(record, '3'), sticker({ x: 0.57 }), TS);
+    moveIn(record, seen(record, '3'), sticker({ x: 0.57 }));
     assert.equal(record.stamps['3'].x, 0.3);
-  });
-
-  test('別のタブではがされていたら、新しいシールとして貼る', () => {
-    const record = fullRecord();
-    const target = seen(record, '3');
-    record.stamps['3'] = sticker({ createdAt: 99 });
-    const edit = moveIn(record, target, sticker({ x: 0.57 }), TS);
-    assert.deepEqual([edit.slot, edit.stamps['0'].createdAt, edit.stamps['3'].createdAt], ['0', TS, 99]);
   });
 });
 

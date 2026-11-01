@@ -4,7 +4,7 @@ import { moveIn, nextRecord, placeIn, recordStamps, removeFrom } from './data/st
 import { REQUEST_TIMEOUT_MS, SERVER_TIME, writeRecord } from './data/stamp-write.mjs';
 import { pageKey } from './data/site-pages.mjs';
 import type { Auth, User } from 'firebase/auth';
-import type { Account, PlacedStamp, Stamp } from './data/stamp-types';
+import type { Account, Operation, PlacedStamp, SavedRecord, Stamp } from './data/stamp-types';
 // The sticker client, loaded once the page needs stickers: the public stream of a page's
 // stickers, Google sign-in, and saving your own stickers.
 type RecordData = { updatedAt: number; stamps: Record<string, Stamp>; avatar?: string };
@@ -91,22 +91,25 @@ async function currentUser() {
 }
 
 // ── Saving ──
-// Only a sticker's look and spot are sent; a new one's age is set by the database.
-type StampData = Omit<Stamp, 'createdAt'>;
-// One read-modify-write of your record on a page (src/data/stamp-write.mjs); `edit` returns the
-// slot it wrote and the new stamps (undefined to change nothing). A place or move whose saved
-// record does not hold the sticker counts as failed.
-async function save(
-  path: string,
+// One read-modify-write of your record on a page (src/data/stamp-write.mjs). Only a sticker's
+// look and spot are sent; a new one's age is set by the database. `target` is the saved sticker
+// a move or peel is for.
+export async function save(
+  op: Operation,
+  target: PlacedStamp | undefined,
   account: Account,
-  edit: (record: RecordData | null) => { slot: string; stamps?: Record<string, unknown> },
-  placing: boolean,
-) {
+): Promise<SavedRecord> {
   const user = await currentUser();
   const token = await user.getIdToken();
+  const edit = (record: RecordData | null) =>
+    op.type === 'remove'
+      ? removeFrom(record, target)
+      : op.type === 'move' && target
+        ? moveIn(record, target, op.stamp)
+        : placeIn(record, op.stamp, SERVER_TIME);
   let slot = '';
   const record = (await writeRecord(
-    { fetch, databaseURL: config.databaseURL, token, page: pageKey(path), uid: user.uid },
+    { fetch, databaseURL: config.databaseURL, token, page: pageKey(op.path), uid: user.uid },
     (stored) => {
       const result = edit(stored as RecordData | null);
       slot = result.slot;
@@ -114,15 +117,5 @@ async function save(
     },
   )) as RecordData | null;
   const stamps = recordStamps(account.uid, record);
-  const placed = stamps.find((s) => s.slot === slot);
-  if (placing && !placed) throw Error('The saved record does not hold the sticker');
-  return { owner: account.uid, stamps, placed };
+  return { owner: account.uid, stamps, placed: stamps.find((s) => s.slot === slot) };
 }
-export const place = (path: string, stamp: StampData, account: Account) =>
-  save(path, account, (record) => placeIn(record, stamp, SERVER_TIME), true);
-// Does nothing if the slot now holds a newer stamp placed by another tab.
-export const remove = (path: string, target: PlacedStamp, account: Account) =>
-  save(path, account, (record) => removeFrom(record, target), false);
-// Moving a sticker is one write of its own slot, so it never pushes out another sticker.
-export const move = (path: string, target: PlacedStamp, stamp: StampData, account: Account) =>
-  save(path, account, (record) => moveIn(record, target, stamp, SERVER_TIME), true);

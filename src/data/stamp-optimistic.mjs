@@ -6,7 +6,7 @@ import { STAMPS_PER_PAGE, WRITE_SPACING_MS } from './stamp-limits.mjs';
 
 /** @typedef {import('./stamp-types').PlacedStamp} PlacedStamp */
 /** @typedef {import('./stamp-types').Operation} Operation */
-/** @typedef {{ owner: string; stamps: PlacedStamp[]; placed?: PlacedStamp }} SavedRecord */
+/** @typedef {import('./stamp-types').SavedRecord} SavedRecord */
 
 export const sameStamp = (a, b) => ['anchor', 'x', 'y', 'kind', 'angle'].every((key) => a[key] === b[key]);
 
@@ -68,14 +68,12 @@ export function serialWrites(wait, spacing = WRITE_SPACING_MS) {
  * after the ones before it; once it has saved or failed it leaves the list, and the promise it
  * returned settles. A sticker placed or moved here is known by a local id until it saves; later
  * changes to it are then sent for the saved sticker. A sticker whose move failed stands for the
- * sticker it was moved from again.
- * `send` makes the requests and returns the saved record, or null when there was nothing to send.
+ * sticker it was moved from again. A sticker whose placement failed is gone, and so are the
+ * changes made to it since: they are dropped and send nothing.
+ * `send` saves one change (to `target`, the saved sticker a move or peel is for) and returns the
+ * saved record, or null when it sent nothing.
  * @param {{
- *   send: {
- *     place(op: Operation & { type: 'add' | 'move' }): Promise<SavedRecord | null>;
- *     move(op: Operation & { type: 'move' }, target: PlacedStamp): Promise<SavedRecord | null>;
- *     remove(op: Operation & { type: 'remove' }, target: PlacedStamp): Promise<SavedRecord | null>;
- *   };
+ *   send: (op: Operation, target?: PlacedStamp) => Promise<SavedRecord | null>;
  *   wait: (ms: number) => Promise<void>;
  *   changed: (pending: readonly Operation[]) => void;
  * }} options
@@ -97,12 +95,9 @@ export function createPendingSaves({ send, wait, changed }) {
   const write = serialWrites(wait);
   /** @param {Operation} op */
   const save = (op) => {
-    if (op.type === 'add') return send.place(op);
+    if (op.type === 'add') return send(op);
     const target = resolve(op.target);
-    // A sticker whose own placement never saved needs no request to be peeled, and is placed
-    // afresh when moved.
-    if (target.owner === 'local') return op.type === 'remove' ? Promise.resolve(null) : send.place(op);
-    return op.type === 'remove' ? send.remove(op, target) : send.move(op, target);
+    return target.owner === 'local' ? Promise.resolve(null) : send(op, target);
   };
   return {
     /** @param {Operation} op @returns {Promise<SavedRecord | null>} */
@@ -117,6 +112,8 @@ export function createPendingSaves({ send, wait, changed }) {
         },
         (error) => {
           if (op.type === 'move') retarget(op.stamp.id, resolve(op.target));
+          if (op.type === 'add')
+            update(pending.filter((item) => item.type === 'add' || item.target.id !== op.stamp.id));
           leave();
           throw error;
         },
