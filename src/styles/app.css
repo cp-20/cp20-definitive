@@ -1221,7 +1221,7 @@
     --thumb: 144px;
     position: relative;
     display: grid;
-    grid-template-columns: var(--thumb) minmax(0, 1fr) 36px;
+    grid-template-columns: var(--thumb) minmax(0, 1fr);
     gap: 40px;
     align-items: center;
     padding: 18px 4px;
@@ -1272,30 +1272,12 @@
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
   }
-  .article-arrow {
-    justify-self: center;
-    box-sizing: content-box;
-    padding: 7px;
-    border: 2px solid transparent;
-    border-radius: 50%;
-    color: var(--muted);
-  }
   /* Only the way in is animated: leaving a row clears it at once, so scanning down the list
-     leaves no trail of markers and arrows winding back. */
+     leaves no trail of markers winding back. */
   @media (hover: hover) {
     .article-row:hover h3 {
       background-size: 100% 100%;
       transition: background-size var(--t-state) var(--ease);
-    }
-    .article-row:hover .article-arrow {
-      transition:
-        transform var(--t-hover) var(--ease),
-        background var(--t-hover) var(--ease),
-        border-color var(--t-hover) var(--ease);
-      border-color: var(--edge);
-      background: var(--hi);
-      color: var(--on-color);
-      transform: translate(2px, -2px);
     }
   }
   .article-row:active > .og-image {
@@ -1460,17 +1442,6 @@
     font-family: var(--mono);
     font-size: 0.75rem;
     color: var(--muted);
-  }
-  .edition-list svg {
-    position: absolute;
-    right: 22px;
-    top: 22px;
-    transition: transform var(--t-hover) var(--ease);
-  }
-  @media (hover: hover) {
-    .edition-list > a:hover svg {
-      transform: translate(2px, -2px) rotate(10deg);
-    }
   }
 
   /* ── Articles page ── */
@@ -1675,19 +1646,10 @@
     position: absolute;
     inset: -8px;
   }
-  .work-index-item h2 a > svg {
-    margin-left: auto;
-    color: var(--faint);
-  }
   /* As in the article list, only the way in is animated. */
   @media (hover: hover) {
     .work-index-item:hover h2 a {
       transition: background-size var(--t-state) var(--ease);
-    }
-    .work-index-item:hover h2 a > svg {
-      color: var(--ink);
-      transform: translate(2px, -2px);
-      transition: transform var(--t-hover) var(--ease);
     }
   }
   .work-index-item h2 .original-icon {
@@ -3155,7 +3117,7 @@
     }
     .home-writing .article-row {
       --thumb: 104px;
-      grid-template-columns: var(--thumb) minmax(0, 1fr) 32px;
+      grid-template-columns: var(--thumb) minmax(0, 1fr);
       gap: 34px;
     }
     .work-grid,
@@ -3376,9 +3338,6 @@
       gap: 30px;
       padding: 14px 0;
     }
-    .article-row .article-arrow {
-      display: none;
-    }
     .article-row h3 {
       font-size: 0.9375rem;
     }
@@ -3402,10 +3361,6 @@
     }
     .edition-list span {
       padding: 2px 12px 14px;
-    }
-    .edition-list svg {
-      right: 20px;
-      top: 20px;
     }
     .article-toolbar {
       flex-direction: column;

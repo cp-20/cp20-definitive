@@ -54,7 +54,6 @@ export default function Works() {
                   <a href={`/works/${w.id}`}>
                     <OriginalIcon url={w.url} name={w.title} placeholder />
                     {w.title}
-                    <Icon name="ArrowUpRight" size={18} />
                   </a>
                 </h2>
                 <p>{w.description}</p>

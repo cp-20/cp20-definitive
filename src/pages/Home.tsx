@@ -49,7 +49,6 @@ export default function Home() {
             </div>
             <a href="/articles" class="under-link">
               すべて見る
-              <Icon name="ArrowRight" size={16} />
             </a>
           </div>
           <ArticleRows items={articles.slice(0, 4)} />
@@ -84,7 +83,6 @@ export default function Home() {
           </div>
           <a href="/about" class="under-link">
             プロフィールを見る
-            <Icon name="ArrowRight" size={16} />
           </a>
         </aside>
       </div>
@@ -98,7 +96,6 @@ export default function Home() {
               <a href={`https://${e.year}.cp20.dev`}>
                 <strong>{e.year}</strong>
                 <span>{e.tech}</span>
-                <Icon name="ArrowUpRight" size={16} />
               </a>
             )}
           </For>

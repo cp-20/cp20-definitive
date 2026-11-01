@@ -1,5 +1,4 @@
 import { httpStatus } from '@solidjs/web';
-import Icon from '../components/Icon.tsx';
 export default function NotFound() {
   httpStatus(404);
   return (
@@ -8,7 +7,6 @@ export default function NotFound() {
       <h1>ページが見つかりません。</h1>
       <a href="/" class="under-link">
         ホームへ戻る
-        <Icon name="ArrowRight" size={18} />
       </a>
     </div>
   );
