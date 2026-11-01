@@ -26,9 +26,13 @@ export function createEdits(options: {
   const [fresh, setFresh] = createSignal<ReadonlyMap<string, { x: number; y: number }>>(new Map()),
     // Stickers peeling off, by visual key, until they are taken out of the layer.
     [leaving, setLeaving] = createSignal<ReadonlySet<string>>(new Set());
+  // The removals of stickers still peeling off. They are applied before a new sticker is set
+  // down, so it is counted against the stickers you really have left.
+  const peeling = new Set<() => void>();
+  // Yours that are not peeling off, newest first.
+  const kept = () => own().filter((s) => !leaving().has(visualKey(s)));
   // Stickers you could still place here once `without` is gone.
-  const remaining = (without?: PlacedStamp) =>
-    LIMIT - own().filter((s) => s.id !== without?.id && !leaving().has(visualKey(s))).length;
+  const remaining = (without?: PlacedStamp) => LIMIT - kept().filter((s) => s.id !== without?.id).length;
   /**
    * Sets a sticker down at a point on screen, moving `target` (one of yours) if given. It settles
    * from `from`, where the sticker in hand was. Returns the new sticker's id, or '' where no
@@ -44,6 +48,7 @@ export function createEdits(options: {
   ) {
     const spot = locate(x, y);
     if (!spot) return '';
+    for (const commit of [...peeling]) commit();
     const id = crypto.randomUUID();
     const stamp: PlacedStamp = {
       id,
@@ -78,7 +83,11 @@ export function createEdits(options: {
     say(stampAnnouncement('removed', stickerName(target.kind), remaining(target)));
     // The page may change while the sticker peels off; the removal belongs to this one.
     const path = options.path();
+    let done = false;
     const commit = () => {
+      if (done) return;
+      done = true;
+      peeling.delete(commit);
       setLeaving((set) => {
         const next = new Set(set);
         next.delete(key);
@@ -90,11 +99,12 @@ export function createEdits(options: {
     if (!animate || reducedMotion()) return commit();
     // The sticker peels off before the optimistic removal takes it out of the layer.
     setLeaving((set) => new Set(set).add(key));
+    peeling.add(commit);
     setTimeout(commit, PEEL_MS);
   }
   // Peels off your newest sticker.
   function undo() {
-    const target = own().find((s) => !leaving().has(visualKey(s)));
+    const target = kept()[0];
     if (!target) return;
     const undoButton = document.activeElement;
     erase(target);
@@ -109,6 +119,7 @@ export function createEdits(options: {
     isFresh: (key: string) => fresh().has(key),
     settlesFrom: (key: string) => fresh().get(key),
     isLeaving: (key: string) => leaving().has(key),
+    kept,
     remaining,
     put,
     erase,

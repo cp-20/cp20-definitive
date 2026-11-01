@@ -84,7 +84,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   });
   const hand = createHand({
     isOwn: store.isOwn,
-    own: store.own,
+    own: edits.kept,
     remaining: () => edits.remaining(),
     put: edits.put,
     erase: edits.erase,

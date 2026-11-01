@@ -23,6 +23,7 @@ const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(mi
 // Creates signals: call it synchronously inside the component that owns them.
 export function createHand(options: {
   isOwn: (s: PlacedStamp) => boolean;
+  // Yours that are not peeling off.
   own: () => PlacedStamp[];
   remaining: () => number;
   put: (x: number, y: number, kind: number, angle: number, from: Point, target?: PlacedStamp) => string;
