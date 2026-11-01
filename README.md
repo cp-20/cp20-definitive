@@ -27,7 +27,7 @@ npm run build
 
 ## 本番公開の初期設定
 
-**公開はCloudflare Workers Builds（CloudflareのGit連携）で行います。`main` へのpushごとにCloudflare上でビルドしてデプロイします。GitHub Actionsは記事などの定期収集とスナップショットのコミットだけを担当し、Cloudflareの認証情報は持ちません。**
+**公開はCloudflare Workers Builds（CloudflareのGit連携）で行います。`main` へのpushごとにCloudflare上でビルドしてデプロイします。GitHub Actionsは記事などの定期収集とスナップショットのコミット、PR・`main` の検証（`CI`）、Firebaseルールのデプロイ（専用DBのみ。下記「ルールの更新」）を担当します。Cloudflareの認証情報は持ちません。**
 
 2026-10-06に `cp-20/cp20-definitive` の `main` とWorkerの接続を設定済みです。公開URLは [cp20-definitive.cp20.workers.dev](https://cp20-definitive.cp20.workers.dev/)。ルートディレクトリは `/`、ビルド・デプロイコマンドは下記のとおりです。非本番ブランチの自動ビルドは無効です。
 
@@ -37,11 +37,12 @@ npm run build
 4. Cloudflareダッシュボードの **Workers & Pages → Create → Import a repository** で `cp-20/cp20-definitive` を接続し、次のように設定。
    - Worker名：`cp20-definitive`（`wrangler.jsonc` の `name` と一致させる。違うとビルドが失敗します）
    - Production branch：`main`
-   - Build command：`npm run build`
+   - Build command：`npm run verify`（`npm run check`・`npm run build`・`npm test` を順に実行。テストはビルド結果も検査するためビルドの後。ViteのビルドはTypeScriptの型を検査しないため、`npm run build` だけだと型やテストが壊れた変更も公開されます。2026-10-06の接続時は `npm run build` で設定したため、ダッシュボードの Settings → Build で変更してください）
    - Deploy command：`npx wrangler deploy`
    - Node.js：`.node-version` の 24（Workers Buildsの既定も24）
    - 任意：Non-production branch builds を有効にすると、ブランチごとのプレビューURLで確認できます。
-5. workers.devで確認後、CloudflareのCustom Domainsで `cp20.dev` を接続。
+5. GitHubのブランチ保護（またはRuleset）で `main` へのマージに `CI` ワークフローの `verify` ジョブを必須チェックにします。`.github/workflows/ci.yml` がすべてのPRと `main` へのpushでCloudflareと同じ `npm run verify` を実行します。必須チェックは `main` への直接pushも止めるため、スナップショットを書き戻す `github-actions[bot]`（3.の更新経路）はバイパス対象にしてください（収集側は `Refresh content` 内で同じ検査を通してからコミットします）。
+6. workers.devで確認後、CloudflareのCustom Domainsで `cp20.dev` を接続。
 
 ドメイン・既存本番サイト・みんなのものさしリポジトリの公開設定は変更していません。canonical / sitemap / robots / RSSは本番予定の `https://cp20.dev` を指します。
 
@@ -125,7 +126,7 @@ Firebase Auth（Googleのポップアップログイン）でログインしたU
 
 Web標準のEventSourceでFirebase RESTストリームへ直接接続。非表示タブでは購読を休止し、再表示時に最新データへ接続します。Auth SDKはシール帳に触れたとき（以前ログインした人はページ表示後）に遅延読込し、ログインのポップアップがクリック内で開けるようにしています。保存はレコードと `throttle/$uid`（最終書込時刻）を同時に更新するRESTのマルチパスPATCHで、`throttle` の前回値を照合（compare-and-swap）して同時編集を検出します。受信したストリームの描画は最大で毎秒4回にまとめ、シールの位置は基準要素ごとに1回だけ測ります。配置と取り消しはネットワーク応答を待たず即時反映し、書き込みはDBの間隔制限に合わせて順番に送信。遷移中もキューを維持し、保存失敗時は該当操作を戻し、失敗した件数と再試行を表示します（再試行と回線復帰時は失敗したすべての操作を順に送り直します）。購読を休止しても保存は独立して完了し、IDトークンの取得を含めて15秒の通信タイムアウトを設けています。ブラウザが自動で再接続している間はエラーを出さず、8秒たっても繋がらないときだけ「シールに接続できません」と伝えます。ページ遷移・記事の絞り込み・作品切替はブラウザ内、定期収集はGitHub Actions、HTML/CSS/JSはStatic Assetsで完結し、サイト独自のWorker APIはありません。
 
-ルールの更新：`database.rules.json` は手で編集せず、`scripts/database-rules.mjs`（ルールの本体）と `src/data/site-pages.mjs`（ページ一覧）・`src/data/stamp-limits.mjs`（1ページ5枚・シール6種・角度±20°・書込間隔1秒）から `npm run rules` で生成してコミットします。`main` で `database.rules.json` か、その元になるファイル（`works.json`・`manual.json` を含む）が変わると、GitHub Actionsの `Firebase rules` ワークフローがコミット済みのルールが最新か（`node scripts/rules.mjs --check`）とエミュレーターでの動作を検証したうえで専用DBへデプロイします（PRでは検証のみ。ルールが古いPRは失敗します）。`manual.json` の記事だけを変えたマージでも同じ内容のルールが再デプロイされますが、結果は変わりません（Environmentに承認者を付けている場合は承認を求められます）。事前にリポジトリのSecretsへ `FIREBASE_SERVICE_ACCOUNT`（cp20-platformの「Firebase Realtime Database 管理者」ロールを持つサービスアカウントのJSONキー）を登録し、Environment `firebase-production` を作成してください（必須レビュアーを付ければ承認制にできます）。手動では、Firebase CLIで対象アカウントにログイン後に `npm run firebase:rules`。サイト（Cloudflare）とルールは別々にデプロイされるため、書込形式が変わるルール変更ではマージ直後の数分間、古いクライアントと新しいルール（またはその逆）の組み合わせでシールの保存が失敗することがあります。`.firebaserc` は専用DBだけを指します。レコードの管理・削除はFirebase Consoleの専用DBから行えます。
+ルールの更新：`database.rules.json` は手で編集せず、`scripts/database-rules.mjs`（ルールの本体）と `src/data/site-pages.mjs`（ページ一覧）・`src/data/stamp-limits.mjs`（1ページ5枚・シール6種・角度±20°・書込間隔1秒）から `npm run rules` で生成してコミットします。`main` で `database.rules.json` か、その元になるファイル（`works.json`・`manual.json` を含む）が変わると、GitHub Actionsの `Firebase rules` ワークフローがコミット済みのルールが最新か（`node scripts/rules.mjs --check`）とエミュレーターでの動作を検証したうえで専用DBへデプロイします（PRでは検証のみ。ルールが古いPRは失敗します）。デプロイの直前に、デプロイするファイル（`database.rules.json`・`firebase.json`・`.firebaserc`）がその時点の `main` と同じかを確かめ、違えば成功扱いでデプロイせずに終わります。古い実行を再実行しても新しいルールを古いルールで上書きしません（新しいルールは、それを変えたコミットの実行がデプロイします）。`manual.json` の記事だけを変えたマージでも同じ内容のルールが再デプロイされますが、結果は変わりません（Environmentに承認者を付けている場合は承認を求められます）。事前にリポジトリのSecretsへ `FIREBASE_SERVICE_ACCOUNT`（cp20-platformの「Firebase Realtime Database 管理者」ロールを持つサービスアカウントのJSONキー）を登録し、Environment `firebase-production` を作成してください（必須レビュアーを付ければ承認制にできます）。手動では、Firebase CLIで対象アカウントにログイン後に `npm run firebase:rules`。サイト（Cloudflare）とルールは別々にデプロイされるため、書込形式が変わるルール変更ではマージ直後の数分間、古いクライアントと新しいルール（またはその逆）の組み合わせでシールの保存が失敗することがあります。`.firebaserc` は専用DBだけを指します。レコードの管理・削除はFirebase Consoleの専用DBから行えます。
 
 ## UI / Web標準
 

@@ -82,9 +82,32 @@ jobs:
           node-version: 24
       - name: Rules match the page list
         run: node scripts/rules.mjs --check
+      # A re-run (or a late approval) of an older run still checks out its original commit, and
+      # concurrency only serialises runs. Deploy only when the files being deployed still match
+      # main right now, so older rules never overwrite newer ones. (Comparing the files rather
+      # than the commit keeps a deploy going when main has only moved on to unrelated commits,
+      # such as a content snapshot, which do not start this workflow.) A newer change to these
+      # files starts its own run, so a superseded run ends green without deploying.
+      - name: Deployed files still match main
+        id: latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          deploy=true
+          for f in database.rules.json firebase.json .firebaserc; do
+            tip="$(gh api "repos/$GITHUB_REPOSITORY/contents/$f?ref=main" --jq .sha)"
+            here="$(git hash-object "$f")"
+            if [ "$tip" != "$here" ]; then
+              echo "::notice::Skipping deploy: $f at $GITHUB_SHA differs from main. The run for the newer commit deploys it."
+              deploy=false
+            fi
+          done
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
       # Service account with "Firebase Realtime Database Admin" on cp20-platform.
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        if: steps.latest.outputs.deploy == 'true'
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       - name: Deploy rules to the stamps database only
+        if: steps.latest.outputs.deploy == 'true'
         run: npx --yes "$FIREBASE_TOOLS" deploy --only database:portfolio-stamps --project cp20-platform --non-interactive

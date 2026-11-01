@@ -1,0 +1,29 @@
+# Runs the same checks as the Cloudflare Workers Builds build command (`npm run verify`) on every
+# pull request and push to main, so a change that breaks tests, types or the build fails here
+# before it is merged. Make the "CI / verify" check required in the branch protection of main.
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      # Install scripts are not needed (firebase/protobufjs postinstalls only tune optional defaults).
+      - run: npm ci --ignore-scripts
+      - run: npm run verify
