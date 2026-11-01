@@ -38,7 +38,7 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
         <header class="site-header wrap" data-stamp-anchor="header">
           <a class="brand" href="/">
             <img src="/stamps/clover.svg" alt="" width="22" height="22" />
-            cp20.dev<span class="edition-label">definitive</span>
+            cp20.dev
           </a>
         </header>
         <main id="main">{props.children}</main>
@@ -49,8 +49,7 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
               GitHub
             </a>
             <a href="https://twitter.com/__cp20__">
-              <Brand url="https://twitter.com/__cp20__" />
-              X / Twitter
+              <Brand url="https://twitter.com/__cp20__" />X / Twitter
             </a>
             <a href="https://mixi.social/@cp20">
               <Brand url="https://mixi.social/@cp20" />

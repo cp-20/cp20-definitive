@@ -8,6 +8,7 @@ import {
   keptOnScreen,
   liftedSpot,
   releaseVelocity,
+  slideTime,
   springStep,
   throwCarry,
   waitsForHold,
@@ -154,7 +155,7 @@ describe('throwing', () => {
 });
 
 describe('springStep の高さ', () => {
-  test('持ち上げると素早く浮き、止まるころには目標の高さになる', () => {
+  test('持ち上げると約150msで浮き、止まるころには目標の高さになる', () => {
     const spring: Spring = {
       x: 0,
       y: 0,
@@ -168,7 +169,9 @@ describe('springStep の高さ', () => {
       lift: 0,
       tl: 1,
     };
-    for (let i = 0; i < 6; i++) springStep(spring, FRAME);
+    for (let i = 0; i < 3; i++) springStep(spring, FRAME);
+    assert.ok(spring.lift! < 0.6, String(spring.lift));
+    for (let i = 0; i < 7; i++) springStep(spring, FRAME);
     assert.ok(spring.lift! > 0.9, String(spring.lift));
     settle(spring);
     assert.ok(Math.abs(spring.lift! - 1) < 0.02, String(spring.lift));
@@ -225,5 +228,15 @@ describe('keptOnScreen', () => {
 
   test('両方は収まらない低い画面では、画面に収めるほうを優先する', () => {
     assert.deepEqual(keptOnScreen(100, 10, 300, 90, 80), { x: 100, y: 60 });
+  });
+});
+
+describe('slideTime', () => {
+  test('離した速さのまま滑り出す長さにし、止まって離したときは既定の長さにする', () => {
+    // 60 px at 900 px/s: 3 × 60 / 900 s = 200 ms.
+    assert.equal(slideTime({ x: 0, y: 0, vx: 900, vy: 0 }, 60, 0), 200);
+    assert.equal(slideTime({ x: 0, y: 0, vx: 4000, vy: 0 }, 10, 0), 180);
+    assert.equal(slideTime({ x: 0, y: 0, vx: 100, vy: 0 }, 100, 0), 400);
+    assert.equal(slideTime({ x: 0, y: 0, vx: 10, vy: 0 }, 5, 0), undefined);
   });
 });

@@ -4,7 +4,7 @@
 // input.ts.
 import { createSignal, flush } from 'solid-js';
 import type { PlacedStamp } from './types.ts';
-import { FLYING, clamp, releaseVelocity, springStep, throwCarry } from './spring.ts';
+import { FLYING, clamp, releaseVelocity, slideTime, springStep, throwCarry } from './spring.ts';
 import { OVER_SHEET, stampAnnouncement } from './a11y.ts';
 import { STICKER_RADIUS, visualKey } from './layout.ts';
 import { overSheetAt, placeAt } from './placement.ts';
@@ -25,7 +25,14 @@ export function createHand(options: {
   // Yours that are not peeling off.
   own: () => PlacedStamp[];
   remaining: () => number;
-  put: (x: number, y: number, kind: number, angle: number, from: Point, target?: PlacedStamp) => string;
+  put: (
+    x: number,
+    y: number,
+    kind: number,
+    angle: number,
+    from: Point & { t?: number },
+    target?: PlacedStamp,
+  ) => string;
   erase: (target: PlacedStamp, animate: boolean) => void;
   say: (text: string) => void;
   open: () => boolean | null;
@@ -262,7 +269,7 @@ export function createHand(options: {
     }
     // It is set down at the angle it is in hand, so it does not twist as it touches the paper.
     const angle = Math.round(clamp(motion.tilt, -14, 14));
-    const from = { x: motion.x, y: motion.y };
+    const from = { x: motion.x, y: motion.y, t: slideTime(motion, x, y) };
     const moving = h.from === 'page' && h.target && options.isOwn(h.target) ? h.target : undefined;
     const before = options.own();
     const place = placeAt(x, y);

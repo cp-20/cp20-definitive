@@ -197,8 +197,9 @@ describe('曲のリンク', () => {
     const box = await sandbox({ tracks: [], series: [] });
     try {
       const media = await box.importModule<{ syncMedia: typeof syncMedia }>('previews.ts');
-      const changed = await media.syncMedia(async (url: string) =>
-        url.includes('featured-tracks') ? rows : [],
+      const changed = await media.syncMedia(
+        async (url: string) => (url.includes('featured-tracks') ? rows : []),
+        async (url) => new Response(null, { status: String(url).includes('/sddefault') ? 200 : 404 }),
       );
       return { changed, tracks: await box.load('tracks') };
     } finally {
@@ -218,6 +219,11 @@ describe('曲のリンク', () => {
   test('https://youtu.be/<id> のリンクは、クエリとハッシュを落として取り込む', async () => {
     const { changed, tracks } = await sync([track('https://youtu.be/upUv8iWVs-I?si=x#t=1')]);
     assert.deepEqual([changed, tracks[0].link], [true, 'https://youtu.be/upUv8iWVs-I']);
+  });
+
+  test('サムネイルは YouTube にある一番大きいものを使う', async () => {
+    const { tracks } = await sync([track('https://youtu.be/upUv8iWVs-I')]);
+    assert.equal(tracks[0].thumbnail, 'https://i.ytimg.com/vi/upUv8iWVs-I/sddefault.jpg');
   });
 
   test('コミットされた曲のリンクは、どれも素の https://youtu.be/<id>', () => {

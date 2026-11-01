@@ -208,8 +208,18 @@ try {
   await page.keyboard.press('Escape');
   await expect(page.locator('#credits')).toBeHidden();
   await expect(creditsButton).toBeFocused();
+  // Back with a dialog open closes it along with the page it was opened on.
+  await page.locator('a[href="/about"]').first().click();
+  await expect(page).toHaveURL(origin + '/about');
+  await page.locator('.credits-open').click();
+  await expect(page.locator('#credits')).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(origin + '/');
+  await expect(page.locator('#credits')).toBeHidden();
+  if ((await page.evaluate(() => getComputedStyle(document.documentElement).overflow)) === 'hidden')
+    throw Error('Scroll lock left after back closed the credits');
   await page.goto(origin + '/about');
-  await page.locator('button.timeline-item').first().click();
+  await page.locator('.timeline-item h3 button').first().click();
   await expect(page.locator('#milestone-0')).toBeVisible();
   await page.mouse.click(5, 5);
   await expect(page.locator('#milestone-0')).toBeHidden();
@@ -455,11 +465,23 @@ try {
   const logo = (await page.locator('.placed-stamp').nth(1).boundingBox())!;
   await page.mouse.move(logo.x + 23, logo.y + 23, { steps: 3 });
   await expect(page.locator('.sticker-avatar')).toHaveCount(1);
-  const opened = context.waitForEvent('page');
+  // Headless Chromium opens no tab for a Ctrl+click, so the check is that the click reached the
+  // link under the sticker (its default is cancelled here) and the page stayed.
+  await page.evaluate(() =>
+    document.querySelector('.site-header a[href="/"]')!.addEventListener(
+      'click',
+      (e) => {
+        if ((e as MouseEvent).ctrlKey) (window as any).__ctrlHit = true;
+        e.preventDefault();
+      },
+      { once: true },
+    ),
+  );
   await page.keyboard.down('Control');
   await page.mouse.click(logo.x + 23, logo.y + 23);
   await page.keyboard.up('Control');
-  await (await opened).close();
+  if (!(await page.evaluate(() => (window as any).__ctrlHit)))
+    throw Error('Ctrl+click under a sticker did not reach the link');
   if (new URL(page.url()).pathname !== '/articles') throw Error('Ctrl+click under a sticker left the page');
   const sort = (await page.locator('.placed-stamp').nth(0).boundingBox())!;
   await page.mouse.click(sort.x + 23, sort.y + 23);

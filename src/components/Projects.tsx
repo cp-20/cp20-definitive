@@ -136,7 +136,7 @@ export default function Projects() {
                   sizes={sizes.featured}
                   priority={i() === 0}
                 />
-                <Postmark date={postmarkDate(p.productionTime)} top="CP20.DEV" bottom={`No.0${i() + 1}`} />
+                <Postmark date={postmarkDate(p.productionTime)} />
               </div>
               <div class="featured-copy">
                 <p class="project-kind">{p.tags.join(' / ')}</p>

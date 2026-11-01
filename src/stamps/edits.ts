@@ -23,7 +23,9 @@ export function createEdits(options: {
 }) {
   const { own, say } = options;
   // Stickers just set down, by visual key: how far from their spot they start settling.
-  const [fresh, setFresh] = createSignal<ReadonlyMap<string, { x: number; y: number }>>(new Map()),
+  const [fresh, setFresh] = createSignal<ReadonlyMap<string, { x: number; y: number; t?: number }>>(
+      new Map(),
+    ),
     // Stickers peeling off, by visual key, until they are taken out of the layer.
     [leaving, setLeaving] = createSignal<ReadonlySet<string>>(new Set());
   // The removals of stickers still peeling off. They are applied before a new sticker is set
@@ -43,7 +45,7 @@ export function createEdits(options: {
     y: number,
     kind: number,
     angle: number,
-    from?: { x: number; y: number },
+    from?: { x: number; y: number; t?: number },
     target?: PlacedStamp,
   ) {
     const spot = locate(x, y);
@@ -60,7 +62,7 @@ export function createEdits(options: {
       createdAt: target?.createdAt ?? Date.now(),
     };
     const key = visualKey(stamp);
-    setFresh((map) => new Map(map).set(key, { x: (from?.x ?? x) - x, y: (from?.y ?? y) - y }));
+    setFresh((map) => new Map(map).set(key, { x: (from?.x ?? x) - x, y: (from?.y ?? y) - y, t: from?.t }));
     setTimeout(
       () =>
         setFresh((map) => {
@@ -68,7 +70,7 @@ export function createEdits(options: {
           next.delete(key);
           return next;
         }),
-      SETTLE_MS,
+      Math.max(SETTLE_MS, (from?.t ?? 0) + 20),
     );
     // Moving one of your stickers rewrites it in place, so it never pushes out another one.
     if (target) options.apply({ type: 'move', id, path: options.path(), target, stamp });

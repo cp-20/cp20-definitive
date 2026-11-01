@@ -171,7 +171,21 @@ export function ogImage(html: string) {
 }
 type Track = { title: string; composer: string; link: string; thumbnail: string };
 type Series = { title: string; author: string; link: string; thumbnail: string; credit: string };
-export async function syncMedia(request: Request) {
+/**
+ * The largest thumbnail YouTube has for video `id`: maxresdefault (1280×720) or sddefault (640×480)
+ * when they exist (both answer 404 otherwise), else hqdefault (480×360), which every video has.
+ */
+export async function youtubeThumbnail(id: string, fetcher: typeof fetch = fetch) {
+  for (const name of ['maxresdefault', 'sddefault']) {
+    const url = `https://i.ytimg.com/vi/${id}/${name}.jpg`;
+    try {
+      const response = await fetcher(url, { method: 'HEAD', signal: AbortSignal.timeout(20000) });
+      if (response.ok) return url;
+    } catch {}
+  }
+  return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+}
+export async function syncMedia(request: Request, fetcher: typeof fetch = fetch) {
   const trackPath = data('tracks'),
     seriesPath = data('series');
   const [tracks, series]: [Track[], Series[]] = await Promise.all([load('tracks'), load('series')]);
@@ -180,25 +194,27 @@ export async function syncMedia(request: Request) {
   try {
     const raw = await request('https://2026.cp20.dev/featured-tracks?raw=true');
     if (!Array.isArray(raw) || !raw.length) throw Error();
-    nextTracks = raw.map((t) => {
-      const u = new URL(t.link);
-      const id = u.pathname.slice(1);
-      if (
-        u.protocol !== 'https:' ||
-        u.hostname !== 'youtu.be' ||
-        !/^[-_a-zA-Z0-9]{11}$/.test(id) ||
-        typeof t.title !== 'string' ||
-        typeof t.composer !== 'string'
-      )
-        throw Error();
-      return {
-        title: t.title,
-        composer: t.composer,
-        // Rebuilt from the checked ID so no scheme, query or hash from the source reaches the href.
-        link: `https://youtu.be/${id}`,
-        thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
-      };
-    });
+    nextTracks = await Promise.all(
+      raw.map(async (t) => {
+        const u = new URL(t.link);
+        const id = u.pathname.slice(1);
+        if (
+          u.protocol !== 'https:' ||
+          u.hostname !== 'youtu.be' ||
+          !/^[-_a-zA-Z0-9]{11}$/.test(id) ||
+          typeof t.title !== 'string' ||
+          typeof t.composer !== 'string'
+        )
+          throw Error();
+        return {
+          title: t.title,
+          composer: t.composer,
+          // Rebuilt from the checked ID so no scheme, query or hash from the source reaches the href.
+          link: `https://youtu.be/${id}`,
+          thumbnail: await youtubeThumbnail(id, fetcher),
+        };
+      }),
+    );
   } catch {
     console.warn('::warning::Music source unavailable; keeping previous selection');
   }

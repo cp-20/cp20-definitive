@@ -15,7 +15,7 @@ export function StampLayer(props: {
   isOwn: (s: PlacedStamp) => boolean;
   avatarOf: (s: PlacedStamp) => string | undefined;
   isFresh: (key: string) => boolean;
-  settlesFrom: (key: string) => { x: number; y: number } | undefined;
+  settlesFrom: (key: string) => { x: number; y: number; t?: number } | undefined;
   isLeaving: (key: string) => boolean;
   lifted: string;
   stickerAt: (x: number, y: number, accept: (s: ShownStamp) => boolean) => ShownStamp | undefined;
@@ -80,6 +80,9 @@ export function StampLayer(props: {
               '--angle': `${s().angle}deg`,
               '--from-x': `${props.settlesFrom(s().key)?.x ?? 0}px`,
               '--from-y': `${props.settlesFrom(s().key)?.y ?? 0}px`,
+              '--slide-time': props.settlesFrom(s().key)?.t
+                ? `${props.settlesFrom(s().key)!.t}ms`
+                : undefined,
             }}
             onPointerEnter={(e) => {
               if (e.pointerType === 'mouse') showAvatar(s().id);

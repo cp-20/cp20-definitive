@@ -77,55 +77,54 @@ export default function About() {
           <div class="timeline">
             <For each={milestones}>
               {(m, i) => {
-                const body = (
-                  <>
-                    <div class="timeline-date">
-                      <time datetime={m.year.replace('.', '-')}>{m.year}</time>
-                      <span>{m.grade}</span>
-                    </div>
-                    <div>
-                      <h3>{m.title}</h3>
-                      <p>{m.text}</p>
-                    </div>
-                  </>
-                );
                 const id = `milestone-${i()}`;
                 // An entry opens its dialog only when there is more to say than the line itself.
-                return m.detail.length || m.links.length ? (
+                const expandable = m.detail.length > 0 || m.links.length > 0;
+                return (
                   <>
-                    <button
-                      type="button"
-                      class="timeline-item"
-                      aria-haspopup="dialog"
-                      onClick={() => openModal(id)}
-                    >
-                      {body}
-                      <Icon name="Plus" size={16} />
-                    </button>
-                    <Modal id={id} title={m.title}>
-                      <p class="modal-meta">
+                    <div class="timeline-item" data-expandable={expandable || undefined}>
+                      <div class="timeline-date">
                         <time datetime={m.year.replace('.', '-')}>{m.year}</time>
                         <span>{m.grade}</span>
-                      </p>
-                      {(m.detail.length ? m.detail : [m.text]).map((d) => (
-                        <p>{d}</p>
-                      ))}
-                      {m.links.length > 0 && (
-                        <ul class="modal-links">
-                          {m.links.map((l) => (
-                            <li>
-                              <a href={l.url}>
-                                <Brand url={l.url} />
-                                {l.label}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </Modal>
+                      </div>
+                      <div>
+                        <h3>
+                          {expandable ? (
+                            <button type="button" aria-haspopup="dialog" onClick={() => openModal(id)}>
+                              {m.title}
+                              <Icon name="Plus" size={15} stroke={2.5} />
+                            </button>
+                          ) : (
+                            m.title
+                          )}
+                        </h3>
+                        <p>{m.text}</p>
+                      </div>
+                    </div>
+                    {expandable && (
+                      <Modal id={id} title={m.title}>
+                        <p class="modal-meta">
+                          <time datetime={m.year.replace('.', '-')}>{m.year}</time>
+                          <span>{m.grade}</span>
+                        </p>
+                        {(m.detail.length ? m.detail : [m.text]).map((d) => (
+                          <p>{d}</p>
+                        ))}
+                        {m.links.length > 0 && (
+                          <ul class="modal-links">
+                            {m.links.map((l) => (
+                              <li>
+                                <a href={l.url}>
+                                  <Brand url={l.url} />
+                                  {l.label}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </Modal>
+                    )}
                   </>
-                ) : (
-                  <div class="timeline-item">{body}</div>
                 );
               }}
             </For>

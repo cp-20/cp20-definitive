@@ -74,7 +74,7 @@ export default function Works() {
                     priority={i() === 0}
                     eager={i() < firstRowWorks}
                   />
-                  <Postmark date={postmarkDate(w.productionTime)} top="CP20.DEV" bottom="WORKS" />
+                  <Postmark date={postmarkDate(w.productionTime)} />
                 </a>
               </Show>
             </article>

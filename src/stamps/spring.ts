@@ -40,6 +40,9 @@ const LEAN_SPEED = 1200;
 // How quickly the lean follows the speed (rad/s): slower than the position, so the frame-to-frame
 // unevenness of pointer events does not make the sticker shiver.
 const LEAN_RATE = 12;
+// How quickly a sticker in hand grows and rises off the paper (rad/s): about 150 ms, slower than
+// it follows the pointer, so being picked up reads as one movement along with the lean.
+const PICKUP = 16;
 
 /**
  * Moves one axis of a critically damped spring `dt` seconds on, exactly, so it moves the same
@@ -64,7 +67,7 @@ function follow(x: number, v: number, to: number, dt: number, k: number): [numbe
 export function springStep(m: Spring, dt: number, k = HELD): boolean {
   [m.x, m.vx] = follow(m.x, m.vx, m.tx, dt, k);
   [m.y, m.vy] = follow(m.y, m.vy, m.ty, dt, k);
-  const ease = 1 - Math.exp(-k * dt);
+  const ease = 1 - Math.exp(-(k === HELD ? PICKUP : k) * dt);
   const base = m.base ?? 0;
   m.tilt += (base + MAX_TILT * Math.tanh(m.vx / LEAN_SPEED) - m.tilt) * (1 - Math.exp(-LEAN_RATE * dt));
   m.scale += (m.ts - m.scale) * ease;
@@ -99,6 +102,20 @@ export function releaseVelocity(samples: readonly Sample[], now: number) {
   const dt = (last.t - first.t) / 1000;
   if (dt <= 0) return { vx: 0, vy: 0 };
   return { vx: (last.x - first.x) / dt, vy: (last.y - first.y) / dt };
+}
+
+// How long (ms) the slide onto its spot may take (stick-slide in app.css).
+const SLIDE_MIN = 180,
+  SLIDE_MAX = 400;
+/**
+ * How long (ms) a sticker let go at `m` (its speed in px/s) takes to slide to (x, y), so it carries
+ * on at the speed it left the hand: stick-slide's ease-out cubic starts at 3× its mean speed, so
+ * distance D at speed v takes 3D/v. Nothing (the default length) when it was let go at rest.
+ */
+export function slideTime(m: { x: number; y: number; vx: number; vy: number }, x: number, y: number) {
+  const speed = Math.hypot(m.vx, m.vy);
+  if (speed < 60) return undefined;
+  return Math.round(clamp((3000 * Math.hypot(x - m.x, y - m.y)) / speed, SLIDE_MIN, SLIDE_MAX));
 }
 
 /** How far (px) a sticker let go at this speed (px/s) slides on, in the direction it was going. */

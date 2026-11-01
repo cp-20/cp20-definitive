@@ -131,6 +131,8 @@ export function createNavigation() {
       const ticket = ++version;
       aim = undefined;
       transition?.skipTransition();
+      // A dialog belongs to the page it was opened on (the credits live in the shell and would stay).
+      for (const d of document.querySelectorAll<HTMLDialogElement>('dialog[open]')) d.close();
       const update = () => {
         if (ticket !== version) return;
         // From now on pages arrive with the turn alone: the first page's entrance is not repeated.

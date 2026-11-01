@@ -540,14 +540,6 @@
       transform: rotate(-20deg);
     }
   }
-  .edition-label {
-    padding-left: 8px;
-    margin-left: 2px;
-    border-left: 2px dotted var(--faint);
-    font-size: 0.6875rem;
-    color: var(--muted);
-    letter-spacing: 0.06em;
-  }
   .site-footer {
     margin-top: 110px;
     padding-bottom: 28px;
@@ -750,7 +742,6 @@
     right: calc(var(--size) * -0.28);
     top: calc(var(--size) * -0.22);
     display: grid;
-    grid-template-rows: 1fr auto 1fr;
     place-items: center;
     width: var(--size);
     height: var(--size);
@@ -762,7 +753,6 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     line-height: 1;
-    text-transform: uppercase;
     white-space: nowrap;
     rotate: -14deg;
     pointer-events: none;
@@ -800,12 +790,6 @@
     -webkit-mask: linear-gradient(90deg, transparent, #000 40%);
     mask: linear-gradient(90deg, transparent, #000 40%);
   }
-  .postmark-top {
-    align-self: end;
-    max-width: 78%;
-    overflow: hidden;
-    text-overflow: clip;
-  }
   .postmark-date {
     width: 100%;
     padding: calc(var(--size) * 0.07) 0;
@@ -816,9 +800,6 @@
     font-size: calc(var(--size) * 0.14);
     letter-spacing: 0.02em;
     text-align: center;
-  }
-  .postmark-bottom {
-    align-self: start;
   }
 
   /* ── Home: intro ── */
@@ -1228,6 +1209,15 @@
   .article-row[hidden] {
     display: none;
   }
+  /* The long list on /articles lays out only the rows near the screen (a page turn lays out the
+     whole new page at once). On wider screens every row there has the image's height (inside the
+     padding), so the page keeps its height and scroll positions. */
+  @media (min-width: 761px) {
+    .article-row:not(.home-writing *) {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 130.5px;
+    }
+  }
   /* Tilts alternate among the rows shown, so a filtered list keeps the zigzag. */
   .article-row:nth-child(even of :not([hidden])) > .og-image {
     rotate: 1.5deg;
@@ -1281,8 +1271,8 @@
     rotate: 0deg;
   }
   .home-writing .article-row {
-    --thumb: 168px;
-    gap: 32px;
+    --thumb: 208px;
+    gap: 28px;
   }
   /* A sticky note stuck on the page. */
   .home-profile {
@@ -2036,10 +2026,14 @@
     width: 100%;
     text-align: inherit;
     display: grid;
-    grid-template-columns: 90px minmax(0, 1fr) 20px;
+    grid-template-columns: 90px minmax(0, 1fr);
     gap: 40px;
     align-items: start;
-    padding: 16px 0;
+    padding: 16px 12px 16px 0;
+    border-radius: 10px;
+    transition:
+      background var(--t-hover) var(--ease),
+      translate var(--t-hover) var(--ease);
   }
   .timeline-item::before {
     content: '';
@@ -2054,7 +2048,7 @@
   }
   /* As in the article list, only the way in is animated. */
   @media (hover: hover) {
-    button.timeline-item:hover::before {
+    .timeline-item:has(button:hover)::before {
       background: var(--hi);
       transform: scale(1.25);
       transition:
@@ -2078,7 +2072,7 @@
     color: var(--muted);
   }
   @media (hover: hover) {
-    button.timeline-item:hover h3 {
+    .timeline-item:has(button:hover) h3 {
       background-size: 100% 100%;
       transition: background-size var(--t-state) var(--ease);
     }
@@ -2088,15 +2082,33 @@
     font-size: 0.875rem;
     color: var(--muted);
   }
-  .timeline-item > svg {
-    margin-top: 6px;
-    color: var(--faint);
+  /* The title is the button; its ::after stretches the hit area over the whole entry. */
+  .timeline-item h3 button {
+    padding: 0;
+    text-align: inherit;
+  }
+  .timeline-item h3 button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  .timeline-item h3 button:focus-visible {
+    outline: none;
+  }
+  .timeline-item h3 button:focus-visible::after {
+    outline: 3px dashed var(--seal);
+    outline-offset: 2px;
+  }
+  .timeline-item h3 svg {
+    display: inline-block;
+    margin-left: 6px;
+    vertical-align: -1px;
   }
   @media (hover: hover) {
-    button.timeline-item:hover > svg {
-      color: var(--ink);
-      transform: translate(2px, -2px);
-      transition: transform var(--t-hover) var(--ease);
+    .timeline-item:has(button:hover) {
+      background: color-mix(in srgb, var(--paper-2) 70%, transparent);
+      translate: 0 -2px;
     }
   }
   .favorites-heading {
@@ -2549,7 +2561,7 @@
      down onto the paper and is pressed into it. */
   .placed-stamp[data-fresh] > .sticker {
     animation:
-      stick-slide var(--t-state) cubic-bezier(0.12, 0.8, 0.3, 1) both,
+      stick-slide var(--slide-time, var(--t-state)) cubic-bezier(0.33, 1, 0.68, 1) both,
       stick-press var(--t-state) linear both;
   }
   .placed-stamp[data-lifted] {
@@ -3049,25 +3061,15 @@
     transform-origin: var(--flip-new-left) 50%;
     animation: turn-back var(--t-page) var(--ease-turn) both;
   }
-  :root[data-flip='back']::view-transition-old(root) {
-    animation: covered var(--t-page) var(--ease-turn) both;
-  }
   @keyframes turn-away {
     to {
       transform: rotateY(-90deg);
-      filter: brightness(0.86);
     }
   }
   /* Starts just short of edge-on, so its edge shows from the first frame. */
   @keyframes turn-back {
     from {
       transform: rotateY(-88deg);
-      filter: brightness(0.86);
-    }
-  }
-  @keyframes covered {
-    to {
-      filter: brightness(0.94);
     }
   }
   /* Only the page the visit starts on settles onto the paper, and its stamps are pressed on.
@@ -3401,9 +3403,6 @@
       font-size: 1rem;
       padding: 4px 10px 4px 8px;
     }
-    .edition-label {
-      display: none;
-    }
     .section-heading {
       flex-wrap: wrap;
       align-items: center;
@@ -3620,9 +3619,9 @@
       left: 8px;
     }
     .timeline-item {
-      grid-template-columns: minmax(0, 1fr) 18px;
-      gap: 2px 12px;
-      padding: 14px 0 14px 34px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+      padding: 14px 8px 14px 34px;
     }
     .timeline-item::before {
       left: 0;
@@ -3641,10 +3640,6 @@
     }
     .timeline-item > div:nth-child(2) {
       grid-column: 1;
-    }
-    .timeline-item > svg {
-      grid-column: 2;
-      grid-row: 1;
     }
     .favorites-heading {
       margin-top: 90px;
@@ -3689,15 +3684,24 @@
       display: none;
     }
   }
+  /* On phones the OG image takes the full width, so the title inside it stays readable. */
+  @media (max-width: 600px) {
+    .article-row,
+    .home-writing .article-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      padding: 18px 0;
+    }
+    .article-row > .og-image {
+      rotate: -0.6deg;
+    }
+    .article-row:nth-child(even of :not([hidden])) > .og-image {
+      rotate: 0.6deg;
+    }
+  }
   @media (max-width: 380px) {
     .wrap {
       padding-inline: 14px;
-    }
-    .article-row,
-    .home-writing .article-row {
-      --thumb: 124px;
-      grid-template-columns: var(--thumb) minmax(0, 1fr);
-      gap: 16px;
     }
     .identity h1 {
       font-size: 2.5rem;

@@ -38,7 +38,7 @@ export default function WorkDetail(props: { work: (typeof works)[number] }) {
           sizes={sizes.workHero}
           priority
         />
-        <Postmark date={postmarkDate(w.productionTime)} top="CP20.DEV" bottom="WORKS" />
+        <Postmark date={postmarkDate(w.productionTime)} />
       </div>
       <div class="work-detail-layout">
         <aside>

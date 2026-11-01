@@ -4,7 +4,7 @@ import { pages } from 'virtual:cp20-media';
 // Upper bounds of the laid-out image widths (measured at 320-1920px wide viewports, and checked
 // by scripts/qa/browser-check.ts; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
 export const sizes = {
-  articleRow: '(max-width: 380px) 124px, (max-width: 760px) 136px, 232px',
+  articleRow: '(max-width: 600px) calc(100vw - 40px), (max-width: 760px) 136px, 232px',
   workGrid: '(max-width: 760px) calc(100vw - 100px), (max-width: 1100px) calc(50vw - 170px), 290px',
   featured:
     '(max-width: 760px) calc(100vw - 104px), (max-width: 900px) calc(100vw - 300px), (max-width: 1100px) calc(55vw - 200px), 470px',
@@ -134,12 +134,10 @@ export const postmarkDate = (value: string) => {
   return m ? [m[1], m[2], m[3]].filter(Boolean).join('.') : '';
 };
 // A cancellation mark stamped across a postage-stamp image.
-export function Postmark(props: { date: string; top: string; bottom: string }) {
+export function Postmark(props: { date: string }) {
   return (
     <span class="postmark" aria-hidden="true">
-      <span class="postmark-top">{props.top}</span>
       <span class="postmark-date">{props.date}</span>
-      <span class="postmark-bottom">{props.bottom}</span>
     </span>
   );
 }
