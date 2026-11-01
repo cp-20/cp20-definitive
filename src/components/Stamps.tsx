@@ -192,6 +192,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   function askToSignIn() {
     setMessage('');
     setNudge((n) => n + 1);
+    say('シールを貼るには Google でログインしてください');
     if (!open()) toggle();
     void connectAccount();
   }
@@ -272,13 +273,61 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     () => [open(), props.enabled] as const,
     () => measureCover(),
   );
+  // The first control the sheet offers, for focus to land on when it opens or its header changes.
+  const sheetStart = () =>
+    sheet?.querySelector<HTMLElement>('.sticker-sheet-head :is(a[href], button:not(:disabled))');
   function toggle() {
     const next = !open();
+    // The tab and the sheet each turn inert as the other appears; focus follows to the other one.
+    const active = document.activeElement;
+    const hadFocus = !!active && (!!tab?.contains(active) || !!sheet?.contains(active));
     setOpen(next);
     if (!next && held()?.from === 'sheet') cancelHeld(false);
     if (next) void connectAccount();
     writePref(SHEET_KEY, next ? 'open' : 'closed');
+    if (!hadFocus) return;
+    flush();
+    focusOnceShown(next ? sheetStart() || sheetFocus() : tab);
   }
+  // The sheet and the tab turn visible through a transition (a very short one with reduced
+  // motion), and focus() does nothing until they are: try again over the next few frames.
+  // A newer call replaces one still waiting.
+  let focusFrame = 0;
+  function focusOnceShown(el: HTMLElement | undefined, tries = 10) {
+    cancelAnimationFrame(focusFrame);
+    if (!el?.isConnected) return;
+    el.focus({ preventScroll: true });
+    const active = document.activeElement;
+    // Focus still on the control that just turned inert (or already dropped to the page).
+    const lost = !active || active === document.body || !!active.closest('[inert]');
+    if (active !== el && lost && tries > 0)
+      focusFrame = requestAnimationFrame(() => focusOnceShown(el, tries - 1));
+  }
+  // Signing in or out swaps the sheet's header (the sign-in button for the avatar and back), and a
+  // sign-in disables its button while it waits. Focus that was on one of them would fall to the page.
+  let focusInSheet = false;
+  onSettled(() => {
+    const track = (e: FocusEvent) => {
+      focusInSheet = !!sheet?.contains(e.target as Node);
+    };
+    document.addEventListener('focusin', track);
+    return () => document.removeEventListener('focusin', track);
+  });
+  // While a sign-in is pending, focus waits on the sheet itself, then moves on to what it brought.
+  let parked: HTMLElement | undefined;
+  createEffect(
+    () => [!!account(), signingIn() || restoring()] as const,
+    ([, busy]) => {
+      queueMicrotask(() => {
+        const active = document.activeElement;
+        const lost = !active || active === document.body || !active.isConnected;
+        if (!focusInSheet || !open() || !(lost || (parked && active === parked))) return;
+        const target = busy ? sheetFocus() : sheetStart() || sheetFocus();
+        parked = busy ? target : undefined;
+        focusOnceShown(target);
+      });
+    },
+  );
   function setHide(value: boolean) {
     setHidden(value);
     writePref(HIDE_KEY, String(value));
@@ -317,6 +366,9 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       .catch(() => {
         setOperations((list) => list.filter((item) => item.id !== op.id));
         setFailed((list) => [...list, op]);
+        // The status line sits in the sheet, which is inert while closed: say it from outside.
+        if (!open())
+          say(stampAnnouncement('failed', nameOf(op.type === 'remove' ? op.target.kind : op.stamp.kind), 0));
       });
   }
   function retryFailed() {
@@ -547,12 +599,22 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           : Math.round(Math.random() * 16 - 8);
     const from = { x: motion.x, y: motion.y };
     const moving = h.from === 'page' && h.target && isOwn(h.target) ? h.target : undefined;
+    const before = own();
     if (!put(x, y, h.kind, angle, from, moving)) return returnHeld(h, true);
     if (h.pointer === 'touch') navigator.vibrate?.(10);
     letGo(h);
     finish();
     flush();
-    say(stampAnnouncement('placed', nameOf(h.kind), remainingWithout()));
+    // A sticker over the limit pushes your oldest one off the page.
+    const pushedOut = before.find((s) => s.id !== moving?.id && !own().some((o) => o.id === s.id));
+    say(
+      stampAnnouncement(
+        'placed',
+        nameOf(h.kind),
+        remainingWithout(),
+        pushedOut ? nameOf(pushedOut.kind) : undefined,
+      ),
+    );
     hand.stop();
   }
   // While aiming with the keyboard, say what the sticker is over once it stops moving.
@@ -584,6 +646,9 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       center,
     );
     overlay?.focus();
+    // Where it starts, once the overlay's own name has been read.
+    clearTimeout(placeTimer);
+    placeTimer = window.setTimeout(announcePlace, 450);
   }
   function keyboard(e: KeyboardEvent) {
     const h = held();
@@ -707,8 +772,17 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           tabindex="0"
           role="application"
           aria-roledescription="シールの配置"
-          aria-label="シールを貼る場所を選択。矢印キーで移動、Enterで貼る、Escapeでやめる"
+          aria-label="シールを貼る場所を選択。矢印キーで移動、Enterで貼る、EscapeかTabでやめる"
           onKeyDown={keyboard}
+          onFocusOut={(e) => {
+            // Tabbing away puts the sticker back. Focus that just leaves the window keeps it.
+            if (!e.relatedTarget) return;
+            queueMicrotask(() => {
+              const h = held();
+              if (h?.mode === 'aim' && h.pointer === 'keys' && document.activeElement !== overlay)
+                cancelHeld(true);
+            });
+          }}
           onPointerMove={(e) => {
             if (e.pointerType === 'mouse') track(e.clientX, e.clientY);
           }}
@@ -747,8 +821,9 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           ref={tab}
           class="sticker-tab stamp-ui"
           data-open={open() === false ? 'true' : undefined}
+          data-failed={failed().length ? 'true' : undefined}
           inert={open() !== false}
-          aria-label={`シール帳を開く（このページのシール${projected().length}枚）`}
+          aria-label={`シール帳を開く（このページのシール${projected().length}枚${failure() ? `、${failure()}` : ''}）`}
           onPointerEnter={() => void connectAccount()}
           onClick={(e) => {
             const h = held();
@@ -859,7 +934,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
                   data-sticker-kind={i()}
                   aria-label={
                     account()
-                      ? `${item.name}のシールを貼る`
+                      ? `${item.name}のシールを貼る${remainingWithout() > 0 ? '' : '（一番古いシールと入れ替わります）'}`
                       : `${item.name}のシール（ログインすると貼れます）`
                   }
                   data-taken={held()?.from === 'sheet' && ghostKind() === i() ? 'true' : undefined}

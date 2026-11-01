@@ -557,6 +557,27 @@ try {
   await page.locator('a[href="/about#credits"]').first().focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('#credits h2')).toBeFocused();
+  // Back returns focus to the link that was followed with the keyboard, not to an off-screen h1.
+  await page.goto(origin + '/works');
+  const lastWork = page.locator('main a[href^="/works/"]:not([tabindex="-1"])').last();
+  await lastWork.focus();
+  const lastHref = await lastWork.getAttribute('href');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(origin + lastHref);
+  await page.goBack();
+  await expect(lastWork).toBeFocused();
+  // Opening and closing the sticker sheet from the keyboard keeps focus on the sheet controls.
+  if (!(await page.locator('.sticker-tab[data-open]').count()))
+    await page.getByRole('button', { name: 'シール帳を閉じる' }).click();
+  await expect(page.locator('.sticker-tab')).toBeVisible();
+  await page.locator('.sticker-tab').focus();
+  await expect(page.locator('.sticker-tab')).toBeFocused();
+  await page.keyboard.press('Enter');
+  // The avatar, or the first header control while the sign-in is still being restored.
+  await expect(page.locator('.sticker-sheet-head :focus')).toHaveCount(1);
+  await page.getByRole('button', { name: 'シール帳を閉じる' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.sticker-tab')).toBeFocused();
   report.interactions.push(
     'failed saves roll back and expose retry; keyboard placement with focus return and spoken result; section links move focus; reduced motion; complete static content without JS',
   );

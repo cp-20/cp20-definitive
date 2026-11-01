@@ -99,7 +99,25 @@ export function createNavigation() {
       )
         target.scrollIntoView({ behavior: 'instant' });
     };
-    const move = (url: URL, restore?: [number, number], animate = true) => {
+    // Back/forward returns focus to the link that left the page (when the keyboard followed it),
+    // else to the first heading on screen, so the next Tab carries on from the restored position.
+    // A page can link one place twice (a card's image and its title): the nth Tab stop is the one.
+    const linksTo = (href: string) =>
+      [...document.querySelectorAll<HTMLAnchorElement>('a[href]')].filter(
+        (a) => a.href === href && a.tabIndex >= 0 && !a.closest('[aria-hidden="true"], [inert]'),
+      );
+    const restoredFocus = (saved: unknown) => {
+      const { href, n } = (saved || {}) as { href?: unknown; n?: unknown };
+      const link = typeof href === 'string' && typeof n === 'number' ? linksTo(href)[n] : undefined;
+      if (link) return link;
+      return (
+        [...document.querySelectorAll<HTMLElement>('main :is(h1, h2, h3)')].find((h) => {
+          const r = h.getBoundingClientRect();
+          return r.height > 0 && r.top >= 0 && r.bottom <= innerHeight;
+        }) || null
+      );
+    };
+    const move = (url: URL, restore?: [number, number], animate = true, focusLink?: unknown) => {
       const ticket = ++version;
       aim = undefined;
       transition?.skipTransition();
@@ -124,7 +142,9 @@ export function createNavigation() {
         // Focus lands where the link pointed: the target section's heading, else the page heading.
         // Otherwise the next Tab would start back at the top of the page.
         const heading =
-          (target && !restore && focusableTarget(target)) || document.querySelector<HTMLElement>('main h1');
+          (restore && restoredFocus(focusLink)) ||
+          (target && !restore && focusableTarget(target)) ||
+          document.querySelector<HTMLElement>('main h1');
         if (heading && heading.tabIndex < 0 && !heading.hasAttribute('tabindex')) heading.tabIndex = -1;
         heading?.focus({ preventScroll: true });
         markSheet('flip-new');
@@ -162,13 +182,22 @@ export function createNavigation() {
       e.preventDefault();
       if (url.href === location.href) return;
       persist();
+      // A keyboard-followed link (detail 0) is where focus goes when this entry is returned to.
+      history.replaceState(
+        {
+          ...history.state,
+          cp20Entry: key,
+          cp20Focus: e.detail === 0 ? { href: a.href, n: linksTo(a.href).indexOf(a) } : undefined,
+        },
+        '',
+      );
       key = crypto.randomUUID();
       history.pushState({ cp20Entry: key }, '', url);
       move(url, undefined, e.detail !== 0);
     };
     const pop = (e: PopStateEvent) => {
       key = e.state?.cp20Entry || crypto.randomUUID();
-      move(new URL(location.href), positions.get(key), false);
+      move(new URL(location.href), positions.get(key), false, e.state?.cp20Focus);
     };
     document.addEventListener('click', click);
     window.addEventListener('scroll', remember, { passive: true });

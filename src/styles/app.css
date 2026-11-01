@@ -2716,6 +2716,11 @@
   .sticker-tab:active {
     box-shadow: 0 0 0 var(--drop);
   }
+  /* A save failed while the sheet was closed: the tab says so until it is retried. */
+  .sticker-tab[data-failed] .sticker-tab-label::after {
+    content: '・未保存';
+    color: var(--seal);
+  }
   .sticker-count {
     margin-right: -8px;
     display: grid;

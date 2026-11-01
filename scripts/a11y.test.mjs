@@ -17,6 +17,12 @@ test('keyboard sticker placement speaks where the sticker is and what happened',
   assert.equal(stampAnnouncement('placed', 'ハート', -1), 'ハートを貼りました。残り0枚');
   assert.match(stampAnnouncement('blocked', 'いいね', 3), /^ここには貼れません/);
   assert.equal(stampAnnouncement('returned', 'いいね', 3), 'いいねをシール帳に戻しました');
+  // Placing over the limit says which sticker it pushed off; a failed save says what came back.
+  assert.equal(
+    stampAnnouncement('placed', 'ハート', 0, 'クローバー'),
+    'ハートを貼りました。一番古いクローバーをはがしました',
+  );
+  assert.equal(stampAnnouncement('failed', 'しーぴー', 0), '保存できませんでした。しーぴーを元に戻しました');
 });
 
 test('peeling a sticker moves focus to the next of your stickers, then the previous one', () => {
@@ -83,4 +89,44 @@ test('turning the featured deck with the arrows is announced', async () => {
   const projects = await source('src/components/Projects.tsx');
   assert.match(projects, /<span class="visually-hidden" role="status">\s*\{spoken\(\)\}/);
   assert.match(projects, /setSpoken\(`0\$\{next \+ 1\} \/ 03 \$\{projects\[next\]\.title\}`\)/);
+});
+
+test('focus follows the sheet when it opens, closes or its header swaps on sign-in and sign-out', () => {
+  const toggle = stamps.slice(
+    stamps.indexOf('function toggle('),
+    stamps.indexOf('\n  }\n', stamps.indexOf('function toggle(')),
+  );
+  assert.match(toggle, /flush\(\);/);
+  assert.match(toggle, /focusOnceShown\(next \? sheetStart\(\) \|\| sheetFocus\(\) : tab\)/);
+  assert.match(stamps, /\[!!account\(\), signingIn\(\) \|\| restoring\(\)\]/);
+});
+
+test('spoken feedback reaches assistive technology even when the sheet is closed or locked', () => {
+  const enqueue = stamps.slice(stamps.indexOf('function enqueue('), stamps.indexOf('function retryFailed('));
+  assert.match(enqueue, /if \(!open\(\)\)\s*say\(stampAnnouncement\('failed'/);
+  assert.match(stamps, /data-failed=\{failed\(\)\.length/);
+  const ask = stamps.slice(
+    stamps.indexOf('function askToSignIn('),
+    stamps.indexOf('onSettled(', stamps.indexOf('function askToSignIn(')),
+  );
+  assert.match(ask, /say\(/);
+  const aim = stamps.slice(stamps.indexOf('function aimWithKeys('), stamps.indexOf('function keyboard('));
+  assert.match(aim, /setTimeout\(announcePlace/);
+  // Tabbing out of the placement overlay puts the sticker back, and the overlay says so.
+  const overlay = stamps.slice(
+    stamps.indexOf('class="stamp-overlay"'),
+    stamps.indexOf('onPointerMove', stamps.indexOf('class="stamp-overlay"')),
+  );
+  assert.match(overlay, /EscapeかTabでやめる/);
+  assert.match(overlay, /onFocusOut=[\s\S]*cancelHeld\(true\)/);
+});
+
+test('back and forward return focus to the followed link instead of the page heading', async () => {
+  const navigation = await source('src/navigation.ts');
+  assert.match(
+    navigation,
+    /cp20Focus: e\.detail === 0 \? \{ href: a\.href, n: linksTo\(a\.href\)\.indexOf\(a\) \}/,
+  );
+  assert.match(navigation, /\(restore && restoredFocus\(focusLink\)\)/);
+  assert.match(navigation, /e\.state\?\.cp20Focus/);
 });

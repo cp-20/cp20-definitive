@@ -27,14 +27,19 @@ export function stampPlace(anchor, label) {
 }
 
 /**
- * @param {'placed' | 'removed' | 'returned' | 'blocked'} event
+ * @param {'placed' | 'removed' | 'returned' | 'blocked' | 'failed'} event
  * @param {string} name the sticker's name (ハート, …)
  * @param {number} remaining stickers still available on this page
+ * @param {string} [pushedOut] the name of your oldest sticker, when placing this one took it off
  * @returns {string}
  */
-export function stampAnnouncement(event, name, remaining) {
+export function stampAnnouncement(event, name, remaining, pushedOut) {
   const left = `残り${Math.max(0, remaining)}枚`;
-  if (event === 'placed') return `${name}を貼りました。${left}`;
+  if (event === 'placed')
+    return pushedOut
+      ? `${name}を貼りました。一番古い${pushedOut}をはがしました`
+      : `${name}を貼りました。${left}`;
+  if (event === 'failed') return `保存できませんでした。${name}を元に戻しました`;
   if (event === 'removed') return `${name}をはがしました。${left}`;
   if (event === 'blocked') return `ここには貼れません。${name}をシール帳に戻しました`;
   return `${name}をシール帳に戻しました`;
