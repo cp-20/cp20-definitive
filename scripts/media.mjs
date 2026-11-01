@@ -48,6 +48,7 @@ export async function syncMedia(request) {
       const u = new URL(t.link);
       const id = u.pathname.slice(1);
       if (
+        u.protocol !== 'https:' ||
         u.hostname !== 'youtu.be' ||
         !/^[-_a-zA-Z0-9]{11}$/.test(id) ||
         typeof t.title !== 'string' ||
@@ -57,7 +58,8 @@ export async function syncMedia(request) {
       return {
         title: t.title,
         composer: t.composer,
-        link: u.href,
+        // Rebuilt from the checked ID so no scheme, query or hash from the source reaches the href.
+        link: `https://youtu.be/${id}`,
         thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
       };
     });

@@ -2,6 +2,7 @@ import { readFile, writeFile, rename, appendFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { syncMedia } from './media.mjs';
+import { mergeWorks } from '../src/data/site-pages.mjs';
 import { fetchGhostPosts } from './ghost.mjs';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 
@@ -134,6 +135,7 @@ export async function collect(
   loaders = providers,
   now = new Date().toISOString(),
   allowShrink = process.env.ALLOW_TRAP_SHRINK === '1',
+  pinned = new Set(),
 ) {
   const next = structuredClone(previous);
   const incoming = [];
@@ -165,7 +167,16 @@ export async function collect(
           .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       else {
         // A complete Admin API snapshot is authoritative: remove unpublished or deleted posts.
-        if (source === 'trap.jp') retained = retained.filter((a) => a.source !== 'trap.jp');
+        // Posts a work links as related are kept, so the build's related-article check cannot jam every source.
+        if (source === 'trap.jp') {
+          const returned = new Set(result.value.map((a) => a.url));
+          retained = retained.filter((a) => {
+            if (a.source !== 'trap.jp') return true;
+            if (!pinned.has(a.url) || returned.has(a.url)) return false;
+            console.warn(`::warning::trap.jp: ${a.url} is linked by a work but was not returned; keeping it`);
+            return true;
+          });
+        }
         incoming.push(...result.value);
       }
       next.sources[source] = { status: 'ok', lastSuccess: now, count: result.value.length };
@@ -191,7 +202,10 @@ export async function collect(
 }
 async function main() {
   const previous = JSON.parse(await readFile(dataPath, 'utf8'));
-  const next = await collect(previous);
+  const load = async (name) => JSON.parse(await readFile(new URL(`./${name}.json`, dataPath), 'utf8'));
+  const [works, manual] = await Promise.all([load('works'), load('manual')]);
+  const pinned = new Set(mergeWorks(works, manual).flatMap((w) => w.relatedArticles ?? []));
+  const next = await collect(previous, providers, undefined, undefined, pinned);
   const mediaChanged = await syncMedia(request);
 
   const tmp = new URL('./generated.json.tmp', dataPath);

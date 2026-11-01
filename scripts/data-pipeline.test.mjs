@@ -350,3 +350,49 @@ test('a series thumbnail hidden behind its volume 1 cover is neither fetched nor
     await box.cleanup();
   }
 });
+
+test('track links are rebuilt as https://youtu.be/<id> whatever scheme the source sends', async () => {
+  const box = await sandbox({ tracks: [], series: [] });
+  try {
+    const { syncMedia } = await box.importScript('media.mjs');
+    const track = (link) => ({ title: 't', composer: 'c', link });
+    const run = (rows) => syncMedia(async (url) => (String(url).includes('featured-tracks') ? rows : []));
+    for (const link of [
+      'javascript://youtu.be/upUv8iWVs-I?%0Aalert(document.domain)',
+      'http://youtu.be/upUv8iWVs-I',
+      'data://youtu.be/upUv8iWVs-I',
+    ]) {
+      assert.equal(await run([track(link)]), false, link);
+      assert.deepEqual(await box.load('tracks'), []);
+    }
+    assert.equal(await run([track('https://youtu.be/upUv8iWVs-I?si=x#t=1')]), true);
+    assert.equal((await box.load('tracks'))[0].link, 'https://youtu.be/upUv8iWVs-I');
+  } finally {
+    await box.cleanup();
+  }
+});
+
+test('committed track links are plain https://youtu.be/<id> URLs', async () => {
+  const tracks = JSON.parse(await readFile(join(root, 'src/data/tracks.json'), 'utf8'));
+  for (const t of tracks) assert.match(t.link, /^https:\/\/youtu\.be\/[-_A-Za-z0-9]{11}$/);
+});
+
+test('a trap.jp post linked by a work survives when Ghost stops returning it', async () => {
+  const articles = Array.from({ length: 10 }, (_, i) =>
+    article(`p${i}`, `https://trap.jp/post/${i}/`, '2025-01-01', 'trap.jp'),
+  );
+  const previous = { articles, repos: [], sources: {}, updatedAt: '2025-01-01' };
+  const pinned = new Set(['https://trap.jp/post/0/']);
+  const next = await collect(previous, { 'trap.jp': async () => articles.slice(1) }, 'now', false, pinned);
+  assert.equal(next.sources['trap.jp'].status, 'ok');
+  assert.deepEqual(
+    next.articles
+      .filter((a) => a.source === 'trap.jp')
+      .map((a) => a.url)
+      .sort(),
+    articles.map((a) => a.url).sort(),
+  );
+  // Unlinked posts are still removed.
+  const pruned = await collect(previous, { 'trap.jp': async () => articles.slice(2) }, 'now', false, pinned);
+  assert.equal(pruned.articles.filter((a) => a.source === 'trap.jp').length, 9);
+});
