@@ -32,7 +32,8 @@ export function createHand(options: {
   sheet: () => HTMLElement | undefined;
   tab: () => HTMLElement | undefined;
   sheetFocus: () => HTMLElement | undefined;
-  slotCenter: (kind: number) => Point;
+  // Also the scale it is drawn at there, against one in hand.
+  slotCenter: (kind: number) => Point & { scale: number };
 }) {
   const { say } = options;
   const nameOf = stickerName;
@@ -40,7 +41,9 @@ export function createHand(options: {
     // The sticker drawn in hand; it stays while flying back after `held` is cleared.
     [ghostKind, setGhostKind] = createSignal(-1),
     // Your sticker lifted off the page, hidden under the one in hand.
-    [lifted, setLifted] = createSignal('');
+    [lifted, setLifted] = createSignal(''),
+    // The sheet sticker that is in hand or flying back to its slot, faded until it lands.
+    [taken, setTaken] = createSignal(-1);
   let ghost: HTMLElement | undefined;
   // ── The spring ──
   // Its position follows the target and leans into the direction of travel (stamp-hand.mjs).
@@ -106,6 +109,7 @@ export function createHand(options: {
     refocus = undefined;
     setHeld(next);
     setGhostKind(next.kind);
+    setTaken(next.from === 'sheet' ? next.kind : -1);
     motion.home = null;
     motion.x = start.x;
     motion.y = start.y;
@@ -117,7 +121,7 @@ export function createHand(options: {
     // comes up, so it is set down at the angle it is seen at.
     motion.tilt = next.target?.angle ?? 0;
     motion.base = next.target?.angle ?? Math.round(Math.random() * 16 - 8);
-    motion.scale = 1;
+    motion.scale = next.from === 'sheet' ? options.slotCenter(next.kind).scale : 1;
     motion.ts = next.mode === 'press' ? 1.06 : 1.12;
     flush();
     paint();
@@ -159,6 +163,7 @@ export function createHand(options: {
   function finish() {
     setGhostKind(-1);
     setLifted('');
+    setTaken(-1);
     const next = refocus;
     refocus = undefined;
     if (!next?.isConnected || (document.activeElement && document.activeElement !== document.body)) return;
@@ -167,7 +172,6 @@ export function createHand(options: {
   }
   // Let go of the sticker: it flies back to the sheet (or to where it was) and disappears.
   function returnHeld(h: Held, blocked = false) {
-    const point = homeOf(h);
     if (h.pointer === 'keys' || blocked) {
       // One of yours from the page goes back where it was, not to the sheet.
       const page = h.from === 'page';
@@ -176,9 +180,16 @@ export function createHand(options: {
     }
     letGo(h);
     if (reducedMotion()) return finish();
-    // Back on the sheet it lies straight, as the ones there do.
-    if (!(h.from === 'page' && h.target)) motion.base = 0;
-    flyTo(point, 1, finish);
+    if (h.from === 'page' && h.target) return flyTo(homeOf(h), 1, finish);
+    flyHome(h);
+  }
+  // Back on the sheet it lies straight and as large as the ones there; its slot stays faded until
+  // it lands.
+  function flyHome(h: Held) {
+    const slot = options.slotCenter(h.kind);
+    motion.base = 0;
+    setTaken(h.kind);
+    flyTo(slot, slot.scale, finish);
   }
   function cancel(animated: boolean) {
     const h = held();
@@ -198,8 +209,7 @@ export function createHand(options: {
       if (h.from === 'page' && h.target) options.erase(h.target, false);
       else if (h.pointer === 'keys') say(stampAnnouncement('returned', nameOf(h.kind), options.remaining()));
       letGo(h);
-      motion.base = 0;
-      return flyTo(options.slotCenter(h.kind), 0.6, finish);
+      return flyHome(h);
     }
     // Set down where it was picked up: nothing changes. A finger cannot aim as finely as a
     // mouse, and a tapped sticker floats away from its spot, so a tap on either puts it back.
@@ -265,6 +275,7 @@ export function createHand(options: {
     held,
     ghostKind,
     lifted,
+    taken,
     motion,
     setGhost: (el: HTMLElement) => void (ghost = el),
     begin,

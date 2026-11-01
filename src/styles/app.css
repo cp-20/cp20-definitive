@@ -840,7 +840,6 @@
     aspect-ratio: 1;
     filter: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(3px 4px 0 rgb(45 42 51 / 0.14));
     rotate: -6deg;
-    transition: rotate var(--t-state) var(--ease);
   }
   .avatar-stamp::before {
     content: '';
@@ -859,11 +858,6 @@
     border: 2px solid var(--green);
     border-radius: 50%;
     background: #fff;
-  }
-  @media (hover: hover) {
-    .avatar-stamp:hover {
-      rotate: 8deg;
-    }
   }
   .identity h1 {
     display: flex;
@@ -1110,7 +1104,9 @@
   .featured-project[data-pos='next'] {
     --shift: var(--away, 32px);
   }
+  /* Above the one leaving, so the work coming in shows at once whichever way the deck turns. */
   .featured-project[data-pos='active'] {
+    z-index: 1;
     --shift: var(--drag, 0px);
     visibility: visible;
     opacity: 1;
@@ -1299,7 +1295,7 @@
       border-color: var(--edge);
       background: var(--hi);
       color: var(--on-color);
-      transform: rotate(45deg);
+      transform: translate(2px, -2px);
     }
   }
   .article-row:active > .og-image {
@@ -1355,20 +1351,10 @@
     display: block;
     width: 140px;
     rotate: -6deg;
-    transition:
-      rotate var(--t-state) var(--ease),
-      transform var(--t-state) var(--ease);
   }
   .home-favorites a:last-child {
     width: 92px;
     rotate: 8deg;
-  }
-  @media (hover: hover) {
-    .home-favorites a:hover {
-      z-index: 1;
-      rotate: 0deg;
-      transform: scale(1.08);
-    }
   }
   .home-favorites img {
     width: 100%;
@@ -1414,8 +1400,7 @@
     rotate: -2deg;
     transition:
       rotate var(--t-state) var(--ease),
-      transform var(--t-state) var(--ease),
-      filter var(--t-hover) var(--ease);
+      transform var(--t-state) var(--ease);
   }
   .edition-list > a::after {
     content: '';
@@ -1453,8 +1438,11 @@
     border-radius: 2px;
     background: var(--tint);
   }
+  /* A stamp on the paper answers hover only with a deeper shadow, swapped without easing
+     (a filter cannot be eased on the compositor). */
   @media (hover: hover) {
-    .edition-list > a:hover {
+    .edition-list > a:hover,
+    .home-favorites a:hover {
       filter: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(5px 8px 4px rgb(45 42 51 / 0.18));
     }
   }
@@ -1681,7 +1669,6 @@
     gap: 10px;
     background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
       no-repeat 0 0 / 0% 100%;
-    transition: background-size var(--t-state) var(--ease);
   }
   .work-index-item h2 a::after {
     content: '';
@@ -1691,12 +1678,16 @@
   .work-index-item h2 a > svg {
     margin-left: auto;
     color: var(--faint);
-    transition: transform var(--t-hover) var(--ease);
   }
+  /* As in the article list, only the way in is animated. */
   @media (hover: hover) {
+    .work-index-item:hover h2 a {
+      transition: background-size var(--t-state) var(--ease);
+    }
     .work-index-item:hover h2 a > svg {
       color: var(--ink);
-      transform: rotate(45deg);
+      transform: translate(2px, -2px);
+      transition: transform var(--t-hover) var(--ease);
     }
   }
   .work-index-item h2 .original-icon {
@@ -2111,14 +2102,15 @@
     border: 2.5px solid var(--edge);
     border-radius: 50%;
     background: var(--paper);
-    transition:
-      transform var(--t-hover) var(--ease),
-      background var(--t-hover) var(--ease);
   }
+  /* As in the article list, only the way in is animated. */
   @media (hover: hover) {
     a.timeline-item:hover::before {
       background: var(--hi);
       transform: scale(1.25);
+      transition:
+        transform var(--t-hover) var(--ease),
+        background var(--t-hover) var(--ease);
     }
   }
   .timeline-date {
@@ -2139,6 +2131,7 @@
   @media (hover: hover) {
     a.timeline-item:hover h3 {
       background-size: 100% 100%;
+      transition: background-size var(--t-state) var(--ease);
     }
   }
   .timeline-item p {
@@ -2149,12 +2142,12 @@
   .timeline-item > svg {
     margin-top: 6px;
     color: var(--faint);
-    transition: transform var(--t-hover) var(--ease);
   }
   @media (hover: hover) {
     a.timeline-item:hover > svg {
       color: var(--ink);
-      transform: rotate(45deg);
+      transform: translate(2px, -2px);
+      transition: transform var(--t-hover) var(--ease);
     }
   }
   .favorites-heading {
@@ -2208,9 +2201,6 @@
     box-shadow: 3px 3px 0 var(--drop);
     opacity: 0;
     transform: scale(0.9);
-    transition:
-      opacity var(--t-hover) var(--ease),
-      transform var(--t-state) var(--ease);
   }
   .play-symbol svg {
     fill: currentColor;
@@ -2222,20 +2212,24 @@
   .music-item:nth-child(even) {
     rotate: 0.8deg;
   }
+  /* As in the article list, only the way in is animated. */
   @media (hover: hover) {
     .music-item:hover .play-symbol {
       opacity: 1;
       transform: none;
+      transition:
+        opacity var(--t-hover) var(--ease),
+        transform var(--t-state) var(--ease);
     }
     .music-item:hover h4 {
       background-size: 100% 100%;
+      transition: background-size var(--t-state) var(--ease);
     }
   }
   .music-item h4 {
     width: fit-content;
     background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
       no-repeat 0 0 / 0% 100%;
-    transition: background-size var(--t-state) var(--ease);
   }
   .music-item h4 {
     font-size: 0.9375rem;
@@ -2272,8 +2266,8 @@
     background: var(--spine);
     color: var(--spine-ink);
     transition:
-      flex var(--t-enter) var(--ease),
-      height var(--t-enter) var(--ease);
+      flex var(--t-state) var(--ease),
+      height var(--t-state) var(--ease);
   }
   .book:nth-child(3n + 1) {
     --h: 0.9;
@@ -2473,6 +2467,7 @@
   }
   /* Peeled off: it curls up and away, quickening as it goes (gone before edits.ts removes it). */
   .placed-stamp[data-leaving] > .sticker {
+    transform-origin: 20% 80%;
     animation: peel var(--t-hover) var(--ease-exit) both;
   }
   .stamp-delete {
@@ -2668,18 +2663,19 @@
     touch-action: none;
   }
   .sheet-sticker .sticker {
-    transition:
-      transform var(--t-hover) var(--ease),
-      opacity var(--t-hover) var(--ease);
+    transition: transform var(--t-hover) var(--ease);
   }
   @media (hover: hover) {
     .sheet-sticker:hover .sticker {
       transform: translateY(-3px) rotate(-6deg);
     }
   }
+  /* Fades as it is taken; when the one in hand lands back on it, it is simply there again. */
   .sheet-sticker[data-taken] .sticker {
     opacity: 0.25;
-    transform: scale(0.85);
+    transition:
+      transform var(--t-hover) var(--ease),
+      opacity var(--t-hover) var(--ease);
   }
   .sheet-sticker img {
     width: 34px;
@@ -2762,7 +2758,7 @@
     background: #fff;
     transition:
       background-color var(--t-hover) var(--ease),
-      scale var(--t-state) var(--spring);
+      scale var(--t-state) var(--ease);
   }
   .sticker-pips > span[data-used] {
     background: var(--seal);
@@ -2849,10 +2845,13 @@
     /* Comes back once the closing sheet is mostly out of the way. */
     transition:
       translate var(--t-state) var(--ease) 80ms,
-      scale var(--t-state) var(--spring) 80ms,
+      scale var(--t-state) var(--ease) 80ms,
       opacity var(--t-hover) var(--ease) 80ms,
       box-shadow var(--t-hover) var(--ease),
       visibility 0s;
+  }
+  .stamp-ui[data-still] {
+    transition: none;
   }
   .sticker-tab:not([data-open]) {
     translate: 0 16px;
@@ -2955,7 +2954,7 @@
   }
   @keyframes turn-away {
     to {
-      transform: perspective(3200px) rotateY(-96deg);
+      transform: perspective(3200px) rotateY(-90deg);
       filter: brightness(0.86);
     }
   }
@@ -2987,16 +2986,6 @@
   }
   :root:not([data-turned]) .work-detail-hero .postmark {
     animation: postmark-in var(--t-enter) var(--spring) 200ms both;
-  }
-  /* The copy of the newly selected work trails the image a little. */
-  .featured-copy > * {
-    transition: translate var(--t-state) var(--ease);
-  }
-  .featured-project[data-pos='prev'] .featured-copy > * {
-    translate: -12px 0;
-  }
-  .featured-project[data-pos='next'] .featured-copy > * {
-    translate: 12px 0;
   }
 
   @keyframes rise {
@@ -3061,18 +3050,18 @@
       transform: translateX(-2px);
     }
   }
-  /* Starts where and as large as it was in hand (scale 1.12 in hand.ts), with the raised shadow
-     of .sticker-ghost[data-dragging]. It speeds up into the paper, is pressed a little flat and
-     comes to rest; the shadow settles with it. */
+  /* Starts where and as large as it was in hand (scale 1.12 in hand.ts), speeds up into the
+     paper, is pressed a little flat and comes to rest. translate and scale (not transform) so the
+     offset is applied before the sticker's own rotate, in the page's frame like --from. */
   @keyframes stick {
     from {
-      transform: translate(var(--from-x), var(--from-y)) scale(1.12);
-      filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff)
-        drop-shadow(0 -1.6px 0 #fff) drop-shadow(8px 16px 6px rgb(45 42 51 / 0.22));
-      animation-timing-function: var(--ease-exit);
+      translate: var(--from-x) var(--from-y);
+      scale: 1.12;
+      /* --ease-exit: var() is not resolved in a keyframe's timing function. */
+      animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
     }
     45% {
-      transform: scale(0.98);
+      scale: 0.98;
     }
   }
   @keyframes peel {
@@ -3102,11 +3091,35 @@
     }
     /* What opens, closes or switches still fades, briefly and in place, so the change is seen. */
     .sticker-sheet,
-    .sticker-tab,
-    .featured-project {
+    .sticker-tab {
       translate: none !important;
       scale: none !important;
+    }
+    .sticker-sheet,
+    .sticker-tab,
+    .featured-project {
       transition-duration: 150ms !important;
+    }
+    /* A work still follows the finger that drags it; it only stops sliding on its own. */
+    .featured-project {
+      --away: 0px !important;
+    }
+    /* A locked sticker reached for: the sign-in button flashes instead of shaking. */
+    .sticker-login[data-nudge='a'] {
+      animation: flash-a 400ms var(--ease) !important;
+    }
+    .sticker-login[data-nudge='b'] {
+      animation: flash-b 400ms var(--ease) !important;
+    }
+    @keyframes flash-a {
+      40% {
+        background: var(--hi);
+      }
+    }
+    @keyframes flash-b {
+      40% {
+        background: var(--hi);
+      }
     }
     /* Saving: the used pips stay dimmed instead of blinking. */
     .sticker-sheet[data-saving] .sticker-pips > span[data-used] {

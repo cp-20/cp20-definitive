@@ -72,16 +72,16 @@ export function createSheet(options: {
     const next = focusAfterRemoval(buttons, mine);
     (next || sheetFocus(target))?.focus({ preventScroll: !next });
   }
-  // Where a sticker of the sheet sits on screen (the tab while the sheet is closed).
+  // Where a sticker of the sheet sits on screen (the tab while the sheet is closed), and its size
+  // there as a scale of one in hand (40px), so it leaves and goes back at the size it is drawn.
   function slotCenter(kind: number) {
-    const slot = (
-      open() ? sheet?.querySelector(`[data-sticker-kind="${kind}"]`) : null
-    )?.getBoundingClientRect();
-    if (slot) return { x: slot.left + slot.width / 2, y: slot.top + slot.height / 2 };
-    const icon = document.querySelector('.sticker-tab img')?.getBoundingClientRect();
-    return icon
-      ? { x: icon.left + icon.width / 2, y: icon.top + icon.height / 2 }
-      : { x: innerWidth - 80, y: innerHeight - 80 };
+    const slot = open() ? sheet?.querySelector(`[data-sticker-kind="${kind}"]`) : null;
+    const img = (slot || document.querySelector('.sticker-tab'))?.querySelector('img');
+    const box = (slot || img)?.getBoundingClientRect();
+    const scale = img ? parseFloat(getComputedStyle(img).width) / 40 : 0.6;
+    return box
+      ? { x: box.left + box.width / 2, y: box.top + box.height / 2, scale }
+      : { x: innerWidth - 80, y: innerHeight - 80, scale };
   }
   // The sheet (or its tab) is pinned over the bottom of the screen. Its height goes straight into
   // scroll-padding-bottom, so whatever gets keyboard focus is scrolled clear of it, and on a phone
@@ -132,6 +132,9 @@ export function createSheet(options: {
     // Start with the sheet tucked away unless it fits on the desk beside the page, so it never
     // covers content.
     const page = document.querySelector('.site-body')?.getBoundingClientRect();
+    // The first state is just there; only opening and closing it later moves.
+    const still = [sheet, tab].filter((el) => !!el);
+    for (const el of still) el.dataset.still = '';
     setOpen(
       sheetStartsOpen(
         readPref(SHEET_KEY),
@@ -139,6 +142,11 @@ export function createSheet(options: {
         page ? page.right : Infinity,
       ),
     );
+    flush();
+    for (const el of still) {
+      getComputedStyle(el).opacity;
+      delete el.dataset.still;
+    }
     const track = (e: FocusEvent) => {
       focusInSheet = !!sheet?.contains(e.target as Node);
     };

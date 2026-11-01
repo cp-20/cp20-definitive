@@ -168,8 +168,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           owned={store.own().length}
           remaining={edits.remaining()}
           hidden={hidden()}
-          held={hand.held()}
-          ghostKind={hand.ghostKind()}
+          taken={hand.taken()}
           message={message()}
           failed={failed()}
           connection={store.connection()}

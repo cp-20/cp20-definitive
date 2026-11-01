@@ -5,7 +5,6 @@ import type { Account } from '../../data/stamp-types';
 import { STAMPS_PER_PAGE as LIMIT } from '../../data/stamp-limits.mjs';
 import Icon from '../Icon';
 import { STICKER_KINDS, StickerFace, gravatarUrl } from './kinds';
-import type { Held } from './hand';
 import type { createInput } from './input';
 export function StickerTab(props: {
   ref: (el: HTMLButtonElement) => void;
@@ -48,8 +47,8 @@ export function StickerSheet(props: {
   owned: number;
   remaining: number;
   hidden: boolean;
-  held: Held | null;
-  ghostKind: number;
+  // The sticker taken from the sheet, faded in its slot until it lands.
+  taken: number;
   message: string;
   failed: boolean;
   connection: string;
@@ -157,7 +156,7 @@ export function StickerSheet(props: {
                   ? `${item.name}のシールを貼る${props.remaining > 0 ? '' : '（一番古いシールと入れ替わります）'}`
                   : `${item.name}のシール（ログインすると貼れます）`
               }
-              data-taken={props.held?.from === 'sheet' && props.ghostKind === i() ? 'true' : undefined}
+              data-taken={props.taken === i() ? 'true' : undefined}
               onPointerDown={(e) => input.grab(e, { kind: i(), from: 'sheet' })}
               onPointerMove={input.follow}
               onPointerUp={input.release}
