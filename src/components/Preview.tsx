@@ -2,7 +2,7 @@ import { createSignal, onSettled, Show } from 'solid-js';
 import { isServer } from '@solidjs/web';
 import { pages } from 'virtual:cp20-media';
 // Upper bounds of the laid-out image widths (measured at 320-1920px wide viewports, and checked
-// by browser-check.mjs; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
+// by scripts/qa/browser-check.ts; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
 export const sizes = {
   articleRow: '(max-width: 760px) 104px, 144px',
   workGrid: '(max-width: 760px) calc(100vw - 100px), (max-width: 1100px) calc(50vw - 170px), 290px',
@@ -25,7 +25,7 @@ export function previewFor(url: string) {
  * the first load picks a small variant; on the client they are applied by `ref` once the page
  * has settled, not while Solid is still building it. In Chromium an image given its srcset
  * during that build stayed registered for viewport changes after its page was swapped out, so
- * every page visited stayed in memory (the leak check in browser-check.mjs catches this).
+ * every page visited stayed in memory (the leak check in scripts/qa/browser-check.ts catches this).
  */
 export function responsive(srcset: string | undefined, sizes: string | undefined) {
   const set = srcset && sizes ? { srcset, sizes } : undefined;

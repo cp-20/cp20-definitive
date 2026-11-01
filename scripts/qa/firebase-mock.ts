@@ -3,27 +3,29 @@
 // seeded into Firebase Auth's storage and the database is served from memory with the same
 // ownership and throttle rules (writes need a Google token for the record's own uid).
 import { readFile } from 'node:fs/promises';
-const config = JSON.parse(await readFile(new URL('../../src/data/firebase.json', import.meta.url)));
+import type { BrowserContext, Route } from '@playwright/test';
+import config from '../../src/data/firebase.json' with { type: 'json' };
 // Page keys are checked against database.rules.json itself (the file that gets deployed), so a
 // client page key the rules do not allow fails the browser checks too.
-const rules = JSON.parse(await readFile(new URL('../../database.rules.json', import.meta.url)));
+const rules = JSON.parse(await readFile(new URL('../../database.rules.json', import.meta.url), 'utf8'));
 const pagePattern = rules.rules.pages.$page['.validate'].match(/^\$page\.matches\(\/(.+)\/\)$/)?.[1];
 if (!pagePattern) throw Error('database.rules.json has no $page pattern the mock can read');
-const allowedPage = (key) => new RegExp(pagePattern).test(key);
+const allowedPage = (key: string) => new RegExp(pagePattern).test(key);
 const cors = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': '*',
   'access-control-allow-methods': '*',
 };
-const b64 = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
-const claims = (token) => {
+const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+type Claims = { user_id?: string; email?: string; firebase?: { sign_in_provider?: string } };
+const claims = (token: string): Claims => {
   try {
     return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
   } catch {
     return {};
   }
 };
-export function googleToken(uid, email) {
+export function googleToken(uid: string, email: string) {
   const now = Math.floor(Date.now() / 1000);
   return `${b64({ alg: 'none' })}.${b64({
     sub: uid,
@@ -35,19 +37,31 @@ export function googleToken(uid, email) {
     firebase: { sign_in_provider: 'google.com' },
   })}.mock`;
 }
+type Record_ = { avatar?: string; updatedAt?: number; stamps?: Record<string, unknown> };
+export type MockDatabase = {
+  pages: Map<string, Record<string, Record_>>;
+  throttle: Map<string, { at: number; prev: number }>;
+  latency: number;
+  writes: number;
+};
 // Pass the returned db to another context to share the database between visitors.
 export async function mockFirebase(
-  context,
-  { latency = 250, db = { pages: new Map(), throttle: new Map(), latency, writes: 0 } } = {},
+  context: BrowserContext,
+  {
+    latency = 250,
+    db = { pages: new Map(), throttle: new Map(), latency, writes: 0 } as MockDatabase,
+  }: { latency?: number; db?: MockDatabase } = {},
 ) {
   // Streams poll the mocked REST endpoint; a fulfilled route cannot stay open.
   await context.addInitScript(() => {
+    // @ts-expect-error: only what the sticker client uses of an EventSource
     window.EventSource = class extends EventTarget {
-      constructor(url) {
+      url: string;
+      closed = false;
+      last = '';
+      constructor(url: string | URL) {
         super();
         this.url = String(url);
-        this.closed = false;
-        this.last = '';
         this.poll();
       }
       async poll() {
@@ -75,30 +89,33 @@ export async function mockFirebase(
       body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#f0a6c2"/><circle cx="32" cy="26" r="12" fill="#fff"/><rect x="14" y="42" width="36" height="22" rx="11" fill="#fff"/></svg>',
     }),
   );
-  await context.route(/identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com/, async (route) => {
-    const request = route.request();
-    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
-    const body = request.postDataJSON?.() || {};
-    if (request.url().includes('accounts:lookup')) {
-      const { user_id: uid, email } = claims(body.idToken || '');
-      return route.fulfill({
-        headers: cors,
-        json: {
-          users: [
-            {
-              localId: uid,
-              email,
-              emailVerified: true,
-              providerUserInfo: [{ providerId: 'google.com', rawId: uid, federatedId: uid, email }],
-              createdAt: '0',
-              lastLoginAt: String(Date.now()),
-            },
-          ],
-        },
-      });
-    }
-    return route.fulfill({ status: 400, headers: cors, json: { error: { message: 'NOT_MOCKED' } } });
-  });
+  await context.route(
+    /identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com/,
+    async (route: Route) => {
+      const request = route.request();
+      if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+      const body = request.postDataJSON?.() || {};
+      if (request.url().includes('accounts:lookup')) {
+        const { user_id: uid, email } = claims(body.idToken || '');
+        return route.fulfill({
+          headers: cors,
+          json: {
+            users: [
+              {
+                localId: uid,
+                email,
+                emailVerified: true,
+                providerUserInfo: [{ providerId: 'google.com', rawId: uid, federatedId: uid, email }],
+                createdAt: '0',
+                lastLoginAt: String(Date.now()),
+              },
+            ],
+          },
+        });
+      }
+      return route.fulfill({ status: 400, headers: cors, json: { error: { message: 'NOT_MOCKED' } } });
+    },
+  );
   await context.route(/firebasedatabase\.app/, async (route) => {
     const request = route.request();
     if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
@@ -108,7 +125,8 @@ export async function mockFirebase(
       .split('/')
       .filter(Boolean);
     const token = claims(url.searchParams.get('auth') || '');
-    const signedIn = (owner) => token.user_id === owner && token.firebase?.sign_in_provider === 'google.com';
+    const signedIn = (owner?: string) =>
+      token.user_id === owner && token.firebase?.sign_in_provider === 'google.com';
     const deny = () => route.fulfill({ status: 401, headers: cors, json: { error: 'Permission denied' } });
     if (request.method() === 'GET') {
       if (root === 'throttle')
@@ -123,9 +141,9 @@ export async function mockFirebase(
     // database.rules.json: own uid only, one write a second, compare-and-swap on `prev`.
     if (request.method() !== 'PATCH' || root) return deny();
     const body = JSON.parse(request.postData() || '{}');
-    const writes = Object.entries(body).map(([path, value]) => [path.split('/'), value]);
+    const writes = Object.entries(body).map(([path, value]) => [path.split('/'), value] as const);
     const throttle = writes.find(([[kind]]) => kind === 'throttle');
-    const owner = throttle?.[0][1];
+    const owner = throttle?.[0][1] ?? '';
     if (
       !throttle ||
       !signedIn(owner) ||
@@ -140,15 +158,22 @@ export async function mockFirebase(
     await new Promise((resolve) => setTimeout(resolve, db.latency));
     const now = Date.now();
     const previous = db.throttle.get(owner);
-    if ((previous?.at ?? 0) !== throttle[1]?.prev || (previous && now < previous.at + 1000)) return deny();
-    const resolve = (value) =>
+    if (
+      (previous?.at ?? 0) !== (throttle[1] as { prev?: number })?.prev ||
+      (previous && now < previous.at + 1000)
+    )
+      return deny();
+    const resolve = (value: unknown): any =>
       value && typeof value === 'object'
         ? '.sv' in value
           ? now
           : Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolve(v)]))
         : value;
     // Like the database, the reply holds the written values (server times filled in) as a tree.
-    const result = { pages: {}, throttle: {} };
+    const result: { pages: Record<string, Record<string, unknown>>; throttle: Record<string, unknown> } = {
+      pages: {},
+      throttle: {},
+    };
     for (const [[kind, p], value] of writes) {
       const next = resolve(value);
       if (kind === 'throttle') db.throttle.set(owner, next);
@@ -167,7 +192,10 @@ export async function mockFirebase(
   return db;
 }
 // Seeds a Google-signed-in Firebase user for every page of the context.
-export async function signInAs(context, { uid = 'mock-google-user', email = 'visitor@example.com' } = {}) {
+export async function signInAs(
+  context: BrowserContext,
+  { uid = 'mock-google-user', email = 'visitor@example.com' } = {},
+) {
   const now = Date.now();
   const user = {
     uid,
