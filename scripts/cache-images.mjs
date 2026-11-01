@@ -3,7 +3,14 @@ import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { imageSize } from 'image-size';
 import sharp from 'sharp';
-import { addVariants, framedSources, iconSources, shownItems, thumbnailSources } from './image-variants.mjs';
+import {
+  addVariants,
+  framedSources,
+  iconPages,
+  iconSources,
+  shownItems,
+  thumbnailSources,
+} from './image-variants.mjs';
 const directory = new URL('../public/media/', import.meta.url);
 const manifestFile = new URL('../src/data/image-cache.json', import.meta.url);
 const previewsFile = new URL('../src/data/previews.json', import.meta.url);
@@ -40,16 +47,21 @@ export async function cacheImages(force = false, previousPreviews) {
   await mkdir(directory, { recursive: true });
   const load = (name) =>
     readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8').then(JSON.parse);
-  const [previews, tracks, series, previous] = await Promise.all([
+  const [previews, tracks, series, works, previous] = await Promise.all([
     load('previews'),
     load('tracks'),
     load('series'),
+    load('works'),
     load('image-cache').catch(() => ({})),
   ]);
+  // Only the icons the pages show (the works'): the article previews' platform logos stay uncached.
+  const shownIcons = iconPages(works);
+  const icons = iconSources(previews, shownIcons);
   const urls = [
     ...new Set(
       [
-        ...Object.values(previews).flatMap((p) => [p.image, p.icon]),
+        ...Object.values(previews).map((p) => p.image),
+        ...icons,
         ...shownItems(tracks, series).map((i) => i.thumbnail),
       ].filter(Boolean),
     ),
@@ -109,6 +121,7 @@ export async function cacheImages(force = false, previousPreviews) {
     for (const [page, preview] of Object.entries(previews)) {
       const before = previousPreviews[page];
       for (const field of ['image', 'icon']) {
+        if (field === 'icon' && !shownIcons.has(page)) continue;
         const source = preview[field];
         const fallback = before?.[field];
         if (!source || next[source] || !fallback || fallback === source || !previous[fallback]) continue;
@@ -131,7 +144,7 @@ export async function cacheImages(force = false, previousPreviews) {
   await addVariants(
     next,
     thumbnailSources(previews, shownItems(tracks, series)),
-    iconSources(previews),
+    icons,
     framedSources(tracks),
   );
   const files = (entry) => [entry.file, ...(entry.variants ?? []).map((v) => v.file)];

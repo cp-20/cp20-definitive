@@ -43,17 +43,6 @@
       }
     ]
   },
-  "https://assets.st-note.com/poc-image/manual/note-common-images/production/icons/apple-touch-icon.png": {
-    "file": "/media/67e8e5e8a08c3401c1730be0.png",
-    "checkedAt": "2026-10-26T04:53:11.838Z",
-    "width": 180,
-    "variants": [
-      {
-        "file": "/media/67e8e5e8a08c3401c1730be0-96w.webp",
-        "width": 96
-      }
-    ]
-  },
   "https://assets.st-note.com/production/uploads/images/101030507/rectangle_large_type_2_38981e693953111bf02080b8db51ef50.png?fit=bounds&quality=85&width=1280": {
     "file": "/media/2e602bfe54ff0ce07740b7f7.png",
     "checkedAt": "2026-10-26T04:53:12.979Z",
@@ -203,17 +192,6 @@
       {
         "file": "/media/cbb15579f741e8def659b7c3-960w.webp",
         "width": 960
-      }
-    ]
-  },
-  "https://cdn.qiita.com/assets/favicons/public/apple-touch-icon-ec5ba42a24ae923f16825592efdc356f.png": {
-    "file": "/media/0ee2666ec822ee5112a33246.png",
-    "checkedAt": "2026-10-26T04:53:12.992Z",
-    "width": 300,
-    "variants": [
-      {
-        "file": "/media/0ee2666ec822ee5112a33246-96w.webp",
-        "width": 96
       }
     ]
   },
@@ -981,22 +959,6 @@
       }
     ]
   },
-  "https://static.sizu.me/images/logo-favicon.png": {
-    "file": "/media/092a2dea07b016e3f7d086cf.png",
-    "checkedAt": "2026-10-26T04:53:11.764Z",
-    "width": 168,
-    "variants": [
-      {
-        "file": "/media/092a2dea07b016e3f7d086cf-96w.webp",
-        "width": 96
-      }
-    ]
-  },
-  "https://static.zenn.studio/images/logo-transparent.png": {
-    "file": "/media/e6c38336be5beec59bb0ce2d.png",
-    "checkedAt": "2026-10-26T04:53:11.909Z",
-    "width": 315
-  },
   "https://titech-lecture-list.vercel.app/apple-touch-icon.png": {
     "file": "/media/0e45b83a8cebf54aaca4f535.png",
     "checkedAt": "2026-10-26T04:53:11.817Z",
@@ -1312,11 +1274,6 @@
       }
     ]
   },
-  "https://trap.jp/content/images/size/w256h256/2020/01/traP_logo_icon.png": {
-    "file": "/media/cf3223d7ae3650c2448eb527.png",
-    "checkedAt": "2026-10-26T04:53:12.329Z",
-    "width": 190
-  },
   "https://traqing.cp20.dev/apple-touch-icon.png": {
     "file": "/media/246cc2a1822d3e022b83f828.png",
     "checkedAt": "2026-10-26T04:53:11.050Z",
@@ -1366,10 +1323,5 @@
         "width": 640
       }
     ]
-  },
-  "https://www.m3tech.blog/icon/touch": {
-    "file": "/media/ced5ed997e1265c84852d840.png",
-    "checkedAt": "2026-10-26T04:53:12.649Z",
-    "width": 114
   }
 }

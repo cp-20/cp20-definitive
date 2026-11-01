@@ -25,7 +25,7 @@ async function sandbox(data, media = {}) {
     await cp(join(root, 'src/data', file), join(dir, 'src/data', file));
   await mkdir(join(dir, 'public/media'), { recursive: true });
   await symlink(join(root, 'node_modules'), join(dir, 'node_modules'));
-  for (const [name, value] of Object.entries(data))
+  for (const [name, value] of Object.entries({ works: [], ...data }))
     await writeFile(join(dir, 'src/data', `${name}.json`), JSON.stringify(value));
   for (const [name, bytes] of Object.entries(media)) await writeFile(join(dir, 'public/media', name), bytes);
   const load = (name) => readFile(join(dir, 'src/data', `${name}.json`), 'utf8').then(JSON.parse);
@@ -132,6 +132,7 @@ test('a truncated image neither aborts the image cache nor enters it', async () 
     previews: { [page]: { image: cut, icon: good, width: 2000, height: 1000 } },
     tracks: [],
     series: [],
+    works: [{ url: page }],
   });
   try {
     const { cacheImages } = await box.importScript('cache-images.mjs');
@@ -318,6 +319,40 @@ test('RSS titles stay strings, hex references decode, and one bad item does not 
     ['2024', '1e3', 'true', '0x1F', '007', '<b>'],
   );
   assert.throws(() => parseFeed(`<rss><channel>${item('bad', 1, 'not a date')}</channel></rss>`, 'note.com'));
+});
+
+test('only the works keep their site icon: article platform logos are neither fetched nor kept', async () => {
+  const work = 'https://example.com/work';
+  const post = 'https://blog.example.com/post';
+  const workIcon = 'https://example.com/icon.png';
+  const logo = 'https://blog.example.com/logo.png';
+  const box = await sandbox(
+    {
+      previews: {
+        [work]: { image: null, icon: workIcon, width: 1200, height: 630 },
+        [post]: { image: null, icon: logo, width: 1200, height: 630 },
+      },
+      tracks: [],
+      series: [],
+      works: [{ url: work }],
+      'image-cache': { [logo]: { file: '/media/logo.png', checkedAt: new Date().toISOString() } },
+    },
+    { 'logo.png': png, 'logo-96w.webp': png },
+  );
+  try {
+    const { cacheImages } = await box.importScript('cache-images.mjs');
+    const fetched = [];
+    await withFetch(
+      async (url) => (fetched.push(String(url)), new Response(png)),
+      () => cacheImages(false, { [post]: { image: null, icon: logo, width: 1200, height: 630 } }),
+    );
+    assert.deepEqual(fetched, [workIcon]);
+    assert.deepEqual(Object.keys(await box.load('image-cache')), [workIcon]);
+    assert.equal(await box.exists('public/media/logo.png'), false);
+    assert.equal(await box.exists('public/media/logo-96w.webp'), false);
+  } finally {
+    await box.cleanup();
+  }
 });
 
 test('a series thumbnail hidden behind its volume 1 cover is neither fetched nor kept', async () => {

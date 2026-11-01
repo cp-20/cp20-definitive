@@ -216,11 +216,23 @@ export const ogSources = (previews) =>
       .filter(Boolean),
   );
 
-/** Source URLs of the site icons in previews.json. */
-export const iconSources = (previews) =>
+/**
+ * Pages whose site icon the pages show: only the works (OriginalIcon in Projects.tsx and the works
+ * grid). Articles show their OG image alone, so the platforms' logos in their previews are not cached.
+ * @param {{url: string}[]} works works.json
+ */
+export const iconPages = (works) => new Set(works.map((w) => w.url));
+
+/**
+ * Source URLs of the site icons in previews.json that the pages show.
+ * @param {Record<string, {icon?: string|null}>} previews
+ * @param {Set<string>} pages from iconPages
+ */
+export const iconSources = (previews, pages) =>
   new Set(
-    Object.values(previews)
-      .map((p) => p.icon)
+    Object.entries(previews)
+      .filter(([page]) => pages.has(page))
+      .map(([, p]) => p.icon)
       .filter(Boolean),
   );
 
@@ -260,12 +272,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const cache = JSON.parse(await readFile(manifest, 'utf8'));
   const load = async (name) =>
     JSON.parse(await readFile(new URL(`../src/data/${name}.json`, import.meta.url), 'utf8'));
-  const [previews, tracks, series] = await Promise.all(['previews', 'tracks', 'series'].map(load));
+  const [previews, tracks, series, works] = await Promise.all(
+    ['previews', 'tracks', 'series', 'works'].map(load),
+  );
   const written =
     (await addVariants(
       cache,
       thumbnailSources(previews, shownItems(tracks, series)),
-      iconSources(previews),
+      iconSources(previews, iconPages(works)),
       framedSources(tracks),
     )) + (await addCoverVariants());
   await writeFile(new URL(manifest.href + '.tmp'), JSON.stringify(cache, null, 2) + '\n');

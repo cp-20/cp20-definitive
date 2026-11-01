@@ -8,7 +8,15 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import subsetFont from 'subset-font';
-import { plannedWidths, variantFile, isVariantFile } from './image-variants.mjs';
+import {
+  iconPages,
+  iconSources,
+  isVariantFile,
+  plannedWidths,
+  shownItems,
+  thumbnailSources,
+  variantFile,
+} from './image-variants.mjs';
 import { collectCharacters, fontHead, weights } from './fonts.mjs';
 import { clientMedia, coverSrcsets } from '../src/data/client-media.mjs';
 
@@ -42,8 +50,13 @@ test('addVariants writes smaller WebP copies for thumbnails and icons only, and 
     await writeFile(join(dir, 'public/media/og.png'), png);
     await writeFile(join(dir, 'public/media/icon.png'), png);
     await writeFile(join(dir, 'public/media/unused.png'), png);
-    // A flat logo (from the real cache) is smaller as PNG than as WebP: no copy is kept for it.
-    await cp(join(root, 'public/media/e6c38336be5beec59bb0ce2d.png'), join(dir, 'public/media/flat.png'));
+    // A flat two-colour logo is smaller as PNG than as WebP: no copy is kept for it.
+    const flat =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="315" height="315"><rect x="40" y="40" width="235" height="235" fill="#3ea8ff"/></svg>';
+    await writeFile(
+      join(dir, 'public/media/flat.png'),
+      await sharp(Buffer.from(flat)).png({ palette: true, colours: 2, compressionLevel: 9 }).toBuffer(),
+    );
     const { addVariants } = await import(pathToFileURL(join(dir, 'scripts/image-variants.mjs')).href);
     const cache = {
       'https://example.com/og.png': { file: '/media/og.png', checkedAt: 'x' },
@@ -93,6 +106,24 @@ test('every committed OG image wider than 400px has its thumbnail variants on di
     assert.ok(entry.variants?.length, `${entry.file} has no variants`);
     for (const v of entry.variants) assert.ok(await exists(join(root, 'public', v.file)), v.file);
   }
+});
+
+test('every cached image is one the pages show (no unused third-party files under /media)', async () => {
+  const cache = JSON.parse(await read('src/data/image-cache.json'));
+  const [previews, tracks, series, works] = await Promise.all(
+    ['previews', 'tracks', 'series', 'works'].map(async (n) => JSON.parse(await read(`src/data/${n}.json`))),
+  );
+  const shown = new Set([
+    ...thumbnailSources(previews, shownItems(tracks, series)),
+    ...iconSources(previews, iconPages(works)),
+  ]);
+  for (const source of Object.keys(cache))
+    assert.ok(shown.has(source), `${source} is cached but never shown`);
+  const files = new Set(
+    Object.values(cache).flatMap((e) => [e.file, ...(e.variants ?? []).map((v) => v.file)]),
+  );
+  for (const name of await readdir(join(root, 'public/media')))
+    assert.ok(files.has(`/media/${name}`), `public/media/${name} is not in the image cache`);
 });
 
 test('every music and manga thumbnail and site icon has its WebP copies on disk', async () => {
