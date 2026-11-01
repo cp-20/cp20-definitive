@@ -2,6 +2,7 @@
 // (previews.json), and the featured music and manga with the manga publishers' thumbnails
 // (tracks.json, series.json). Only the head of each third-party page is read.
 import { readFile, writeFile, rename } from 'node:fs/promises';
+import { parse } from 'node-html-parser';
 import { mergeArticles } from '../../src/content/normalize.ts';
 import { dimensions, size } from './images.ts';
 import type { Request } from './sync.ts';
@@ -18,36 +19,19 @@ async function saveIfChanged(file: URL, previous: unknown, next: unknown) {
 // Only the head is parsed, so a large page is truncated instead of downloaded in full.
 const htmlLimit = { maxBytes: 1_000_000, truncate: true };
 
-// Linear-time extraction of <meta>/<link> attributes from untrusted HTML.
-// Only the document head is scanned, tags are bounded in length and may not contain '<',
-// so an unclosed '<meta ' cannot make the scan run to the end of the input for every match.
+// The <meta> and <link> elements of a page's head. Only the head is parsed (and at most maxScan
+// characters of it), so a hostile page cannot make the parse run over its whole body.
 const maxScan = 512_000;
-/** @param names lowercase tag names */
-export function headTags(html: string, names: string[]): Record<string, string>[] {
+const headElements = (html: string, selector: string) => {
   const end = html.search(/<\/head\s*>/i);
-  const head = html.slice(0, Math.min(end < 0 ? html.length : end, maxScan));
-  const tag = new RegExp(`<(?:${names.join('|')})\\s[^<>]{0,4096}>`, 'gi');
-  return (head.match(tag) || []).map((t) =>
-    Object.fromEntries(
-      [...t.matchAll(/(?<![\w:-])([\w:-]{1,64})\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>=`]+))/g)].map((m) => [
-        m[1].toLowerCase(),
-        m[2] ?? m[3] ?? m[4],
-      ]),
-    ),
-  );
-}
+  return parse(html.slice(0, Math.min(end < 0 ? html.length : end, maxScan))).querySelectorAll(selector);
+};
 
 // ── Link previews ──
-const decode = (s: string) =>
-  s
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n));
 const https = (s: string, base: string) => {
   if (!s.trim()) return null;
   try {
-    const u = new URL(decode(s), base);
+    const u = new URL(s, base);
     return u.protocol === 'https:' && !u.username && !u.password ? u.href : null;
   } catch {
     return null;
@@ -62,10 +46,11 @@ type Preview = {
 };
 export function parsePreview(html: string, url: string): Preview {
   const metas: Record<string, string> = {},
-    links: Record<string, string>[] = [];
-  for (const a of headTags(html, ['meta', 'link'])) {
-    if (a.content) metas[(a.property || a.name || '').toLowerCase()] ??= a.content;
-    if (a.rel && a.href) links.push(a);
+    links: { rel: string; href: string }[] = [];
+  for (const element of headElements(html, 'meta, link')) {
+    const a = (name: string) => element.getAttribute(name) ?? '';
+    if (a('content')) metas[(a('property') || a('name')).toLowerCase()] ??= a('content');
+    if (a('rel') && a('href')) links.push({ rel: a('rel'), href: a('href') });
   }
   const image = https(metas['og:image:secure_url'] || metas['og:image'] || metas['twitter:image'] || '', url);
   const icon =
@@ -178,11 +163,9 @@ const publishers: Record<string, string> = {
 };
 /** The publisher thumbnail of a manga page: its og:image, if it is served from a known publisher CDN. */
 export function ogImage(html: string) {
-  for (const attributes of headTags(html, ['meta'])) {
-    if (attributes.property === 'og:image' && attributes.content) {
-      const u = new URL(attributes.content.replace(/&amp;/g, '&'));
-      if (u.protocol === 'https:' && allowedImages.has(u.hostname)) return u.href;
-    }
+  for (const meta of headElements(html, 'meta[property="og:image"][content]')) {
+    const u = new URL(meta.getAttribute('content')!);
+    if (u.protocol === 'https:' && allowedImages.has(u.hostname)) return u.href;
   }
   throw Error('No supported publisher thumbnail');
 }

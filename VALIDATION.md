@@ -37,4 +37,4 @@ Cloudflareへの本番デプロイ、GitHub接続、Actions secrets登録は未�
 - 数字のスロットがFirebaseでnull付き配列に変換されるケースを修正し、読み取り・追加・削除で空きスロットを除外。回帰テストを含め7ファイルのテストと型検査が成功。
 - 漫画6点の画像枠を16:10・同じ余白・中央配置に統一。320 / 390 / 1440pxで全6点の枠寸法が一致し、横はみ出しがないことを確認。元画像は切り抜かない。
 - OG画像の内側だけを拡大するホバーと角度変化を除去。作品一覧の画像・枠のtransformと角度がホバー前後で一致することを測定。
-- 削除モードのモバイル画面を実際に確認。axeの検出違反0、JavaScript例外0。追加検証は `scripts/polish-check.mjs`、結果は `QA.json` の `polish` に収録。
+- 削除モードのモバイル画面を実際に確認。axeの検出違反0、JavaScript例外0。追加検証は `scripts/qa/browser-check.ts`（旧 polish-check を統合）、結果は `QA.json` の `polish` に収録。

@@ -4,50 +4,34 @@
 // carries the latest 15 posts, so the paginated author pages are the only complete public list.
 // The RSS is still read (best effort) for exact publication times; the pages only show the day.
 import { XMLParser } from 'fast-xml-parser';
+import { parse } from 'node-html-parser';
 import type { Article } from '../../src/content/normalize.ts';
 import type { Format } from './sync.ts';
 
 const ORIGIN = 'https://trap.jp';
 const AUTHOR = `${ORIGIN}/author/cp20/`;
 const MAX_PAGES = 20;
-const entities: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0' };
-const decode = (text: string) =>
-  text
-    .replace(/<[^>]{0,200}>/g, '')
-    .replace(/&(?:#x([0-9a-f]{1,6})|#(\d{1,7})|([a-z]{2,6}));/gi, (match, hex, dec, name) => {
-      if (hex || dec) {
-        const code = hex ? parseInt(hex, 16) : Number(dec);
-        return code <= 0x10ffff ? String.fromCodePoint(code) : match;
-      }
-      return entities[name.toLowerCase()] ?? match;
-    })
-    .trim();
-
 /** Parses one author page into {url, title, day} cards. */
 export function parseAuthorPage(html: string) {
-  const cards: { url: string; title: string; day: string }[] = [];
-  // Split on the card links so every pattern below runs on one bounded card, never the whole page.
-  const parts = html.split(/<a href="(\/post\/\d{1,9}\/)" class="article">/);
-  for (let i = 1; i < parts.length; i += 2) {
-    const body = parts[i + 1].slice(0, 4000);
-    const day = body.match(/<small>(\d{4})年(\d{1,2})月(\d{1,2})日<\/small>/);
-    const title = body.match(/<strong>([^<]{1,1000})<\/strong>/);
-    if (!day || !title) throw new Error(`trap.jp: unexpected card markup for ${parts[i]}`);
-    cards.push({
-      url: new URL(parts[i], ORIGIN).href,
-      title: decode(title[1]),
+  return parse(html)
+    .querySelectorAll('a.article')
+    .flatMap((card) => {
+      const href = card.getAttribute('href') ?? '';
+      if (!/^\/post\/\d{1,9}\/$/.test(href)) return [];
+      const day = card.querySelector('small')?.text.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日$/);
+      const title = card.querySelector('strong')?.text.trim();
+      if (!day || !title) throw new Error(`trap.jp: unexpected card markup for ${href}`);
       // Days are shown in JST.
-      day: `${day[1]}-${day[2].padStart(2, '0')}-${day[3].padStart(2, '0')}T00:00:00+09:00`,
+      const date = `${day[1]}-${day[2].padStart(2, '0')}-${day[3].padStart(2, '0')}T00:00:00+09:00`;
+      return [{ url: new URL(href, ORIGIN).href, title, day: date }];
     });
-  }
-  return cards;
 }
 
 /** The `<link rel="next">` Ghost puts in the head of every page except the last. */
 export function nextPage(html: string) {
   const end = html.indexOf('</head>');
-  const head = end >= 0 ? html.slice(0, end) : html.slice(0, 200_000);
-  return head.match(/<link rel="next" href="([^"<>]{1,300})"\s*\/?>/)?.[1] ?? null;
+  const head = parse(end >= 0 ? html.slice(0, end) : html.slice(0, 200_000));
+  return head.querySelector('link[rel="next"]')?.getAttribute('href') ?? null;
 }
 
 const rssParser = new XMLParser({ processEntities: true, parseTagValue: false });
