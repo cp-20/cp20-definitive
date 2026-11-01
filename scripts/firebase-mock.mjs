@@ -148,7 +148,8 @@ export async function mockFirebase(
           ? now
           : Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolve(v)]))
         : value;
-    const result = {};
+    // Like the database, the reply holds the written values (server times filled in) as a tree.
+    const result = { pages: {}, throttle: {} };
     for (const [[kind, p], value] of writes) {
       const next = resolve(value);
       if (kind === 'throttle') db.throttle.set(owner, next);
@@ -158,7 +159,8 @@ export async function mockFirebase(
         else delete records[owner];
         db.pages.set(p, records);
       }
-      result[kind === 'throttle' ? `throttle/${owner}` : `pages/${p}/${owner}`] = next ?? null;
+      if (kind === 'throttle') result.throttle[owner] = next;
+      else (result.pages[p] ||= {})[owner] = next ?? null;
     }
     db.writes++;
     return route.fulfill({ headers: cors, json: result });

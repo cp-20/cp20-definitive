@@ -46,12 +46,12 @@ describe('writeBody', () => {
 });
 
 describe('writeRecord', () => {
-  test('スロットル、レコードの順に読み、更新して、書いたレコードを読み直す', async () => {
+  test('スロットル、レコードの順に読んでから更新する（読み直しはしない）', async () => {
     const db = fakeDatabase({ 'GET throttle/alice': { at: 5, prev: 0 }, 'GET pages/home/alice': null });
     await writeRecord(where(db.fetch), () => ({ stamps: { 0: 'new' } }));
     assert.deepEqual(
       db.requests.map((r) => `${r.method} ${r.path}`.trim()),
-      ['GET throttle/alice', 'GET pages/home/alice', 'PATCH', 'GET pages/home/alice'],
+      ['GET throttle/alice', 'GET pages/home/alice', 'PATCH'],
     );
   });
 
@@ -73,19 +73,25 @@ describe('writeRecord', () => {
     const db = fakeDatabase({ 'GET throttle/alice': { at: 5 } });
     await writeRecord(where(db.fetch), () => ({ stamps: { 1: 'new' } }));
     const patch = db.requests.find((r) => r.method === 'PATCH');
-    assert.deepEqual(patch.body, writeBody('home', 'alice', { stamps: { 1: 'new' } }, { at: 5 }));
+    assert.deepEqual(patch.body, {
+      'pages/home/alice': { stamps: { 1: 'new' } },
+      'throttle/alice': { at: { '.sv': 'timestamp' }, prev: 5 },
+    });
   });
 
-  test('読み直したレコード（サーバー時刻が入ったもの）を返す', async () => {
-    let written = null;
+  test('PATCH の返事にある、保存されたレコード（サーバー時刻が入ったもの）を返す', async () => {
     const db = fakeDatabase({
-      PATCH: () => (written = { stamps: { 0: 'saved' }, updatedAt: 42 }),
-      'GET pages/home/alice': () => written,
+      PATCH: { pages: { home: { alice: { stamps: { 0: 'saved' }, updatedAt: 42 } } }, throttle: {} },
     });
     assert.deepEqual(await writeRecord(where(db.fetch), () => ({})), {
       stamps: { 0: 'saved' },
       updatedAt: 42,
     });
+  });
+
+  test('レコードを消した書き込みは null を返す', async () => {
+    const db = fakeDatabase({ PATCH: { pages: { home: { alice: null } }, throttle: {} } });
+    assert.equal(await writeRecord(where(db.fetch), () => null), null);
   });
 
   test('update が undefined なら書き込まず、読んだレコードを返す', async () => {
