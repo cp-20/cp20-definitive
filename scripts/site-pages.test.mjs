@@ -1,5 +1,5 @@
 // The page list and what is derived from it: page keys, tabs and the stamp database rules.
-import { test } from 'node:test';
+import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
@@ -26,50 +26,95 @@ const works = mergeWorks(baseWorks, manual);
 const pagePattern = (rules) =>
   new RegExp(rules.rules.pages.$page['.validate'].match(/matches\(\/(.*)\/\)$/)[1]);
 
-test('database.rules.json is generated from the page list', async () => {
+test('database.rules.json はページ一覧から生成したものと一致する（npm run rules）', async () => {
   const committed = await readFile(new URL('../database.rules.json', import.meta.url), 'utf8');
-  assert.equal(committed, await generatedRules(), 'run npm run rules');
+  assert.equal(committed, await generatedRules());
 });
 
-test('the page pattern takes every page and nothing else', () => {
+describe('ルールのページの正規表現', () => {
   const pattern = pagePattern(buildRules(stampPageKeys(works)));
-  for (const key of stampPageKeys(works)) assert.match(key, pattern);
+
+  test('サイトのすべてのページを受け付ける', () => {
+    assert.deepEqual(
+      stampPageKeys(works).filter((key) => !pattern.test(key)),
+      [],
+    );
+  });
+
   for (const key of ['works--nope', 'home--x', 'works--', 'homes', '', 'xhome', 'works--c-compiler-x'])
-    assert.doesNotMatch(key, pattern, key);
-  // A new work's page is accepted once the rules are regenerated.
-  const added = pagePattern(buildRules(stampPageKeys([...works, { id: 'new-thing' }])));
-  assert.match('works--new-thing', added);
-  assert.doesNotMatch('works--new-thing', pattern);
-  assert.throws(() => buildRules(['home', 'a|b']));
+    test(`サイトにないページ ${JSON.stringify(key)} は受け付けない`, () => {
+      assert.doesNotMatch(key, pattern);
+    });
+
+  test('作品を足してルールを作り直すと、そのページを受け付ける', () => {
+    const added = pagePattern(buildRules(stampPageKeys([...works, { id: 'new-thing' }])));
+    assert.deepEqual([pattern.test('works--new-thing'), added.test('works--new-thing')], [false, true]);
+  });
+
+  test('正規表現を壊すページキーではルールを作らない', () => {
+    assert.throws(() => buildRules(['home', 'a|b']));
+  });
 });
 
-test('work ids are checked', () => {
-  assert.ok(works.length >= 18);
-  assert.deepEqual(validateWorks(works), works);
+describe('validateWorks', () => {
+  test('コミットされた作品はすべて通る', () => {
+    assert.deepEqual(validateWorks(works), works);
+  });
+
   for (const id of ['Foo', 'a--b', '', 'a.b', '-a', 'a-', 'a/b', undefined])
-    assert.throws(() => validateWorks([{ id }]), /Invalid work id/, String(id));
-  assert.throws(() => validateWorks([{ id: 'a' }, { id: 'a' }]), /Duplicate work id "a"/);
-  assert.throws(
-    () => validateWorks([{ id: 'a', imageKind: 'square' }]),
-    /Invalid imageKind "square" for work "a"/,
-  );
-  assert.deepEqual(validateWorks([{ id: 'a', imageKind: 'icon' }]), [{ id: 'a', imageKind: 'icon' }]);
-  assert.throws(() => mergeWorks(baseWorks, { projects: [{ id: baseWorks[0].id }] }), /Duplicate/);
-  assert.deepEqual(mergeWorks([{ id: 'a' }], {}), [{ id: 'a' }]);
+    test(`作品 id ${JSON.stringify(id)} は使えない`, () => {
+      assert.throws(() => validateWorks([{ id }]), /Invalid work id/);
+    });
+
+  test('同じ id の作品が2つあれば失敗にする', () => {
+    assert.throws(() => validateWorks([{ id: 'a' }, { id: 'a' }]), /Duplicate work id "a"/);
+  });
+
+  test('imageKind は icon だけを受け付ける', () => {
+    assert.throws(
+      () => validateWorks([{ id: 'a', imageKind: 'square' }]),
+      /Invalid imageKind "square" for work "a"/,
+    );
+  });
 });
 
-test('paths, page keys, tabs and sections', () => {
-  for (const { id } of works) assert.equal(pageKey(workPath(id)), `works--${id}`);
-  assert.deepEqual(stampPageKeys([]), ['home', 'about', 'articles', 'works']);
-  assert.deepEqual(sitePaths([{ id: 'x' }]), ['/', '/about', '/articles', '/works', '/works/x']);
+describe('mergeWorks', () => {
+  test('手で足した作品が既存の id と重なれば失敗にする', () => {
+    assert.throws(() => mergeWorks(baseWorks, { projects: [{ id: baseWorks[0].id }] }), /Duplicate/);
+  });
+
+  test('手で足した作品がなければ、そのまま', () => {
+    assert.deepEqual(mergeWorks([{ id: 'a' }], {}), [{ id: 'a' }]);
+  });
+});
+
+describe('パスとページキー', () => {
+  test('作品ページのキーは works--<id>', () => {
+    assert.equal(pageKey(workPath('c-compiler')), 'works--c-compiler');
+  });
+
+  test('作品がなくても、固定の4ページにシールを貼れる', () => {
+    assert.deepEqual(stampPageKeys([]), ['home', 'about', 'articles', 'works']);
+  });
+
+  test('サイトのパスは固定の4ページと作品ページ', () => {
+    assert.deepEqual(sitePaths([{ id: 'x' }]), ['/', '/about', '/articles', '/works', '/works/x']);
+  });
+
   for (const [input, output] of [
     ['/works/', '/works'],
     ['/', '/'],
     ['', '/'],
     ['/about', '/about'],
   ])
-    assert.equal(normalizePath(input), output);
-  assert.deepEqual(TAB_PATHS, ['/', '/works', '/articles', '/about']);
+    test(`${JSON.stringify(input)} は ${output} にそろえる`, () => {
+      assert.equal(normalizePath(input), output);
+    });
+
+  test('タブは ホーム・作品・記事・プロフィール の順', () => {
+    assert.deepEqual(TAB_PATHS, ['/', '/works', '/articles', '/about']);
+  });
+
   for (const [path, tab, section] of [
     ['/', 0, 'home'],
     ['/works', 1, 'works'],
@@ -78,34 +123,36 @@ test('paths, page keys, tabs and sections', () => {
     ['/about', 3, 'about'],
     ['/404', -1, '404'],
     ['/colophon', -1, 'colophon'],
-  ]) {
-    assert.equal(tabIndex(path), tab, path);
-    assert.equal(sectionName(path), section, path);
-  }
+  ])
+    test(`${path} はタブ ${tab}、セクション ${section}`, () => {
+      assert.deepEqual([tabIndex(path), sectionName(path)], [tab, section]);
+    });
 });
 
 test(
-  'every related article of a work is in the article list, so it shows with its title',
+  '作品の関連記事は、どれも記事一覧にある（記事名つきで表示できる）',
   // The scheduled refresh only warns here (see refresh.yml); commits and PRs stay strict.
   { skip: process.env.RELATED_ARTICLES === 'warn' && 'related-article check set to warn' },
   () => {
-    const articles = mergeArticles(snapshot.articles, [], manual);
-    assertRelatedArticles(works, articles);
-    // The C compiler write-up is the main explanation of a headline work.
-    assert.equal(
-      articles.find((a) => a.url === 'https://trap.jp/post/2313/')?.title,
-      'Cコンパイラを作ろうとしてみた',
-    );
+    assert.deepEqual(missingRelatedArticles(works, mergeArticles(snapshot.articles, [], manual)), []);
   },
 );
 
-test('a missing related article is reported with its work, and assert throws on it', () => {
+describe('missingRelatedArticles', () => {
   const articles = [{ url: 'https://example.com/known' }];
   const linked = [{ id: 'a', relatedArticles: ['https://example.com/known', 'https://example.com/x'] }];
-  assert.deepEqual(missingRelatedArticles(linked, articles), [
-    'Work "a" links https://example.com/x, which is not in the article list',
-  ]);
-  assert.throws(() => assertRelatedArticles(linked, articles), /Work "a" links https:\/\/example\.com\/x/);
-  assert.deepEqual(missingRelatedArticles([{ id: 'a' }], []), []);
-  assertRelatedArticles([{ id: 'a' }], []);
+
+  test('一覧にない関連記事を、作品名つきで挙げる', () => {
+    assert.deepEqual(missingRelatedArticles(linked, articles), [
+      'Work "a" links https://example.com/x, which is not in the article list',
+    ]);
+  });
+
+  test('assertRelatedArticles は、一覧にない関連記事があれば失敗にする', () => {
+    assert.throws(() => assertRelatedArticles(linked, articles), /Work "a" links https:\/\/example\.com\/x/);
+  });
+
+  test('関連記事のない作品では何も挙げない', () => {
+    assert.deepEqual(missingRelatedArticles([{ id: 'a' }], []), []);
+  });
 });

@@ -73,86 +73,137 @@ const fontLicense = (names) => {
   assert.match(names.get(0) ?? '', /Copyright/);
 };
 
-test('font subsets keep the copyright, designer and OFL records of the name table', async () => {
+describe('Zen Maru Gothic の絞り込み', async () => {
   const source = readFileSync(join(root, 'fonts/zen-maru-gothic/zen-maru-gothic-500.woff2'));
   const original = nameRecords(source);
   const names = nameRecords(await subsetFont(source, 'あa', subsetOptions));
-  fontLicense(names);
-  for (const id of [8, 9, 11, 12, 13, 14])
-    if (original.has(id)) assert.equal(names.get(id), original.get(id), `name ID ${id}`);
+
+  test('絞り込んだフォントにも著作権と OFL の記載が残る', () => {
+    fontLicense(names);
+  });
+
+  test('デザイナーやライセンスの name レコードは元のまま残る', () => {
+    const kept = [8, 9, 11, 12, 13, 14].filter((id) => original.has(id));
+    assert.deepEqual(
+      kept.map((id) => names.get(id)),
+      kept.map((id) => original.get(id)),
+    );
+  });
 });
 
-test('built Zen Maru Gothic subsets carry the OFL in their name table', { skip }, () => {
-  const fonts = readdirSync(built('assets')).filter((f) => /^zen-maru-gothic-\d+-.*\.woff2$/.test(f));
-  assert.equal(fonts.length, 2);
-  for (const font of fonts) fontLicense(nameRecords(readFileSync(built(`assets/${font}`))));
+describe('ビルドした Zen Maru Gothic', { skip }, () => {
+  const fonts = skip
+    ? []
+    : readdirSync(built('assets')).filter((f) => /^zen-maru-gothic-\d+-.*\.woff2$/.test(f));
+
+  test('太さ2つぶんのファイルがある', () => {
+    assert.equal(fonts.length, 2);
+  });
+
+  for (const font of fonts)
+    test(`${font} の name テーブルに OFL が書かれている`, () => {
+      fontLicense(nameRecords(readFileSync(built(`assets/${font}`))));
+    });
 });
 
-test('module ids and bare imports map to their package', () => {
-  assert.equal(
-    packageDirectory('/x/node_modules/@firebase/app/dist/esm/index.esm.js'),
-    '/x/node_modules/@firebase/app',
-  );
-  assert.equal(
-    packageDirectory('/x/node_modules/a/node_modules/b/index.js?v=1'),
-    '/x/node_modules/a/node_modules/b',
-  );
-  assert.equal(
-    packageDirectory('node_modules/@fontsource/ibm-plex-mono/files/x.woff2'),
-    'node_modules/@fontsource/ibm-plex-mono',
-  );
-  assert.equal(packageDirectory('/x/src/App.tsx'), undefined);
-  assert.equal(bareName('@solidjs/web/storage'), '@solidjs/web');
-  assert.equal(bareName('lucide'), 'lucide');
-  assert.equal(bareName('./assets/a.js'), undefined);
-  assert.equal(bareName('node:fs'), undefined);
+describe('packageDirectory', () => {
+  for (const [id, directory] of [
+    ['/x/node_modules/@firebase/app/dist/esm/index.esm.js', '/x/node_modules/@firebase/app'],
+    ['/x/node_modules/a/node_modules/b/index.js?v=1', '/x/node_modules/a/node_modules/b'],
+    ['node_modules/@fontsource/ibm-plex-mono/files/x.woff2', 'node_modules/@fontsource/ibm-plex-mono'],
+    ['/x/src/App.tsx', undefined],
+  ])
+    test(`${id} は ${directory ?? 'どのパッケージにも属さない'}`, () => {
+      assert.equal(packageDirectory(id), directory);
+    });
 });
 
-test('packages without a LICENSE file get the license text and their own copyright lines', () => {
-  const firebase = packageLicense(join(root, 'node_modules/@firebase/app'));
-  assert.match(firebase.text, /Apache License\s+Version 2\.0/);
-  assert.ok(firebase.copyright.some((line) => /Google LLC/.test(line)));
-  const solid = packageLicense(join(root, 'node_modules/solid-js'));
-  assert.match(solid.text, /Permission is hereby granted/);
-  assert.ok(solid.copyright.some((line) => /Ryan Carniato/.test(line)));
-  const lucide = packageLicense(join(root, 'node_modules/lucide'));
-  assert.match(lucide.text, /Cole Bemis/, 'the Feather-derived MIT part of the Lucide license');
+describe('bareName', () => {
+  for (const [specifier, name] of [
+    ['@solidjs/web/storage', '@solidjs/web'],
+    ['lucide', 'lucide'],
+    ['./assets/a.js', undefined],
+    ['node:fs', undefined],
+  ])
+    test(`${specifier} は ${name ?? 'パッケージではない'}`, () => {
+      assert.equal(bareName(specifier), name);
+    });
 });
 
-test('identical license texts are printed once, with every package and copyright line', () => {
+describe('packageLicense', () => {
+  test('LICENSE ファイルのない Firebase には Apache-2.0 の本文と Google の著作権表示をつける', () => {
+    const firebase = packageLicense(join(root, 'node_modules/@firebase/app'));
+    assert.deepEqual(
+      [
+        /Apache License\s+Version 2\.0/.test(firebase.text),
+        firebase.copyright.some((l) => /Google LLC/.test(l)),
+      ],
+      [true, true],
+    );
+  });
+
+  test('solid-js には MIT の本文と作者の著作権表示をつける', () => {
+    const solid = packageLicense(join(root, 'node_modules/solid-js'));
+    assert.deepEqual(
+      [/Permission is hereby granted/.test(solid.text), solid.copyright.some((l) => /Ryan Carniato/.test(l))],
+      [true, true],
+    );
+  });
+
+  test('Lucide のライセンスには Feather 由来の MIT の部分も含む', () => {
+    assert.match(packageLicense(join(root, 'node_modules/lucide')).text, /Cole Bemis/);
+  });
+});
+
+describe('formatNotices', () => {
   const text = formatNotices([
     { name: 'b', version: '1.0.0', license: 'MIT', copyright: ['Copyright B'], text: 'MIT TEXT' },
     { name: 'a', version: '2.0.0', license: 'MIT', copyright: ['Copyright A'], text: 'MIT TEXT' },
     { name: 'c', license: 'ISC', copyright: [], text: 'ISC TEXT' },
   ]);
-  assert.equal(text.split('MIT TEXT').length, 2);
-  assert.ok(text.indexOf('a@2.0.0 (MIT)') < text.indexOf('b@1.0.0 (MIT)'));
-  assert.match(text, /a@2\.0\.0 \(MIT\)\n {2}Copyright A\nb@1\.0\.0 \(MIT\)\n {2}Copyright B/);
-  assert.match(text, /ISC TEXT\n$/);
+
+  test('同じライセンス本文は1回だけ書く', () => {
+    assert.equal(text.split('MIT TEXT').length, 2);
+  });
+
+  test('同じ本文のパッケージを名前順に、それぞれの著作権表示つきで並べる', () => {
+    assert.match(text, /a@2\.0\.0 \(MIT\)\n {2}Copyright A\nb@1\.0\.0 \(MIT\)\n {2}Copyright B/);
+  });
+
+  test('最後の本文で終わる', () => {
+    assert.match(text, /ISC TEXT\n$/);
+  });
 });
 
-test('the built notices cover the bundled libraries, fonts and stickers', { skip }, () => {
-  const text = readFileSync(built(licensesPath), 'utf8');
-  for (const needle of [
-    /^@firebase\/app@\S+ \(Apache-2\.0\)/m,
-    /^firebase@\S+ \(Apache-2\.0\)/m,
-    /^solid-js@\S+ \(MIT\)/m,
-    /^@solidjs\/web@\S+ \(MIT\)/m,
-    /^lucide@\S+ \(ISC\)/m,
-    /Copyright \(c\) 2013-present Cole Bemis/,
-    /^@fontsource\/ibm-plex-mono@\S+ \(OFL-1\.1\)/m,
-    /^Zen Maru Gothic .*\(OFL-1\.1\)/m,
-    /^Twemoji graphics .*\(CC-BY-4\.0\).*\n-+\nCopyright 2019 Twitter, Inc and other contributors/m,
-    /Apache License\s+Version 2\.0/,
-    /SIL OPEN FONT LICENSE Version 1\.1/,
+describe('ビルドした第三者ライセンス表示', { skip }, () => {
+  const text = skip ? '' : readFileSync(built(licensesPath), 'utf8');
+  for (const [what, needle] of [
+    ['@firebase/app', /^@firebase\/app@\S+ \(Apache-2\.0\)/m],
+    ['firebase', /^firebase@\S+ \(Apache-2\.0\)/m],
+    ['solid-js', /^solid-js@\S+ \(MIT\)/m],
+    ['@solidjs/web', /^@solidjs\/web@\S+ \(MIT\)/m],
+    ['lucide', /^lucide@\S+ \(ISC\)/m],
+    ['Feather 由来の Lucide の著作権', /Copyright \(c\) 2013-present Cole Bemis/],
+    ['IBM Plex Mono', /^@fontsource\/ibm-plex-mono@\S+ \(OFL-1\.1\)/m],
+    ['Zen Maru Gothic', /^Zen Maru Gothic .*\(OFL-1\.1\)/m],
+    [
+      'Twemoji の絵柄と著作権',
+      /^Twemoji graphics .*\(CC-BY-4\.0\).*\n-+\nCopyright 2019 Twitter, Inc and other contributors/m,
+    ],
+    ['Apache-2.0 の本文', /Apache License\s+Version 2\.0/],
+    ['OFL の本文', /SIL OPEN FONT LICENSE Version 1\.1/],
   ])
-    assert.match(text, needle);
-  assert.ok(existsSync(built('stamps/LICENSE-GRAPHICS.txt')));
-  assert.match(readFileSync(built('about/index.html'), 'utf8'), /href="\/third-party-licenses\.txt"/);
+    test(`${what} を載せる`, () => {
+      assert.match(text, needle);
+    });
+
+  test('シールの絵柄のライセンスも公開する', () => {
+    assert.ok(existsSync(built('stamps/LICENSE-GRAPHICS.txt')));
+  });
 });
 
 describe('the built credits on /about', { skip }, () => {
-  const html = readFileSync(built('about/index.html'), 'utf8');
+  const html = skip ? '' : readFileSync(built('about/index.html'), 'utf8');
   const credits = html.slice(
     html.indexOf('id="credits"'),
     html.indexOf('</section>', html.indexOf('id="credits"')),
