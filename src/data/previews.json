@@ -15,17 +15,17 @@
   },
   "https://wsh.trap.show": {
     "image": null,
-    "icon": null,
+    "icon": "https://wsh.trap.show/favicon.ico",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T13:32:00.301Z"
+    "checkedAt": "2026-11-01T14:27:54.462Z"
   },
   "https://2025.cp20.dev": {
     "image": null,
     "icon": "https://2025.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T13:32:00.859Z"
+    "checkedAt": "2026-11-01T14:27:55.558Z"
   },
   "https://traqing.cp20.dev": {
     "image": "https://traqing.cp20.dev/og.png",
@@ -81,7 +81,7 @@
     "icon": "https://2023.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T13:31:58.991Z"
+    "checkedAt": "2026-11-01T14:27:54.056Z"
   },
   "https://minna-no-monosashi.lolipop-now.app/": {
     "image": "https://minna-no-monosashi.lolipop-now.app/og/default?v=4",
@@ -494,7 +494,7 @@
     "icon": "https://2024.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T13:32:00.909Z"
+    "checkedAt": "2026-11-01T14:27:56.405Z"
   },
   "https://marketplace.visualstudio.com/items?itemName=cp20.foodmoji-vscode": {
     "image": "https://cp20.gallerycdn.vsassets.io/extensions/cp20/foodmoji-vscode/1.0.0/1732020741627/Microsoft.VisualStudio.Services.Icons.Default",
@@ -635,5 +635,33 @@
     "width": 1024,
     "height": 538,
     "checkedAt": "2026-11-01T10:57:35.284Z"
+  },
+  "https://blog.cp20.dev/posts/personal-blog-in-ai-agent-era/": {
+    "image": "https://blog.cp20.dev/og/455ac7cdc87421920a6f536b.png",
+    "icon": "https://blog.cp20.dev/favicon.svg?v=2",
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-01T14:27:53.447Z"
+  },
+  "https://blog.cp20.dev/posts/layerx-internship/": {
+    "image": "https://blog.cp20.dev/og/83e416fb958aca4961bd2c68.png",
+    "icon": "https://blog.cp20.dev/favicon.svg?v=2",
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-01T14:27:53.855Z"
+  },
+  "https://blog.cp20.dev/posts/vue-fes-japan-2026/": {
+    "image": "https://blog.cp20.dev/og/1be127ccd27b386d70e1f4ec.png",
+    "icon": "https://blog.cp20.dev/favicon.svg?v=2",
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-01T14:27:53.938Z"
+  },
+  "https://blog.cp20.dev/posts/css-text-wrapping/": {
+    "image": "https://blog.cp20.dev/og/90feba365238374902510605.png",
+    "icon": "https://blog.cp20.dev/favicon.svg?v=2",
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-01T14:27:54.233Z"
   }
 }

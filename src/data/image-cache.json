@@ -176,6 +176,82 @@
       }
     ]
   },
+  "https://blog.cp20.dev/og/1be127ccd27b386d70e1f4ec.png": {
+    "file": "/media/fd765e89fb95ffcde409b05f.png",
+    "checkedAt": "2026-11-01T14:27:56.633Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/fd765e89fb95ffcde409b05f-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/fd765e89fb95ffcde409b05f-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/fd765e89fb95ffcde409b05f-960w.webp",
+        "width": 960
+      }
+    ]
+  },
+  "https://blog.cp20.dev/og/455ac7cdc87421920a6f536b.png": {
+    "file": "/media/fb58dada0d1d85fcafe7f9cb.png",
+    "checkedAt": "2026-11-01T14:27:56.592Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/fb58dada0d1d85fcafe7f9cb-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/fb58dada0d1d85fcafe7f9cb-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/fb58dada0d1d85fcafe7f9cb-960w.webp",
+        "width": 960
+      }
+    ]
+  },
+  "https://blog.cp20.dev/og/83e416fb958aca4961bd2c68.png": {
+    "file": "/media/14ae8e27431127a7c64a3ec2.png",
+    "checkedAt": "2026-11-01T14:27:56.554Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/14ae8e27431127a7c64a3ec2-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/14ae8e27431127a7c64a3ec2-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/14ae8e27431127a7c64a3ec2-960w.webp",
+        "width": 960
+      }
+    ]
+  },
+  "https://blog.cp20.dev/og/90feba365238374902510605.png": {
+    "file": "/media/40a4a8957e1690a20bf4b107.png",
+    "checkedAt": "2026-11-01T14:27:56.570Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/40a4a8957e1690a20bf4b107-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/40a4a8957e1690a20bf4b107-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/40a4a8957e1690a20bf4b107-960w.webp",
+        "width": 960
+      }
+    ]
+  },
   "https://cdn.image.st-hatena.com/image/scale/d27c3aa7b8fe95a65823b4bea20757884bc549f8/backend=imagemagick;version=1;width=1300/https%3A%2F%2Fcdn-ak.f.st-hatena.com%2Fimages%2Ffotolife%2Fm%2Fm3tech%2F20250926%2F20250926170015.jpg": {
     "file": "/media/cbb15579f741e8def659b7c3.jpg",
     "checkedAt": "2026-10-26T04:53:12.241Z",
@@ -1604,5 +1680,9 @@
         "width": 640
       }
     ]
+  },
+  "https://wsh.trap.show/favicon.ico": {
+    "file": "/media/db74ab0b78338c1f778f8398.ico",
+    "checkedAt": "2026-11-01T13:41:39.950Z"
   }
 }
