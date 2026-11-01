@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-01T14:27:49.442Z",
+  "updatedAt": "2026-11-01T15:41:30.072Z",
   "articles": [
     {
       "title": "AI Agent 時代こそ個人ブログ",
@@ -463,9 +463,9 @@
       "name": "cp20-definitive",
       "url": "https://github.com/cp-20/cp20-definitive",
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "JavaScript",
+      "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-01T14:27:33Z",
+      "updatedAt": "2026-11-01T15:41:04Z",
       "fork": false,
       "archived": false
     },
@@ -1343,39 +1343,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T14:27:49.442Z",
+      "lastSuccess": "2026-11-01T15:41:30.072Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T14:27:49.442Z",
+      "lastSuccess": "2026-11-01T15:41:30.072Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T14:27:49.442Z",
+      "lastSuccess": "2026-11-01T15:41:30.072Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T14:27:49.442Z",
+      "lastSuccess": "2026-11-01T15:41:30.072Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T14:27:49.442Z",
+      "lastSuccess": "2026-11-01T15:41:30.072Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T14:27:49.442Z",
+      "lastSuccess": "2026-11-01T15:41:30.072Z",
       "count": 128
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-01T14:27:49.442Z",
+      "lastSuccess": "2026-11-01T15:41:30.072Z",
       "count": 4
     }
   },
-  "checkedAt": "2026-11-01T14:27:49.442Z"
+  "checkedAt": "2026-11-01T15:41:30.072Z"
 }
