@@ -17,8 +17,8 @@ import {
   variantFile,
 } from './image-variants.mjs';
 import { collectCharacters, fontHead, weights } from './fonts.mjs';
-import { clientMedia, coverSrcsets } from '../src/data/client-media.mjs';
-import { mangaCovers } from '../src/data/manga-covers.mjs';
+import { clientMedia, coverSrcsets } from '../src/content/media.ts';
+import { mangaCovers } from '../src/data/manga-covers.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFile(join(root, path), 'utf8');
@@ -65,9 +65,11 @@ describe('addVariants', () => {
   beforeAll(async () => {
     dir = await mkdtemp(join(tmpdir(), 'cp20-variants-'));
     await cp(join(root, 'scripts'), join(dir, 'scripts'), { recursive: true });
-    await mkdir(join(dir, 'src/data'), { recursive: true });
-    for (const file of ['variant-names.mjs', 'manga-covers.mjs'])
-      await cp(join(root, 'src/data', file), join(dir, 'src/data', file));
+    // The code under src, but none of its data: each test writes the data it needs.
+    await cp(join(root, 'src'), join(dir, 'src'), {
+      recursive: true,
+      filter: (path) => !path.endsWith('.json'),
+    });
     await symlink(join(root, 'node_modules'), join(dir, 'node_modules'));
     await mkdir(join(dir, 'public/media'), { recursive: true });
     const png = await readFile(join(root, 'public/images/avatar.png')); // 512px

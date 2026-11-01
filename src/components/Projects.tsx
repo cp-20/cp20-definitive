@@ -1,10 +1,10 @@
 import { createSignal, For } from 'solid-js';
-import Icon from './Icon';
-import { isIconImage } from '../data/icon-image.mjs';
-import { OGImage, OriginalIcon, Postmark, postmarkDate, sizes } from './Preview';
-import { works } from '../data/content';
-import { featuredIds } from '../data/editorial';
-import { fingerSpeed, swipeTurn } from '../data/deck-swipe.mjs';
+import Icon from './Icon.tsx';
+import { isIconImage } from '../content/icon-image.ts';
+import { OGImage, OriginalIcon, Postmark, postmarkDate, sizes } from './Preview.tsx';
+import { works } from '../content/content.ts';
+import { featuredIds } from '../data/editorial.ts';
+import { fingerSpeed, swipeTurn } from './deck-swipe.ts';
 export const projects = featuredIds.map((id) => works.find((w) => w.id === id)!);
 export default function Projects() {
   const [selected, setSelected] = createSignal(0);
@@ -29,7 +29,7 @@ export default function Projects() {
     }
   };
   // Touch swipe: the card follows the finger one to one, and a flick turns the deck as surely as
-  // a long drag (deck-swipe.mjs). The card thrown away keeps going the way it was thrown: how far
+  // a long drag (deck-swipe.ts). The card thrown away keeps going the way it was thrown: how far
   // it steps aside (--away) grows with the speed it was let go at.
   // Vertical scrolling and pinch zoom stay native (touch-action: pan-y pinch-zoom); a second
   // finger means a pinch, so it cancels the swipe.

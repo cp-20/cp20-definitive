@@ -3,14 +3,14 @@
 // `npm run rules` writes the file; `node scripts/rules.mjs --check` fails if it is out of date.
 // Only imports node built-ins and dependency-free modules, so CI needs no npm ci.
 import { readFile } from 'node:fs/promises';
-import { mergeWorks, stampPageKeys } from '../src/data/site-pages.mjs';
+import { mergeWorks, stampPageKeys } from '../src/site/pages.ts';
 import {
   ANCHOR_PATTERN,
   MAX_ANGLE,
   STAMPS_PER_PAGE,
   STICKER_KIND_COUNT,
   WRITE_INTERVAL_MS,
-} from '../src/data/stamp-limits.mjs';
+} from '../src/stamps/limits.ts';
 
 const KEY_PATTERN = /^[a-z0-9-]+$/;
 

@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { imageSize } from 'image-size';
 import { headTags } from './html-tags.mjs';
 import { decodableRaster, maxImageBytes } from './cache-images.mjs';
-import { mergeArticles } from '../src/data/normalize.mjs';
+import { mergeArticles } from '../src/content/normalize.ts';
 const file = new URL('../src/data/previews.json', import.meta.url);
 const decode = (s) =>
   s

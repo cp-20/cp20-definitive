@@ -1,10 +1,17 @@
 import { For, Show } from 'solid-js';
-import Icon from '../components/Icon';
-import { OGImage, OriginalIcon, Postmark, firstRowWorks, postmarkDate, sizes } from '../components/Preview';
-import { isIconImage } from '../data/icon-image.mjs';
-import { works, repos, formatDate } from '../data/content';
-import { featuredIds } from '../data/editorial';
-import { nameParts } from '../data/name-breaks.mjs';
+import Icon from '../components/Icon.tsx';
+import {
+  OGImage,
+  OriginalIcon,
+  Postmark,
+  firstRowWorks,
+  postmarkDate,
+  sizes,
+} from '../components/Preview.tsx';
+import { isIconImage } from '../content/icon-image.ts';
+import { works, repos, formatDate } from '../content/content.ts';
+import { featuredIds } from '../data/editorial.ts';
+import { nameParts } from '../content/name-breaks.ts';
 // GitHub's language colours, for the dot beside each repository.
 const languageColors: Record<string, string> = {
   TypeScript: '#3178c6',

@@ -9,8 +9,8 @@
 // loaded into a throwaway namespace and unsigned Google tokens stand in for real sign-ins.
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
-import { throttlePath, writeBody } from '../src/data/stamp-write.mjs';
-import { mergeWorks, stampPageKeys } from '../src/data/site-pages.mjs';
+import { throttlePath, writeBody } from '../src/stamps/write.ts';
+import { mergeWorks, stampPageKeys } from '../src/site/pages.ts';
 const emulator = process.env.STAMPS_RULES_EMULATOR;
 if (process.env.STAMPS_LIVE_TEST !== '1' && !emulator)
   throw Error(

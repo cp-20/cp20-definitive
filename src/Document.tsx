@@ -1,7 +1,7 @@
 import type { JSX } from '@solidjs/web';
 import { HydrationScript } from '@solidjs/web';
-import { pageInfo } from './route';
-import { canonicalUrl } from './data/site-pages.mjs';
+import { pageInfo } from './site/route.ts';
+import { canonicalUrl } from './site/pages.ts';
 export default function Document(props: { children: JSX.Element }) {
   const info = pageInfo();
   return (

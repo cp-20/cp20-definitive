@@ -1,5 +1,5 @@
 import { httpStatus } from '@solidjs/web';
-import Icon from '../components/Icon';
+import Icon from '../components/Icon.tsx';
 export default function NotFound() {
   httpStatus(404);
   return (

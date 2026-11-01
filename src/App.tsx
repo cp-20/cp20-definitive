@@ -1,15 +1,15 @@
 import './styles/app.css';
 import { For, createMemo } from 'solid-js';
-import Shell from './components/Shell';
-import { StampProvider } from './components/stamps/StampProvider';
-import Home from './pages/Home';
-import About from './pages/About';
-import Articles from './pages/Articles';
-import Works from './pages/Works';
-import WorkDetail from './pages/WorkDetail';
-import NotFound from './pages/NotFound';
-import { pageInfo } from './route';
-import { createNavigation } from './navigation';
+import Shell from './site/Shell.tsx';
+import { StampProvider } from './stamps/StampProvider.tsx';
+import Home from './pages/Home.tsx';
+import About from './pages/About.tsx';
+import Articles from './pages/Articles.tsx';
+import Works from './pages/Works.tsx';
+import WorkDetail from './pages/WorkDetail.tsx';
+import NotFound from './pages/NotFound.tsx';
+import { pageInfo } from './site/route.ts';
+import { createNavigation } from './site/navigation.ts';
 // Built pages get Zen Maru Gothic as one subset WOFF2 per weight (scripts/fonts.mjs, run by prerender);
 // the dev server, which has no prerender step, uses the full @fontsource split instead.
 if (import.meta.env.DEV)

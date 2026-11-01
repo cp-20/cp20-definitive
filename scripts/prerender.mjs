@@ -1,13 +1,13 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { handleRequest } from '../dist/server/server.js';
-import { mergeArticles } from '../src/data/normalize.mjs';
+import { mergeArticles } from '../src/content/normalize.ts';
 import {
   assertRelatedArticles,
   canonicalUrl,
   mergeWorks,
   missingRelatedArticles,
   sitePaths,
-} from '../src/data/site-pages.mjs';
+} from '../src/site/pages.ts';
 import { buildFeed } from './feed.mjs';
 import { subsetSiteFonts } from './fonts.mjs';
 const load = async (name) =>

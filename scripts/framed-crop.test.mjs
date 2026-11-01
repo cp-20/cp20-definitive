@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { framedCrop, framedSources } from './image-variants.mjs';
-import { clientMedia } from '../src/data/client-media.mjs';
+import { clientMedia } from '../src/content/media.ts';
 
 /** A `width`×`height` greyscale image: noisy artwork inside the given bands of flat colour. */
 function image(width, height, { top = 0, bottom = 0, left = 0, right = 0, band = 0 } = {}) {

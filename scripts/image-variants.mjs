@@ -8,8 +8,8 @@
 import { access, readFile, readdir, writeFile, rename, rm, stat } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
-import { variantFile, iconWidth } from '../src/data/variant-names.mjs';
-import { shownSeriesThumbnail } from '../src/data/manga-covers.mjs';
+import { variantFile, iconWidth } from '../src/content/media.ts';
+import { shownSeriesThumbnail } from '../src/data/manga-covers.ts';
 
 export { variantFile, iconWidth };
 

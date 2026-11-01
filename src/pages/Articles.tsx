@@ -1,7 +1,7 @@
 import { createSignal, createStore, createMemo, createEffect, onSettled, For, Show } from 'solid-js';
-import Icon from '../components/Icon';
-import { ArticleRows } from '../components/ArticleRows';
-import { articles, type Article } from '../data/content';
+import Icon from '../components/Icon.tsx';
+import { ArticleRows } from '../components/ArticleRows.tsx';
+import { articles, type Article } from '../content/content.ts';
 export default function Articles() {
   const [filters, setFilters] = createStore({ source: '', order: 'newest' });
   const [ready, setReady] = createSignal(false);

@@ -1,9 +1,9 @@
 import { createSignal, For } from 'solid-js';
-import Icon from './Icon';
-import { responsive, sizes } from './Preview';
-import { mangaCovers } from '../data/editorial';
-import { seriesCover } from '../data/images';
-import { spineAuthor } from '../data/series-credit.mjs';
+import Icon from './Icon.tsx';
+import { responsive, sizes } from './Preview.tsx';
+import { mangaCovers } from '../data/editorial.ts';
+import { seriesCover } from '../content/images.ts';
+import { spineAuthor } from '../content/series-credit.ts';
 import series from '../data/series.json';
 // Spines on a shelf; choosing one pulls that book out so its cover faces you. The shelf is a
 // tablist like the featured works: one stop for Tab, the arrow keys (and Home/End) move along it,

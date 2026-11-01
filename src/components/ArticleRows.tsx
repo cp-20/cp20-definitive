@@ -1,7 +1,7 @@
 import { createMemo, For } from 'solid-js';
-import Icon from './Icon';
-import { OGImage, articleAnchor, sizes } from './Preview';
-import { formatDate, type Article } from '../data/content';
+import Icon from './Icon.tsx';
+import { OGImage, articleAnchor, sizes } from './Preview.tsx';
+import { formatDate, type Article } from '../content/content.ts';
 /**
  * With `shown`, every row stays in the DOM and rows it rejects are only hidden, so filtering
  * neither rebuilds the list nor detaches images (see /articles).

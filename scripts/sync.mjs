@@ -2,7 +2,7 @@ import { readFile, writeFile, rename, appendFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { syncMedia } from './media.mjs';
-import { mergeWorks } from '../src/data/site-pages.mjs';
+import { mergeWorks } from '../src/site/pages.ts';
 import { fetchTrapPosts } from './trap.mjs';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 
@@ -14,8 +14,8 @@ const parser = new XMLParser({
   htmlEntities: true,
   parseTagValue: false,
 });
-import { safeUrl, article, mergeArticles } from '../src/data/normalize.mjs';
-export { safeUrl, article, mergeArticles } from '../src/data/normalize.mjs';
+import { safeUrl, article, mergeArticles } from '../src/content/normalize.ts';
+export { safeUrl, article, mergeArticles } from '../src/content/normalize.ts';
 export function parseFeed(xml, source) {
   if (XMLValidator.validate(xml) !== true || /<!DOCTYPE|<!ENTITY/i.test(xml)) throw new Error('Invalid feed');
   const data = parser.parse(xml);

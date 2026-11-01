@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parsePreview, dimensions } from './previews.mjs';
 import { ogImage } from './media.mjs';
 import { article, collect, parseFeed, request } from './sync.mjs';
-import { stripInvalidText } from '../src/data/normalize.mjs';
+import { stripInvalidText } from '../src/content/normalize.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const png = await readFile(new URL('../public/images/avatar.png', import.meta.url));
@@ -19,9 +19,11 @@ const key = 'abcdef0123456789:' + 'ab'.repeat(32);
 async function sandbox(data, media = {}) {
   const dir = await mkdtemp(join(tmpdir(), 'cp20-pipeline-'));
   await cp(join(root, 'scripts'), join(dir, 'scripts'), { recursive: true });
-  await mkdir(join(dir, 'src/data'), { recursive: true });
-  for (const file of ['normalize.mjs', 'variant-names.mjs', 'manga-covers.mjs'])
-    await cp(join(root, 'src/data', file), join(dir, 'src/data', file));
+  // The code under src, but none of its data: each test writes the data it needs.
+  await cp(join(root, 'src'), join(dir, 'src'), {
+    recursive: true,
+    filter: (path) => !path.endsWith('.json'),
+  });
   await mkdir(join(dir, 'public/media'), { recursive: true });
   await symlink(join(root, 'node_modules'), join(dir, 'node_modules'));
   for (const [name, value] of Object.entries({ works: [], ...data }))

@@ -1,11 +1,11 @@
 import { For } from 'solid-js';
-import Icon from '../components/Icon';
-import { responsive, sizes } from '../components/Preview';
-import Projects from '../components/Projects';
-import { ArticleRows } from '../components/ArticleRows';
-import { articles } from '../data/content';
-import { editions } from '../data/editorial';
-import { localImage, seriesCover } from '../data/images';
+import Icon from '../components/Icon.tsx';
+import { responsive, sizes } from '../components/Preview.tsx';
+import Projects from '../components/Projects.tsx';
+import { ArticleRows } from '../components/ArticleRows.tsx';
+import { articles } from '../content/content.ts';
+import { editions } from '../data/editorial.ts';
+import { localImage, seriesCover } from '../content/images.ts';
 import tracks from '../data/tracks.json';
 import series from '../data/series.json';
 export default function Home() {

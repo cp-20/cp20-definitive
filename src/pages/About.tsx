@@ -1,9 +1,9 @@
 import { For } from 'solid-js';
-import Icon from '../components/Icon';
-import { responsive, sizes } from '../components/Preview';
-import Bookshelf from '../components/Bookshelf';
-import { milestones, mangaCovers } from '../data/editorial';
-import { localImage } from '../data/images';
+import Icon from '../components/Icon.tsx';
+import { responsive, sizes } from '../components/Preview.tsx';
+import Bookshelf from '../components/Bookshelf.tsx';
+import { milestones, mangaCovers } from '../data/editorial.ts';
+import { localImage } from '../content/images.ts';
 import profile from '../data/profile.json';
 import tracks from '../data/tracks.json';
 import series from '../data/series.json';

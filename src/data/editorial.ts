@@ -81,4 +81,4 @@ export const editions = [
   { year: '2025', tech: 'SolidJS', image: '2025-portfolio' },
   { year: '2026', tech: 'Hono + xterm.js', image: null },
 ];
-export { mangaCovers, shownSeriesThumbnail } from './manga-covers.mjs';
+export { mangaCovers, shownSeriesThumbnail } from './manga-covers.ts';

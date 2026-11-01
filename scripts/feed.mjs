@@ -1,4 +1,4 @@
-import { stripInvalidText } from '../src/data/normalize.mjs';
+import { stripInvalidText } from '../src/content/normalize.ts';
 // Shared with the <link rel="alternate"> in src/Document.tsx (checked by scripts/seo.test.mjs).
 export const feedTitle = 'cp20.dev — Articles';
 export const feedUrl = 'https://cp20.dev/feed.xml';
