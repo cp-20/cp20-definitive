@@ -9,8 +9,8 @@ import { WRITE_SPACING_MS } from './stamp-limits.mjs';
 /** @typedef {{ owner: string; stamps: PlacedStamp[] }} SavedRecord */
 /**
  * @typedef {{
- *   place(path: string, stamp: StampData, account: Account): Promise<SavedRecord & { placed?: PlacedStamp }>;
- *   move(path: string, target: PlacedStamp, stamp: StampData, account: Account): Promise<SavedRecord & { placed?: PlacedStamp }>;
+ *   place(path: string, stamp: StampData, account: Account, reuse?: boolean): Promise<SavedRecord & { placed?: PlacedStamp }>;
+ *   move(path: string, target: PlacedStamp, stamp: StampData, account: Account, reuse?: boolean): Promise<SavedRecord & { placed?: PlacedStamp }>;
  *   remove(path: string, target: PlacedStamp, account: Account): Promise<SavedRecord>;
  * }} SaveApi
  */
@@ -21,6 +21,9 @@ import { WRITE_SPACING_MS } from './stamp-limits.mjs';
  * removing one needs no request at all (`result` is null). A place or move whose saved record
  * does not hold the sticker counts as failed, like a failed request: the queue then offers a
  * retry, and later operations on that sticker still see its unsaved local version.
+ * A retried place or move (`op.retry`) may have reached the database the first time with only
+ * the reply lost (a timeout, a dropped connection), so it reuses an identical stored sticker
+ * instead of saving a second one.
  * @param {SaveApi} api
  * @param {Operation} op
  * @param {Account} who
@@ -35,10 +38,11 @@ export async function saveOperation(api, op, who, resolve) {
   }
   const { anchor, x, y, kind, angle } = op.stamp;
   const target = op.type === 'move' ? resolve(op.target) : undefined;
+  const reuse = !!op.retry;
   const added =
     target && target.owner !== 'local'
-      ? await api.move(op.path, target, { anchor, x, y, kind, angle }, who)
-      : await api.place(op.path, { anchor, x, y, kind, angle }, who);
+      ? await api.move(op.path, target, { anchor, x, y, kind, angle }, who, reuse)
+      : await api.place(op.path, { anchor, x, y, kind, angle }, who, reuse);
   if (!added.placed) throw Error('The saved record does not hold the sticker');
   return { result: added, placed: added.placed };
 }

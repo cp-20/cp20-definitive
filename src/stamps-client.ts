@@ -162,10 +162,10 @@ const recordOf = (account: Account, stamps: Record<string, unknown> | undefined)
     : Object.keys(stamps).length
       ? { stamps, updatedAt: timestamp(), avatar: account.avatar }
       : null;
-export async function place(path: string, stamp: Omit<Stamp, 'createdAt'>, account: Account) {
+export async function place(path: string, stamp: Omit<Stamp, 'createdAt'>, account: Account, reuse = false) {
   let slot = '0';
   const data = await transaction(path, (data) => {
-    const edit = placeIn(data, stamp, timestamp());
+    const edit = placeIn(data, stamp, timestamp(), reuse);
     slot = edit.slot;
     return recordOf(account, edit.stamps);
   });
@@ -183,10 +183,11 @@ export async function move(
   target: PlacedStamp,
   stamp: Omit<Stamp, 'createdAt'>,
   account: Account,
+  reuse = false,
 ) {
   let slot = target.slot;
   const data = await transaction(path, (data) => {
-    const edit = moveIn(data, target, stamp, timestamp());
+    const edit = moveIn(data, target, stamp, timestamp(), reuse);
     slot = edit.slot;
     return recordOf(account, edit.stamps);
   });

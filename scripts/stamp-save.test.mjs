@@ -214,3 +214,14 @@ test('every failed save stays for the retry when nothing took it over', async ()
   await runQueue(api, ledger, failed);
   assert.equal(api.calls.length, 2);
 });
+
+test('only a retried place or move asks the client to reuse an identical saved sticker', async () => {
+  const flags = [];
+  const api = fakeApi();
+  const place = api.place;
+  api.place = async (path, stamp, account, reuse) => (flags.push(reuse), place(path, stamp, account));
+  const stamp = sticker('l1', 'local');
+  await saveOperation(api, { type: 'add', id: 'a', path: '/', stamp }, who, same);
+  await saveOperation(api, { type: 'add', id: 'b', path: '/', stamp, retry: true }, who, same);
+  assert.deepEqual(flags, [false, true]);
+});

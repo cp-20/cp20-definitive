@@ -27,11 +27,18 @@ export default function Projects() {
     }
   };
   // Touch swipe: the card follows the finger, then settles on the next work or springs back.
-  // Vertical scrolling stays native (touch-action: pan-y).
+  // Vertical scrolling and pinch zoom stay native (touch-action: pan-y pinch-zoom); a second
+  // finger means a pinch, so it cancels the swipe.
   const [drag, setDrag] = createSignal(0);
   let swipe = { x: 0, y: 0, id: -1 };
+  const swipeCancel = () => {
+    swipe.id = -1;
+    setDrag(0);
+  };
   const swipeStart = (e: PointerEvent) => {
-    if (e.pointerType !== 'mouse' && e.isPrimary) swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    if (e.pointerType === 'mouse') return;
+    if (e.isPrimary) swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    else swipeCancel();
   };
   const swipeMove = (e: PointerEvent) => {
     if (e.pointerId !== swipe.id) return;
@@ -99,10 +106,7 @@ export default function Projects() {
         onPointerDown={swipeStart}
         onPointerMove={swipeMove}
         onPointerUp={swipeEnd}
-        onPointerCancel={() => {
-          swipe.id = -1;
-          setDrag(0);
-        }}
+        onPointerCancel={swipeCancel}
       >
         <For each={projects}>
           {(p, i) => (

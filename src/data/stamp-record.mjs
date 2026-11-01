@@ -13,8 +13,12 @@ const holds = (stamps, target) => {
 // The record edits behind placing, peeling and moving a sticker. Each takes the stored record
 // and returns the slot it wrote and the new stamps (undefined when there is nothing to do).
 // `createdAt` is the server-timestamp placeholder for a new sticker.
-export function placeIn(record, stamp, createdAt) {
+// `reuse` is set when retrying a save whose reply was lost: if the record already holds the
+// same sticker (the earlier request did reach the database), it is not placed a second time.
+export function placeIn(record, stamp, createdAt, reuse = false) {
   const stamps = Object.fromEntries(stampEntries(record));
+  const same = reuse && Object.keys(stamps).find((s) => visual.every((k) => stamps[s][k] === stamp[k]));
+  if (same) return { slot: same, stamps: undefined };
   // A free slot, else the oldest sticker makes room.
   const slot =
     SLOTS.find((s) => !stamps[s]) ||
@@ -31,9 +35,9 @@ export function removeFrom(record, target) {
 // Moving rewrites the sticker in its own slot and keeps its age, so it never pushes out
 // another sticker. If it is gone (peeled in another tab), the visitor still gets it where
 // they dropped it, as a new sticker.
-export function moveIn(record, target, stamp, createdAt) {
+export function moveIn(record, target, stamp, createdAt, reuse = false) {
   const stamps = Object.fromEntries(stampEntries(record));
-  if (!holds(stamps, target)) return placeIn(record, stamp, createdAt);
+  if (!holds(stamps, target)) return placeIn(record, stamp, createdAt, reuse);
   stamps[target.slot] = { ...pick(stamp), createdAt: stamps[target.slot].createdAt };
   return { slot: target.slot, stamps };
 }

@@ -50,3 +50,16 @@ test('removing or moving a sticker another tab replaced in its slot leaves it al
   assert.equal(moved.stamps['3'].createdAt, 99);
   assert.equal(moved.stamps['0'].createdAt, TS);
 });
+test('a retried place or move whose first request was saved does not save the sticker twice', () => {
+  const kept = { ...full.stamps['2'] };
+  // Without `reuse` an identical sticker is a new one (two stickers can be placed alike).
+  assert.equal(placeIn(full, kept, TS).slot, '0');
+  const again = placeIn(full, kept, TS, true);
+  assert.deepEqual(again, { slot: '2', stamps: undefined });
+  // A move whose reply was lost: the slot already holds the moved sticker, so the retry's
+  // target no longer matches and it would otherwise be placed afresh.
+  const movedTo = { ...seen('3'), x: 0.57 };
+  const after = { stamps: { ...full.stamps, 3: { ...full.stamps['3'], x: 0.57 } } };
+  assert.equal(moveIn(after, seen('3'), movedTo, TS).slot, '0');
+  assert.deepEqual(moveIn(after, seen('3'), movedTo, TS, true), { slot: '3', stamps: undefined });
+});

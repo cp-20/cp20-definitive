@@ -387,7 +387,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   function retryFailed() {
     const list = failed();
     setFailed([]);
-    for (const op of list) enqueue({ ...op, id: crypto.randomUUID() });
+    for (const op of list) enqueue({ ...op, id: crypto.randomUUID(), retry: true });
   }
   // Failed saves belong to the account that made them.
   createEffect(owner, () => {

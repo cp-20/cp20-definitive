@@ -130,3 +130,20 @@ test('back and forward return focus to the followed link instead of the page hea
   assert.match(navigation, /\(restore && restoredFocus\(focusLink\)\)/);
   assert.match(navigation, /e\.state\?\.cp20Focus/);
 });
+
+test('text follows the browser default font size and the works deck can be pinched', async () => {
+  const css = await source('src/styles/app.css');
+  // px font sizes ignore a larger default size set in the browser; rem follows it.
+  // (A px term inside a viewport-width calculation is a length, not a text size.)
+  const fixed = css
+    .split('\n')
+    .filter((line) => /font-size:/.test(line) && /\d+px/.test(line.replace(/\([^()]*vw[^()]*\)/g, '')));
+  assert.deepEqual(fixed, []);
+  assert.match(css, /\.project-deck \{[^}]*touch-action: pan-y pinch-zoom;/);
+  const projects = await source('src/components/Projects.tsx');
+  assert.match(
+    projects,
+    /if \(e\.isPrimary\)[^\n]*\n\s*else swipeCancel\(\);/,
+    'a second finger cancels the swipe',
+  );
+});
