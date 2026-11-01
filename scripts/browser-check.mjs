@@ -388,6 +388,50 @@ try {
   await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
   await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(0, { timeout: 3000 });
   if (db.writes !== writesBeforeSwipe) throw Error('Putting a tapped sticker back saved it');
+  // A tap that puts the sticker in hand back (on the floating sticker, on its old spot, or on a
+  // spot it cannot go) ends there: its click never reaches the link or page under the finger.
+  await visitor.evaluate(() => {
+    window.__pageClicks = 0;
+    // The tap that lifts a sticker clicks the overlay that appears under it; that is not the page.
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.stamp-ui, .placed-stamp, .stamp-overlay')) window.__pageClicks++;
+    });
+  });
+  await visitor.touchscreen.tap(160, 190);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
+  await visitor.waitForTimeout(400);
+  const floating = await visitor.locator('.sticker-ghost').boundingBox();
+  await visitor.touchscreen.tap(floating.x + floating.width / 2, floating.y + floating.height / 2);
+  await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(0, { timeout: 3000 });
+  await visitor.touchscreen.tap(160, 190);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
+  await visitor.touchscreen.tap(160, 190);
+  await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
+  await visitor.waitForTimeout(700);
+  await visitor.getByRole('button', { name: 'クローバーのシールを貼る', exact: true }).tap();
+  const worksTab = await visitor.locator('.rail nav a[data-tab=works]').boundingBox();
+  await visitor.touchscreen.tap(worksTab.x + worksTab.width / 2, worksTab.y + worksTab.height / 2);
+  await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
+  await visitor.waitForTimeout(700);
+  if (new URL(visitor.url()).pathname !== '/')
+    throw Error('A tap that placed nothing followed the link under it');
+  if (await visitor.evaluate(() => window.__pageClicks))
+    throw Error('A tap that put a sticker back clicked the page');
+  if (db.writes !== writesBeforeSwipe) throw Error('Putting a tapped sticker back saved it');
+  // A phone turned on its side keeps the sticker waiting for its spot on screen.
+  await visitor.getByRole('button', { name: 'ハートのシールを貼る', exact: true }).tap();
+  await visitor.setViewportSize({ width: 844, height: 390 });
+  await expect
+    .poll(async () => {
+      const box = await visitor.locator('.sticker-ghost').boundingBox();
+      return box.y >= 0 && box.y + box.height <= 390 && box.x >= 0 && box.x + box.width <= 844;
+    })
+    .toBe(true);
+  await visitor.getByRole('button', { name: 'やめる' }).tap();
+  await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
+  await visitor.setViewportSize({ width: 390, height: 844 });
+  await visitor.waitForTimeout(700);
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
   const backing = await visitor.locator('.sticker-sheet').boundingBox();
@@ -557,6 +601,28 @@ try {
   db.pages.delete('articles');
   await expect(visitor.locator('.placed-stamp')).toHaveCount(0);
   report.interactions.push('stickers scrolling under the fixed mobile tabs stay below them');
+  // A tap on your own sticker lying over a select opens the select and leaves focus on it.
+  await visitor.evaluate(() => document.querySelector('#article-sort').scrollIntoView({ block: 'center' }));
+  await visitor.waitForTimeout(200);
+  if (!(await visitor.locator('.sticker-sheet').isVisible())) await visitor.locator('.sticker-tab').tap();
+  const sortBox = await visitor.locator('#article-sort').boundingBox();
+  await visitor.getByRole('button', { name: 'ハートのシールを貼る', exact: true }).tap();
+  await visitor.touchscreen.tap(sortBox.x + sortBox.width / 2, sortBox.y + sortBox.height / 2);
+  await expect(visitor.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
+  await visitor.getByRole('button', { name: 'シール帳を閉じる' }).tap();
+  await expect(visitor.locator('.sticker-sheet')).toBeHidden();
+  const onSort = await visitor.locator('.placed-stamp').boundingBox();
+  await visitor.touchscreen.tap(onSort.x + onSort.width / 2, onSort.y + onSort.height / 2);
+  await expect(visitor.locator('#article-sort')).toBeFocused();
+  await expect
+    .poll(() => visitor.evaluate(() => document.querySelector('#article-sort').matches(':open')))
+    .toBe(true);
+  await visitor.keyboard.press('Escape');
+  db.pages.delete('articles');
+  await expect(visitor.locator('.placed-stamp')).toHaveCount(0);
+  report.interactions.push(
+    'taps that put a sticker back never click the page; a turned phone keeps the held sticker on screen; your sticker over a select opens it',
+  );
   report.interactions.push(
     'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift, put back and peel; swipes over your sticker scroll; moving one of five stickers keeps the rest; two tabs placing at once; responsive anchors',
   );

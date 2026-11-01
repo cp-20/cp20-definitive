@@ -40,6 +40,24 @@ export function liftedSpot(x, y, width, height, top = 25, margin = 25) {
   };
 }
 
+/**
+ * Where a sticker waiting for its spot goes when the screen changes size (a phone turned on its
+ * side): the nearest point still fully on screen and below `top` (the hint bar) where there is
+ * room for it.
+ * @param {number} x
+ * @param {number} y
+ * @param {number} width viewport width
+ * @param {number} height viewport height
+ * @param {number} [top] the lowest edge it may not sit above
+ * @param {number} [margin] half a sticker as it is drawn in hand (enlarged), kept from the edges
+ */
+export function keptOnScreen(x, y, width, height, top = 0, margin = 30) {
+  return {
+    x: clamp(x, margin, width - margin),
+    y: clamp(y, Math.min(top + margin, height - margin), height - margin),
+  };
+}
+
 // Controls a tap on your sticker presses instead of lifting the sticker.
 export const TAPPABLE =
   'a[href], button, summary, label, input, select, textarea, [role="button"], [role="link"], [role="tab"]';

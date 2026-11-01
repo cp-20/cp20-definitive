@@ -69,3 +69,16 @@ test('a finger scrolls past your stickers and a tapped one floats clear of it, o
     assert.ok(spot.x >= 25 && spot.x <= w - 25 && spot.y >= 25 && spot.y <= h - 25, JSON.stringify(spot));
   }
 });
+
+test('a sticker waiting for its spot stays on screen when the phone is turned', async () => {
+  const { keptOnScreen } = await import('../src/data/stamp-touch.mjs');
+  // Held near the bottom of a portrait screen, then turned to landscape (412×839 → 839×412).
+  assert.deepEqual(keptOnScreen(322, 672, 839, 412, 80), { x: 322, y: 412 - 30 });
+  // Already in view: left where it is.
+  assert.deepEqual(keptOnScreen(200, 300, 839, 412, 80), { x: 200, y: 300 });
+  // Never under the hint bar, nor past the right edge.
+  assert.deepEqual(keptOnScreen(900, 10, 839, 412, 80), { x: 839 - 30, y: 80 + 30 });
+  // A screen too short for both keeps it on screen first.
+  const short = keptOnScreen(100, 10, 300, 90, 80);
+  assert.ok(short.y >= 30 && short.y <= 60, JSON.stringify(short));
+});

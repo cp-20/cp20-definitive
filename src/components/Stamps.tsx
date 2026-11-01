@@ -5,7 +5,14 @@ import { projectStamps } from '../data/stamp-optimistic.mjs';
 import { sheetStartsOpen } from '../data/sheet-start.mjs';
 import { OVER_SHEET, focusAfterRemoval, stampAnnouncement, stampPlace } from '../data/stamp-a11y.mjs';
 import { STAMPS_PER_PAGE as LIMIT } from '../data/stamp-limits.mjs';
-import { HOLD_MS, HOLD_SLOP, TAPPABLE, liftedSpot, waitsForHold } from '../data/stamp-touch.mjs';
+import {
+  HOLD_MS,
+  HOLD_SLOP,
+  TAPPABLE,
+  keptOnScreen,
+  liftedSpot,
+  waitsForHold,
+} from '../data/stamp-touch.mjs';
 import { createSaveLedger, saveOperation, writeDelay } from '../data/stamp-save.mjs';
 import Icon from './Icon';
 import { STICKER_KINDS as kinds, StickerFace, gravatarUrl as gravatar, stickerName } from './sticker/kinds';
@@ -227,6 +234,16 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       if (h?.mode === 'aim' && h.pointer === 'keys') placeSoon();
     };
     window.addEventListener('scroll', scrolled, { passive: true });
+    // A phone turned on its side while a sticker waits for its spot: keep the sticker in view.
+    const keepHeldInView = () => {
+      const h = held();
+      if (h?.mode !== 'aim') return;
+      const spot = keptOnScreen(motion.tx, motion.ty, innerWidth, innerHeight, byKeys() ? 0 : AIM_BAR_BOTTOM);
+      motion.tx = spot.x;
+      motion.ty = spot.y;
+      if (byKeys()) placeSoon();
+    };
+    window.addEventListener('resize', keepHeldInView);
     // Other visitors' stickers let the pointer through, so their avatar is found by position:
     // shown while a mouse is over one, and for a moment after a tap on one.
     let hovered = '';
@@ -264,6 +281,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       window.removeEventListener('resize', reposition);
       document.removeEventListener('keydown', key);
       window.removeEventListener('scroll', scrolled);
+      window.removeEventListener('resize', keepHeldInView);
+      stopCatchingClick?.();
       window.removeEventListener('online', online);
       document.removeEventListener('pointermove', hover);
       document.removeEventListener('pointerdown', tap);
@@ -767,6 +786,34 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       }, HOLD_MS);
   }
   const follow = (e: PointerEvent) => track(e.clientX, e.clientY);
+  // The click that follows a tap which put the sticker in hand down (or back) would land on
+  // whatever lies under the finger once the sticker or the overlay is gone, such as a link.
+  // Catch that one click; `then` runs in its place, or after a moment if no click comes.
+  let stopCatchingClick: (() => void) | undefined;
+  function catchNextClick(then?: () => void) {
+    stopCatchingClick?.();
+    let timer = 0;
+    const stop = () => {
+      clearTimeout(timer);
+      window.removeEventListener('click', caught, true);
+      window.removeEventListener('pointerdown', stop, true);
+      if (stopCatchingClick === stop) stopCatchingClick = undefined;
+    };
+    const caught = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      stop();
+      then?.();
+    };
+    window.addEventListener('click', caught, true);
+    // A new press means the click never came; that press starts something else.
+    window.addEventListener('pointerdown', stop, true);
+    timer = window.setTimeout(() => {
+      stop();
+      then?.();
+    }, 600);
+    stopCatchingClick = stop;
+  }
   // A click (press without moving) keeps the sticker in hand; the next click sticks it.
   const release = (e: PointerEvent) => {
     const h = held();
@@ -779,8 +826,20 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       : null;
     if (control) {
       cancelHeld(false);
-      if (control.matches('input, select, textarea')) control.focus();
-      return control.click();
+      if (!control.matches('input, select, textarea')) return control.click();
+      // A form field is used once the tap's own click is over, or that click would take its
+      // focus (and close a list it opened). A select opens its list: click() does not do that.
+      return catchNextClick(() => {
+        control.focus();
+        if (control instanceof HTMLSelectElement && 'showPicker' in control)
+          try {
+            return control.showPicker();
+          } catch {
+            // Not allowed without a recent tap (the click never came): focus is left on it.
+            return;
+          }
+        control.click();
+      });
     }
     setHeld({ ...h, mode: 'aim' });
     lift(h);
@@ -908,6 +967,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
               motion.tx = e.clientX;
               motion.ty = e.clientY;
               drop(e.clientX, e.clientY);
+              // The overlay is gone before the tap's click, which would reach the page under it.
+              catchNextClick();
             }
             aimDown.id = -1;
           }}
