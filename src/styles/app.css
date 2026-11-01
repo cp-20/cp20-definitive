@@ -1819,10 +1819,9 @@
   .work-facts dd:last-child {
     border-bottom: 0;
   }
+  /* The link text flows as inline text with the arrow glued to its last character, so a wrapped
+     repository name or article title keeps the arrow at the end of its last line. */
   .work-facts dd a {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
     font-family: var(--mono);
     font-size: 0.8125rem;
     overflow-wrap: anywhere;
@@ -1856,9 +1855,6 @@
     line-height: 1.8;
   }
   .work-detail-copy > p > a {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
     font-weight: 700;
     text-decoration: underline;
     text-decoration-color: var(--hi);
@@ -1872,9 +1868,17 @@
     text-decoration-thickness: 6px;
     text-underline-offset: 2px;
   }
+  .work-facts dd a > svg,
+  .work-detail-copy > p > a > svg {
+    display: inline-block;
+    margin-left: 4px;
+    vertical-align: -0.125em;
+  }
+  .work-detail-copy > p > a > svg {
+    margin-left: 6px;
+  }
   /* Links inside a sentence keep wrapping with the text. */
   .work-detail-copy > p > a.inline-link {
-    display: inline;
     text-underline-offset: 4px;
   }
 
@@ -3262,8 +3266,10 @@
     .featured-tab {
       font-size: 0.75rem;
     }
+    /* On the narrowest screens the third tab sits close to the page edge, so the badge stops at
+       the tab's right edge plus a little instead of running under the paper's frame. */
     .featured-tab small {
-      left: calc(50% + 20px);
+      left: min(calc(50% + 20px), calc(100% - 34px));
     }
     .project-deck {
       margin-top: 28px;

@@ -53,6 +53,39 @@ try {
         throw Error(`Work title ${id} at ${width}: ${JSON.stringify(heading)}`);
     }
   }
+  // A wrapped source or related-article link keeps its ↗ right after the end of its last line.
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const id of ['dice-spec-v1', 'read-stack', 'trap-mission']) {
+      await page.goto(`${origin}/works/${id}`);
+      const gaps = await page.$$eval(
+        '.work-facts dd a, .work-detail-copy > p > a:not(.inline-link)',
+        (links) =>
+          links.map((a) => {
+            const range = document.createRange();
+            range.selectNodeContents(a);
+            range.setEndBefore(a.querySelector('svg'));
+            const lines = [...range.getClientRects()].filter((r) => r.width > 0);
+            const last = lines[lines.length - 1];
+            const arrow = a.querySelector('svg').getBoundingClientRect();
+            return { gap: arrow.left - last.right, below: arrow.top - last.top, height: last.height };
+          }),
+      );
+      for (const g of gaps)
+        if (g.gap < 0 || g.gap > 10 || g.below < -2 || g.below > g.height)
+          throw Error(`Link arrow on ${id} at ${width}: ${JSON.stringify(g)}`);
+    }
+  }
+  // The NEW badge on the third checkpoint stays inside the paper's frame.
+  for (const width of [300, 320, 360, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(origin + '/');
+    const badge = await page.locator('.featured-tab small').evaluate((s) => ({
+      right: s.getBoundingClientRect().right,
+      paper: document.querySelector('.site-body').getBoundingClientRect().right,
+    }));
+    if (badge.right > badge.paper - 4) throw Error(`NEW badge at ${width}: ${JSON.stringify(badge)}`);
+  }
   // Repository descriptions are never squeezed to a few characters next to the name.
   for (const width of [761, 768, 900, 1000, 1101]) {
     await page.setViewportSize({ width, height: 900 });

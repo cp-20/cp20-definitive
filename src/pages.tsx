@@ -22,6 +22,8 @@ import { nameParts } from './data/name-breaks.mjs';
 import { spineAuthor } from './data/series-credit.mjs';
 import tracks from './data/tracks.json';
 import series from './data/series.json';
+/* U+2060 WORD JOINER: no line break between a link's last character and its trailing arrow. */
+const WORD_JOINER = '\u2060';
 // GitHub's language colours, for the dot beside each repository.
 const languageColors: Record<string, string> = {
   TypeScript: '#3178c6',
@@ -672,6 +674,7 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
                 ) : (
                   <a href={r}>
                     {r.replace('https://github.com/', '')}
+                    {WORD_JOINER}
                     <Icon name="ArrowUpRight" size={13} />
                   </a>
                 ),
@@ -703,6 +706,7 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
               <p>
                 <a href={url}>
                   {articles.find((a) => a.url === url)?.title || url}
+                  {WORD_JOINER}
                   <Icon name="ArrowUpRight" size={16} />
                 </a>
               </p>
