@@ -8,7 +8,8 @@ import series from '../data/series.json';
 // Spines on a shelf; choosing one pulls that book out so its cover faces you. The shelf is a
 // tablist like the featured works: one stop for Tab, the arrow keys (and Home/End) move along it,
 // and the caption below is the panel. The chosen book's name is read on focus, so the caption
-// is not a live region (it would read the title a second time).
+// is not a live region (it would read the title a second time). On phones the shelf scrolls
+// sideways, and the chosen book is scrolled into view once it has opened.
 export default function Bookshelf() {
   const [open, setOpen] = createSignal(0);
   let shelf!: HTMLDivElement;
@@ -25,9 +26,21 @@ export default function Bookshelf() {
     setOpen(next);
     (shelf.children[next] as HTMLElement).focus();
   };
+  const reveal = (e: TransitionEvent) => {
+    const book = e.target as HTMLElement;
+    if (e.propertyName === 'flex-basis' && book.getAttribute('aria-selected') === 'true')
+      book.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  };
   return (
     <>
-      <div class="bookshelf" ref={shelf} role="tablist" aria-label="本棚" onKeyDown={keyboard}>
+      <div
+        class="bookshelf"
+        ref={shelf}
+        role="tablist"
+        aria-label="本棚"
+        onKeyDown={keyboard}
+        onTransitionEnd={reveal}
+      >
         <For each={series}>
           {(s, i) => (
             <button
@@ -51,6 +64,13 @@ export default function Bookshelf() {
                 loading="lazy"
               />
               <span class="book-spine" aria-hidden="true">
+                <img
+                  class="book-art"
+                  src={seriesCover(s)?.src}
+                  {...responsive(seriesCover(s)?.srcset, sizes.bookCover)}
+                  alt=""
+                  loading="lazy"
+                />
                 <strong>{s.title}</strong>
                 <small>{spineAuthor(s.author)}</small>
               </span>

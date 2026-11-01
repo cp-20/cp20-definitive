@@ -9,8 +9,8 @@ export const sizes = {
   featured:
     '(max-width: 760px) calc(100vw - 104px), (max-width: 900px) calc(100vw - 300px), (max-width: 1100px) calc(55vw - 200px), 470px',
   workHero: '(max-width: 760px) calc(100vw - 120px), (max-width: 1100px) calc(100vw - 300px), 930px',
-  // The open book on the /about shelf (spines show a strip of the same image).
-  bookCover: '(max-width: 460px) 230px, (max-width: 760px) calc(100vw - 230px), 216px',
+  // The open book on the /about shelf (spines show a corner of the same image).
+  bookCover: '(max-width: 760px) 176px, 222px',
   homeCover: '92px',
   homeTrack: '134px',
   track: '(max-width: 760px) calc(100vw - 88px), (max-width: 1100px) calc(50vw - 160px), 292px',
