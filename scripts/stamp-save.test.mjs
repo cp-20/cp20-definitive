@@ -299,3 +299,37 @@ test('a failed move that nothing took over is sent again by the retry', async ()
   assert.deepEqual(api.calls[1].slice(0, 3), ['move', '/', 'u1-0']);
   assert.equal(api.calls[1][3].x, 0.4);
 });
+
+test('a move and a peel that both failed offline only peel the sticker when retried', async () => {
+  const api = fakeApi();
+  const offline = {
+    place: () => Promise.reject(Error('offline')),
+    move: () => Promise.reject(Error('offline')),
+    remove: () => Promise.reject(Error('offline')),
+  };
+  const ledger = createSaveLedger();
+  const saved = sticker('u1-0', 'u1');
+  const moved = {
+    type: 'move',
+    id: 'm',
+    path: '/',
+    target: saved,
+    stamp: sticker('l1', 'local', { x: 0.4 }),
+  };
+  // The peel acts on the saved sticker shown again after the move failed.
+  const peeled = { type: 'remove', id: 'r', path: '/', target: saved };
+  let failed = await runQueue(offline, ledger, [moved]);
+  failed = await runQueue(offline, ledger, [peeled], failed);
+  assert.deepEqual(
+    failed.map((op) => op.id),
+    ['r'],
+  );
+  // Back online: the retry sends only the peel, for the saved sticker.
+  const retry = failed.map((op) => ({ ...op, id: `${op.id}-retry`, retry: true }));
+  // A stale list still holding the move brings nothing back either.
+  assert.deepEqual(await runQueue(api, ledger, [{ ...moved, id: 'm-retry', retry: true }, ...retry]), []);
+  assert.deepEqual(
+    api.calls.map((c) => c.slice(0, 3)),
+    [['remove', '/', 'u1-0']],
+  );
+});
