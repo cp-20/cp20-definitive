@@ -418,6 +418,8 @@ try {
   );
 
   // ── Other visitors' stickers never take the pointer or cover the index tabs ──
+  // The tab in front (a Ctrl+click from a tab behind it opens no new tab).
+  await page.bringToFront();
   await page.goto(origin + '/articles');
   await settle();
   const targets = await page.evaluate(() => {
@@ -529,6 +531,34 @@ try {
   await expect(plain.locator('noscript a')).toHaveCount(3);
   await nojs.close();
   passed('complete static content without JavaScript');
+
+  // ── Every `sizes` is at least the width its image is laid out at (src/components/Preview.tsx) ──
+  await page.goto(origin + '/works');
+  const workPage = (await page.locator('a[href^="/works/"]').first().getAttribute('href'))!;
+  for (const width of [360, 380, 450, 600, 760, 761, 900, 901, 1100, 1101, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const route of ['/', '/works', '/about', workPage]) {
+      await page.goto(origin + route);
+      const short = await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLImageElement>('img[sizes]')].flatMap((img) => {
+          const sizes = img.getAttribute('sizes')!;
+          const [, , slot] =
+            sizes
+              .split(/,\s*(?![^()]*\))/)
+              .map((part) => part.match(/^(\(.+?\))\s+(.+)$/) || [, , part])
+              .find(([, query]) => !query || matchMedia(query).matches) || [];
+          const probe = document.body.appendChild(document.createElement('div'));
+          probe.style.width = slot ?? '';
+          const room = probe.getBoundingClientRect().width;
+          probe.remove();
+          return img.offsetWidth > room + 0.5 ? [`${sizes}: ${img.offsetWidth} > ${room}`] : [];
+        }),
+      );
+      if (short.length)
+        throw Error(`sizes below the rendered width at ${width}px ${route}: ${short.join('; ')}`);
+    }
+  }
+  passed('no image is laid out wider than its sizes promise, at 360-1920px');
 
   // ── Pages swapped out and rows filtered away are released ──
   // After a warm-up lap the DOM node count (after GC) stays flat. Chromium kept every
