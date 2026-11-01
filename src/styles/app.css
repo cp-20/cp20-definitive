@@ -2343,10 +2343,14 @@
       opacity 200ms var(--ease);
     animation: sticker-pop 420ms var(--ease) var(--delay, 0ms) both;
   }
+  /* A swipe that starts on your sticker still scrolls the page; a finger drags it only after a
+     long press (stamp-touch.mjs), which neither selects text nor opens a callout. */
   .placed-stamp[data-owned] {
     pointer-events: auto;
     cursor: grab;
-    touch-action: none;
+    touch-action: pan-x pan-y;
+    -webkit-touch-callout: none;
+    user-select: none;
   }
   .stamp-layer[data-holding] .placed-stamp {
     pointer-events: none;
@@ -2445,6 +2449,36 @@
     .stamp-overlay {
       cursor: default;
     }
+  }
+  /* While a sticker waits for its spot: what the next tap does, and a way out without a keyboard. */
+  .stamp-aim-bar {
+    position: fixed;
+    z-index: 65;
+    top: max(12px, env(safe-area-inset-top));
+    left: 50%;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    max-width: calc(100vw - 32px);
+    padding: 5px 5px 5px 14px;
+    border: 2px solid var(--edge);
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 3px 3px 0 var(--drop);
+    translate: -50% 0;
+  }
+  .stamp-aim-bar > button {
+    min-height: 32px;
+    padding: 0 14px;
+    border: 2px solid var(--edge);
+    border-radius: 999px;
+    background: var(--yellow);
+    color: var(--on-color);
+    font: inherit;
   }
   /* The sticker sheet: a glossy backing with die-cut slots. */
   .sticker-sheet {

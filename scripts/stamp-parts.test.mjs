@@ -45,3 +45,27 @@ test('the shared limits agree with each other and with the sticker designs', asy
   const list = kinds.slice(kinds.indexOf('STICKER_KINDS = ['), kinds.indexOf('];'));
   assert.equal(list.match(/\{ symbol: /g).length, STICKER_KIND_COUNT);
 });
+
+test('a finger scrolls past your stickers and a tapped one floats clear of it, on screen', async () => {
+  const { HOLD_SLOP, LIFT, liftedSpot, waitsForHold } = await import('../src/data/stamp-touch.mjs');
+  // Only your stickers on the page wait for a long press, and only under a finger or pen.
+  assert.equal(waitsForHold({ from: 'page', pointer: 'touch' }), true);
+  assert.equal(waitsForHold({ from: 'page', pointer: 'pen' }), true);
+  assert.equal(waitsForHold({ from: 'page', pointer: 'mouse' }), false);
+  assert.equal(waitsForHold({ from: 'sheet', pointer: 'touch' }), false);
+  assert.ok(HOLD_SLOP > 6, 'a still finger is not mistaken for a swipe');
+  // Room above the finger: it floats up there.
+  assert.deepEqual(liftedSpot(200, 400, 390, 664, 80), { x: 200, y: 400 - LIFT });
+  // Near the top of the screen (or under the hint bar) it goes below the finger instead.
+  assert.deepEqual(liftedSpot(300, 30, 390, 664, 80), { x: 300, y: 30 + LIFT });
+  assert.deepEqual(liftedSpot(300, 120, 390, 664, 80), { x: 300, y: 120 + LIFT });
+  // It never leaves the screen, even on one too short for either.
+  for (const [x, y, w, h] of [
+    [2, 0, 390, 664],
+    [389, 660, 390, 664],
+    [100, 40, 390, 100],
+  ]) {
+    const spot = liftedSpot(x, y, w, h, 80);
+    assert.ok(spot.x >= 25 && spot.x <= w - 25 && spot.y >= 25 && spot.y <= h - 25, JSON.stringify(spot));
+  }
+});

@@ -1,7 +1,8 @@
 // Where stickers go on the page: anchors, their layout boxes and the point under the pointer.
 
 // The sticker UI itself, which a point on screen looks through to find the page below.
-export const STAMP_UI_SELECTOR = '.sticker-sheet,.sticker-tab,.stamp-overlay,.stamp-layer,.sticker-ghost';
+export const STAMP_UI_SELECTOR =
+  '.sticker-sheet,.sticker-tab,.stamp-overlay,.stamp-aim-bar,.stamp-layer,.sticker-ghost';
 export type Box = { x: number; y: number; w: number; h: number };
 // Layout position relative to <body>, ignoring transforms and scroll.
 export function layoutBox(el: HTMLElement): Box {

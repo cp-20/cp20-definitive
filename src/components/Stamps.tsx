@@ -5,10 +5,11 @@ import { projectStamps } from '../data/stamp-optimistic.mjs';
 import { sheetStartsOpen } from '../data/sheet-start.mjs';
 import { focusAfterRemoval, stampAnnouncement, stampPlace } from '../data/stamp-a11y.mjs';
 import { STAMPS_PER_PAGE as LIMIT } from '../data/stamp-limits.mjs';
+import { HOLD_MS, HOLD_SLOP, TAPPABLE, liftedSpot, waitsForHold } from '../data/stamp-touch.mjs';
 import { createSaveLedger, saveOperation, writeDelay } from '../data/stamp-save.mjs';
 import Icon from './Icon';
 import { STICKER_KINDS as kinds, StickerFace, gravatarUrl as gravatar, stickerName } from './sticker/kinds';
-import { centerOf as center, createAnchorMeasure, locate } from './sticker/dom';
+import { centerOf as center, createAnchorMeasure, locate, pageElementAt } from './sticker/dom';
 import { createHand } from './sticker/hand';
 import { createStampAccount } from './sticker/account';
 import { ACCOUNT_KEY, HIDE_KEY, SHEET_KEY, readPref, writePref } from './sticker/prefs';
@@ -25,6 +26,9 @@ const visualKey = (s: Pick<PlacedStamp, 'anchor' | 'x' | 'y' | 'kind' | 'angle'>
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 // Half of a placed sticker's 46px box (.placed-stamp in app.css).
 const STICKER_RADIUS = 23;
+// The hint bar shown while a tapped sticker waits for its spot (.stamp-aim-bar in app.css) ends
+// about this far down; a sticker floating up from under it goes below the finger instead.
+const AIM_BAR_BOTTOM = 80;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 // A copy of a map or set without one key.
 function withoutKey<V>(map: ReadonlyMap<string, V>, key: string): ReadonlyMap<string, V>;
@@ -502,7 +506,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     () => !!held(),
   );
   const { m: motion, paint, animate } = hand;
-  let press = { x: 0, y: 0 };
+  let press = { x: 0, y: 0 },
+    holdTimer = 0;
   function slotCenter(stickerKind: number) {
     const slot = (
       open() ? sheet?.querySelector(`[data-sticker-kind="${stickerKind}"]`) : null
@@ -543,7 +548,13 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   function track(x: number, y: number) {
     const h = held();
     if (!h) return;
-    if (h.mode === 'press' && Math.hypot(x - press.x, y - press.y) > 6) {
+    const moved = Math.hypot(x - press.x, y - press.y);
+    if (h.mode === 'press' && waitsForHold(h)) {
+      // A finger that moves before the long press is scrolling: the sticker stays where it is.
+      if (moved > HOLD_SLOP) cancelHeld(false);
+      return;
+    }
+    if (h.mode === 'press' && moved > 6) {
       setHeld({ ...h, mode: 'drag' });
       motion.ts = 1.18;
       lift(h);
@@ -554,6 +565,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   // Put the sticker in hand down. The keyboard overlay goes with it, so focus returns to the
   // sheet sticker it was taken from (or the tab when the sheet has been closed).
   function letGo(h: Held) {
+    clearTimeout(holdTimer);
     const hadFocus = !!overlay?.isConnected && document.activeElement === overlay;
     setHeld(null);
     if (!hadFocus) return;
@@ -595,10 +607,16 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       letGo(h);
       return hand.flyTo(slotCenter(h.kind), 0.6, finish);
     }
-    // Set down where it was picked up: nothing changes.
+    // Set down where it was picked up: nothing changes. A finger cannot aim as finely as a
+    // mouse, and a tapped sticker floats away from its spot, so a tap on either puts it back.
     if (h.from === 'page') {
-      const home = homeOf(h);
-      if (Math.hypot(x - home.x, y - home.y) < 6) return returnHeld(h);
+      const home = homeOf(h),
+        reach = h.pointer === 'mouse' ? 6 : STICKER_RADIUS;
+      if (
+        Math.hypot(x - home.x, y - home.y) < reach ||
+        (h.mode === 'aim' && h.pointer !== 'mouse' && Math.hypot(x - motion.x, y - motion.y) < reach)
+      )
+        return returnHeld(h);
     }
     const lean = Math.round(clamp(motion.tilt, -14, 14));
     const angle =
@@ -695,7 +713,18 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     }
     const el = e.currentTarget as Element;
     el.setPointerCapture(e.pointerId);
-    begin({ ...next, mode: 'press', pointer: e.pointerType }, center(el), { x: e.clientX, y: e.clientY });
+    const pressed: Held = { ...next, mode: 'press', pointer: e.pointerType };
+    begin(pressed, center(el), { x: e.clientX, y: e.clientY });
+    // A finger held still on your sticker picks it up to drag.
+    clearTimeout(holdTimer);
+    if (waitsForHold(pressed))
+      holdTimer = window.setTimeout(() => {
+        if (held() !== pressed) return;
+        setHeld({ ...pressed, mode: 'drag' });
+        motion.ts = 1.18;
+        lift(pressed);
+        navigator.vibrate?.(10);
+      }, HOLD_MS);
   }
   const follow = (e: PointerEvent) => track(e.clientX, e.clientY);
   // A click (press without moving) keeps the sticker in hand; the next click sticks it.
@@ -704,15 +733,36 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     if (!h) return;
     if (h.mode === 'drag') return drop(e.clientX, e.clientY);
     if (h.mode !== 'press') return;
+    // A tap on your sticker lying over a link or button presses that instead of lifting it.
+    const control = waitsForHold(h)
+      ? pageElementAt(e.clientX, e.clientY)?.closest<HTMLElement>(TAPPABLE)
+      : null;
+    if (control) {
+      cancelHeld(false);
+      if (control.matches('input, select, textarea')) control.focus();
+      return control.click();
+    }
     setHeld({ ...h, mode: 'aim' });
     lift(h);
     motion.ts = 1.18;
     if (h.pointer !== 'mouse') {
-      motion.tx = motion.x;
-      motion.ty = motion.y - 70;
+      // It floats clear of the finger, but never off screen or under the hint bar.
+      const spot = liftedSpot(motion.x, motion.y, innerWidth, innerHeight, AIM_BAR_BOTTOM);
+      motion.tx = spot.x;
+      motion.ty = spot.y;
     }
   };
   let aimDown = { x: 0, y: 0, id: -1 };
+  // Your stickers let a swipe scroll the page (touch-action in app.css); once one is held long
+  // enough to drag, the finger moves it instead. Only a listener that is not passive can stop that.
+  const pinScroll = (el: HTMLElement) =>
+    el.addEventListener(
+      'touchmove',
+      (e) => {
+        if (held()?.mode === 'drag' && e.cancelable) e.preventDefault();
+      },
+      { passive: false },
+    );
   return (
     <>
       {props.children}
@@ -720,6 +770,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         <For each={visible()} keyed={(s) => s.key}>
           {(s, i) => (
             <span
+              ref={pinScroll}
               class="placed-stamp"
               data-stamp-id={s().id}
               data-owned={isOwn(s()) ? 'true' : undefined}
@@ -744,7 +795,11 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
               onPointerDown={(e) => grab(e, { kind: s().kind, from: 'page', target: s() })}
               onPointerMove={follow}
               onPointerUp={release}
-              onPointerCancel={() => cancelHeld(true)}
+              // The page started to scroll under a finger that had not picked the sticker up yet.
+              onPointerCancel={() => cancelHeld(held()?.mode !== 'press')}
+              onContextMenu={(e) => {
+                if (held() && held()!.pointer !== 'mouse') e.preventDefault();
+              }}
             >
               <span class="sticker" data-kind={s().kind}>
                 <StickerFace kind={s().kind} />
@@ -809,6 +864,18 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           }}
           onPointerCancel={() => (aimDown.id = -1)}
         />
+      </Show>
+      {/* A pointer has no Escape key: say what the next tap does, and offer a way out. */}
+      <Show when={held()?.mode === 'aim' && held()!.pointer !== 'keys'}>
+        <div class="stamp-aim-bar stamp-ui">
+          <span>
+            {held()!.pointer === 'mouse' ? 'クリック' : 'タップ'}した場所に
+            {held()!.from === 'page' ? '移動します' : '貼ります'}
+          </span>
+          <button type="button" onClick={() => cancelHeld(true)}>
+            やめる
+          </button>
+        </div>
       </Show>
       <div
         ref={ghost}

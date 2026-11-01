@@ -363,6 +363,28 @@ try {
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('[data-pending=true]')).toHaveCount(1);
   await expect(visitor.locator('.sticker-sheet[data-saving]')).toHaveCount(0, { timeout: 20000 });
+  // A swipe that starts on your own sticker scrolls the page and leaves the sticker where it was.
+  const writesBeforeSwipe = db.writes;
+  const cdp = await visitorContext.newCDPSession(visitor);
+  const finger = (type, y) =>
+    cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x: 160, y }] });
+  await finger('touchStart', 190);
+  for (let y = 170; y >= 10; y -= 20) await finger('touchMove', y);
+  // Rest before lifting the finger, so no fling keeps the page moving afterwards.
+  await visitor.waitForTimeout(300);
+  await finger('touchEnd');
+  await expect.poll(() => visitor.evaluate(() => scrollY)).toBeGreaterThan(100);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(0);
+  await visitor.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  await expect.poll(() => visitor.evaluate(() => scrollY)).toBe(0);
+  if (db.writes !== writesBeforeSwipe) throw Error('A swipe over your sticker moved it');
+  // A tapped sticker can be put back without a keyboard.
+  await visitor.touchscreen.tap(160, 190);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
+  await visitor.getByRole('button', { name: 'やめる' }).tap();
+  await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(0, { timeout: 3000 });
+  if (db.writes !== writesBeforeSwipe) throw Error('Putting a tapped sticker back saved it');
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
   const backing = await visitor.locator('.sticker-sheet').boundingBox();
@@ -483,7 +505,7 @@ try {
     "other visitors' stickers let clicks, modifier clicks and the select through, keep off the index tabs and show their avatar on hover",
   );
   report.interactions.push(
-    'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift and peel; moving one of five stickers keeps the rest; two tabs placing at once; responsive anchors',
+    'signed-out visitors cannot place; click-to-stick placement; Gravatar shown on hover; click to lift and re-place; immediate optimistic render and undo; cross-visitor live sync; touch placement, lift, put back and peel; swipes over your sticker scroll; moving one of five stickers keeps the rest; two tabs placing at once; responsive anchors',
   );
   for (const [width, height] of [
     [390, 844],
