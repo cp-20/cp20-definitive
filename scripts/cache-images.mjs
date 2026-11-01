@@ -66,7 +66,9 @@ export async function cacheImages(force = false, previousPreviews) {
           (await access(new URL(`../public${old.file}`, import.meta.url))
             .then(() => true)
             .catch(() => false));
-        if (exists) next[source] = old;
+        // A copy: addVariants rewrites entries in place, and `previous` must stay as it was for the
+        // change check below (a run that only adds or drops variants is still a change).
+        if (exists) next[source] = structuredClone(old);
         if (!force && exists && Date.now() - Date.parse(old.checkedAt) < 7 * 86400000) continue;
         try {
           const url = new URL(source);
@@ -115,7 +117,7 @@ export async function cacheImages(force = false, previousPreviews) {
           .then(() => true)
           .catch(() => false);
         if (!kept) continue;
-        next[fallback] = previous[fallback];
+        next[fallback] = structuredClone(previous[fallback]);
         preview[field] = fallback;
         if (field === 'image') Object.assign(preview, { width: before.width, height: before.height });
         previewsReverted = true;

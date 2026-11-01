@@ -1,5 +1,6 @@
 import { createSignal, For } from 'solid-js';
 import Icon from './Icon';
+import { isIconImage } from '../data/icon-image.mjs';
 import { OGImage, OriginalIcon, Postmark, postmarkDate, sizes } from './Preview';
 import { works } from '../data/content';
 import { featuredIds } from '../data/editorial';
@@ -116,7 +117,13 @@ export default function Projects() {
               inert={selected() !== i()}
             >
               <div class="featured-image">
-                <OGImage url={p.url} alt={`${p.title}のOG画像`} sizes={sizes.featured} priority={i() === 0} />
+                <OGImage
+                  url={p.url}
+                  alt={`${p.title}のOG画像`}
+                  icon={isIconImage(p)}
+                  sizes={sizes.featured}
+                  priority={i() === 0}
+                />
                 <Postmark date={postmarkDate(p.productionTime)} top="CP20.DEV" bottom={`No.0${i() + 1}`} />
               </div>
               <div class="featured-copy">

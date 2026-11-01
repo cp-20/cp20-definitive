@@ -223,6 +223,36 @@ test('when a new OG image cannot be cached, the previous image file and preview 
   }
 });
 
+test('a run that only adds or drops WebP variants reports a change (so it is built and deployed)', async () => {
+  const page = 'https://example.com/work';
+  const image = 'https://example.com/og.png';
+  const box = await sandbox(
+    {
+      previews: { [page]: { image, icon: null, width: 512, height: 512, checkedAt: '2000-01-01' } },
+      tracks: [],
+      series: [],
+      'image-cache': { [image]: { file: '/media/og.png', checkedAt: new Date().toISOString() } },
+    },
+    { 'og.png': png },
+  );
+  try {
+    const { cacheImages } = await box.importScript('cache-images.mjs');
+    const offline = async () => new Response('busy', { status: 503 });
+    assert.equal(await withFetch(offline, () => cacheImages(false, {})), true, 'variants were added');
+    const cached = (await box.load('image-cache'))[image];
+    assert.ok(cached.variants?.length, 'the cache records the new variants');
+    assert.equal(await withFetch(offline, () => cacheImages(false, {})), false, 'nothing changed');
+    // The variants disappear from the manifest (e.g. a hand-edited or older cache): a change again.
+    await writeFile(
+      join(box.dir, 'src/data/image-cache.json'),
+      JSON.stringify({ [image]: { file: cached.file, checkedAt: cached.checkedAt } }),
+    );
+    assert.equal(await withFetch(offline, () => cacheImages(false, {})), true, 'variants were restored');
+  } finally {
+    await box.cleanup();
+  }
+});
+
 test('Ghost responses missing filter fields, or matching nothing, keep the previous snapshot', async () => {
   const post = {
     title: 't',

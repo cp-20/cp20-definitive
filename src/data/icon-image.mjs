@@ -1,7 +1,10 @@
 /**
- * A square-ish image (a site that only offers its app icon, such as a Marketplace listing) is not
- * stretched to fill the OG frame: it sits at no more than its own size on the placeholder pattern.
- * @param {{ width?: number | null; height?: number | null } | undefined} preview
+ * Whether a work's image is an app icon (a site that only offers its app icon, such as a
+ * Marketplace listing) rather than an OG card. Such an image is not stretched to fill the OG
+ * frame: it sits at no more than its own size on the placeholder pattern.
+ *
+ * This is stated in works.json (`"imageKind": "icon"`), never guessed from the fetched image's
+ * aspect ratio: square and portrait OG cards (sizu.me's 500×500 ones, for example) are cards.
+ * @param {{ imageKind?: string } | undefined} work
  */
-export const isIconImage = (preview) =>
-  Boolean(preview?.width && preview?.height && preview.width / preview.height < 1.3);
+export const isIconImage = (work) => work?.imageKind === 'icon';

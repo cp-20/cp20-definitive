@@ -61,14 +61,20 @@ test('manga spines shrink to fit the shelf; the open book keeps its cover width'
 
 test('an icon-only work image sits on the placeholder pattern at no more than its own size', async () => {
   const { isIconImage } = await import('../src/data/icon-image.mjs');
-  assert.equal(isIconImage({ width: 256, height: 256 }), true);
-  assert.equal(isIconImage({ width: 1200, height: 630 }), false);
+  const works = JSON.parse(await readFile(new URL('../src/data/works.json', import.meta.url), 'utf8'));
+  // Stated per work, never guessed from the fetched image: square OG cards stay cards.
+  assert.deepEqual(
+    works.filter(isIconImage).map((w) => w.id),
+    ['foodmoji'],
+  );
+  assert.equal(isIconImage({ imageKind: undefined }), false);
   assert.equal(isIconImage(undefined), false);
-  const previews = JSON.parse(await readFile(new URL('../src/data/previews.json', import.meta.url), 'utf8'));
-  const foodmoji = previews['https://marketplace.visualstudio.com/items?itemName=cp20.foodmoji-vscode'];
-  if (foodmoji?.width) assert.equal(isIconImage(foodmoji), true);
   assert.match(rule('.og-image.icon img'), /height: min\(var\(--icon-size\), \d+%\);/);
   assert.match(css, /\.og-image\.unavailable::after,\s*\.og-image\.icon::after \{/);
+  // An icon still offers its smaller variants.
+  const preview = await readFile(new URL('../src/components/Preview.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(preview, /srcset=\{[^}]*icon\(\)/);
+  assert.doesNotMatch(preview, /isIconImage\(previewFor/);
 });
 
 test('credits read as running text; only the cover list is laid out as items', async () => {

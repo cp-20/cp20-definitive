@@ -46,6 +46,11 @@ test('work ids are checked', () => {
   for (const id of ['Foo', 'a--b', '', 'a.b', '-a', 'a-', 'a/b', undefined])
     assert.throws(() => validateWorks([{ id }]), /Invalid work id/, String(id));
   assert.throws(() => validateWorks([{ id: 'a' }, { id: 'a' }]), /Duplicate work id "a"/);
+  assert.throws(
+    () => validateWorks([{ id: 'a', imageKind: 'square' }]),
+    /Invalid imageKind "square" for work "a"/,
+  );
+  assert.deepEqual(validateWorks([{ id: 'a', imageKind: 'icon' }]), [{ id: 'a', imageKind: 'icon' }]);
   assert.throws(() => mergeWorks(baseWorks, { projects: [{ id: baseWorks[0].id }] }), /Duplicate/);
   assert.deepEqual(mergeWorks([{ id: 'a' }], {}), [{ id: 'a' }]);
 });

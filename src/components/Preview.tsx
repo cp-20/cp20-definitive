@@ -1,6 +1,5 @@
 import { createSignal, Show } from 'solid-js';
 import { pages } from 'virtual:cp20-media';
-import { isIconImage } from '../data/icon-image.mjs';
 // Upper bounds of the laid-out image widths (measured at 320-1920px wide viewports, and checked
 // by browser-check.mjs; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
 export const sizes = {
@@ -48,12 +47,14 @@ export function OriginalIcon(props: { url: string; name: string }) {
 export function OGImage(props: {
   url: string;
   alt: string;
+  /** The image is an app icon (works.json `imageKind: "icon"`), not an OG card. */
+  icon?: boolean;
   priority?: boolean;
   eager?: boolean;
   sizes?: string;
 }) {
   const [failed, setFailed] = createSignal(false);
-  const icon = () => isIconImage(previewFor(props.url));
+  const icon = () => Boolean(props.icon);
   return (
     <div
       class={['og-image', { unavailable: !previewFor(props.url)?.image || failed(), icon: icon() }]}
@@ -71,8 +72,8 @@ export function OGImage(props: {
       >
         <img
           src={previewFor(props.url)?.image}
-          srcset={props.sizes && !icon() ? previewFor(props.url)?.srcset : undefined}
-          sizes={props.sizes && !icon() && previewFor(props.url)?.srcset ? props.sizes : undefined}
+          srcset={props.sizes ? previewFor(props.url)?.srcset : undefined}
+          sizes={props.sizes && previewFor(props.url)?.srcset ? props.sizes : undefined}
           alt={props.alt}
           width={previewFor(props.url)?.width || 1200}
           height={previewFor(props.url)?.height || 630}

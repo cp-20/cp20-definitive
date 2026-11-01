@@ -138,6 +138,7 @@
     "title": "Foodmoji",
     "description": "あなたのコミットメッセージを絵文字で彩る",
     "url": "https://marketplace.visualstudio.com/items?itemName=cp20.foodmoji-vscode",
+    "imageKind": "icon",
     "repositories": ["https://github.com/cp-20/foodmoji-vscode"],
     "productionTime": "2024/11/19",
     "techStack": [

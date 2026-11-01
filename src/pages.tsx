@@ -1,6 +1,7 @@
 import { createSignal, createStore, createMemo, createEffect, onSettled, For, Show } from 'solid-js';
 import { httpStatus } from '@solidjs/web';
 import Icon from './components/Icon';
+import { isIconImage } from './data/icon-image.mjs';
 import {
   OGImage,
   OriginalIcon,
@@ -567,6 +568,7 @@ export function Works() {
                   <OGImage
                     url={w.url}
                     alt=""
+                    icon={isIconImage(w)}
                     sizes={sizes.workGrid}
                     priority={i() === 0}
                     eager={i() < firstRowWorks}
@@ -637,7 +639,13 @@ export function WorkDetail(props: { work: (typeof works)[number] }) {
         </div>
       </header>
       <div class="work-detail-hero" data-stamp-anchor="work-image">
-        <OGImage url={w.url} alt={`${w.title}のOG画像`} sizes={sizes.workHero} priority />
+        <OGImage
+          url={w.url}
+          alt={`${w.title}のOG画像`}
+          icon={isIconImage(w)}
+          sizes={sizes.workHero}
+          priority
+        />
         <Postmark date={postmarkDate(w.productionTime)} top="CP20.DEV" bottom="WORKS" />
       </div>
       <div class="work-detail-layout">
