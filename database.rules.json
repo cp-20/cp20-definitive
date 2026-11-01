@@ -10,31 +10,31 @@
         "$uid": {
           ".read": "auth != null && auth.uid == $uid",
           ".write": "auth != null && auth.uid == $uid && auth.token.firebase.sign_in_provider == 'google.com' && (!newData.exists() || newData.parent().parent().parent().child('throttle').child(auth.uid).child('at').val() == now)",
-          ".validate": "newData.hasChildren(['updatedAt','stamps']) && newData.child('updatedAt').val() == now",
+          ".validate": "newData.getPriority() == null && (newData.hasChildren(['updatedAt','stamps']) && newData.child('updatedAt').val() == now)",
           "updatedAt": {
-            ".validate": "newData.val() == now"
+            ".validate": "newData.getPriority() == null && (newData.val() == now)"
           },
           "stamps": {
-            ".validate": "newData.hasChildren()",
+            ".validate": "newData.getPriority() == null && (newData.hasChildren())",
             "$slot": {
-              ".validate": "$slot.matches(/^[0-4]$/) && newData.hasChildren(['anchor','x','y','kind','angle','createdAt'])",
+              ".validate": "newData.getPriority() == null && ($slot.matches(/^[0-4]$/) && newData.hasChildren(['anchor','x','y','kind','angle','createdAt']))",
               "anchor": {
-                ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9-]{1,96}$/)"
+                ".validate": "newData.getPriority() == null && (newData.isString() && newData.val().matches(/^[a-z0-9-]{1,96}$/))"
               },
               "x": {
-                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1"
+                ".validate": "newData.getPriority() == null && (newData.isNumber() && newData.val() >= 0 && newData.val() <= 1)"
               },
               "y": {
-                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1"
+                ".validate": "newData.getPriority() == null && (newData.isNumber() && newData.val() >= 0 && newData.val() <= 1)"
               },
               "kind": {
-                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5 && newData.val() % 1 == 0"
+                ".validate": "newData.getPriority() == null && (newData.isNumber() && newData.val() >= 0 && newData.val() <= 5 && newData.val() % 1 == 0)"
               },
               "angle": {
-                ".validate": "newData.isNumber() && newData.val() >= -20 && newData.val() <= 20"
+                ".validate": "newData.getPriority() == null && (newData.isNumber() && newData.val() >= -20 && newData.val() <= 20)"
               },
               "createdAt": {
-                ".validate": "newData.isNumber() && (newData.val() == now || (data.exists() && newData.val() == data.val()))"
+                ".validate": "newData.getPriority() == null && (newData.isNumber() && (newData.val() == now || (data.exists() && newData.val() == data.val())))"
               },
               "$other": {
                 ".validate": false
@@ -42,7 +42,7 @@
             }
           },
           "avatar": {
-            ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/)"
+            ".validate": "newData.getPriority() == null && (newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/))"
           },
           "$other": {
             ".validate": false
@@ -54,12 +54,12 @@
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
         ".write": "auth != null && auth.uid == $uid && auth.token.firebase.sign_in_provider == 'google.com' && newData.exists() && (!data.exists() || now >= data.child('at').val() + 1000)",
-        ".validate": "newData.hasChildren(['at','prev']) && newData.child('at').val() == now && ((!data.exists() && newData.child('prev').val() == 0) || (data.exists() && newData.child('prev').val() == data.child('at').val()))",
+        ".validate": "newData.getPriority() == null && (newData.hasChildren(['at','prev']) && newData.child('at').val() == now && ((!data.exists() && newData.child('prev').val() == 0) || (data.exists() && newData.child('prev').val() == data.child('at').val())))",
         "at": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.getPriority() == null && (newData.isNumber())"
         },
         "prev": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.getPriority() == null && (newData.isNumber())"
         },
         "$other": {
           ".validate": false

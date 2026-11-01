@@ -14,6 +14,21 @@ import {
 
 const KEY_PATTERN = /^[a-z0-9-]+$/;
 
+// A write can attach a `.priority` to any node, and no type or $other check sees it, yet the
+// public stream delivers it to every visitor. So every validated node under a visitor's own
+// paths also requires that no priority is set.
+function withoutPriority(node) {
+  const out = {};
+  for (const [key, value] of Object.entries(node))
+    out[key] =
+      key === '.validate' && typeof value === 'string'
+        ? `newData.getPriority() == null && (${value})`
+        : value && typeof value === 'object' && !Array.isArray(value)
+          ? withoutPriority(value)
+          : value;
+  return out;
+}
+
 /** @param {readonly string[]} pageKeys every page that may hold stickers (see stampPageKeys) */
 export function buildRules(pageKeys) {
   if (!pageKeys.length) throw Error('No pages');
@@ -37,7 +52,7 @@ export function buildRules(pageKeys) {
           // Public reads are bounded to the 100 most recently updated visitors.
           '.read':
             "query.orderByChild == 'updatedAt' && query.limitToLast != null && query.limitToLast <= 100",
-          $uid: {
+          $uid: withoutPriority({
             '.read': 'auth != null && auth.uid == $uid',
             // Google accounts only, own record only, and only together with a throttle update.
             '.write': `${signedInOwner} && (!newData.exists() || ${throttled})`,
@@ -71,13 +86,13 @@ export function buildRules(pageKeys) {
               '.validate': 'newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/)',
             },
             $other: { '.validate': false },
-          },
+          }),
         },
       },
       // The time of each account's last write. It outlives deleted records, and `prev` must be
       // the value read before writing (a compare-and-swap between tabs).
       throttle: {
-        $uid: {
+        $uid: withoutPriority({
           '.read': 'auth != null && auth.uid == $uid',
           '.write': `${signedInOwner} && newData.exists() && (!data.exists() || now >= data.child('at').val() + ${WRITE_INTERVAL_MS})`,
           '.validate':
@@ -85,7 +100,7 @@ export function buildRules(pageKeys) {
           at: { '.validate': 'newData.isNumber()' },
           prev: { '.validate': 'newData.isNumber()' },
           $other: { '.validate': false },
-        },
+        }),
       },
     },
   };

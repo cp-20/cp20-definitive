@@ -130,6 +130,31 @@ if (google) {
     await expect(put(record({ ...stamp, html: '<script>' })), 401, 'extra stamp data denied');
     await expect(put(record(stamp, { avatar: 'https://example.com/a.png' })), 401, 'non-hash avatar denied');
     await expect(put(record(stamp, { email: 'a@example.com' })), 401, 'extra record data denied');
+    // A priority slips past type and $other checks and would reach every subscriber.
+    const big = 'p'.repeat(4096);
+    await expect(put(record(stamp, { '.priority': big })), 401, 'record priority denied');
+    await expect(
+      put({ ...record(stamp), stamps: { 0: stamp, '.priority': big } }),
+      401,
+      'stamps priority denied',
+    );
+    await expect(put(record({ ...stamp, '.priority': big })), 401, 'slot priority denied');
+    for (const field of ['anchor', 'x', 'kind', 'createdAt'])
+      await expect(
+        put(record({ ...stamp, [field]: { '.value': stamp[field], '.priority': 'p' } })),
+        401,
+        `${field} priority denied`,
+      );
+    await expect(
+      put(record(stamp, { avatar: { '.value': avatar, '.priority': 'p' } })),
+      401,
+      'avatar priority denied',
+    );
+    {
+      const body = writeBody('home', uid, record(stamp), null);
+      body[throttlePath(uid)] = { ...body[throttlePath(uid)], '.priority': big };
+      await expect(request('', 'PATCH', body, google), 401, 'throttle priority denied');
+    }
     await expect(
       put({ updatedAt: { '.sv': 'timestamp' }, stamps: { 5: stamp }, avatar }),
       401,

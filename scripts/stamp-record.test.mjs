@@ -5,6 +5,17 @@ const stamp = { anchor: 'intro', x: 0.5, y: 0.5, kind: 0, angle: 0, createdAt: 1
 assert.deepEqual(stampEntries(null), []);
 assert.deepEqual(stampEntries({ stamps: [null, stamp, null] }), [['1', stamp]]);
 assert.deepEqual(stampEntries({ stamps: { 0: null, 4: stamp } }), [['4', stamp]]);
+test('stickers the rules would not accept are dropped', () => {
+  const odd = (fields) => stampEntries({ stamps: { 0: { ...stamp, ...fields } } });
+  assert.deepEqual(odd({ x: { '.value': 0.5, '.priority': 'p' } }), []);
+  assert.deepEqual(odd({ kind: { '.value': 0, '.priority': 'p' } }), []);
+  assert.deepEqual(odd({ angle: { '.value': 0, '.priority': 'p' } }), []);
+  assert.deepEqual(odd({ createdAt: { '.sv': 'timestamp' } }), []);
+  assert.deepEqual(odd({ kind: 1.5 }), []);
+  assert.deepEqual(odd({ anchor: 'Not An Anchor' }), []);
+  assert.deepEqual(odd({ y: NaN }), []);
+  assert.deepEqual(stampEntries({ stamps: { 0: stamp, '.priority': 'junk', 7: stamp } }), [['0', stamp]]);
+});
 const remaining = Object.fromEntries(stampEntries({ stamps: [null, stamp] }));
 delete remaining['1'];
 assert.equal(Object.keys(remaining).length, 0, 'removing the last occupied slot must delete the record');

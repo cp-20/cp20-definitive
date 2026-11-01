@@ -1,7 +1,25 @@
-import { STAMP_SLOTS as SLOTS } from './stamp-limits.mjs';
+import { ANCHOR_PATTERN, MAX_ANGLE, STAMP_SLOTS as SLOTS, STICKER_KIND_COUNT } from './stamp-limits.mjs';
+const anchorPattern = new RegExp(ANCHOR_PATTERN);
+const fraction = (v) => typeof v === 'number' && v >= 0 && v <= 1;
+// What the rules accept. Anything else (e.g. a `{".value", ".priority"}` pair from the stream)
+// is dropped, so it can neither break the drawing nor be written back.
+const wellFormed = (slot, s) =>
+  SLOTS.includes(slot) &&
+  !!s &&
+  typeof s === 'object' &&
+  typeof s.anchor === 'string' &&
+  anchorPattern.test(s.anchor) &&
+  fraction(s.x) &&
+  fraction(s.y) &&
+  Number.isInteger(s.kind) &&
+  s.kind >= 0 &&
+  s.kind < STICKER_KIND_COUNT &&
+  typeof s.angle === 'number' &&
+  Math.abs(s.angle) <= MAX_ANGLE &&
+  Number.isFinite(s.createdAt);
 // Firebase may encode numeric slot keys as an array with null holes.
 export const stampEntries = (record) =>
-  Object.entries(record?.stamps || {}).filter(([, stamp]) => stamp != null);
+  Object.entries(record?.stamps || {}).filter(([slot, stamp]) => wellFormed(slot, stamp));
 const visual = ['anchor', 'x', 'y', 'kind', 'angle'];
 // The stored sticker in `target`'s slot is still the one the visitor saw (not a newer one a
 // second tab put in the same slot).
