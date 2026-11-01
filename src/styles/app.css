@@ -1044,6 +1044,7 @@
   }
   .featured-tab:active .project-spot {
     transform: rotate(-6deg) scale(0.92);
+    transition-duration: var(--t-press);
   }
   .featured-tab[aria-selected='true'] {
     color: var(--ink);
@@ -2532,7 +2533,7 @@
       transition-delay: 350ms;
     }
   }
-  /* The sticker in hand. Its transform is driven by a spring in Stamps.tsx. */
+  /* The sticker in hand. Its transform is driven by a spring in hand.ts. */
   .sticker-ghost {
     position: fixed;
     z-index: 70;
@@ -2544,10 +2545,10 @@
     height: 46px;
     margin: -23px 0 0 -23px;
     pointer-events: none;
-    will-change: transform;
   }
   .sticker-ghost[data-active] {
     display: grid;
+    will-change: transform;
   }
   /* One sticker only, so its raised shadow can ease in as it is picked up. */
   .sticker-ghost .sticker {
