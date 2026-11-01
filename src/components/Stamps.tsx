@@ -48,7 +48,8 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     [spoken, setSpoken] = createSignal(''),
     // The sticker stream's state, kept apart so it never hides a sign-in or saving message.
     [connection, setConnection] = createSignal(''),
-    [failed, setFailed] = createSignal<Operation | null>(null),
+    // Saves that failed, oldest first; one retry sends them all again in order.
+    [failed, setFailed] = createSignal<readonly Operation[]>([]),
     [revision, setRevision] = createSignal(0),
     [nudge, setNudge] = createSignal(0),
     [held, setHeld] = createSignal<Held | null>(null),
@@ -77,6 +78,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   const {
     account,
     signingIn,
+    restoring,
     connect: connectAccount,
     signIn,
     signOut,
@@ -233,6 +235,11 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     document.addEventListener('pointermove', hover, { passive: true });
     document.addEventListener('pointerdown', tap, { passive: true });
     document.addEventListener('keydown', key);
+    // Saves lost to a dropped connection are sent again as soon as it is back.
+    const online = () => {
+      if (failed().length && account()) retryFailed();
+    };
+    window.addEventListener('online', online);
     window.addEventListener('resize', measureCover);
     const covered = new ResizeObserver(measureCover);
     if (sheet) covered.observe(sheet);
@@ -245,6 +252,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       clearTimeout(peekTimer);
       window.removeEventListener('resize', reposition);
       document.removeEventListener('keydown', key);
+      window.removeEventListener('online', online);
       document.removeEventListener('pointermove', hover);
       document.removeEventListener('pointerdown', tap);
       window.removeEventListener('resize', measureCover);
@@ -278,7 +286,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
   function enqueue(op: Operation) {
     setOperations((list) => [...list, op]);
     setMessage('');
-    setFailed(null);
     writes = writes
       .then(async () => {
         const delay = writeDelay(lastWrite);
@@ -309,10 +316,22 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       })
       .catch(() => {
         setOperations((list) => list.filter((item) => item.id !== op.id));
-        setFailed(op);
-        setMessage('保存できませんでした');
+        setFailed((list) => [...list, op]);
       });
   }
+  function retryFailed() {
+    const list = failed();
+    setFailed([]);
+    for (const op of list) enqueue({ ...op, id: crypto.randomUUID() });
+  }
+  // Failed saves belong to the account that made them.
+  createEffect(owner, () => {
+    setFailed([]);
+  });
+  const failure = () => {
+    const count = failed().length;
+    return count > 1 ? `${count}件保存できませんでした` : count ? '保存できませんでした' : '';
+  };
   function put(
     x: number,
     y: number,
@@ -770,12 +789,12 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
                 <button
                   class="sticker-login"
                   data-nudge={nudge() % 2 ? 'a' : nudge() ? 'b' : undefined}
-                  disabled={signingIn()}
+                  disabled={signingIn() || restoring()}
                   onPointerDown={() => void connectAccount()}
                   onClick={signIn}
                 >
                   <Icon name="LogIn" size={15} />
-                  Google でログイン
+                  {restoring() ? 'ログインしています…' : 'Google でログイン'}
                 </button>
               }
             >
@@ -861,16 +880,14 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           </div>
           {/* Only problems are spelled out here; saving shows on the pips and the sticker itself,
               and placing or peeling is spoken through the status line next to the overlay. */}
-          <p class="stamp-status" role="status" data-idle={message() || connection() ? undefined : 'true'}>
-            {message() || connection()}
-            <Show when={failed()}>
-              <button
-                class="stamp-retry"
-                onClick={() => {
-                  const op = failed();
-                  if (op) enqueue({ ...op, id: crypto.randomUUID() });
-                }}
-              >
+          <p
+            class="stamp-status"
+            role="status"
+            data-idle={message() || failure() || connection() ? undefined : 'true'}
+          >
+            {message() || failure() || connection()}
+            <Show when={failed().length}>
+              <button class="stamp-retry" onClick={retryFailed}>
                 再試行
               </button>
             </Show>

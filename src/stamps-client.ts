@@ -4,7 +4,12 @@ import { moveIn, placeIn, removeFrom, stampEntries } from './data/stamp-record.m
 import { deadline, reconnectDelay } from './data/resilience.mjs';
 import { recordPath, throttlePath, writeBody, writeWithRetry } from './data/stamp-write.mjs';
 import { pageKey } from './data/site-pages.mjs';
-import { SIGN_IN_TIMEOUT_MS as SIGN_IN_TIMEOUT } from './data/stamp-limits.mjs';
+import {
+  AUTH_TIMEOUT_MS as AUTH_TIMEOUT,
+  REQUEST_TIMEOUT_MS as REQUEST_TIMEOUT,
+  SIGN_IN_TIMEOUT_MS as SIGN_IN_TIMEOUT,
+  STREAM_STALL_MS,
+} from './data/stamp-limits.mjs';
 import type { Auth, User } from 'firebase/auth';
 import type { Account, PlacedStamp, Stamp } from './data/stamp-types';
 type RecordData = { updatedAt: number; stamps: Record<string, Stamp>; avatar?: string };
@@ -43,11 +48,20 @@ export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void
   // EventSource retries network drops by itself, but closes for good on an HTTP error or a
   // wrong content type (a captive portal's HTML page). Those, and a cancelled listener, are
   // retried here with a backoff, and straight away once the device comes back online.
+  // While the browser is reconnecting by itself nothing is reported, unless it takes a while.
   let attempts = 0,
-    retry: ReturnType<typeof setTimeout> | undefined;
+    retry: ReturnType<typeof setTimeout> | undefined,
+    stalled: ReturnType<typeof setTimeout> | undefined;
   const lost = (source: EventSource) => {
+    if (source !== stream) return;
+    if (source.readyState !== EventSource.CLOSED) {
+      stalled ??= setTimeout(() => {
+        stalled = undefined;
+        if (source === stream && source.readyState !== EventSource.OPEN) fail();
+      }, STREAM_STALL_MS);
+      return;
+    }
     fail();
-    if (source !== stream || source.readyState !== EventSource.CLOSED) return;
     source.close();
     stream = undefined;
     clearTimeout(retry);
@@ -55,13 +69,18 @@ export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void
   };
   const resume = () => {
     clearTimeout(retry);
-    retry = undefined;
+    clearTimeout(stalled);
+    retry = stalled = undefined;
     render.cancel();
     stream?.close();
     stream = undefined;
     if (document.hidden) return;
     const source = new EventSource(url);
     stream = source;
+    source.onopen = () => {
+      clearTimeout(stalled);
+      stalled = undefined;
+    };
     source.addEventListener('put', (e) => {
       attempts = 0;
       change(e as MessageEvent, 'put');
@@ -82,6 +101,7 @@ export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void
   window.addEventListener('online', online);
   return () => {
     clearTimeout(retry);
+    clearTimeout(stalled);
     render.cancel();
     stream?.close();
     document.removeEventListener('visibilitychange', resume);
@@ -101,7 +121,8 @@ function loadAuth() {
     ]);
     const app = getApps().find((a) => a.name === 'cp20-portfolio') || initializeApp(config, 'cp20-portfolio');
     const instance = sdk.getAuth(app);
-    await instance.authStateReady();
+    // A hung token refresh would otherwise keep a returning visitor waiting for 30 seconds.
+    await deadline(instance.authStateReady(), AUTH_TIMEOUT);
     return { auth: instance, sdk };
   })().catch((error) => {
     auth = undefined;
@@ -156,14 +177,14 @@ const settled = (value: unknown): value is RecordData | null =>
 async function transaction(path: string, update: (data: RecordData | null) => unknown) {
   const identity = await currentUser();
   const page = pageKey(path);
-  const token = await identity.getIdToken();
+  const token = await deadline(identity.getIdToken(), REQUEST_TIMEOUT);
   const at = (location: string) => {
     const url = new URL(`${config.databaseURL}/${location}.json`);
     url.searchParams.set('auth', token);
     return url;
   };
   const read = async (location: string) => {
-    const response = await fetch(at(location), { signal: AbortSignal.timeout(15000) });
+    const response = await fetch(at(location), { signal: AbortSignal.timeout(REQUEST_TIMEOUT) });
     if (!response.ok) throw Error('Cannot read own stamps');
     return response.json();
   };
@@ -176,7 +197,7 @@ async function transaction(path: string, update: (data: RecordData | null) => un
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(writeBody(page, identity.uid, data, throttle)),
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT),
         });
         // Denied: another tab wrote in between, or the last write was under a second ago.
         if (saved.status === 401 || saved.status === 403) return { denied: true };

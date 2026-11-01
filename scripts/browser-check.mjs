@@ -540,6 +540,18 @@ try {
   await expect(page.locator('.stamp-status')).toContainText('保存できませんでした', { timeout: 20000 });
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '再試行' })).toBeVisible();
+  // A second failure while the first is waiting keeps both, and one retry sends both again.
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.stamp-status')).toContainText('2件保存できませんでした', { timeout: 20000 });
+  await page.unroute('https://**.firebasedatabase.app/**');
+  const writesBeforeRetry = db.writes;
+  await page.getByRole('button', { name: '再試行' }).click();
+  await expect(page.locator('.stamp-retry')).toHaveCount(0);
+  await expect(page.locator('[data-pending=true]')).toHaveCount(0, { timeout: 20000 });
+  await expect.poll(() => db.writes - writesBeforeRetry, { timeout: 20000 }).toBe(2);
+  await expect(page.locator('.stamp-status')).not.toContainText('保存できませんでした');
   // An in-app link to a section moves focus to that section, so the next Tab continues there.
   await page.goto(origin + '/');
   await page.locator('a[href="/about#credits"]').first().focus();

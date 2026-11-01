@@ -3409,6 +3409,30 @@
       display: none;
     }
   }
+  /* High-contrast modes replace backgrounds with Canvas, so states shown by a fill alone
+     (the chosen filter, the used sticker pips, the current tab) are redrawn in system colors. */
+  @media (forced-colors: active) {
+    .source-chip[aria-pressed='true'],
+    .rail nav a[aria-current='page'] {
+      forced-color-adjust: none;
+      border-color: Highlight;
+      background: Highlight;
+      color: HighlightText;
+    }
+    .source-chip[aria-pressed='true'] small {
+      forced-color-adjust: none;
+      background: HighlightText;
+      color: Highlight;
+    }
+    .sticker-pips > span {
+      forced-color-adjust: none;
+      border-color: CanvasText;
+      background: Canvas;
+    }
+    .sticker-pips > span[data-used] {
+      background: CanvasText;
+    }
+  }
   /* Paper copies: the sticker tools and the skip link only make sense on screen. */
   @media print {
     .skip-link,

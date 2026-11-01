@@ -6,7 +6,7 @@ import type { Account } from '../../data/stamp-types';
 import { deadline } from '../../data/resilience.mjs';
 import { signInMessage } from '../../data/stamp-a11y.mjs';
 import { SIGN_IN_TIMEOUT_MS } from '../../data/stamp-limits.mjs';
-import { ACCOUNT_KEY, writePref } from './prefs';
+import { ACCOUNT_KEY, readPref, writePref } from './prefs';
 type Client = typeof import('../../stamps-client');
 // Creates signals: call it synchronously inside the component that owns them.
 export function createStampAccount(options: {
@@ -16,19 +16,24 @@ export function createStampAccount(options: {
 }) {
   const { client, onMessage, beforeSignOut } = options;
   const [account, setAccount] = createSignal<Account | null>(null),
-    [signingIn, setSigningIn] = createSignal(false);
+    [signingIn, setSigningIn] = createSignal(false),
+    // A visitor who signed in before is being signed back in: the sign-in button waits.
+    [restoring, setRestoring] = createSignal(false);
   let watching: Promise<void> | undefined;
   function connect() {
+    if (!watching && readPref(ACCOUNT_KEY)) setRestoring(true);
     return (watching ||= client()
       .then((api) =>
         api.watchAccount((next) => {
           setAccount(next);
+          setRestoring(false);
           writePref(ACCOUNT_KEY, next ? '1' : null);
         }),
       )
       .then(() => {})
       .catch(() => {
         watching = undefined;
+        setRestoring(false);
       }));
   }
   async function signIn() {
@@ -57,5 +62,5 @@ export function createStampAccount(options: {
       onMessage('ログアウトできませんでした');
     }
   }
-  return { account, signingIn, connect, signIn, signOut };
+  return { account, signingIn, restoring, connect, signIn, signOut };
 }
