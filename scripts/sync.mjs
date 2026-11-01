@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { syncMedia } from './media.mjs';
 import { mergeWorks } from '../src/data/site-pages.mjs';
-import { fetchGhostPosts } from './ghost.mjs';
+import { fetchTrapPosts } from './trap.mjs';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 
 const dataPath = new URL('../src/data/generated.json', import.meta.url);
@@ -49,18 +49,22 @@ export async function request(
     try {
       const headers = {
         'User-Agent': 'cp20-definitive-content-sync',
-        Accept: format === 'json' ? 'application/json' : 'application/rss+xml, application/xml',
+        Accept:
+          format === 'json'
+            ? 'application/json'
+            : format === 'html'
+              ? 'text/html'
+              : 'application/rss+xml, application/xml',
       };
       if (new URL(url).hostname === 'api.github.com' && process.env.GITHUB_TOKEN)
         headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
       const response = await fetcher(url, {
         headers: { ...headers, ...extraHeaders },
-        redirect: extraHeaders.Authorization ? 'manual' : 'follow',
+        redirect: 'follow',
         signal: AbortSignal.timeout(20000),
       });
-      if (extraHeaders.Authorization && response.status >= 300 && response.status < 400)
-        throw Object.assign(new Error('Admin API requires SSO authentication'), { code: 'AUTH_REDIRECT' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok)
+        throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status });
       let size = 0;
       const chunks = [];
       for await (const chunk of response.body) {
@@ -75,7 +79,7 @@ export async function request(
       const text = Buffer.concat(chunks).toString('utf8');
       return format === 'json' ? JSON.parse(text) : text;
     } catch (error) {
-      if (attempt === 1 || error.code === 'AUTH_REDIRECT') throw error;
+      if (attempt === 1 || error.status === 404) throw error;
       await new Promise((resolve) => setTimeout(resolve, 800));
     }
   }
@@ -107,7 +111,7 @@ const providers = {
       (_, rows) => rows.length === 100,
     ),
   'note.com': async () => parseFeed(await request('https://note.com/cp20/rss', 'xml'), 'note.com'),
-  'trap.jp': () => fetchGhostPosts(request, article),
+  'trap.jp': () => fetchTrapPosts(request, article),
   'sizu.me': async () => parseFeed(await request('https://sizu.me/cp20/rss', 'xml'), 'sizu.me'),
   'github.com': () =>
     paginated(
@@ -166,7 +170,7 @@ export async function collect(
           .filter((r) => !r.fork && !r.archived)
           .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       else {
-        // A complete Admin API snapshot is authoritative: remove unpublished or deleted posts.
+        // A complete author-page listing is authoritative: remove unpublished or deleted posts.
         // Posts a work links as related are kept, so the build's related-article check cannot jam every source.
         if (source === 'trap.jp') {
           const returned = new Set(result.value.map((a) => a.url));
@@ -184,12 +188,10 @@ export async function collect(
       next.sources[source] = {
         ...previous.sources[source],
         status: 'stale',
-        reason:
-          result.status === 'rejected' && result.reason?.code === 'AUTH_REDIRECT'
-            ? 'sso_required'
-            : 'unavailable',
+        reason: 'unavailable',
       };
-      console.warn(`::warning::${source}: fetch failed; keeping last successful data`);
+      const why = result.status === 'rejected' ? result.reason?.message : 'no items returned';
+      console.warn(`::warning::${source}: fetch failed (${why}); keeping last successful data`);
     }
   });
   if (!successes) throw new Error('All sources failed; snapshot was not changed');

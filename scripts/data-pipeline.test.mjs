@@ -8,7 +8,6 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parsePreview, dimensions } from './previews.mjs';
 import { ogImage } from './media.mjs';
-import { fetchGhostPosts } from './ghost.mjs';
 import { article, collect, parseFeed, request } from './sync.mjs';
 import { stripInvalidText } from '../src/data/normalize.mjs';
 
@@ -256,23 +255,6 @@ test('a run that only adds or drops WebP variants reports a change (so it is bui
   }
 });
 
-test('Ghost responses missing filter fields, or matching nothing, keep the previous snapshot', async () => {
-  const post = {
-    title: 't',
-    url: 'https://trap.jp/post/1/',
-    published_at: '2026-01-01',
-    status: 'published',
-    visibility: 'public',
-    authors: [{ slug: 'cp20' }],
-  };
-  const reply = (posts) => async () => ({ posts, meta: { pagination: { page: 1, next: null } } });
-  const { authors, ...withoutAuthors } = post;
-  await assert.rejects(fetchGhostPosts(reply([withoutAuthors]), article, key), /shape/);
-  await assert.rejects(fetchGhostPosts(reply([{ ...post, authors: [{ slug: 'other' }] }]), article, key));
-  assert.deepEqual(await fetchGhostPosts(reply([]), article, key), []);
-  assert.equal((await fetchGhostPosts(reply([post]), article, key)).length, 1);
-});
-
 test('a sudden large drop in trap.jp posts is stale unless explicitly allowed', async () => {
   const articles = Array.from({ length: 10 }, (_, i) =>
     article(`p${i}`, `https://trap.jp/post/${i}/`, '2025-01-01', 'trap.jp'),
@@ -412,7 +394,7 @@ test('committed track links are plain https://youtu.be/<id> URLs', async () => {
   for (const t of tracks) assert.match(t.link, /^https:\/\/youtu\.be\/[-_A-Za-z0-9]{11}$/);
 });
 
-test('a trap.jp post linked by a work survives when Ghost stops returning it', async () => {
+test('a trap.jp post linked by a work survives when the author pages stop listing it', async () => {
   const articles = Array.from({ length: 10 }, (_, i) =>
     article(`p${i}`, `https://trap.jp/post/${i}/`, '2025-01-01', 'trap.jp'),
   );

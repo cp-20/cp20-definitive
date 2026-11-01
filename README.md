@@ -16,14 +16,14 @@ npm run dev:worker
 
 ```sh
 npm run sync   # 記事・GitHub・おすすめ曲/漫画・サムネイルを取得
-npm test       # Ghost公開範囲、データ保持、OG解析、画像形式、スタンプ即時反映
+npm test       # 収集元の解析、データ保持、OG解析、画像形式、スタンプ即時反映
 npm run cache:images # 画像キャッシュだけ更新（通常はsyncが実行）
 npm run check  # Solidの型検査
 npm run rules  # database.rules.json をページ一覧から再生成（--check で差分の検査のみ）
 npm run build
 ```
 
-初期データを同梱しているため、Ghostキーなしでもビルドできます。キーがないとtraPの取得状態は「前回のデータを表示」になります。
+初期データを同梱しているため、収集なしでもビルドできます。
 
 ## 本番公開の初期設定
 
@@ -32,30 +32,26 @@ npm run build
 2026-10-06に `cp-20/cp20-definitive` の `main` とWorkerの接続を設定済みです。公開URLは [cp20-definitive.cp20.workers.dev](https://cp20-definitive.cp20.workers.dev/)。ルートディレクトリは `/`、ビルド・デプロイコマンドは下記のとおりです。非本番ブランチの自動ビルドは無効です。
 
 1. このフォルダをGitHubリポジトリの `main` に配置。
-2. GitHub Actions Secretsに `TRAP_GHOST_ADMIN_KEY` を登録（収集用）。
-3. Actionsにスナップショットを書き戻す権限を許可。ブランチ保護を使う場合も更新経路を確保。
-4. Cloudflareダッシュボードの **Workers & Pages → Create → Import a repository** で `cp-20/cp20-definitive` を接続し、次のように設定。
+2. Actionsにスナップショットを書き戻す権限を許可。ブランチ保護を使う場合も更新経路を確保。
+3. Cloudflareダッシュボードの **Workers & Pages → Create → Import a repository** で `cp-20/cp20-definitive` を接続し、次のように設定。
    - Worker名：`cp20-definitive`（`wrangler.jsonc` の `name` と一致させる。違うとビルドが失敗します）
    - Production branch：`main`
    - Build command：`npm run verify`（`npm run check`・`npm run build`・`npm test` を順に実行。テストはビルド結果も検査するためビルドの後。ViteのビルドはTypeScriptの型を検査しないため、`npm run build` だけだと型やテストが壊れた変更も公開されます。2026-10-06の接続時は `npm run build` で設定したため、ダッシュボードの Settings → Build で変更してください）
    - Deploy command：`npx wrangler deploy`
    - Node.js：`.node-version` の 24（Workers Buildsの既定も24）
    - 任意：Non-production branch builds を有効にすると、ブランチごとのプレビューURLで確認できます。
-5. GitHubのブランチ保護（またはRuleset）で `main` へのマージに `CI` ワークフローの `verify`・`browser`・`rules` ジョブを必須チェックにします。`.github/workflows/ci.yml` がすべてのPRと `main` へのpushで、Cloudflareと同じ `npm run verify`、ブラウザでの動作確認（下記「検証と素材」）、Realtime Databaseエミュレーターでのルールの検証（`scripts/stamps-rules.mjs`）を実行します。`rules` を必須にしないと、書込形式とルールが食い違ったPRもマージでき、`main` ではルールのデプロイだけが止まってクライアントは公開されてしまいます。必須チェックは `main` への直接pushも止めるため、スナップショットを書き戻す `github-actions[bot]`（3.の更新経路）はバイパス対象にしてください（収集側は `Refresh content` 内で、収集したスナップショットに同じ `npm run verify` を通してからコミットします）。
-6. workers.devで確認後、CloudflareのCustom Domainsで `cp20.dev` を接続。
+4. GitHubのブランチ保護（またはRuleset）で `main` へのマージに `CI` ワークフローの `verify`・`browser`・`rules` ジョブを必須チェックにします。`.github/workflows/ci.yml` がすべてのPRと `main` へのpushで、Cloudflareと同じ `npm run verify`、ブラウザでの動作確認（下記「検証と素材」）、Realtime Databaseエミュレーターでのルールの検証（`scripts/stamps-rules.mjs`）を実行します。`rules` を必須にしないと、書込形式とルールが食い違ったPRもマージでき、`main` ではルールのデプロイだけが止まってクライアントは公開されてしまいます。必須チェックは `main` への直接pushも止めるため、スナップショットを書き戻す `github-actions[bot]`（2.の更新経路）はバイパス対象にしてください（収集側は `Refresh content` 内で、収集したスナップショットに同じ `npm run verify` を通してからコミットします）。
+5. workers.devで確認後、CloudflareのCustom Domainsで `cp20.dev` を接続。
 
 ドメイン・既存本番サイト・みんなのものさしリポジトリの公開設定は変更していません。canonical / sitemap / robots / RSSは本番予定の `https://cp20.dev` を指します。
 
-### Ghost Admin API
+### traPブログ
 
-ローカルで収集する場合は `.env.example` を `.env.sync` にコピーし、キーを設定して `npm run sync`。チャットやソースにキーを書かないでください。`.env.sync` はWranglerが自動ロードするファイル名を避けており、収集用Nodeプロセスだけが読みます。`.env*` はGitと配布ZIPから除外します（空の `.env.example` のみ同梱）。
+traPの記事は公開の著者ページ `https://trap.jp/author/cp20/`（`/page/2/` 以降を404まで）から、タイトル・URL・公開日だけを取得します。キーは不要です。公開時刻は著者RSS（最新15件）から補い、RSSにない古い記事は著者ページに出る日付（日本時間）を使います。1ページ目が取得できない・カードの形式が変わった場合は失敗として前回のスナップショットを維持し、正常な全件取得後は一覧から消えた記事を除去します（作品の関連記事に指定した記事は保持）。
 
-- 接続先：`https://blog-admin.trap.jp/ghost/api/admin/posts/`
-- HS256 JWT、有効期限5分、`aud: /admin/`。キーは収集時だけ使用し、Workerやクライアントには渡しません。
-- `authors.slug:cp20+status:published+visibility:public`、`include=authors`、100件ずつ全ページ取得。
-- レスポンスでも著者・公開状態・公開範囲を再確認し、タイトル・URL・公開日・出典だけを保存。記事本文、著者メールなどは保存しません。
-- 正常な全件取得後はtraP記事を置き換え、削除・非公開の記事を一覧から除去。途中失敗・認証失敗では以前の公開スナップショットを維持。
-- キーを設定して実接続した結果、管理APIがGhostに到達する前にtraP SSOへHTTP 307で転送されることを確認（2026-09-27）。2026版と同じ形式でも同様です。キーの有効性・全件取得はまだ確認できず、正式なバッチ用API経路またはSSOサービス認証が必要です。認証先への転送には追従せずキーを別ホストへ送らない構成です。JWT、ページネーション、公開範囲、削除反映、障害時保持はテストで確認。
+以前は Ghost Admin API を使っていましたが、管理APIは traP SSO の内側にあり（Ghostに届く前にHTTP 307でログインへ転送）、定期収集では一度も成功していなかったため廃止しました。
+
+ローカルで収集する場合は `npm run sync`。GitHub APIの上限を増やしたいときだけ `.env.example` を `.env.sync` にコピーして `GITHUB_TOKEN` を設定します。
 
 ### 自動更新
 
@@ -65,7 +61,7 @@ npm run build
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Zenn・Qiita                      | 公開APIを全ページ取得                                                                                                  |
 | note・sizu.me                    | RSS。配信範囲から外れた過去記事を保持                                                                                  |
-| traP                             | Ghost Admin API。RSSは使用しない                                                                                       |
+| traP                             | 公開の著者ページを全ページ取得（公開時刻は著者RSSで補完）                                                              |
 | 公開コード                       | GitHub API。fork・archived以外の最近更新したリポジトリ                                                                 |
 | 好きな曲・漫画                   | 2026版の公開 `featured-tracks` / `featured-series` データ                                                              |
 | 漫画のサムネイル                 | 公式掲載ページの `og:image`。失敗時は前回URLを保持                                                                     |

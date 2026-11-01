@@ -41,7 +41,6 @@ jobs:
         run: npm run sync
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          TRAP_GHOST_ADMIN_KEY: ${{ secrets.TRAP_GHOST_ADMIN_KEY }}
           ALLOW_TRAP_SHRINK: ${{ inputs.allow_trap_shrink && '1' || '' }}
       # Validate the new snapshot with Cloudflare's build command (type check, build, then the
       # tests, which read the snapshot and dist) so a broken one never reaches main.
