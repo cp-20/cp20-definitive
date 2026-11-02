@@ -82,25 +82,18 @@ export function OriginalIcon(props: { url: string; name: string; placeholder?: b
 export function OGImage(props: {
   url: string;
   alt: string;
-  /** The image is an app icon (works.json `imageKind: "icon"`), not an OG card. */
-  icon?: boolean;
   priority?: boolean;
   eager?: boolean;
   sizes?: string;
 }) {
   const [failed, setFailed] = createSignal(false);
-  const icon = () => Boolean(props.icon);
   const image = responsive(props.sizes && previewFor(props.url)?.srcset, props.sizes);
   return (
     <div
-      class={['og-image', { unavailable: !previewFor(props.url)?.image || failed(), icon: icon() }]}
-      style={
-        icon()
-          ? { '--icon-size': `${previewFor(props.url)?.width}px` }
-          : {
-              '--image-ratio': `${previewFor(props.url)?.width || 1200} / ${previewFor(props.url)?.height || 630}`,
-            }
-      }
+      class={['og-image', { unavailable: !previewFor(props.url)?.image || failed() }]}
+      style={{
+        '--image-ratio': `${previewFor(props.url)?.width || 1200} / ${previewFor(props.url)?.height || 630}`,
+      }}
     >
       <Show
         when={previewFor(props.url)?.image && !failed()}

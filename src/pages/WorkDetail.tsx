@@ -2,8 +2,7 @@ import { Show } from 'solid-js';
 import Icon from '../components/Icon.tsx';
 import { OGImage, Postmark, postmarkDate, sizes } from '../components/Preview.tsx';
 import Brand from '../components/Brand.tsx';
-import { isIconImage } from '../content/icon-image.ts';
-import { articles, works } from '../content/content.ts';
+import { articles, works, workStack } from '../content/content.ts';
 import { splitLinks } from '../content/inline-links.ts';
 /* U+2060 WORD JOINER: no line break between a link's last character and its trailing arrow. */
 const WORD_JOINER = '\u2060';
@@ -31,13 +30,7 @@ export default function WorkDetail(props: { work: (typeof works)[number] }) {
         </div>
       </header>
       <div class="work-detail-hero" data-stamp-anchor="work-image">
-        <OGImage
-          url={w.url}
-          alt={`${w.title}のOG画像`}
-          icon={isIconImage(w)}
-          sizes={sizes.workHero}
-          priority
-        />
+        <OGImage url={w.url} alt={`${w.title}のOG画像`} sizes={sizes.workHero} priority />
         <Postmark date={postmarkDate(w.productionTime)} />
       </div>
       <div class="work-detail-layout">
@@ -45,12 +38,14 @@ export default function WorkDetail(props: { work: (typeof works)[number] }) {
           <dl class="work-facts">
             <dt>制作時期</dt>
             <dd>{w.productionTime.replace('now', '現在')}</dd>
-            <dt>使用技術</dt>
-            <dd>
-              {w.techStack.map((t) => (
-                <span>{t.label}</span>
-              ))}
-            </dd>
+            <Show when={workStack(w).length > 0}>
+              <dt>使用技術</dt>
+              <dd>
+                {workStack(w).map((t) => (
+                  <span>{t.label}</span>
+                ))}
+              </dd>
+            </Show>
             <dt>ソースコード</dt>
             <dd>
               {w.repositories.map((r) =>

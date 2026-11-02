@@ -32,6 +32,119 @@
       }
     ]
   },
+  "https://2025.cp20.dev/works/og/2023-portfolio.avif": {
+    "file": "/media/98b5cbc0827eb24240fd3b7b.avif",
+    "checkedAt": "2026-11-02T01:18:38.019Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/98b5cbc0827eb24240fd3b7b-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/98b5cbc0827eb24240fd3b7b-480w.webp",
+        "width": 480
+      }
+    ]
+  },
+  "https://2025.cp20.dev/works/og/2024-portfolio.avif": {
+    "file": "/media/e97b3a60e79992037e012bf7.avif",
+    "checkedAt": "2026-11-02T01:18:38.019Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/e97b3a60e79992037e012bf7-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/e97b3a60e79992037e012bf7-480w.webp",
+        "width": 480
+      }
+    ]
+  },
+  "https://2025.cp20.dev/works/og/2025-portfolio.avif": {
+    "file": "/media/c7876903fff051007fc02e6a.avif",
+    "checkedAt": "2026-11-02T01:18:37.966Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/c7876903fff051007fc02e6a-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/c7876903fff051007fc02e6a-480w.webp",
+        "width": 480
+      },
+      {
+        "file": "/media/c7876903fff051007fc02e6a-640w.webp",
+        "width": 640
+      }
+    ]
+  },
+  "https://2025.cp20.dev/works/og/c-compiler.avif": {
+    "file": "/media/ab39a7fdcd139df2b4bdb560.avif",
+    "checkedAt": "2026-11-02T01:18:38.148Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/ab39a7fdcd139df2b4bdb560-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/ab39a7fdcd139df2b4bdb560-480w.webp",
+        "width": 480
+      }
+    ]
+  },
+  "https://2025.cp20.dev/works/og/foodmoji.avif": {
+    "file": "/media/dd49454377ebae840cf3eef6.avif",
+    "checkedAt": "2026-11-02T01:18:38.221Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/dd49454377ebae840cf3eef6-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/dd49454377ebae840cf3eef6-480w.webp",
+        "width": 480
+      }
+    ]
+  },
+  "https://2025.cp20.dev/works/og/isuc.avif": {
+    "file": "/media/775ca00306fd9ab797c45246.avif",
+    "checkedAt": "2026-11-02T01:18:37.967Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/775ca00306fd9ab797c45246-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/775ca00306fd9ab797c45246-480w.webp",
+        "width": 480
+      }
+    ]
+  },
+  "https://2025.cp20.dev/works/og/wsh-scoring-tool.avif": {
+    "file": "/media/d1f79a457e1c053b3b8cb442.avif",
+    "checkedAt": "2026-11-02T01:18:37.968Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/d1f79a457e1c053b3b8cb442-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/d1f79a457e1c053b3b8cb442-480w.webp",
+        "width": 480
+      },
+      {
+        "file": "/media/d1f79a457e1c053b3b8cb442-640w.webp",
+        "width": 640
+      }
+    ]
+  },
   "https://2026.cp20.dev/apple-touch-icon.png": {
     "file": "/media/77e35c5775a657273824c53b.png",
     "checkedAt": "2026-10-26T04:53:10.979Z",
@@ -342,11 +455,6 @@
       }
     ]
   },
-  "https://cp20.gallerycdn.vsassets.io/extensions/cp20/foodmoji-vscode/1.0.0/1732020741627/Microsoft.VisualStudio.Services.Icons.Default": {
-    "file": "/media/35da753f75b8481058308e20.png",
-    "checkedAt": "2026-10-31T16:53:28.358Z",
-    "width": 256
-  },
   "https://dicespec.app/apple-touch-icon.png": {
     "file": "/media/7ae41b75ee2cad38e5964530.png",
     "checkedAt": "2026-10-26T04:53:11.174Z",
@@ -380,11 +488,6 @@
         "width": 960
       }
     ]
-  },
-  "https://github.githubassets.com/favicons/favicon.png": {
-    "file": "/media/74cf90ac2fe6624ab1056cac.png",
-    "checkedAt": "2026-10-26T04:53:11.028Z",
-    "width": 32
   },
   "https://i.ytimg.com/vi/ATBCJbb1RT0/sddefault.jpg": {
     "file": "/media/df34a13ce2802b91fc4d3f4d.jpg",
@@ -743,52 +846,6 @@
       }
     ]
   },
-  "https://opengraph.githubassets.com/1be798cc289ee8962ada64c20e88478c69a55750d2ea25ab02fb5a0e42aeaa93/cp-20/c-compiler": {
-    "file": "/media/1f66ad757ac7f5ddbb14de54.png",
-    "checkedAt": "2026-10-26T04:53:11.316Z",
-    "width": 1200,
-    "variants": [
-      {
-        "file": "/media/1f66ad757ac7f5ddbb14de54-320w.webp",
-        "width": 320
-      },
-      {
-        "file": "/media/1f66ad757ac7f5ddbb14de54-480w.webp",
-        "width": 480
-      },
-      {
-        "file": "/media/1f66ad757ac7f5ddbb14de54-640w.webp",
-        "width": 640
-      },
-      {
-        "file": "/media/1f66ad757ac7f5ddbb14de54-960w.webp",
-        "width": 960
-      }
-    ]
-  },
-  "https://opengraph.githubassets.com/5b015bb344dffbaee22c005a34c31dbe0517f463773a07cd80304268c6e80fba/traP-jp/isuc": {
-    "file": "/media/a5b0b629a83a286bb876133f.png",
-    "checkedAt": "2026-10-27T12:18:32.641Z",
-    "width": 1200,
-    "variants": [
-      {
-        "file": "/media/a5b0b629a83a286bb876133f-320w.webp",
-        "width": 320
-      },
-      {
-        "file": "/media/a5b0b629a83a286bb876133f-480w.webp",
-        "width": 480
-      },
-      {
-        "file": "/media/a5b0b629a83a286bb876133f-640w.webp",
-        "width": 640
-      },
-      {
-        "file": "/media/a5b0b629a83a286bb876133f-960w.webp",
-        "width": 960
-      }
-    ]
-  },
   "https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-user-contents.imgix.net%2Fhttps%253A%252F%252Fcdn.qiita.com%252Fassets%252Fpublic%252Fadvent-calendar-ogp-background-7940cd1c8db80a7ec40711d90f43539e.jpg%3Fixlib%3Drb-4.1.1%26w%3D1200%26blend64%3DaHR0cHM6Ly9xaWl0YS11c2VyLXByb2ZpbGUtaW1hZ2VzLmltZ2l4Lm5ldC9odHRwcyUzQSUyRiUyRnFpaXRhLWltYWdlLXN0b3JlLnMzLmFwLW5vcnRoZWFzdC0xLmFtYXpvbmF3cy5jb20lMkYwJTJGMTkwOTE1NSUyRnByb2ZpbGUtaW1hZ2VzJTJGMTY1NTM3NTM1Mz9peGxpYj1yYi00LjEuMSZhcj0xJTNBMSZmaXQ9Y3JvcCZtYXNrPWVsbGlwc2UmYmc9RkZGRkZGJmZtPXBuZzMyJnM9MjU1Y2IwYWM0NGJkMmJhYmJmZmY1M2FkMWYwZDc3NzI%26blend-x%3D120%26blend-y%3D467%26blend-w%3D82%26blend-h%3D82%26blend-mode%3Dnormal%26s%3Dbb09f830d187783db853940f40a9eb85?ixlib=rb-4.1.1&w=1200&fm=jpg&mark64=aHR0cHM6Ly9xaWl0YS11c2VyLWNvbnRlbnRzLmltZ2l4Lm5ldC9-dGV4dD9peGxpYj1yYi00LjEuMSZ3PTk2MCZoPTMyNCZ0eHQ9JUU4JTg3JUFBJUU0JUJEJTlDJUUzJTgzJTk3JUUzJTgzJUFEJUUzJTgyJUIwJUUzJTgzJUE5JUUzJTgzJTlGJUUzJTgzJUIzJUUzJTgyJUIwJUU4JUE4JTgwJUU4JUFBJTlFTGF6ZSVFMyU4MSVBNyVFOCVCNiU4NSVFNyVCNCU5QSVFNyVBOSU4RCVFNSU4OCU4NiVFMyU4MiU5MiVFOCVBNyVBMyVFMyU4MSU4NCVFMyU4MSVBNiVFMyU4MSVCRiVFMyU4MSU5RiVFOCVBOSVCMSZ0eHQtYWxpZ249bGVmdCUyQ3RvcCZ0eHQtY29sb3I9JTIzM0EzQzNDJnR4dC1mb250PUhpcmFnaW5vJTIwU2FucyUyMFc2JnR4dC1zaXplPTU2JnR4dC1wYWQ9MCZzPTM3YTY2Y2I4MjY2ZTY0NWE1OWUxM2VkOTIzMThiMjU1&mark-x=120&mark-y=112&blend64=aHR0cHM6Ly9xaWl0YS11c2VyLWNvbnRlbnRzLmltZ2l4Lm5ldC9-dGV4dD9peGxpYj1yYi00LjEuMSZ3PTgzOCZoPTU4JnR4dD0lNDBjcDIwJnR4dC1jb2xvcj0lMjMzQTNDM0MmdHh0LWZvbnQ9SGlyYWdpbm8lMjBTYW5zJTIwVzYmdHh0LXNpemU9MzYmdHh0LXBhZD0wJnM9MGQ3ZWM2MTIzN2JiN2ZkOGMwZjExODU5NzYwMTdhNTQ&blend-x=242&blend-y=480&blend-w=838&blend-h=46&blend-fit=crop&blend-crop=left%2Cbottom&blend-mode=normal&s=0863641739ba91df8c4b9e3c0482d133": {
     "file": "/media/1c0e29c3b66bd3967714b7c9.jpg",
     "checkedAt": "2026-10-26T04:53:13.041Z",
@@ -993,6 +1050,28 @@
       {
         "file": "/media/126c6f6e40344c61bd244c83-960w.webp",
         "width": 960
+      }
+    ]
+  },
+  "https://raw.githubusercontent.com/cp-20/foodmoji-vscode/main/assets/icon.png": {
+    "file": "/media/35da753f75b8481058308e20.png",
+    "checkedAt": "2026-11-02T01:18:38.065Z",
+    "width": 256,
+    "variants": [
+      {
+        "file": "/media/35da753f75b8481058308e20-96w.webp",
+        "width": 96
+      }
+    ]
+  },
+  "https://raw.githubusercontent.com/cp-20/read-stack/main/apps/web/public/apple-touch-icon.png": {
+    "file": "/media/2ffc4de6df867c97776791cd.png",
+    "checkedAt": "2026-11-02T01:18:38.053Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/2ffc4de6df867c97776791cd-96w.webp",
+        "width": 96
       }
     ]
   },

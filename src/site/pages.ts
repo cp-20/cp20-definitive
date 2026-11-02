@@ -40,7 +40,7 @@ export const tabIndex = (path: string) =>
 export const sectionName = (path: string) =>
   path === '/' ? 'home' : path.startsWith('/works') ? 'works' : path.slice(1) || 'home';
 
-/** Throws if an id is malformed or used twice, or an `imageKind` is unknown. */
+/** Throws if an id is malformed or used twice. */
 export function validateWorks<T extends { id: string }>(works: readonly T[]): T[] {
   const seen = new Set<string>();
   for (const work of works) {
@@ -50,9 +50,6 @@ export function validateWorks<T extends { id: string }>(works: readonly T[]): T[
         `Invalid work id ${JSON.stringify(id)}: use lower-case letters, digits and single hyphens (e.g. "my-app-2")`,
       );
     if (seen.has(id)) throw Error(`Duplicate work id "${id}"`);
-    const kind = (work as { imageKind?: unknown }).imageKind;
-    if (kind !== undefined && kind !== 'icon')
-      throw Error(`Invalid imageKind ${JSON.stringify(kind)} for work "${id}": omit it or use "icon"`);
     seen.add(id);
   }
   return [...works];

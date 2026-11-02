@@ -74,6 +74,7 @@
     "title": "cp20.dev (2025)",
     "description": "世の中にはね、無駄なことなんかひとつだってないのよ、きっと",
     "url": "https://2025.cp20.dev",
+    "image": "https://2025.cp20.dev/works/og/2025-portfolio.avif",
     "repositories": ["https://github.com/cp-20/2025.cp20.dev"],
     "productionTime": "2025/03/26 ～ 2025/03/31",
     "techStack": [
@@ -117,6 +118,8 @@
     "title": "isuc",
     "description": "Auto-caching database driver for ISUCON",
     "url": "https://github.com/traP-jp/isuc",
+    "image": "https://2025.cp20.dev/works/og/isuc.avif",
+    "icon": null,
     "repositories": ["https://github.com/traP-jp/isuc"],
     "productionTime": "2025/01/13 ～ 2025/01/19",
     "techStack": [
@@ -138,7 +141,8 @@
     "title": "Foodmoji",
     "description": "あなたのコミットメッセージを絵文字で彩る",
     "url": "https://marketplace.visualstudio.com/items?itemName=cp20.foodmoji-vscode",
-    "imageKind": "icon",
+    "image": "https://2025.cp20.dev/works/og/foodmoji.avif",
+    "icon": "https://raw.githubusercontent.com/cp-20/foodmoji-vscode/main/assets/icon.png",
     "repositories": ["https://github.com/cp-20/foodmoji-vscode"],
     "productionTime": "2024/11/19",
     "techStack": [
@@ -203,6 +207,8 @@
     "title": "Web Speed Hackathon スコアリングツール",
     "description": "Web Speed Hackathon の非公式スコアリングツール",
     "url": "https://wsh.trap.show",
+    "image": "https://2025.cp20.dev/works/og/wsh-scoring-tool.avif",
+    "icon": null,
     "repositories": ["https://github.com/cp-20/wsh-scoring-tool"],
     "productionTime": "2024/08/19 ～ 2024/09/22",
     "techStack": [
@@ -259,6 +265,8 @@
     "title": "自作Cコンパイラ",
     "description": "セルフホストできるCコンパイラ",
     "url": "https://github.com/cp-20/c-compiler",
+    "image": "https://2025.cp20.dev/works/og/c-compiler.avif",
+    "icon": null,
     "repositories": ["https://github.com/cp-20/c-compiler"],
     "productionTime": "2024/04/01 ～ 2024/08/22",
     "techStack": [
@@ -353,6 +361,7 @@
     "title": "cp20.dev (2024)",
     "description": "しーぴーくんのお手製サイト",
     "url": "https://2024.cp20.dev",
+    "image": "https://2025.cp20.dev/works/og/2024-portfolio.avif",
     "repositories": ["https://github.com/cp-20/2024.cp20.dev"],
     "productionTime": "2024/03/11 ～ 2024/03/31 (実際は4日ぐらい)",
     "techStack": [
@@ -467,6 +476,7 @@
     "title": "ReadStack",
     "description": "技術記事の未読消化サポートアプリ（サービス終了）",
     "url": "https://read-stack.cp20.dev",
+    "icon": "https://raw.githubusercontent.com/cp-20/read-stack/main/apps/web/public/apple-touch-icon.png",
     "repositories": [
       "https://github.com/cp-20/read-stack",
       "https://github.com/cp-20/read-stack-extension",
@@ -710,6 +720,7 @@
     "title": "cp20.dev (2023)",
     "description": "しーぴーくんの生態がわかるサイト",
     "url": "https://2023.cp20.dev",
+    "image": "https://2025.cp20.dev/works/og/2023-portfolio.avif",
     "repositories": ["https://github.com/cp-20/2023.cp20.dev"],
     "productionTime": "2023/03/19 ～ 2023/03/27",
     "techStack": [
