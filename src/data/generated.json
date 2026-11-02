@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-02T06:13:35.746Z",
+  "updatedAt": "2026-11-02T16:09:04.263Z",
   "articles": [
     {
       "title": "ISUCON2026 に AI Agent と出て学生2位でした",
@@ -471,7 +471,7 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-02T04:28:52Z",
+      "updatedAt": "2026-11-02T06:14:16Z",
       "fork": false,
       "archived": false
     },
@@ -1349,39 +1349,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T06:13:35.746Z",
+      "lastSuccess": "2026-11-02T16:09:04.263Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T06:13:35.746Z",
+      "lastSuccess": "2026-11-02T16:09:04.263Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T06:13:35.746Z",
+      "lastSuccess": "2026-11-02T16:09:04.263Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T06:13:35.746Z",
+      "lastSuccess": "2026-11-02T16:09:04.263Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T06:13:35.746Z",
+      "lastSuccess": "2026-11-02T16:09:04.263Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T06:13:35.746Z",
+      "lastSuccess": "2026-11-02T16:09:04.263Z",
       "count": 128
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T06:13:35.746Z",
+      "lastSuccess": "2026-11-02T16:09:04.263Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-02T06:13:35.746Z"
+  "checkedAt": "2026-11-02T16:09:04.263Z"
 }
