@@ -663,5 +663,19 @@
     "width": 1200,
     "height": 630,
     "checkedAt": "2026-11-01T14:27:54.233Z"
+  },
+  "https://neon-overdrive.lolipop-now.app/": {
+    "image": "https://neon-overdrive.lolipop-now.app/og-image-20260922.png",
+    "icon": null,
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-02T03:22:46.555Z"
+  },
+  "https://is-general-kanji.lolipop-now.app/": {
+    "image": "https://is-general-kanji.lolipop-now.app/og/default.png",
+    "icon": "https://is-general-kanji.lolipop-now.app/apple-touch-icon.png",
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-02T03:22:47.863Z"
   }
 }
