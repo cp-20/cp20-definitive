@@ -49,7 +49,7 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
               GitHub
             </a>
             <a href="https://twitter.com/__cp20__">
-              <Brand url="https://twitter.com/__cp20__" />X / Twitter
+              <Brand url="https://twitter.com/__cp20__" />Twitter
             </a>
             <a href="https://mixi.social/@cp20">
               <Brand url="https://mixi.social/@cp20" />

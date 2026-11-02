@@ -5,9 +5,10 @@ import { mangaCovers } from '../data/editorial.ts';
 import { seriesCover } from '../content/images.ts';
 import { spineAuthor } from '../content/series-credit.ts';
 import series from '../data/series.json';
-// Spines on a shelf; choosing one pulls that book out so its cover faces you. The shelf is a
-// tablist like the featured works: one stop for Tab, the arrow keys (and Home/End) move along it,
-// and the caption beside it (below it on narrower screens) is the panel. The chosen book's name
+// Spines on a shelf; choosing one pulls that book out so its cover faces you. Every book keeps its
+// slot; the books after the open one only slide over (data-after), so the page never reflows. The
+// shelf is a tablist like the featured works: one stop for Tab, the arrow keys (and Home/End) move
+// along it, and the caption on the board (below it on phones) is the panel. The chosen book's name
 // is read on focus, so the caption is not a live region (it would read the title a second time).
 // On phones the shelf scrolls sideways, and the chosen book is scrolled into view once it has
 // opened.
@@ -29,8 +30,9 @@ export default function Bookshelf() {
   };
   const reveal = (e: TransitionEvent) => {
     const book = e.target as HTMLElement;
-    if (e.propertyName === 'flex-basis' && book.getAttribute('aria-selected') === 'true')
-      book.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    if (e.propertyName === 'clip-path' && book.getAttribute('aria-selected') === 'true')
+      // The cover, not the slot: the slot is only a spine wide.
+      book.querySelector('.book-cover')!.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
   };
   return (
     <div class="shelf-row">
@@ -50,6 +52,7 @@ export default function Bookshelf() {
               role="tab"
               aria-label={`${s.title} ${s.author}`}
               aria-selected={open() === i() ? 'true' : 'false'}
+              data-after={i() > open() || undefined}
               aria-controls="book-caption"
               tabindex={open() === i() ? 0 : -1}
               style={{ '--spine': mangaCovers[s.title]?.spine, '--spine-ink': mangaCovers[s.title]?.ink }}
