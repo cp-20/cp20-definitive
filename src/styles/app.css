@@ -1198,6 +1198,15 @@
   .article-row[hidden] {
     display: none;
   }
+  /* Filtered out: kept where it was, out of the flow, while it fades (reflow.ts). */
+  .article-list {
+    position: relative;
+  }
+  .article-row.leaving {
+    display: grid;
+    position: absolute;
+    pointer-events: none;
+  }
   /* Every stamp has the OG card's shape (the image is fitted inside), so the strips line up. */
   .article-row > .og-image {
     grid-area: 1 / 1;

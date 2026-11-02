@@ -1,7 +1,8 @@
-import { createSignal, createStore, createMemo, createEffect, onSettled, For, Show } from 'solid-js';
+import { createSignal, createStore, createMemo, createEffect, onSettled, flush, For, Show } from 'solid-js';
 import Icon from '../components/Icon.tsx';
 import { ArticleRows } from '../components/ArticleRows.tsx';
 import Brand from '../components/Brand.tsx';
+import { reflow } from '../components/reflow.ts';
 import { articles, type Article } from '../content/content.ts';
 export default function Articles() {
   const [filters, setFilters] = createStore({ source: '', order: 'newest' });
@@ -33,6 +34,13 @@ export default function Articles() {
   const ordered = createMemo(() => (filters.order === 'oldest' ? [...articles].reverse() : articles));
   const shown = (a: Article) => !filters.source || a.source === filters.source;
   const count = createMemo(() => articles.filter(shown).length);
+  let results!: HTMLDivElement;
+  // A choice made here moves the cards to their new places (a page arrival just shows them).
+  const choose = (change: (d: typeof filters) => void) =>
+    reflow(results.querySelector('.article-list')!, () => {
+      setFilters(change);
+      flush();
+    });
   return (
     <div class="wrap">
       <header data-stamp-anchor="heading" class="page-heading">
@@ -50,7 +58,7 @@ export default function Articles() {
                   class="source-chip"
                   aria-pressed={filters.source === source ? 'true' : 'false'}
                   onClick={() =>
-                    setFilters((d) => {
+                    choose((d) => {
                       d.source = source;
                     })
                   }
@@ -74,11 +82,12 @@ export default function Articles() {
                 <select
                   id="article-sort"
                   value={filters.order}
-                  onChange={(e) =>
-                    setFilters((d) => {
-                      d.order = e.currentTarget.value;
-                    })
-                  }
+                  onChange={(e) => {
+                    const order = e.currentTarget.value;
+                    choose((d) => {
+                      d.order = order;
+                    });
+                  }}
                 >
                   <option value="newest">新しい順</option>
                   <option value="oldest">古い順</option>
@@ -88,9 +97,9 @@ export default function Articles() {
             </div>
           </div>
         </div>
-        <div class="article-results">
+        <div class="article-results" ref={results}>
           {/* The rows stay mounted: filtering hides them and sorting moves them (keyed), so the
-              list is never rebuilt and only the rows that newly come into view settle in. */}
+              list is never rebuilt and the cards glide to their new places (reflow.ts). */}
           <ArticleRows items={ordered()} shown={shown} />
           <Show when={!count()}>
             <p id="article-empty" class="empty-state">

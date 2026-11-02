@@ -75,6 +75,7 @@ export function StampLayer(props: {
               ref={input.pinScroll}
               class="placed-stamp"
               data-stamp-id={s().id}
+              data-anchor={s().anchor}
               data-owned={props.isOwn(s()) ? 'true' : undefined}
               data-pending={s().owner === 'local' ? 'true' : undefined}
               data-fresh={props.isFresh(s().key) ? 'true' : undefined}
