@@ -1,6 +1,12 @@
 {
-  "updatedAt": "2026-11-02T04:28:18.932Z",
+  "updatedAt": "2026-11-02T06:13:35.746Z",
   "articles": [
+    {
+      "title": "ISUCON2026 に AI Agent と出て学生2位でした",
+      "url": "https://blog.cp20.dev/posts/isucon2026/",
+      "date": "2026-11-01T15:00:00.000Z",
+      "source": "blog.cp20.dev"
+    },
     {
       "title": "AI Agent 時代こそ個人ブログ",
       "url": "https://blog.cp20.dev/posts/personal-blog-in-ai-agent-era/",
@@ -465,7 +471,7 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-02T04:27:52Z",
+      "updatedAt": "2026-11-02T04:28:52Z",
       "fork": false,
       "archived": false
     },
@@ -1343,39 +1349,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T04:28:18.932Z",
+      "lastSuccess": "2026-11-02T06:13:35.746Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T04:28:18.932Z",
+      "lastSuccess": "2026-11-02T06:13:35.746Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T04:28:18.932Z",
+      "lastSuccess": "2026-11-02T06:13:35.746Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T04:28:18.932Z",
+      "lastSuccess": "2026-11-02T06:13:35.746Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T04:28:18.932Z",
+      "lastSuccess": "2026-11-02T06:13:35.746Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T04:28:18.932Z",
+      "lastSuccess": "2026-11-02T06:13:35.746Z",
       "count": 128
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T04:28:18.932Z",
-      "count": 4
+      "lastSuccess": "2026-11-02T06:13:35.746Z",
+      "count": 5
     }
   },
-  "checkedAt": "2026-11-02T04:28:18.932Z"
+  "checkedAt": "2026-11-02T06:13:35.746Z"
 }
