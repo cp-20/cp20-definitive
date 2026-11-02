@@ -13,6 +13,19 @@ export type Milestone = {
 };
 export const milestones: Milestone[] = [
   {
+    year: '2026.10',
+    grade: '大学4年',
+    title: 'ISUCON2026 学生2位',
+    text: 'pirosiki と2人のチームで、最終 211,213 点。',
+    detail: [
+      'チーム [object Object] として pirosiki と2人で出場し、BeReal 風の SNS「ISUReal」を8時間かけて高速化した。複数の AI Agent を並列に動かすため、ベンチのロックやタスクボードなどの道具を事前に用意して臨み、最終 211,213 点で学生2位になった。',
+      '投稿画像の JPEG 検証は判定結果を変えずに最適化し、標準ライブラリを複製した検証器で、412KB の画像の検証を 27.6ms から 1.15ms（約24倍）にした。',
+    ],
+    links: [
+      { label: 'ISUCON2026 に AI Agent と出て学生2位でした', url: 'https://blog.cp20.dev/posts/isucon2026/' },
+    ],
+  },
+  {
     year: '2026.09',
     grade: '大学4年',
     title: 'LayerX インターン',
