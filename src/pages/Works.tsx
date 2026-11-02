@@ -8,8 +8,7 @@ import {
   sizes,
 } from '../components/Preview.tsx';
 import Brand from '../components/Brand.tsx';
-import { isIconImage } from '../content/icon-image.ts';
-import { works, repos, formatDate } from '../content/content.ts';
+import { works, repos, formatDate, keyStack } from '../content/content.ts';
 import { featuredIds } from '../data/editorial.ts';
 import { nameParts } from '../content/name-breaks.ts';
 // GitHub's language colours, for the dot beside each repository.
@@ -56,12 +55,9 @@ export default function Works() {
                 </h2>
                 <p>{w.description}</p>
                 <div class="tag-line">
-                  {w.techStack
-                    .filter((t) => ['language', 'main', 'framework'].includes(t.type))
-                    .slice(0, 4)
-                    .map((t) => (
-                      <span>{t.label}</span>
-                    ))}
+                  {keyStack(w).map((label) => (
+                    <span>{label}</span>
+                  ))}
                 </div>
               </div>
               <Show when={true}>
@@ -69,7 +65,6 @@ export default function Works() {
                   <OGImage
                     url={w.url}
                     alt=""
-                    icon={isIconImage(w)}
                     sizes={sizes.workGrid}
                     priority={i() === 0}
                     eager={i() < firstRowWorks}

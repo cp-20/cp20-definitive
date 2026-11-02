@@ -1,8 +1,7 @@
 import { createSignal, For } from 'solid-js';
 import Icon from './Icon.tsx';
-import { isIconImage } from '../content/icon-image.ts';
 import { OGImage, OriginalIcon, Postmark, postmarkDate, sizes } from './Preview.tsx';
-import { works } from '../content/content.ts';
+import { keyStack, works } from '../content/content.ts';
 import { featuredIds } from '../data/editorial.ts';
 import { fingerSpeed, swipeTurn } from './deck-swipe.ts';
 export const projects = featuredIds.map((id) => works.find((w) => w.id === id)!);
@@ -129,13 +128,7 @@ export default function Projects() {
               inert={selected() !== i()}
             >
               <div class="featured-image">
-                <OGImage
-                  url={p.url}
-                  alt={`${p.title}のOG画像`}
-                  icon={isIconImage(p)}
-                  sizes={sizes.featured}
-                  priority={i() === 0}
-                />
+                <OGImage url={p.url} alt={`${p.title}のOG画像`} sizes={sizes.featured} priority={i() === 0} />
                 <Postmark date={postmarkDate(p.productionTime)} />
               </div>
               <div class="featured-copy">
@@ -145,13 +138,7 @@ export default function Projects() {
                   {p.title}
                 </h3>
                 <p class="project-description">{p.description}</p>
-                <p class="project-stack">
-                  {p.techStack
-                    .filter((t) => ['language', 'framework', 'main'].includes(t.type))
-                    .slice(0, 3)
-                    .map((t) => t.label)
-                    .join(' / ')}
-                </p>
+                <p class="project-stack">{keyStack(p).join(' / ')}</p>
                 <div class="project-links">
                   <a class="primary-button" href={p.url}>
                     作品を開く

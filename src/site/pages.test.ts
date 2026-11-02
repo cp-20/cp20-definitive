@@ -34,13 +34,6 @@ describe('validateWorks', () => {
   test('同じ id の作品が2つあれば失敗にする', () => {
     assert.throws(() => validateWorks([{ id: 'a' }, { id: 'a' }]), /Duplicate work id "a"/);
   });
-
-  test('imageKind は icon だけを受け付ける', () => {
-    assert.throws(
-      () => validateWorks([{ id: 'a', imageKind: 'square' }]),
-      /Invalid imageKind "square" for work "a"/,
-    );
-  });
 });
 
 describe('mergeWorks', () => {

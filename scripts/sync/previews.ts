@@ -62,6 +62,16 @@ export function parsePreview(html: string, url: string): Preview {
     height: size(metas['og:image:height'], 630),
   };
 }
+/**
+ * A work's eyecatch and icon stated in works.json (`image`, `icon`) win over its page's: for a
+ * page whose own are missing or not the work's (a repository page offers GitHub's). `"icon": null`
+ * states that the work has none.
+ */
+export const withStated = (preview: Preview, work?: { image?: string; icon?: string | null }): Preview => ({
+  ...preview,
+  ...(work?.image && { image: work.image }),
+  ...(work && 'icon' in work && { icon: work.icon ?? null }),
+});
 // Only pages the site still links to keep metadata, so a replaced URL's image is not cached forever.
 export const keepReferenced = <T>(previews: Record<string, T>, urls: string[]) => {
   const linked = new Set(urls);
@@ -82,12 +92,23 @@ export async function syncPreviews(request: Request, force = false) {
       ),
     ),
   ];
+  const stated = new Map<string, { image?: string; icon?: string | null }>(
+    works.map((w: { url: string }) => [w.url, w]),
+  );
   const next = keepReferenced(previous, urls);
   let fetched = 0;
+  // A newly stated image or icon is picked up on the next run.
+  const restated = (url: string) => {
+    const p = previous[url];
+    return !!p && JSON.stringify(withStated(p, stated.get(url))) !== JSON.stringify(p);
+  };
   // Refresh successes weekly; retry missing/failed entries on the next scheduled run.
   const queue = urls.filter(
     (url) =>
-      force || !previous[url]?.image || Date.now() - Date.parse(previous[url].checkedAt!) > 7 * 86400000,
+      force ||
+      !previous[url]?.image ||
+      restated(url) ||
+      Date.now() - Date.parse(previous[url].checkedAt!) > 7 * 86400000,
   );
   await Promise.all(
     Array.from({ length: 6 }, async () => {
@@ -103,7 +124,7 @@ export async function syncPreviews(request: Request, force = false) {
             },
             htmlLimit,
           );
-          const preview = parsePreview(html, url);
+          const preview = withStated(parsePreview(html, url), stated.get(url));
           const old = previous[url];
           const keepOldImage = () => {
             // Image, width and height travel together so a stale image never gets new dimensions.

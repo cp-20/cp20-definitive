@@ -706,17 +706,7 @@
     object-fit: contain;
     background: #fff;
   }
-  /* An app icon instead of an OG image: centred on the placeholder pattern, never above its own size. */
-  .og-image.icon img {
-    top: 50%;
-    left: 50%;
-    width: auto;
-    height: min(var(--icon-size), 64%);
-    translate: -50% -50%;
-    background: none;
-  }
-  .og-image.unavailable::after,
-  .og-image.icon::after {
+  .og-image.unavailable::after {
     content: '';
     position: absolute;
     z-index: -1;

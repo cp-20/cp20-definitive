@@ -5,7 +5,14 @@ import assert from 'node:assert/strict';
 import works from '../../src/data/works.json' with { type: 'json' };
 import previews from '../../src/data/previews.json' with { type: 'json' };
 import tracks from '../../src/data/tracks.json' with { type: 'json' };
-import { keepReferenced, ogImage, parsePreview, type syncMedia, type syncPreviews } from './previews.ts';
+import {
+  keepReferenced,
+  ogImage,
+  parsePreview,
+  withStated,
+  type syncMedia,
+  type syncPreviews,
+} from './previews.ts';
 import { sandbox } from './sandbox.ts';
 
 afterEach(() => {
@@ -74,6 +81,42 @@ test('サイトがもうリンクしないページの情報は捨て、残り�
   );
 });
 
+describe('works.json に書いた画像とアイコン', () => {
+  const page = {
+    image: 'https://github.com/og.png',
+    icon: 'https://github.com/favicon.png',
+    width: 1200,
+    height: 600,
+  };
+
+  test('ページのものより優先する', () => {
+    const { image, icon } = withStated(page, {
+      image: 'https://a.example/og.png',
+      icon: 'https://a.example/i.png',
+    });
+    assert.deepEqual([image, icon], ['https://a.example/og.png', 'https://a.example/i.png']);
+  });
+
+  test('icon: null ならアイコンを付けない', () => {
+    assert.equal(withStated(page, { icon: null }).icon, null);
+  });
+
+  test('書いていなければページのものを使う', () => {
+    assert.deepEqual(withStated(page, {}), page);
+    assert.deepEqual(withStated(page, undefined), page);
+  });
+
+  test('リポジトリのページの作品は GitHub のアイコンを使わない', () => {
+    const icons: Record<string, { icon: string | null }> = previews;
+    assert.deepEqual(
+      works
+        .filter((w) => icons[w.url]?.icon?.startsWith('https://github.githubassets.com/'))
+        .map((w) => w.id),
+      [],
+    );
+  });
+});
+
 describe('Marketplace の作品', () => {
   const shown: Record<string, { image: string | null }> = previews;
   const listed = works.filter((w) => new URL(w.url).hostname === 'marketplace.visualstudio.com');
@@ -87,12 +130,14 @@ describe('Marketplace の作品', () => {
     );
   });
 
-  test('プレビュー画像は cp20 の配信元から取る', () => {
+  test('プレビュー画像は works.json に書いた画像か cp20 の配信元から取る', () => {
     assert.deepEqual(
       listed
         .filter(
           (w) =>
-            shown[w.url]?.image && new URL(shown[w.url].image!).hostname !== 'cp20.gallerycdn.vsassets.io',
+            shown[w.url]?.image &&
+            shown[w.url].image !== w.image &&
+            new URL(shown[w.url].image!).hostname !== 'cp20.gallerycdn.vsassets.io',
         )
         .map((w) => w.id),
       [],

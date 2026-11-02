@@ -4,98 +4,98 @@
     "icon": "https://trap-conference.trap.show/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-26T04:52:59.769Z"
+    "checkedAt": "2026-11-02T01:18:34.523Z"
   },
   "https://2026.cp20.dev": {
     "image": "https://cp20.dev/og.png",
     "icon": "https://2026.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-26T04:52:58.883Z"
+    "checkedAt": "2026-11-02T01:18:33.603Z"
   },
   "https://wsh.trap.show": {
-    "image": null,
+    "image": "https://2025.cp20.dev/works/og/wsh-scoring-tool.avif",
     "icon": null,
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T15:41:34.444Z"
+    "checkedAt": "2026-11-02T01:18:34.850Z"
   },
   "https://2025.cp20.dev": {
-    "image": null,
+    "image": "https://2025.cp20.dev/works/og/2025-portfolio.avif",
     "icon": "https://2025.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T15:41:35.827Z"
+    "checkedAt": "2026-11-02T01:18:36.041Z"
   },
   "https://traqing.cp20.dev": {
     "image": "https://traqing.cp20.dev/og.png",
     "icon": "https://traqing.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-26T04:53:00.258Z"
+    "checkedAt": "2026-11-02T01:18:36.465Z"
   },
   "https://github.com/traP-jp/isuc": {
-    "image": "https://opengraph.githubassets.com/5b015bb344dffbaee22c005a34c31dbe0517f463773a07cd80304268c6e80fba/traP-jp/isuc",
-    "icon": "https://github.githubassets.com/favicons/favicon.png",
-    "width": 1200,
-    "height": 600,
-    "checkedAt": "2026-10-26T22:42:59.616Z"
-  },
-  "https://read-stack.cp20.dev": {
-    "image": "https://read-stack.cp20.dev/ogp.png",
+    "image": "https://2025.cp20.dev/works/og/isuc.avif",
     "icon": null,
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-26T04:53:00.762Z"
+    "checkedAt": "2026-11-02T01:18:33.671Z"
+  },
+  "https://read-stack.cp20.dev": {
+    "image": "https://read-stack.cp20.dev/ogp.png",
+    "icon": "https://raw.githubusercontent.com/cp-20/read-stack/main/apps/web/public/apple-touch-icon.png",
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-02T01:18:36.181Z"
   },
   "https://dicespec.app": {
     "image": "https://dicespec.app/ogp.png",
     "icon": "https://dicespec.app/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-26T04:53:00.639Z"
+    "checkedAt": "2026-11-02T01:18:36.698Z"
   },
   "https://mission.trap.games": {
     "image": "https://mission.trap.games/ogp.png",
     "icon": "https://mission.trap.games/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-26T04:53:02.079Z"
+    "checkedAt": "2026-11-02T01:18:37.424Z"
   },
   "https://github.com/cp-20/c-compiler": {
-    "image": "https://opengraph.githubassets.com/1be798cc289ee8962ada64c20e88478c69a55750d2ea25ab02fb5a0e42aeaa93/cp-20/c-compiler",
-    "icon": "https://github.githubassets.com/favicons/favicon.png",
+    "image": "https://2025.cp20.dev/works/og/c-compiler.avif",
+    "icon": null,
     "width": 1200,
-    "height": 600,
-    "checkedAt": "2026-10-26T04:53:00.259Z"
+    "height": 630,
+    "checkedAt": "2026-11-02T01:18:34.705Z"
   },
   "https://tokyo-tech-syllabus.cp20.dev": {
     "image": "https://tokyo-tech-syllabus.cp20.dev/ogp.png",
     "icon": "https://tokyo-tech-syllabus.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-26T04:53:00.687Z"
+    "checkedAt": "2026-11-02T01:18:35.959Z"
   },
   "https://2023.cp20.dev": {
-    "image": null,
+    "image": "https://2025.cp20.dev/works/og/2023-portfolio.avif",
     "icon": "https://2023.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T15:41:35.062Z"
+    "checkedAt": "2026-11-02T01:18:36.980Z"
   },
   "https://minna-no-monosashi.lolipop-now.app/": {
     "image": "https://minna-no-monosashi.lolipop-now.app/og/default?v=4",
     "icon": "https://minna-no-monosashi.lolipop-now.app/apple-touch-icon.png?v=3",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-26T04:53:03.472Z"
+    "checkedAt": "2026-11-02T01:18:36.554Z"
   },
   "https://no-log-chat.vercel.app": {
     "image": "https://no-log-chat.vercel.app/ogp.png",
     "icon": "https://no-log-chat.vercel.app/favicons/apple-touch-icon-57x57.png",
     "width": 960,
     "height": 540,
-    "checkedAt": "2026-10-26T04:53:01.484Z"
+    "checkedAt": "2026-11-02T01:18:37.518Z"
   },
   "https://trap.jp/post/2984/": {
     "image": "https://trap.jp/content/images/2026/07/og.png",
@@ -109,7 +109,7 @@
     "icon": "https://titech-lecture-list.vercel.app/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-10-26T04:53:01.408Z"
+    "checkedAt": "2026-11-02T01:18:37.152Z"
   },
   "https://sizu.me/cp20/posts/x9hd6795sfiz": {
     "image": "https://sizu.me/api/og-image/528fa40b678a?avatarUrl=https%3A%2F%2Fr2.sizu.me%2Fusers%2F452%2Favatar.png%3Fv%3D1700030367107&theme=user&username=cp20",
@@ -158,7 +158,7 @@
     "icon": "https://v1-dicespec.vercel.app/favicons/apple-touch-icon-57x57.png",
     "width": 960,
     "height": 540,
-    "checkedAt": "2026-10-26T04:53:02.277Z"
+    "checkedAt": "2026-11-02T01:18:37.564Z"
   },
   "https://note.com/cp20/n/nbaf3d44086ba": {
     "image": "https://assets.st-note.com/production/uploads/images/224786945/rectangle_large_type_2_64e76f7970a742aad3476e0d09c152c2.jpeg?fit=bounds&quality=85&width=1280",
@@ -490,18 +490,18 @@
     "checkedAt": "2026-10-26T04:53:10.088Z"
   },
   "https://2024.cp20.dev": {
-    "image": null,
+    "image": "https://2025.cp20.dev/works/og/2024-portfolio.avif",
     "icon": "https://2024.cp20.dev/apple-touch-icon.png",
     "width": 1200,
     "height": 630,
-    "checkedAt": "2026-11-01T15:41:36.368Z"
+    "checkedAt": "2026-11-02T01:18:37.296Z"
   },
   "https://marketplace.visualstudio.com/items?itemName=cp20.foodmoji-vscode": {
-    "image": "https://cp20.gallerycdn.vsassets.io/extensions/cp20/foodmoji-vscode/1.0.0/1732020741627/Microsoft.VisualStudio.Services.Icons.Default",
-    "icon": null,
-    "width": 256,
-    "height": 256,
-    "checkedAt": "2026-10-31T16:53:39.408Z"
+    "image": "https://2025.cp20.dev/works/og/foodmoji.avif",
+    "icon": "https://raw.githubusercontent.com/cp-20/foodmoji-vscode/main/assets/icon.png",
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-02T01:18:33.913Z"
   },
   "https://trap.jp/post/2313/": {
     "image": "https://trap.jp/content/images/2024/08/1000015504.png",
