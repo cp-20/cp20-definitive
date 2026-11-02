@@ -3,8 +3,8 @@
 // the client bundle only carries their paths.
 const brands: Record<string, string> = {
   'github.com': 'github.svg',
-  'twitter.com': 'x.svg',
-  'x.com': 'x.svg',
+  'twitter.com': 'twitter.svg',
+  'x.com': 'twitter.svg',
   'mixi.social': 'mixi2.svg',
   'zenn.dev': 'zenn.svg',
   'qiita.com': 'qiita.svg',

@@ -18,7 +18,7 @@ export const milestones: Milestone[] = [
     title: 'LayerX インターン',
     text: 'バクラクの Enabling チームで、社内の AI エージェント基盤 haro を開発。',
     detail: [
-      '約1ヶ月、バクラクの Enabling チームで働いた。社内の AI エージェント基盤 haro の v2 で、チャットから登録できるカスタムスキルと、PR の自動レビューやコンフリクト解消をする GitHub 連携をつくった。',
+      '2026年9月から約1ヶ月の短期インターンでバクラクの Enabling チームに入り、その後も継続している。社内の AI エージェント基盤 haro の v2 で、チャットから登録できるカスタムスキルと、PR の自動レビューやコンフリクト解消をする GitHub 連携をつくった。',
       'CI ではチェックアウトを 65.9 秒から 17.5 秒に縮め、フロントエンドのビルドとテストも Vitest の設定見直しと TypeScript 7 への移行で約2割速くした。',
     ],
     links: [
@@ -50,6 +50,14 @@ export const milestones: Milestone[] = [
     ],
   },
   {
+    year: '2025.02',
+    grade: '大学2年',
+    title: 'CyberAgent CA Tech JOB',
+    text: 'ABEMA の Web TV チームでのインターン。',
+    detail: ['ABEMA の Web TV チームに配属され、約10日間働いた。Lint ルールの修正などに取り組んだ。'],
+    links: [],
+  },
+  {
     year: '2024.12',
     grade: '大学2年',
     title: 'MIXI Bug Shooting Challenge 優勝',
@@ -67,10 +75,7 @@ export const milestones: Milestone[] = [
     detail: [
       'クラウドセキュリティ製品 Shisho Cloud のチームで、2024年4月から2025年9月まで学業と並行して働いた。ほかのインターン生がセキュリティ診断をするなか、1人だけソフトウェアエンジニアとして開発に入っていた。',
     ],
-    links: [
-      { label: '悠々自適【2024まとめ & 2025抱負】', url: 'https://sizu.me/cp20/posts/xmxfwixh3adh' },
-      { label: '祭りのあとで【2025まとめ & 2026抱負】', url: 'https://sizu.me/cp20/posts/uuo635tes2wc' },
-    ],
+    links: [],
   },
   {
     year: '2024.03',
@@ -108,10 +113,7 @@ export const milestones: Milestone[] = [
       'NICT の若手セキュリティイノベーター育成プログラム。開発駆動コースで、元の記事を読むだけで未読管理が半自動で進む ReadStack を、ブラウザ拡張とスマホアプリとしてつくった。',
       '2024年3月に修了し、2024年度はアシスタントとして関わった。',
     ],
-    links: [
-      { label: '2023年度の成果物', url: 'https://sechack365.nict.go.jp/achievement/2023/#area_24dn' },
-      { label: '悠々自適【2024まとめ & 2025抱負】', url: 'https://sizu.me/cp20/posts/xmxfwixh3adh' },
-    ],
+    links: [{ label: '2023年度の成果物', url: 'https://sechack365.nict.go.jp/achievement/2023/#area_24dn' }],
   },
   {
     year: '2023.04',
