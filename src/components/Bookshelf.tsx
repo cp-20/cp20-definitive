@@ -55,7 +55,13 @@ export default function Bookshelf() {
               data-after={i() > open() || undefined}
               aria-controls="book-caption"
               tabindex={open() === i() ? 0 : -1}
-              style={{ '--spine': mangaCovers[s.title]?.spine, '--spine-ink': mangaCovers[s.title]?.ink }}
+              style={{
+                '--spine': mangaCovers[s.title]?.spine,
+                '--spine-ink': mangaCovers[s.title]?.ink,
+                '--length': [...s.title].length,
+                '--face-x': mangaCovers[s.title]?.face[0] ?? 0.5,
+                '--face-y': mangaCovers[s.title]?.face[1] ?? 0.35,
+              }}
               onClick={() => setOpen(i())}
             >
               <img
@@ -68,15 +74,22 @@ export default function Bookshelf() {
                 loading="lazy"
               />
               <span class="book-spine" aria-hidden="true">
-                <img
-                  class="book-art"
-                  src={seriesCover(s)?.src}
-                  {...responsive(seriesCover(s)?.srcset, sizes.bookCover)}
-                  alt=""
-                  loading="lazy"
-                />
-                <strong>{s.title}</strong>
-                <small>{spineAuthor(s.author)}</small>
+                {/* As on a real volume: a character at the head, the title set to fill the spine,
+                    the author at its foot, the volume number, and the band the label sits in. */}
+                <span class="book-art">
+                  <img
+                    src={seriesCover(s)?.src}
+                    {...responsive(seriesCover(s)?.srcset, sizes.bookCover)}
+                    alt=""
+                    loading="lazy"
+                  />
+                </span>
+                <span class="book-name">
+                  <strong>{s.title}</strong>
+                  <small>{spineAuthor(s.author)}</small>
+                </span>
+                {/* Every cover on the shelf is a first volume. */}
+                <span class="book-volume">1</span>
               </span>
             </button>
           )}

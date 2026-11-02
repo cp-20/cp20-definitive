@@ -2232,8 +2232,8 @@
      Every book keeps a fixed slot the width of a spine, so nothing on the page is laid out again
      on a change: the open book's cover spills to the right of its slot and is revealed with
      clip-path, and the books after it slide over with a transform. Each spine takes its colours
-     from the book's own cover, with a piece of the cover art at the top as on the real volumes,
-     and is shaded so it reads as round. */
+     from the book's own cover and is laid out like a real volume's (character, title, author,
+     number, label band); the books differ a little in height and fading, and are shaded round. */
   .shelf-row {
     --shelf-height: 314px;
     /* The covers' own proportions (480×682), so the open book is never cropped out of shape. */
@@ -2241,6 +2241,11 @@
     --spine-width: 60px;
     --gap: 6px;
     --board: 12px;
+    --band: 30px;
+    /* The title's size: as large as the spine is wide allows, and no larger than its length
+       leaves room for beside the picture, the number and the band. */
+    --title-max: 1.25rem;
+    --title-room: calc(var(--spine-width) + 22px + var(--band) + 40px);
     display: grid;
     grid-template-columns: auto minmax(120px, 1fr);
     gap: 0 24px;
@@ -2293,10 +2298,14 @@
       translate var(--t-hover) var(--ease);
   }
   .book:nth-child(3n + 1) {
-    --h: 0.9;
+    --h: 0.93;
+    --fade: 6%;
   }
   .book:nth-child(3n + 2) {
-    --h: 0.97;
+    --h: 0.965;
+  }
+  .book:nth-child(4n + 3) {
+    --fade: 3%;
   }
   .book[data-after] {
     transform: translateX(calc(var(--open) - var(--spine-width)));
@@ -2353,49 +2362,95 @@
   .book-spine {
     width: 100%;
     height: calc(var(--shelf-height) * var(--h, 0.94));
-    padding: calc(var(--spine-width) + 4px) 0 12px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
+    padding: 0 0 calc(var(--band) + 6px);
     overflow: hidden;
-    writing-mode: vertical-rl;
+    color: var(--spine-ink);
+    border: 1.5px solid color-mix(in oklab, var(--spine) 40%, var(--edge));
+    border-bottom: 0;
     background:
+      /* Round: a dark hinge on each side and light catching the curve left of centre. */
       linear-gradient(
         90deg,
-        rgb(0 0 0 / 0.16),
-        rgb(255 255 255 / 0.2) 22%,
-        rgb(255 255 255 / 0) 48%,
-        rgb(0 0 0 / 0.06) 78%,
-        rgb(0 0 0 / 0.2)
+        rgb(0 0 0 / 0.24),
+        rgb(0 0 0 / 0.04) 9%,
+        rgb(255 255 255 / 0.24) 27%,
+        rgb(255 255 255 / 0) 52%,
+        rgb(0 0 0 / 0.05) 80%,
+        rgb(0 0 0 / 0.26)
       ),
-      var(--spine);
+      /* The jacket folding over the head of the book. */
+      linear-gradient(rgb(255 255 255 / 0.5), rgb(255 255 255 / 0) 3px),
+      /* The label's band at the foot, a shade deeper and ruled off from the spine. */
+      linear-gradient(var(--spine-ink) 0 0) 0 calc(100% - var(--band)) / 100% 1.5px no-repeat,
+      linear-gradient(color-mix(in oklab, var(--spine), var(--edge) 30%) 0 0) bottom / 100% var(--band) no-repeat,
+      color-mix(in oklab, var(--spine), white var(--fade, 0%));
     transition: opacity var(--t-hover) var(--ease) 120ms;
   }
-  /* A piece of the cover art, edged in the spine's ink like a label. */
-  .book-art {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
-    object-position: 50% 42%;
-    border-bottom: 2px solid var(--spine-ink);
+  /* Title and author run down the spine in two columns, the title in the middle and the author
+     beside it at the foot; the title is set to fill the length it has, as on a real volume. */
+  .book-name {
+    flex: 1 1 0;
+    min-height: 0;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 0;
+    writing-mode: vertical-rl;
+    white-space: nowrap;
+    line-height: 1;
   }
-  .book-spine strong {
-    font-size: 0.9375rem;
-    letter-spacing: 0.08em;
-    line-height: 1.2;
+  .book-name strong {
+    margin-block: auto;
+    font-size: min(var(--title-max), calc((var(--shelf-height) * var(--h, 0.94) - var(--title-room)) / var(--length)));
+    font-weight: 700;
+    letter-spacing: 0.04em;
   }
-  .book-spine small {
-    margin-top: auto;
+  .book-name small {
+    align-self: flex-end;
+    margin-inline-start: 4px;
     font-size: 0.6875rem;
     font-weight: 700;
-    line-height: 1.2;
+    letter-spacing: 0.06em;
     /* Take the spine's ink, not the base small colour, and stay opaque so the name stays legible. */
     color: inherit;
+  }
+  .book-volume {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--spine-ink);
+    color: var(--spine);
+    font: 700 0.8125rem / 1 var(--mono);
+  }
+  /* The character at the head, cut from the cover around its face and framed in paper. */
+  .book-art {
+    --zoom: 2.2;
+    position: relative;
+    flex: none;
+    width: calc(100% - 10px);
+    margin-top: 5px;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border: 2px solid var(--paper);
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.18);
+  }
+  .book-art img {
+    position: absolute;
+    left: calc(50% - var(--face-x) * var(--zoom) * 100%);
+    /* The frame is square, so its width also measures the cover's height (480×682). */
+    top: calc(50% - var(--face-y) * var(--zoom) * 142%);
+    width: calc(var(--zoom) * 100%);
+    max-width: none;
+    aspect-ratio: 480 / 682;
   }
   .book[aria-selected='true'] .book-spine {
     opacity: 0;
@@ -3625,6 +3680,8 @@
       --spine-width: 46px;
       --shelf-height: 250px;
       --gap: 5px;
+      --band: 22px;
+      --title-max: 0.9375rem;
     }
     .shelf-row::before {
       border-radius: 4px 4px 0 0;
@@ -3634,16 +3691,12 @@
       padding: 16px 12px var(--board);
     }
     .book-spine {
-      gap: 4px;
+      gap: 6px;
     }
     .book-caption a {
       font-size: 1.0625rem;
     }
-    .book-spine strong {
-      font-size: 0.8125rem;
-      letter-spacing: 0.04em;
-    }
-    .book-spine small {
+    .book-name small {
       font-size: 0.625rem;
     }
     .credits {
