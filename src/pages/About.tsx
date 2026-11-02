@@ -54,7 +54,7 @@ export default function About() {
               {(a) => (
                 <li>
                   <a href={a.url}>
-                    <Brand url={a.url} />
+                    <Brand url={a.url} size={18} />
                     {a.name}
                   </a>
                   {a.sub?.map((s) => (
