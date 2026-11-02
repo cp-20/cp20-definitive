@@ -79,7 +79,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
       store.apply(change);
     },
     say,
-    focusPastDeleteButton: sheet.focusPastDeleteButton,
+    focusPastSticker: sheet.focusPastSticker,
     sheet: sheet.sheet,
   });
   const hand = createHand({
@@ -108,10 +108,15 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     askToSignIn,
     isOwn: store.isOwn,
     isLeaving: (s) => edits.isLeaving(visualKey(s)),
+    erase: (s) => edits.erase(s),
+    find: (key) => placement.visible().find((s) => s.key === key),
   });
   createEffect(
     () => props.path,
-    () => hand.cancel(false),
+    () => {
+      hand.cancel(false);
+      input.closeMenu();
+    },
   );
   onSettled(() => {
     setHidden(readPref(HIDE_KEY) === 'true');
@@ -138,7 +143,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         lifted={hand.lifted()}
         stickerAt={placement.stickerAt}
         input={input}
-        erase={(s) => edits.erase(s)}
       />
       <InHand held={hand.held()} ghostKind={hand.ghostKind()} setGhost={hand.setGhost} input={input} />
       <Show when={props.enabled}>

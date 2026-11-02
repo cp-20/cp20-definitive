@@ -1,7 +1,16 @@
 // Where placed stickers are drawn on the page.
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { STICKER_RADIUS, layoutStamps, spotIn, stampAt, visualKey, type Box } from './layout.ts';
+import {
+  MENU_WIDTH,
+  STICKER_RADIUS,
+  layoutStamps,
+  menuSpot,
+  spotIn,
+  stampAt,
+  visualKey,
+  type Box,
+} from './layout.ts';
 import type { PlacedStamp } from './types.ts';
 
 const stamp = (id: string, fields: Partial<PlacedStamp> = {}): PlacedStamp => ({
@@ -112,5 +121,19 @@ describe('stampAt', () => {
       stampAt(shown, 100, 100 + STICKER_RADIUS + 1, (s) => s.id === 'below'),
       undefined,
     );
+  });
+});
+
+describe('menuSpot', () => {
+  const box = (left: number, top: number) => ({ left, top, right: left + 46, bottom: top + 46 });
+  test('シールの真上、少し離れたところに出る', () => {
+    assert.deepEqual(menuSpot(box(200, 300), 390), { x: 223, y: 292, below: false });
+  });
+  test('上に場所がなければ下に出る', () => {
+    assert.deepEqual(menuSpot(box(200, 20), 390), { x: 223, y: 74, below: true });
+  });
+  test('画面の端からはみ出さない', () => {
+    assert.equal(menuSpot(box(0, 300), 390).x, MENU_WIDTH / 2 + 8);
+    assert.equal(menuSpot(box(344, 300), 390).x, 390 - MENU_WIDTH / 2 - 8);
   });
 });

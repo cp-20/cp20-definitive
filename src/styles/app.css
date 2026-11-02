@@ -2711,60 +2711,69 @@
     transform-origin: 20% 80%;
     animation: peel var(--t-hover) var(--ease-exit) both;
   }
-  .stamp-delete {
-    position: absolute;
-    top: -12px;
-    right: -12px;
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    opacity: 0;
-    scale: 0.8;
-    pointer-events: none;
-    transition:
-      opacity var(--t-hover) var(--ease),
-      scale var(--t-hover) var(--ease);
-  }
   /* Covers the sticker; it only shows (as a ring) while focused from the keyboard, and a pointer
-     picks the sticker itself up instead. */
-  .stamp-move {
+     presses the sticker itself instead. */
+  .stamp-open {
     position: absolute;
     inset: 0;
     border-radius: 50%;
     opacity: 0;
     pointer-events: none;
   }
-  .stamp-move:focus-visible {
+  .stamp-open:focus-visible {
     opacity: 1;
     outline: 3px dashed var(--seal);
     outline-offset: 2px;
-    border-radius: 50%;
   }
-  .stamp-delete > span {
+  /* The sticker whose menu is open. */
+  .placed-stamp[data-menu]::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border: 2px dashed var(--edge);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  /* Move or peel one of your stickers: a pill of two buttons above it (below near the top). */
+  .stamp-menu {
+    position: fixed;
+    z-index: 64;
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border: 2px solid var(--edge);
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 3px 3px 0 var(--drop);
+    translate: -50% -100%;
+    transform-origin: 50% 100%;
+    animation: menu-pop var(--t-hover) var(--ease) both;
+  }
+  .stamp-menu[data-below] {
+    translate: -50% 0;
+    transform-origin: 50% 0;
+  }
+  .stamp-menu > button {
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
-    border: 2px solid var(--edge);
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: var(--seal);
-    color: #fff;
+    transition: background-color var(--t-hover) var(--ease);
   }
-  /* Touch screens never show the ×, so a tap is never redirected onto it by touch adjustment.
-     A tapped sticker is lifted instead, and goes back to the sheet to come off. */
-  .stamp-delete:focus-visible {
-    opacity: 1;
-    scale: 1;
-    pointer-events: auto;
+  .stamp-menu > .stamp-peel {
+    color: var(--seal);
   }
   @media (hover: hover) {
-    .placed-stamp[data-owned]:hover .stamp-delete {
-      opacity: 1;
-      scale: 1;
-      pointer-events: auto;
-      transition-delay: 350ms;
+    .stamp-menu > button:hover {
+      background: var(--yellow);
+      color: var(--on-color);
     }
+  }
+  .stamp-menu > button:active {
+    background: var(--yellow);
+    color: var(--on-color);
   }
   /* The sticker in hand. Its transform is driven by a spring in hand.ts. */
   .sticker-ghost {
@@ -2879,6 +2888,19 @@
   @media (hover: hover) {
     .sheet-tool:hover:not(:disabled) {
       background: #fff;
+    }
+  }
+  /* A fingertip gets a larger button, and a little more around it that still counts. */
+  @media (pointer: coarse) {
+    .sheet-tool {
+      position: relative;
+      width: 36px;
+      height: 36px;
+    }
+    .sheet-tool::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
     }
   }
   .sheet-tool[aria-pressed='true'] {
@@ -3315,6 +3337,12 @@
     to {
       scale: 1;
       --lift: 0;
+    }
+  }
+  @keyframes menu-pop {
+    from {
+      opacity: 0;
+      scale: 0.85;
     }
   }
   @keyframes peel {

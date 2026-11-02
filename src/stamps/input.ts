@@ -1,13 +1,16 @@
 // How pointers, fingers and keys drive the sticker in hand (hand.ts).
-// - A mouse drags a sticker, or clicks it up and clicks again where it goes.
+// - A mouse drags a sticker, or clicks one from the sheet up and clicks again where it goes.
 // - A finger does the same, except that your stickers on the page let a swipe scroll past them:
-//   one comes up to be dragged once held still for a moment, and a tap on one lying over a link
-//   presses the link (spring.ts).
+//   one comes up to be dragged once held still for a moment (floating above the finger), and a
+//   tap on one lying over a link presses the link (spring.ts).
+// - A click or tap on one of your stickers (or a long press let go without moving) opens its
+//   menu: move it, then click or tap where it goes, or peel it off. The keys open the same menu.
 // - The keys aim a sticker from an overlay: arrows move it, Enter sets it down, Escape or Tab
 //   puts it back.
-import { onSettled } from 'solid-js';
+import { createSignal, flush, onSettled } from 'solid-js';
 import type { PlacedStamp } from './types.ts';
 import { HOLD_MS, clamp, HOLD_SLOP, TAPPABLE, keptOnScreen, liftedSpot, waitsForHold } from './spring.ts';
+import { menuSpot, visualKey } from './layout.ts';
 import { centerOf, pageElementAt } from './placement.ts';
 import type { Held, createHand } from './hand.ts';
 // How far one arrow key press moves the sticker aimed with the keys, and with Shift held.
@@ -32,6 +35,9 @@ export function createInput(
     askToSignIn: () => void;
     isOwn: (s: PlacedStamp) => boolean;
     isLeaving: (s: PlacedStamp) => boolean;
+    erase: (s: PlacedStamp) => void;
+    // One of the stickers drawn, by its visual key.
+    find: (key: string) => PlacedStamp | undefined;
   },
 ) {
   const { held, motion } = hand;
@@ -39,10 +45,93 @@ export function createInput(
   let overlay: HTMLElement | undefined,
     press = { x: 0, y: 0 },
     holdTimer = 0;
+  // ── The menu of one of your stickers ──
+  // Which sticker it belongs to, by its look (`key`: its id changes once it is saved), where it
+  // sits (fixed, above the sticker or below it near the top), and whether the keys opened it
+  // (focus goes into it).
+  type Menu = { key: string; x: number; y: number; below: boolean; keys: boolean };
+  const [menu, setMenu] = createSignal<Menu | null>(null);
+  // The sticker the menu belongs to, as it is now.
+  const menuTarget = () => {
+    const m = menu();
+    return m ? options.find(m.key) : undefined;
+  };
+  const stickerOf = (s: PlacedStamp) =>
+    document.querySelector<HTMLElement>(`.stamp-layer [data-stamp-id="${CSS.escape(s.id)}"]`);
+  function openMenu(target: PlacedStamp, keys = false) {
+    const el = stickerOf(target);
+    if (!el || !options.isOwn(target) || options.isLeaving(target)) return;
+    const box = el.getBoundingClientRect();
+    setMenu({ key: visualKey(target), keys, ...menuSpot(box, innerWidth) });
+    if (!keys) return;
+    flush();
+    document.querySelector<HTMLElement>('.stamp-menu button')?.focus({ preventScroll: true });
+  }
+  // `refocus`: focus was in the menu, and goes back to the sticker it belongs to.
+  function closeMenu(refocus = false) {
+    const target = menuTarget();
+    setMenu(null);
+    if (refocus && target)
+      stickerOf(target)?.querySelector<HTMLElement>('.stamp-open')?.focus({ preventScroll: true });
+  }
+  // A second press on the sticker whose menu is open closes it rather than opening it again.
+  let closedBy = '';
+  // The pointer that pressed a menu button; none means the keys (or a screen reader) did.
+  let menuPointer = '';
+  function moveFromMenu(e: MouseEvent) {
+    const target = menuTarget();
+    const pointer = menuPointer;
+    menuPointer = '';
+    closeMenu();
+    const el = target && stickerOf(target);
+    if (!el) return;
+    if (!pointer) return moveWithKeys(target, el);
+    // Lifted where it lies: it comes up to the mouse, or floats clear of the finger, and the
+    // next click or tap puts it down.
+    const from = centerOf(el);
+    const next: Held = { kind: target.kind, from: 'page', target, mode: 'aim', pointer };
+    hand.begin(next, from, from);
+    hand.lift(next, 'aim');
+    const spot =
+      pointer === 'mouse'
+        ? { x: e.clientX, y: e.clientY }
+        : liftedSpot(from.x, from.y, innerWidth, innerHeight, AIM_BAR_BOTTOM);
+    hand.aimAt(spot.x, spot.y);
+    hand.say(`${aimHint(next)}。やめるボタンで戻せます`);
+  }
+  function peelFromMenu() {
+    const target = menuTarget();
+    menuPointer = '';
+    // Erasing moves focus on from the menu (sheet.ts) before it closes.
+    if (target) options.erase(target);
+    closeMenu();
+  }
+  const menuHandlers = {
+    onPointerDown(e: PointerEvent) {
+      menuPointer = e.pointerType || 'mouse';
+    },
+    // A pointer leaves focus where it was: only the keys move it into the menu.
+    onMouseDown(e: MouseEvent) {
+      e.preventDefault();
+    },
+    onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      closeMenu(true);
+    },
+    onFocusOut(e: FocusEvent) {
+      const to = e.relatedTarget as Node | null;
+      if (to && !(e.currentTarget as Element).contains(to)) closeMenu();
+    },
+    move: moveFromMenu,
+    peel: peelFromMenu,
+  };
   // ── Pointers and fingers ──
   // Pressing a sheet sticker or one of yours on the page.
   function grab(e: PointerEvent, next: Omit<Held, 'mode' | 'pointer'>) {
     if (e.button !== 0 || !e.isPrimary) return;
+    closeMenu();
     if (!options.signedIn()) return options.askToSignIn();
     const current = held();
     if (current?.mode === 'aim') {
@@ -119,6 +208,11 @@ export function createInput(
       // A finger lets go where it pressed after a long press too, and that tap's click would
       // follow the link under the sticker as it flies back or lands.
       if (h.pointer !== 'mouse') catchNextClick();
+      // A long press let go without moving opens the menu, as a tap does.
+      if (waitsForHold(h) && h.target && Math.hypot(e.clientX - press.x, e.clientY - press.y) <= HOLD_SLOP) {
+        hand.cancel(true);
+        return openMenu(h.target);
+      }
       return hand.drop(e.clientX, e.clientY);
     }
     if (h.mode !== 'press') return;
@@ -142,6 +236,13 @@ export function createInput(
           }
         control.click();
       });
+    }
+    // A click or tap on one of yours opens its menu (or closes it, if it was already open).
+    if (h.from === 'page' && h.target) {
+      cancel(false);
+      const again = closedBy === h.target.id;
+      closedBy = '';
+      return again ? undefined : openMenu(h.target);
     }
     hand.lift(h, 'aim');
     // The hint bar is the only guide for a pointer; read it once as it appears.
@@ -173,11 +274,11 @@ export function createInput(
     hand.placeSoon(450);
   }
   // The keyboard's way to move one of your stickers: lift it where it lies, then aim as above.
-  function moveWithKeys(target: PlacedStamp, button: HTMLElement) {
+  function moveWithKeys(target: PlacedStamp, sticker: HTMLElement) {
     hand.forgetPlace();
     if (!options.signedIn()) return options.askToSignIn();
     if (!options.isOwn(target) || options.isLeaving(target)) return;
-    const from = centerOf(button.closest('.placed-stamp') || button);
+    const from = centerOf(sticker);
     const start = { x: clamp(from.x, 25, innerWidth - 25), y: clamp(from.y, 25, innerHeight - 25) };
     const next: Held = { kind: target.kind, from: 'page', target, mode: 'aim', pointer: 'keys' };
     hand.begin(next, from, start);
@@ -235,14 +336,30 @@ export function createInput(
   };
   onSettled(() => {
     const escape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && held()) cancel(true);
+      if (e.key !== 'Escape') return;
+      if (held()) cancel(true);
+      closeMenu();
+    };
+    // The menu closes from a press anywhere else, or as the page scrolls or changes size.
+    const pressedOutside = (e: PointerEvent) => {
+      const target = menuTarget(),
+        on = e.target as Element;
+      closedBy = '';
+      if (!menu() || on.closest?.('.stamp-menu')) return;
+      const pressed = on.closest?.('[data-stamp-id]')?.getAttribute('data-stamp-id');
+      if (target && pressed === target.id) closedBy = target.id;
+      closeMenu();
+      // That press only closes the menu: it does not also follow a link on the page under it.
+      if (!on.closest?.('.stamp-ui, .placed-stamp')) catchNextClick();
     };
     const scrolled = () => {
+      closeMenu();
       const h = held();
       if (h?.mode === 'aim' && h.pointer === 'keys') hand.placeSoon();
     };
     // A phone turned on its side while a sticker waits for its spot: keep the sticker in view.
     const keepInView = () => {
+      closeMenu();
       if (held()?.mode !== 'aim') return;
       const spot = keptOnScreen(motion.tx, motion.ty, innerWidth, innerHeight, byKeys() ? 0 : AIM_BAR_BOTTOM);
       hand.aimAt(spot.x, spot.y);
@@ -259,7 +376,9 @@ export function createInput(
     window.addEventListener('scroll', scrolled, { passive: true });
     window.addEventListener('resize', keepInView);
     document.addEventListener('pointerdown', pinch, true);
+    document.addEventListener('pointerdown', pressedOutside, true);
     return () => {
+      document.removeEventListener('pointerdown', pressedOutside, true);
       document.removeEventListener('keydown', escape);
       window.removeEventListener('scroll', scrolled);
       window.removeEventListener('resize', keepInView);
@@ -276,7 +395,11 @@ export function createInput(
     cancel,
     pinScroll,
     aimWithKeys,
-    moveWithKeys,
+    menu,
+    menuTarget,
+    openMenu,
+    closeMenu,
+    menuHandlers,
     overlay: overlayHandlers,
   };
 }

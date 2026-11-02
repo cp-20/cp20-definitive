@@ -61,3 +61,21 @@ export const stampAt = (
   py: number,
   accept: (stamp: ShownStamp) => boolean,
 ) => shown.findLast((s) => accept(s) && Math.hypot(s.left - px, s.top - py) <= STICKER_RADIUS);
+
+/** The menu of one of your stickers (.stamp-menu in app.css): two 44px buttons in a pill. */
+export const MENU_WIDTH = 104,
+  MENU_HEIGHT = 56;
+// Kept between the menu and the sticker, and between the menu and the screen's edges.
+const MENU_GAP = 8;
+
+/**
+ * Where the menu of a sticker on screen (`box`, viewport coordinates) goes: centered above it,
+ * or below it when there is no room above, and never past the sides of a screen `width` wide.
+ * @returns its center `x`, and `y`: its bottom edge above the sticker, or its top edge below it
+ */
+export function menuSpot(box: { left: number; top: number; right: number; bottom: number }, width: number) {
+  const half = MENU_WIDTH / 2 + MENU_GAP;
+  const x = Math.min(Math.max((box.left + box.right) / 2, half), Math.max(half, width - half));
+  const below = box.top - MENU_GAP - MENU_HEIGHT < MENU_GAP;
+  return { x, y: below ? box.bottom + MENU_GAP : box.top - MENU_GAP, below };
+}

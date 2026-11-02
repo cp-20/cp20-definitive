@@ -27,6 +27,8 @@ import {
   Star,
   LogIn,
   LogOut,
+  Move,
+  Trash2,
 } from 'lucide';
 const icons = {
   ArrowUpRight,
@@ -56,6 +58,8 @@ const icons = {
   Star,
   LogIn,
   LogOut,
+  Move,
+  Trash2,
 };
 export type IconName = keyof typeof icons;
 export default function Icon(props: { name: IconName; size?: number; class?: string; stroke?: number }) {

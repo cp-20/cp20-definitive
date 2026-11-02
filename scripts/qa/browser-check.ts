@@ -301,13 +301,23 @@ try {
     )
       throw Error('Responsive stamp anchor');
   }
-  // Hovering shows who placed it; a click lifts it and the next click puts it down elsewhere.
+  // Hovering shows who placed it; a click opens its menu, and moving it from there lifts it for
+  // the next click to put down elsewhere.
   const placed = (await own.boundingBox())!;
   const spot = { x: placed.x + placed.width / 2, y: placed.y + placed.height / 2 };
+  const menu = page.locator('.stamp-menu');
   await page.mouse.move(spot.x + 120, spot.y + 120);
   await page.mouse.move(spot.x, spot.y, { steps: 4 });
   await expect(page.locator('.sticker-avatar')).toHaveAttribute('src', /gravatar\.com\/avatar\/[0-9a-f]{64}/);
   await page.mouse.click(spot.x, spot.y);
+  await expect(menu).toBeVisible();
+  await expect(own.locator('.stamp-open')).toHaveAttribute('aria-expanded', 'true');
+  // A second click on the sticker closes it again.
+  await page.mouse.click(spot.x, spot.y);
+  await expect(menu).toHaveCount(0);
+  await page.mouse.click(spot.x, spot.y);
+  await menu.getByRole('button', { name: '動かす' }).click();
+  await expect(menu).toHaveCount(0);
   await expect(page.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
   await page.mouse.move(spot.x - 120, spot.y + 40, { steps: 6 });
   await page.mouse.click(spot.x - 120, spot.y + 40);
@@ -320,11 +330,11 @@ try {
     throw Error('Lifted sticker placement');
   const movedId = await own.getAttribute('data-stamp-id');
   await expect(visitor.locator(`[data-stamp-id="${movedId}"]`)).toBeVisible();
-  // Saved stickers come back after a reload; the × that hovering shows peels one at once.
+  // Saved stickers come back after a reload, and the menu peels one at once.
   await page.reload();
   await expect(own).toHaveCount(1, { timeout: 10000 });
-  await own.hover();
-  await page.locator('.stamp-delete').click();
+  await own.click();
+  await menu.getByRole('button', { name: 'はがす' }).click();
   await expect(own).toHaveCount(0);
   await saved(page);
   await expect(visitor.locator(`[data-stamp-id="${movedId}"]`)).toHaveCount(0);
@@ -338,7 +348,7 @@ try {
   await expect(own).toHaveCount(0);
   await saved(page);
   passed(
-    'signed-out visitors cannot place; placing shows at once, saves the Gravatar hash, syncs live and keeps its anchor; hover shows the avatar; lift and move; reload, × and undo',
+    'signed-out visitors cannot place; placing shows at once, saves the Gravatar hash, syncs live and keeps its anchor; hover shows the avatar; the menu moves and peels; reload and undo',
   );
 
   // ── Stickers by touch ──
@@ -361,31 +371,78 @@ try {
   await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(0);
   await visitor.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
   await expect.poll(() => visitor.evaluate(() => scrollY)).toBe(0);
-  // A tap lifts it; a tap that puts it back where it was clicks nothing under it.
+  // A tap opens its menu, with buttons a fingertip can hit; a tap elsewhere only closes it, and
+  // so does scrolling.
   await visitor.evaluate(() => {
     window.__pageClicks = 0;
     document.addEventListener('click', (e) => {
       if (!(e.target as Element).closest('.stamp-ui, .placed-stamp, .stamp-overlay')) window.__pageClicks++;
     });
   });
+  const touchMenu = visitor.locator('.stamp-menu');
   await visitor.touchscreen.tap(160, 190);
+  await expect(touchMenu).toBeVisible();
+  for (const size of await touchMenu
+    .locator('button')
+    .evaluateAll((els) => els.map((e) => [e.clientWidth, e.clientHeight])))
+    if (Math.min(...size) < 44) throw Error(`Sticker menu button ${size} smaller than 44px`);
+  await visitor.touchscreen.tap(300, 420);
+  await expect(touchMenu).toHaveCount(0);
+  await visitor.touchscreen.tap(160, 190);
+  await expect(touchMenu).toBeVisible();
+  await visitor.evaluate(() => scrollBy({ top: 30, behavior: 'instant' }));
+  await expect(touchMenu).toHaveCount(0);
+  await visitor.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  await expect.poll(() => visitor.evaluate(() => scrollY)).toBe(0);
+  // Moving it from the menu floats it above where it lay; a tap on it puts it back.
+  await visitor.touchscreen.tap(160, 190);
+  await touchMenu.getByRole('button', { name: '動かす' }).tap();
   await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
-  await visitor.touchscreen.tap(160, 190);
+  await visitor.waitForTimeout(400);
+  const floating = (await visitor.locator('.sticker-ghost').boundingBox())!;
+  if (floating.y + floating.height > 190 - 23)
+    throw Error('A sticker moved by touch does not float clear of it');
+  await visitor.touchscreen.tap(floating.x + floating.width / 2, floating.y + floating.height / 2);
   await expect(visitor.locator('.stamp-overlay')).toHaveCount(0);
   await visitor.waitForTimeout(700);
   if (await visitor.evaluate(() => window.__pageClicks))
-    throw Error('A tap that put a sticker back clicked the page');
+    throw Error('Closing the menu or putting a sticker back clicked the page');
   if (db.writes !== writesBefore) throw Error('A swipe or a put-back sticker was saved');
-  // A sticker lifted and tapped onto the sheet is peeled.
-  await visitor.touchscreen.tap(160, 190);
-  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(1);
-  const backing = (await visitor.locator('.sticker-sheet').boundingBox())!;
-  await visitor.touchscreen.tap(backing.x + 6, backing.y + backing.height / 2);
+  // Held still, it can be dragged, riding above the finger, and lands where it was seen.
+  await finger('touchStart', 190);
+  await visitor.waitForTimeout(500);
+  for (let i = 1; i <= 6; i++)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: 160 + i * 10, y: 190 + i * 30 }],
+    });
+  await visitor.waitForTimeout(300);
+  const riding = (await visitor.locator('.sticker-ghost').boundingBox())!;
+  if (riding.y + riding.height > 370 - 10) throw Error('A dragged sticker is hidden under the finger');
+  await finger('touchEnd');
   await saved(visitor);
+  const dragged = (await visitor.locator('.placed-stamp[data-owned]').boundingBox())!;
+  if (
+    Math.abs(dragged.x + 23 - riding.x - riding.width / 2) > 2 ||
+    Math.abs(dragged.y + 23 - riding.y - riding.height / 2) > 2
+  )
+    throw Error('A dragged sticker did not land where it was shown');
+  // A long press let go without moving opens the menu too; peeling from it saves.
+  const writesBeforePress = db.writes;
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x: dragged.x + 23, y: dragged.y + 23 }],
+  });
+  await visitor.waitForTimeout(500);
+  await finger('touchEnd');
+  await expect(touchMenu).toBeVisible();
+  if (db.writes !== writesBeforePress) throw Error('A long press without moving was saved');
+  await touchMenu.getByRole('button', { name: 'はがす' }).tap();
   await expect(visitor.locator('.placed-stamp')).toHaveCount(0);
-  if (Object.keys(db.pages.get('home') || {}).length) throw Error('Test stickers left in the mock database');
+  await saved(visitor);
+  await expect.poll(() => Object.keys(db.pages.get('home') || {}).length).toBe(0);
   passed(
-    'touch: tap to place, swipes over your sticker scroll, put back without clicking, tap onto the sheet to peel',
+    'touch: tap to place, swipes over your sticker scroll; its menu (44px, closed by a tap elsewhere or a scroll) moves and peels; a drag rides above the finger; put back without clicking',
   );
 
   // ── Five stickers, and two tabs at once ──
@@ -406,9 +463,12 @@ try {
   const beforeMove = structuredClone(five());
   if (Object.keys(beforeMove).length !== 5) throw Error('Five stickers not saved');
   const lift = (await page.locator(`[data-stamp-id="${user.uid}-3"]`).boundingBox())!;
-  await page.mouse.click(lift.x + lift.width / 2, lift.y + lift.height / 2);
-  await page.mouse.move(lift.x + 40, lift.y + 140, { steps: 6 });
-  await page.mouse.click(lift.x + 40, lift.y + 140);
+  // Dragged with the mouse this time.
+  await page.mouse.move(lift.x + lift.width / 2, lift.y + lift.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(lift.x + 40, lift.y + 140, { steps: 8 });
+  await page.waitForTimeout(100);
+  await page.mouse.up();
   await saved(page);
   await expect(page.locator(`[data-stamp-id^="${user.uid}-"]`)).toHaveCount(5);
   const afterMove = five() as Record<string, { y: number; createdAt: number }>;
@@ -538,6 +598,22 @@ try {
   await page.keyboard.press('Enter');
   await expect.poll(() => db.writes - writesAfterOutage, { timeout: 20000 }).toBe(1);
   await expect(page.locator('.stamp-status')).not.toContainText('保存できませんでした');
+  // The keys open a sticker's menu (Escape returns to the sticker) and move it from there.
+  await saved(page);
+  const opener = own.locator('.stamp-open');
+  await opener.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.stamp-menu').getByRole('button', { name: '動かす' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.stamp-menu')).toHaveCount(0);
+  await expect(opener).toBeFocused();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.stamp-overlay')).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Enter');
+  await expect(own.locator('.stamp-open')).toBeFocused();
+  await saved(page);
   // A peel that fails brings the sticker back.
   await page.route(database, outage);
   await page.getByRole('button', { name: '最後に貼ったシールをはがす', exact: true }).click();

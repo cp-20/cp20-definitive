@@ -2,9 +2,9 @@
 // pointer with, and how a finger handles your own stickers on the page.
 //
 // A swipe that starts on one of your stickers scrolls the page like anywhere else; the sticker
-// only comes up to be dragged once it has been held still for a moment. A short tap on one lying
-// over a link or button presses that control, and a tap anywhere else lifts it so the next tap
-// puts it down.
+// only comes up to be dragged once it has been held still for a moment, and then rides above the
+// finger. A short tap on one lying over a link or button presses that control; a tap anywhere
+// else opens its menu (input.ts).
 
 export const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -132,6 +132,8 @@ export const HOLD_MS = 350;
 export const HOLD_SLOP = 10;
 // How far above the finger a tapped sticker floats, so the finger does not hide it.
 export const LIFT = 70;
+// How far above the fingertip a dragged sticker's center is held: clear of the finger's pad.
+export const DRAG_RISE = 56;
 
 /**
  * Whether a press waits for a long press before it drags: your stickers on the page, by touch

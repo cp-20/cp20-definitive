@@ -18,7 +18,7 @@ export function createEdits(options: {
   isOwn: (s: PlacedStamp) => boolean;
   apply: (change: Change) => void;
   say: (text: string) => void;
-  focusPastDeleteButton: (target: PlacedStamp) => void;
+  focusPastSticker: (target: PlacedStamp) => void;
   sheet: () => HTMLElement | undefined;
 }) {
   const { own, say } = options;
@@ -81,7 +81,7 @@ export function createEdits(options: {
     if (!options.isOwn(target)) return;
     const key = visualKey(target);
     if (leaving().has(key)) return;
-    options.focusPastDeleteButton(target);
+    options.focusPastSticker(target);
     say(stampAnnouncement('removed', stickerName(target.kind), remaining(target)));
     // The page may change while the sticker peels off; the removal belongs to this one.
     const path = options.path();

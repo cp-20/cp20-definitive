@@ -4,7 +4,7 @@
 // input.ts.
 import { createSignal, flush } from 'solid-js';
 import type { PlacedStamp } from './types.ts';
-import { FLYING, clamp, releaseVelocity, slideTime, springStep, throwCarry } from './spring.ts';
+import { DRAG_RISE, FLYING, clamp, releaseVelocity, slideTime, springStep, throwCarry } from './spring.ts';
 import { OVER_SHEET, stampAnnouncement } from './a11y.ts';
 import { STICKER_RADIUS, visualKey } from './layout.ts';
 import { overSheetAt, placeAt } from './placement.ts';
@@ -159,6 +159,15 @@ export function createHand(options: {
     motion.tl = 1;
     // A tapped sticker floats clear of the finger, and the next tap puts its center there.
     if (mode === 'aim' && h.pointer !== 'mouse') motion.ox = motion.oy = 0;
+    // A dragged one rises above the fingertip, so the finger never hides where it will land.
+    if (mode === 'drag' && h.pointer !== 'mouse' && h.pointer !== 'keys') {
+      const px = motion.tx + motion.ox,
+        py = motion.ty + motion.oy;
+      motion.ox = 0;
+      motion.oy = DRAG_RISE;
+      motion.tx = px;
+      motion.ty = py - DRAG_RISE;
+    }
     if (h.from === 'page' && h.target) setLifted(visualKey(h.target));
   }
   // Follow the pointer, held where it was pressed.
@@ -176,7 +185,7 @@ export function createHand(options: {
   }
   // Put the sticker in hand down. The keyboard overlay goes with it, so focus returns to the
   // sheet sticker it was taken from (or the tab when the sheet has been closed).
-  // A sticker moved with the keys hands focus to its own move button, where it now lies (`movedTo`).
+  // A sticker moved with the keys hands focus to its own button, where it now lies (`movedTo`).
   let refocus: HTMLElement | undefined;
   function letGo(h: Held, movedTo?: string) {
     const hadFocus = !!document.activeElement?.matches('.stamp-overlay');
@@ -185,7 +194,7 @@ export function createHand(options: {
     flush();
     const id = h.from === 'page' ? movedTo || h.target?.id : undefined;
     const moved = id
-      ? document.querySelector<HTMLElement>(`[data-stamp-id="${CSS.escape(id)}"] .stamp-move`)
+      ? document.querySelector<HTMLElement>(`[data-stamp-id="${CSS.escape(id)}"] .stamp-open`)
       : null;
     // A sticker going back where it was stays hidden under the one in hand until that lands.
     if (moved?.closest('[data-lifted]')) return void (refocus = moved);
@@ -241,7 +250,8 @@ export function createHand(options: {
   function drop(px: number, py: number) {
     const h = held();
     if (!h) return;
-    if (overSheetAt(px, py)) {
+    // The sticker itself (above a dragging finger) is what goes onto the sheet.
+    if (overSheetAt(px - motion.ox, py - motion.oy)) {
       // Putting one of your stickers back on the sheet peels it off the page.
       if (h.from === 'page' && h.target) options.erase(h.target, false);
       else if (h.pointer === 'keys') say(stampAnnouncement('returned', nameOf(h.kind), options.remaining()));

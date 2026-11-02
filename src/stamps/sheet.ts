@@ -62,13 +62,15 @@ export function createSheet(options: {
     if (sheet) sheet.tabIndex = -1;
     return sheet;
   }
-  // A sticker's "peel off" button disappears with it: move on to the next one of yours.
-  function focusPastDeleteButton(target: PlacedStamp) {
-    const buttons = [...document.querySelectorAll<HTMLElement>('.stamp-layer .stamp-delete')];
+  // A sticker peeled off from its menu (or while focused) goes: move on to the next one of yours.
+  function focusPastSticker(target: PlacedStamp) {
+    const buttons = [...document.querySelectorAll<HTMLElement>('.stamp-layer .stamp-open')];
     const mine = buttons.find(
       (b) => b.closest<HTMLElement>('[data-stamp-id]')?.dataset.stampId === target.id,
     );
-    if (!mine || document.activeElement !== mine) return;
+    // Focus on the sticker itself, or in its menu (peel).
+    const active = document.activeElement;
+    if (!mine || !(active === mine || active?.closest('.stamp-menu'))) return;
     const next = focusAfterRemoval(buttons, mine);
     (next || sheetFocus(target))?.focus({ preventScroll: !next });
   }
@@ -174,7 +176,7 @@ export function createSheet(options: {
     setTab: (el: HTMLButtonElement) => void (tab = el),
     focusOnceShown,
     sheetFocus,
-    focusPastDeleteButton,
+    focusPastSticker,
     slotCenter,
   };
 }

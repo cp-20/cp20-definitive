@@ -7,7 +7,7 @@ import { stampPlace } from './a11y.ts';
 
 // The sticker UI itself, which a point on screen looks through to find the page below.
 const STAMP_UI_SELECTOR =
-  '.sticker-sheet,.sticker-tab,.stamp-overlay,.stamp-aim-bar,.stamp-layer,.sticker-ghost';
+  '.sticker-sheet,.sticker-tab,.stamp-overlay,.stamp-aim-bar,.stamp-layer,.sticker-ghost,.stamp-menu';
 const anchorNamed = (name: string) =>
   document.querySelector<HTMLElement>(`[data-stamp-anchor="${CSS.escape(name)}"]`);
 // Layout position relative to <body>, ignoring transforms and scroll.
