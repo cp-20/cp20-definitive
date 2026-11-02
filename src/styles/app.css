@@ -1177,7 +1177,7 @@
     margin-top: 110px;
     align-items: start;
   }
-  /* A stamp album: the OG images are stamps tucked into glassine strips that run along each row. */
+  /* A stamp album: the OG images are stamps tucked into the clear pockets of a stock leaf that run along each row. */
   .article-list {
     --gap: 28px;
     display: grid;
@@ -1214,20 +1214,35 @@
   .article-row:nth-child(3n of :not([hidden])) > .og-image {
     rotate: -0.4deg;
   }
-  /* The strip holds the bottom edge of each stamp and reaches halfway into the gaps, so the
-     strips of a row join up. Thin and faint, with a soft sheen for its top edge, so the stamp
-     itself stays legible. */
+  /* The pocket holds the lower third of each stamp and reaches halfway into the gaps, so the
+     pockets of a row join into one strip. It reads as film on paper from its edges: a bright cut
+     lip with the film's faint shadow under it, a cool tint that darkens a little (never clouds
+     white) and so shows as a step over the bare paper, and a paper hem folded under at the
+     bottom that the stamp's foot disappears into, with the strip's shadow below. */
+  .article-row {
+    isolation: isolate;
+  }
+  .article-row > .og-image {
+    z-index: 1;
+  }
   .article-row::after {
     content: '';
     grid-area: 1 / 1;
     align-self: end;
-    z-index: 1;
-    height: 18%;
-    margin: 0 calc(var(--gap) / -2) -5px;
-    background: linear-gradient(rgb(255 255 255 / 0.32), rgb(255 255 255 / 0.12) 5px, rgb(255 255 255 / 0.2));
+    z-index: 2;
+    height: 36%;
+    margin: 0 calc(var(--gap) / -2) -6px;
+    background:
+      linear-gradient(#fff, #fff) top / 100% 1px no-repeat,
+      linear-gradient(rgb(45 42 51 / 0.14), rgb(45 42 51 / 0)) 0 1px / 100% 4px no-repeat,
+      linear-gradient(rgb(45 42 51 / 0.12), rgb(45 42 51 / 0.12)) 0 calc(100% - 7px) / 100% 1px no-repeat,
+      linear-gradient(var(--paper), var(--paper-2)) bottom / 100% 7px no-repeat,
+      linear-gradient(rgb(255 255 255 / 0.35), rgb(255 255 255 / 0) 9px),
+      rgb(110 135 160 / 0.1);
     box-shadow:
-      0 -1px 3px rgb(255 255 255 / 0.35),
-      0 1px 0 rgb(45 42 51 / 0.08);
+      0 -1px 0 rgb(45 42 51 / 0.1),
+      0 1px 0 rgb(45 42 51 / 0.12),
+      0 4px 5px -2px rgb(45 42 51 / 0.14);
     pointer-events: none;
   }
   .article-text {
@@ -3764,7 +3779,7 @@
       gap: 14px;
     }
     .article-row::after {
-      margin-inline: -4px;
+      margin: 0 -4px -5px;
     }
     .article-text {
       grid-area: 1 / 2;

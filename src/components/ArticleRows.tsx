@@ -3,7 +3,7 @@ import Brand from './Brand.tsx';
 import { OGImage, articleAnchor, sizes } from './Preview.tsx';
 import { formatDate, type Article } from '../content/content.ts';
 /**
- * A page of a stamp album: each article's OG image is a stamp tucked into a glassine strip,
+ * A page of a stamp album: each article's OG image is a stamp tucked into the clear pocket of a stock leaf,
  * with its title, source and date written underneath.
  * With `shown`, every row stays in the DOM and rows it rejects are only hidden, so filtering
  * neither rebuilds the list nor detaches images (see /articles).
