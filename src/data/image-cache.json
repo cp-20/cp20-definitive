@@ -754,6 +754,40 @@
       "height": 720
     }
   },
+  "https://is-general-kanji.lolipop-now.app/apple-touch-icon.png": {
+    "file": "/media/64aea6d9800fec3e33b91650.png",
+    "checkedAt": "2026-11-02T03:22:48.745Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/64aea6d9800fec3e33b91650-96w.webp",
+        "width": 96
+      }
+    ]
+  },
+  "https://is-general-kanji.lolipop-now.app/og/default.png": {
+    "file": "/media/eb59c4525b065ec3f51fc9dc.png",
+    "checkedAt": "2026-11-02T03:22:48.236Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/eb59c4525b065ec3f51fc9dc-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/eb59c4525b065ec3f51fc9dc-480w.webp",
+        "width": 480
+      },
+      {
+        "file": "/media/eb59c4525b065ec3f51fc9dc-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/eb59c4525b065ec3f51fc9dc-960w.webp",
+        "width": 960
+      }
+    ]
+  },
   "https://minna-no-monosashi.lolipop-now.app/apple-touch-icon.png?v=3": {
     "file": "/media/4bc6ef7f4e0cfe99e36b1750.png",
     "checkedAt": "2026-10-26T04:53:12.056Z",
@@ -818,6 +852,29 @@
       },
       {
         "file": "/media/efdb3c6c6c5a6cc99c9baa9c-960w.webp",
+        "width": 960
+      }
+    ]
+  },
+  "https://neon-overdrive.lolipop-now.app/og-image-20260922.png": {
+    "file": "/media/53cf3f435ed9d90a39236954.png",
+    "checkedAt": "2026-11-02T03:22:47.995Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/53cf3f435ed9d90a39236954-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/53cf3f435ed9d90a39236954-480w.webp",
+        "width": 480
+      },
+      {
+        "file": "/media/53cf3f435ed9d90a39236954-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/53cf3f435ed9d90a39236954-960w.webp",
         "width": 960
       }
     ]

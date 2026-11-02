@@ -1,5 +1,77 @@
 [
   {
+    "id": "neon-overdrive",
+    "title": "NEON OVERDRIVE",
+    "description": "照準を動かして11体のボスを倒す、ブラウザで遊ぶシューティングのタイムアタック。",
+    "url": "https://neon-overdrive.lolipop-now.app/",
+    "repositories": ["private"],
+    "productionTime": "2026/09/28 ～ 2026/10/05",
+    "techStack": [
+      {
+        "label": "JavaScript",
+        "type": "language"
+      },
+      {
+        "label": "WebGL",
+        "type": "library"
+      },
+      {
+        "label": "Web Audio API",
+        "type": "library"
+      },
+      {
+        "label": "Firebase",
+        "type": "database"
+      },
+      {
+        "label": "ロリポップ！デプロイナウ",
+        "type": "deploy"
+      }
+    ],
+    "tags": ["個人開発"],
+    "comments": [
+      "中央の自機から自動で連射し、照準を動かして10体のボスとラスボスを倒す一人用のタイムアタックです。PCはマウスやキーボード、スマートフォンはタッチで遊べます。",
+      "撃破を続けるとCHAINが伸びて火力が上がり、画面の演出とBGMも盛り上がっていきます。難易度は5段階で、ランキングと実績はFirebaseに保存します。"
+    ],
+    "relatedArticles": []
+  },
+  {
+    "id": "is-general-kanji",
+    "title": "それ、常用漢字？",
+    "description": "次々に出てくる漢字が常用漢字かどうかを一瞬で判定するブラウザゲーム。",
+    "url": "https://is-general-kanji.lolipop-now.app/",
+    "repositories": ["private"],
+    "productionTime": "2026/09/28 ～ 2026/10/02",
+    "techStack": [
+      {
+        "label": "TypeScript",
+        "type": "language"
+      },
+      {
+        "label": "Vite",
+        "type": "tool"
+      },
+      {
+        "label": "Web Audio API",
+        "type": "library"
+      },
+      {
+        "label": "Firebase",
+        "type": "database"
+      },
+      {
+        "label": "ロリポップ！デプロイナウ",
+        "type": "deploy"
+      }
+    ],
+    "tags": ["個人開発"],
+    "comments": [
+      "表示された漢字を常用か常用外かで振り分けていくゲームです。30秒のタイムアタック、日付ごとに全員が同じ問題を解く「今日のお題」、1ミスで終わるサドンデスがあります。",
+      "漢字ごとのみんなの正答率やスコアの分布を記録していて、結果はWordle風のマス目でシェアできます。"
+    ],
+    "relatedArticles": []
+  },
+  {
     "id": "minna-no-monosashi",
     "title": "みんなのものさし",
     "description": "お題に数字で答えて、友達やみんなとの感覚の違いを比べるWebアプリ。",
