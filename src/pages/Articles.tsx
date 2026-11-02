@@ -1,6 +1,7 @@
 import { createSignal, createStore, createMemo, createEffect, onSettled, flush, For, Show } from 'solid-js';
 import Icon from '../components/Icon.tsx';
 import { ArticleRows } from '../components/ArticleRows.tsx';
+import { AttendanceCard, yearOf } from '../components/AttendanceCard.tsx';
 import Brand from '../components/Brand.tsx';
 import { reflow } from '../components/reflow.ts';
 import { articles, type Article } from '../content/content.ts';
@@ -33,12 +34,25 @@ export default function Articles() {
   );
   const ordered = createMemo(() => (filters.order === 'oldest' ? [...articles].reverse() : articles));
   const shown = (a: Article) => !filters.source || a.source === filters.source;
-  const count = createMemo(() => articles.filter(shown).length);
+  // One year's card is open at a time; the list beside it holds that year's articles.
+  const years = [...new Set(articles.map(yearOf))].sort();
+  const [year, setYear] = createSignal(years.at(-1)!);
+  const [hot, setHot] = createSignal<string>();
+  const inYear = (a: Article) => shown(a) && yearOf(a) === year();
+  const yearCounts = createMemo(() =>
+    years.map((y) => ({ year: y, count: articles.filter((a) => shown(a) && yearOf(a) === y).length })),
+  );
+  const count = createMemo(() => articles.filter(inYear).length);
   let results!: HTMLDivElement;
   // A choice made here moves the cards to their new places (a page arrival just shows them).
   const choose = (change: (d: typeof filters) => void) =>
     reflow(results.querySelector('.article-list')!, () => {
       setFilters(change);
+      flush();
+    });
+  const chooseYear = (y: number) =>
+    reflow(results.querySelector('.article-list')!, () => {
+      setYear(y);
       flush();
     });
   return (
@@ -74,7 +88,7 @@ export default function Articles() {
           </div>
           <div class="article-sort-row">
             <p id="filter-count" class="meta" role="status">
-              {count()} 件
+              {year()}年 {count()} 件
             </p>
             <div class="sort-control">
               <label for="article-sort">並び順</label>
@@ -97,15 +111,26 @@ export default function Articles() {
             </div>
           </div>
         </div>
-        <div class="article-results" ref={results}>
+        <div class="article-results attendance-desk" ref={results}>
+          <AttendanceCard
+            items={articles}
+            year={year()}
+            years={yearCounts()}
+            onYear={chooseYear}
+            shown={shown}
+            hot={hot()}
+            onHot={setHot}
+          />
           {/* The rows stay mounted: filtering hides them and sorting moves them (keyed), so the
               list is never rebuilt and the cards glide to their new places (reflow.ts). */}
-          <ArticleRows items={ordered()} shown={shown} />
-          <Show when={!count()}>
-            <p id="article-empty" class="empty-state">
-              記事がありません。
-            </p>
-          </Show>
+          <div class="attendance-list">
+            <ArticleRows items={ordered()} shown={inYear} hot={hot()} onHot={setHot} />
+            <Show when={!count()}>
+              <p id="article-empty" class="empty-state">
+                この年の記事はありません。
+              </p>
+            </Show>
+          </div>
         </div>
       </section>
     </div>
