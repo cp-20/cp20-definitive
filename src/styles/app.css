@@ -1177,66 +1177,74 @@
     margin-top: 110px;
     align-items: start;
   }
+  /* A stamp album: the OG images are stamps tucked into glassine strips that run along each row. */
   .article-list {
-    border-top: 2px dashed var(--rule);
+    --gap: 28px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 40px var(--gap);
+    padding-top: 6px;
+  }
+  .home-writing .article-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .article-row {
-    --perf: 8px;
-    --perf-hole: 2.4px;
-    --thumb: 232px;
-    position: relative;
+    --perf: 10px;
+    --perf-hole: 3px;
     display: grid;
-    grid-template-columns: var(--thumb) minmax(0, 1fr);
-    gap: 40px;
-    align-items: center;
-    padding: 18px 4px;
-    border-bottom: 2px dashed var(--rule);
-  }
-  .article-row > .og-image {
-    aspect-ratio: 16 / 9;
-    rotate: -1.5deg;
+    align-content: start;
+    gap: 14px;
   }
   .article-row[hidden] {
     display: none;
   }
-  /* The long list on /articles lays out only the rows near the screen (a page turn lays out the
-     whole new page at once). On wider screens every row there has the image's height (inside the
-     padding), so the page keeps its height and scroll positions. */
-  @media (min-width: 761px) {
-    .article-row:not(.home-writing *) {
-      content-visibility: auto;
-      contain-intrinsic-size: auto 130.5px;
-    }
+  /* Every stamp has the OG card's shape (the image is fitted inside), so the strips line up. */
+  .article-row > .og-image {
+    grid-area: 1 / 1;
+    aspect-ratio: 1200 / 630;
+    rotate: -1.2deg;
+    transition:
+      translate var(--t-hover) var(--ease),
+      rotate var(--t-hover) var(--ease);
   }
-  /* Tilts alternate among the rows shown, so a filtered list keeps the zigzag. */
-  .article-row:nth-child(even of :not([hidden])) > .og-image {
-    rotate: 1.5deg;
+  /* Tilts vary among the stamps shown, so a filtered page keeps them uneven. */
+  .article-row:nth-child(3n + 2 of :not([hidden])) > .og-image {
+    rotate: 0.9deg;
+  }
+  .article-row:nth-child(3n of :not([hidden])) > .og-image {
+    rotate: -0.4deg;
+  }
+  /* The strip holds the lower part of each stamp and reaches halfway into the gaps, so the
+     strips of a row join up. */
+  .article-row::after {
+    content: '';
+    grid-area: 1 / 1;
+    align-self: end;
+    z-index: 1;
+    height: 34%;
+    margin: 0 calc(var(--gap) / -2) -5px;
+    border-top: 1.5px solid #fff;
+    background: linear-gradient(rgb(255 255 255 / 0.45), rgb(240 246 250 / 0.2) 40%, rgb(255 255 255 / 0.32));
+    box-shadow:
+      0 -1px 0 rgb(45 42 51 / 0.12),
+      0 1px 0 rgb(45 42 51 / 0.12);
+    pointer-events: none;
   }
   .article-text {
     min-width: 0;
+    padding: 0 2px;
+    line-height: 1.6;
   }
   .article-meta {
     display: flex;
-    gap: 10px;
+    gap: 7px;
     align-items: center;
-    margin-bottom: 4px;
+    margin-top: 6px;
+    font-family: var(--mono);
     font-size: 0.75rem;
     color: var(--muted);
     line-height: 1.5;
-  }
-  .article-meta time {
     font-variant-numeric: tabular-nums;
-  }
-  .article-meta > span {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 0 8px;
-    border: 1.5px solid var(--edge);
-    border-radius: 6px;
-    color: var(--ink);
-    font-weight: 700;
-    font-size: 0.6875rem;
   }
   /* Titles get the highlighter swipe on hover. */
   .article-row h3,
@@ -1249,20 +1257,25 @@
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
   }
+  .article-row h3 {
+    font-size: 0.9375rem;
+    line-height: 1.65;
+  }
   /* Only the way in is animated: leaving a row clears it at once, so scanning down the list
-     leaves no trail of markers winding back. */
+     leaves no trail of markers winding back. The stamp is drawn a little way out of its strip. */
   @media (hover: hover) {
     .article-row:hover h3 {
       background-size: 100% 100%;
       transition: background-size var(--t-state) var(--ease);
     }
+    .article-row:hover > .og-image {
+      translate: 0 -6px;
+    }
   }
   .article-row:active > .og-image {
+    translate: 0 -2px;
     rotate: 0deg;
-  }
-  .home-writing .article-row {
-    --thumb: 208px;
-    gap: 28px;
+    transition-duration: var(--t-press);
   }
   /* A sticky note stuck on the page. */
   .home-profile {
@@ -3273,11 +3286,6 @@
       grid-template-columns: minmax(0, 1fr) 260px;
       gap: 40px;
     }
-    .home-writing .article-row {
-      --thumb: 136px;
-      grid-template-columns: var(--thumb) minmax(0, 1fr);
-      gap: 30px;
-    }
     .work-grid,
     .music-list {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3523,19 +3531,9 @@
     .home-middle {
       margin-top: 90px;
     }
-    .article-row,
-    .home-writing .article-row {
-      --thumb: 136px;
-      grid-template-columns: var(--thumb) minmax(0, 1fr);
-      gap: 20px;
-      padding: 14px 0;
-    }
-    .article-row h3 {
-      font-size: 0.9375rem;
-    }
-    .article-meta {
-      font-size: 0.6875rem;
-      gap: 8px;
+    .article-list {
+      --gap: 20px;
+      row-gap: 32px;
     }
     .home-profile {
       margin: 20px 6px 0;
@@ -3717,19 +3715,26 @@
       display: none;
     }
   }
-  /* On phones the OG image takes the full width, so the title inside it stays readable. */
+  /* On phones two stamps share a row; their titles carry the reading. */
   @media (max-width: 600px) {
-    .article-row,
-    .home-writing .article-row {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 12px;
-      padding: 18px 0;
+    .article-list {
+      --gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      row-gap: 26px;
     }
-    .article-row > .og-image {
-      rotate: -0.6deg;
+    .article-row {
+      --perf: 7px;
+      --perf-hole: 2.1px;
+      gap: 10px;
     }
-    .article-row:nth-child(even of :not([hidden])) > .og-image {
-      rotate: 0.6deg;
+    .article-text,
+    .article-row h3 {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+    .article-meta {
+      margin-top: 4px;
+      font-size: 0.6875rem;
     }
   }
   @media (max-width: 380px) {
