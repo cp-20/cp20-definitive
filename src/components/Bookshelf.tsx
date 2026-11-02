@@ -7,9 +7,10 @@ import { spineAuthor } from '../content/series-credit.ts';
 import series from '../data/series.json';
 // Spines on a shelf; choosing one pulls that book out so its cover faces you. The shelf is a
 // tablist like the featured works: one stop for Tab, the arrow keys (and Home/End) move along it,
-// and the caption below is the panel. The chosen book's name is read on focus, so the caption
-// is not a live region (it would read the title a second time). On phones the shelf scrolls
-// sideways, and the chosen book is scrolled into view once it has opened.
+// and the caption beside it (below it on narrower screens) is the panel. The chosen book's name
+// is read on focus, so the caption is not a live region (it would read the title a second time).
+// On phones the shelf scrolls sideways, and the chosen book is scrolled into view once it has
+// opened.
 export default function Bookshelf() {
   const [open, setOpen] = createSignal(0);
   let shelf!: HTMLDivElement;
@@ -32,7 +33,7 @@ export default function Bookshelf() {
       book.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
   };
   return (
-    <>
+    <div class="shelf-row">
       <div
         class="bookshelf"
         ref={shelf}
@@ -78,19 +79,21 @@ export default function Bookshelf() {
           )}
         </For>
       </div>
-      <p id="book-caption" class="book-caption" role="tabpanel" aria-labelledby={`book-${open()}`}>
-        <For each={[series[open()]]}>
-          {(s) => (
-            <>
+      {/* Every caption sits in the same cell and only the chosen one is visible, so the panel is
+          as tall as the longest title from the start and nothing below it moves on a change. */}
+      <div id="book-caption" class="book-caption" role="tabpanel" aria-labelledby={`book-${open()}`}>
+        <For each={series}>
+          {(s, i) => (
+            <p data-open={open() === i() || undefined}>
               <a href={s.link}>
                 {s.title}
                 <Icon name="ArrowUpRight" size={15} />
               </a>
               <span>{s.author}</span>
-            </>
+            </p>
           )}
         </For>
-      </p>
-    </>
+      </div>
+    </div>
   );
 }

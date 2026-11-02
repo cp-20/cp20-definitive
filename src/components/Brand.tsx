@@ -1,5 +1,5 @@
 // Service logos beside links, so a link is recognised by its icon before its label is read.
-// The files live in public/images/brands (Simple Icons, CC0, plus each service's own favicon), so
+// The files live in public/images/brands (Simple Icons, CC0, plus each service's or organisation's own favicon), so
 // the client bundle only carries their paths.
 const brands: Record<string, string> = {
   'github.com': 'github.svg',
@@ -10,6 +10,9 @@ const brands: Record<string, string> = {
   'qiita.com': 'qiita.svg',
   'note.com': 'note.svg',
   'trap.jp': 'trap.png',
+  'isct.ac.jp': 'isct.svg',
+  'layerx.co.jp': 'layerx.png',
+  'cyberagent.co.jp': 'cyberagent.png',
   'sizu.me': 'sizu.png',
   'blog.cp20.dev': 'cp20-blog.svg',
   'speakerdeck.com': 'speakerdeck.svg',

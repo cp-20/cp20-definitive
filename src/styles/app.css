@@ -1955,6 +1955,13 @@
     box-shadow: 5px 5px 0 var(--drop);
     rotate: -1deg;
   }
+  /* The history runs far longer than the card; the card stays beside it while it is read. */
+  @media (min-width: 901px) {
+    .profile-details {
+      position: sticky;
+      top: 48px;
+    }
+  }
   .profile-details::before {
     content: '';
     position: absolute;
@@ -1980,12 +1987,13 @@
   .profile-affiliations li {
     position: relative;
     display: grid;
-    padding-left: 22px;
+    padding-left: 26px;
     font-size: 0.9375rem;
     font-weight: 700;
     line-height: 1.6;
   }
-  .profile-affiliations li::before {
+  /* Each place's own logo is its bullet; the clover stands in for one without a logo. */
+  .profile-affiliations li:not(:has(> a > .brand-icon))::before {
     content: '';
     position: absolute;
     left: 0;
@@ -2212,6 +2220,8 @@
     align-items: flex-end;
     width: fit-content;
     max-width: 100%;
+    /* Fixed, so the board stays put while one book shrinks and the next grows. */
+    height: calc(var(--shelf-height) + 34px);
     padding: 22px 18px 0;
     overflow-x: auto;
     overscroll-behavior-x: contain;
@@ -2342,25 +2352,40 @@
     opacity: 0;
     transition-delay: 0ms;
   }
-  .book-caption {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 14px;
-    align-items: baseline;
-    margin-top: 20px;
+  /* On a wide sheet the chosen book's title stands beside the shelf, level with its board. */
+  .shelf-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 28px;
+    align-items: end;
   }
+  .book-caption {
+    display: grid;
+    padding-bottom: 18px;
+  }
+  .book-caption p {
+    grid-area: 1 / 1;
+    align-self: end;
+  }
+  .book-caption p:not([data-open]) {
+    visibility: hidden;
+  }
+  /* Inline, so a title that wraps keeps its arrow after the last word. */
   .book-caption a {
-    display: inline-flex;
-    gap: 4px;
-    align-items: center;
-    font-size: 1.0625rem;
+    font-size: 1.25rem;
+    line-height: 1.5;
     font-weight: 700;
     background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%);
   }
   .book-caption a svg {
+    display: inline-block;
+    margin-left: 4px;
+    vertical-align: -1px;
     color: var(--faint);
   }
   .book-caption span {
+    display: block;
+    margin-top: 6px;
     font-size: 0.8125rem;
     color: var(--muted);
   }
@@ -2371,9 +2396,12 @@
     object-fit: contain;
   }
   .work-facts dd a > .brand-icon,
-  .work-detail-copy > p > a > .brand-icon,
-  .profile-affiliations a > .brand-icon {
+  .work-detail-copy > p > a > .brand-icon {
     margin-right: 6px;
+  }
+  .profile-affiliations a > .brand-icon {
+    margin: 0 8px 0 -26px;
+    border-radius: 4px;
   }
   /* A dialog is a card lifted off the sheet; the page behind it stays put. */
   html:has(.modal[open]) {
@@ -3265,8 +3293,19 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .profile-history-layout {
-      grid-template-columns: 250px minmax(0, 1fr);
-      gap: 40px;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 36px;
+    }
+    /* Too narrow beside the shelf for a title; it goes underneath. */
+    .shelf-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 20px;
+    }
+    .book-caption {
+      padding-bottom: 0;
+    }
+    .book-caption p {
+      align-self: start;
     }
   }
   @media (max-width: 900px) {
@@ -3554,11 +3593,15 @@
       --spine-width: 46px;
       --shelf-height: 250px;
       gap: 5px;
+      height: calc(var(--shelf-height) + 28px);
       padding: 16px 12px 0;
       border-radius: 4px 4px 0 0;
     }
     .book-spine {
       gap: 4px;
+    }
+    .book-caption a {
+      font-size: 1.0625rem;
     }
     .book-spine strong {
       font-size: 0.8125rem;
