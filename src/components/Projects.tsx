@@ -95,7 +95,7 @@ export default function Projects() {
               data-project-tab={i()}
             >
               <span class="project-spot">
-                <OriginalIcon url={p.url} name={p.title} />
+                <OriginalIcon url={p.url} name={p.title} placeholder />
                 <span class="project-order">0{i() + 1}</span>
               </span>
               <span class="project-name">{p.title}</span>
@@ -134,7 +134,7 @@ export default function Projects() {
               <div class="featured-copy">
                 <p class="project-kind">{p.tags.join(' / ')}</p>
                 <h3>
-                  <OriginalIcon url={p.url} name={p.title} />
+                  <OriginalIcon url={p.url} name={p.title} placeholder />
                   {p.title}
                 </h3>
                 <p class="project-description">{p.description}</p>
