@@ -1216,7 +1216,7 @@
   }
   /* The pocket holds the lower third of each stamp and reaches halfway into the gaps, so the
      pockets of a row join into one strip. It reads as film on paper from its edges: a bright cut
-     lip with the film's faint shadow under it, a cool tint that darkens a little (never clouds
+     lip with one faint line outside it, hairline sides that close it into a pocket, a cool tint that darkens a little (never clouds
      white) and so shows as a step over the bare paper, and a paper hem folded under at the
      bottom that the stamp's foot disappears into, with the strip's shadow below. */
   .article-row {
@@ -1234,11 +1234,12 @@
     margin: 0 calc(var(--gap) / -2) -6px;
     background:
       linear-gradient(#fff, #fff) top / 100% 1px no-repeat,
-      linear-gradient(rgb(45 42 51 / 0.14), rgb(45 42 51 / 0)) 0 1px / 100% 4px no-repeat,
+      linear-gradient(rgb(45 42 51 / 0.14), rgb(45 42 51 / 0.14)) left / 1px 100% no-repeat,
+      linear-gradient(rgb(45 42 51 / 0.14), rgb(45 42 51 / 0.14)) right / 1px 100% no-repeat,
       linear-gradient(rgb(45 42 51 / 0.12), rgb(45 42 51 / 0.12)) 0 calc(100% - 7px) / 100% 1px no-repeat,
       linear-gradient(var(--paper), var(--paper-2)) bottom / 100% 7px no-repeat,
       linear-gradient(rgb(255 255 255 / 0.35), rgb(255 255 255 / 0) 9px),
-      rgb(110 135 160 / 0.1);
+      rgb(110 135 160 / var(--pocket, 0.1));
     box-shadow:
       0 -1px 0 rgb(45 42 51 / 0.1),
       0 1px 0 rgb(45 42 51 / 0.12),
@@ -2233,38 +2234,41 @@
      on a change: the open book's cover spills to the right of its slot and is revealed with
      clip-path, and the books after it slide over with a transform. Each spine takes its colours
      from the book's own cover and is laid out like a real volume's (character, title, author,
-     number, label band); the books differ a little in height and fading, and are shaded round. */
+     band); the books differ a little in height and fading, and are shaded round. The shelf is
+     drawn straight on the paper: only a board, outlined in ink like the other pieces. */
   .shelf-row {
     --shelf-height: 314px;
     /* The covers' own proportions (480×682), so the open book is never cropped out of shape. */
     --open: calc(var(--shelf-height) * 0.704);
     --spine-width: 60px;
     --gap: 6px;
-    --board: 12px;
-    --band: 30px;
+    --board: 14px;
+    --band: 18px;
+    --author-size: 0.6875rem;
     /* The title's size: as large as the spine is wide allows, and no larger than its length
-       leaves room for beside the picture, the number and the band. */
+       leaves room for beside the picture, the author under it and the band. */
     --title-max: 1.25rem;
-    --title-room: calc(var(--spine-width) + 22px + var(--band) + 40px);
     display: grid;
     grid-template-columns: auto minmax(120px, 1fr);
     gap: 0 24px;
     align-items: end;
   }
-  /* The board runs the full width of the section, under the books and the chosen title. */
+  /* The board under the books: a plank in an ink outline with a lit top edge, and the same
+     offset shadow as the stickers. */
   .shelf-row::before {
     content: '';
-    grid-area: 1 / 1 / 2 / -1;
-    align-self: stretch;
-    border-radius: 6px 6px 0 0;
+    grid-area: 1 / 1;
+    align-self: end;
+    z-index: 1;
+    height: var(--board);
+    border: 2px solid var(--edge);
+    border-radius: 3px;
     background:
-      linear-gradient(rgb(45 42 51 / 0.1), transparent 22px),
-      linear-gradient(90deg, rgb(45 42 51 / 0.08), transparent 18px calc(100% - 18px), rgb(45 42 51 / 0.08)),
-      #e9dcc2;
-    /* A lit front edge over the wood. */
-    border-bottom: var(--board) solid #b98a52;
-    border-image: linear-gradient(#d9ad72 0 2px, #c3925a 2px 7px, #a77746 7px) 0 0 12 / 0 0 var(--board);
-    box-shadow: 0 10px 0 -4px rgb(45 42 51 / 0.12);
+      linear-gradient(#e2b57a 0 2px, transparent 2px),
+      linear-gradient(90deg, rgb(0 0 0 / 0.06), transparent 30% 70%, rgb(0 0 0 / 0.06)),
+      #c3925a;
+    box-shadow: 3px 3px 0 var(--drop);
+    pointer-events: none;
   }
   .bookshelf {
     grid-area: 1 / 1;
@@ -2272,8 +2276,8 @@
     gap: var(--gap);
     align-items: flex-end;
     max-width: 100%;
-    height: calc(var(--shelf-height) + 22px + var(--board));
-    padding: 22px 18px var(--board);
+    height: calc(var(--shelf-height) + 22px + var(--board) - 2px);
+    padding: 22px 18px calc(var(--board) - 2px);
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
@@ -2365,8 +2369,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 0 0 calc(var(--band) + 6px);
+    gap: 8px;
+    padding: 0 0 calc(var(--band) + 8px);
     overflow: hidden;
     color: var(--spine-ink);
     border: 1.5px solid color-mix(in oklab, var(--spine) 40%, var(--edge));
@@ -2384,64 +2388,69 @@
       ),
       /* The jacket folding over the head of the book. */
       linear-gradient(rgb(255 255 255 / 0.5), rgb(255 255 255 / 0) 3px),
-      /* The label's band at the foot, a shade deeper and ruled off from the spine. */
-      linear-gradient(var(--spine-ink) 0 0) 0 calc(100% - var(--band)) / 100% 1.5px no-repeat,
-      linear-gradient(color-mix(in oklab, var(--spine), var(--edge) 30%) 0 0) bottom / 100% var(--band) no-repeat,
+      /* The band at the foot, a shade deeper than the spine. */
+      linear-gradient(color-mix(in oklab, var(--spine), var(--edge) 14%) 0 0) bottom / 100% var(--band) no-repeat,
       color-mix(in oklab, var(--spine), white var(--fade, 0%));
     transition: opacity var(--t-hover) var(--ease) 120ms;
   }
-  /* Title and author run down the spine in two columns, the title in the middle and the author
-     beside it at the foot; the title is set to fill the length it has, as on a real volume. */
+  /* Title and author run down the middle of the spine in one line, the title centred in the
+     length it has and set to fill it, and the author under it at the foot, as on a real volume. */
   .book-name {
     flex: 1 1 0;
     min-height: 0;
     align-self: stretch;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    padding: 4px 0;
+    padding: 2px 0;
     writing-mode: vertical-rl;
     white-space: nowrap;
     line-height: 1;
   }
   .book-name strong {
-    margin-block: auto;
+    /* Set here, where each book's author length is known. */
+    --title-room: calc(
+      var(--spine-width) + var(--band) + 40px + var(--author-length, 0) * var(--author-size) * 1.08
+    );
+    margin-inline: auto;
     font-size: min(var(--title-max), calc((var(--shelf-height) * var(--h, 0.94) - var(--title-room)) / var(--length)));
     font-weight: 700;
     letter-spacing: 0.04em;
   }
-  .book-name small {
+  /* Title and author as a pair of lines, centred together on the spine. */
+  .book-name[data-beside] {
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+  }
+  .book-name[data-beside] strong {
+    --author-length: 0;
+  }
+  .book-name[data-beside] small {
     align-self: flex-end;
-    margin-inline-start: 4px;
-    font-size: 0.6875rem;
+    margin: 0;
+  }
+  .book-name small {
+    flex: none;
+    margin-inline-start: 10px;
+    font-size: var(--author-size);
     font-weight: 700;
     letter-spacing: 0.06em;
+    /* A name in Latin letters stands upright like the kana around it. */
+    text-orientation: upright;
     /* Take the spine's ink, not the base small colour, and stay opaque so the name stays legible. */
     color: inherit;
   }
-  .book-volume {
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 22px;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    background: var(--spine-ink);
-    color: var(--spine);
-    font: 700 0.8125rem / 1 var(--mono);
-  }
-  /* The character at the head, cut from the cover around its face and framed in paper. */
+  /* The character at the head, cut from the cover around its face and printed on the spine:
+     no frame, and its foot fades into the spine's colour. */
   .book-art {
-    --zoom: 2.2;
     position: relative;
     flex: none;
-    width: calc(100% - 10px);
-    margin-top: 5px;
+    width: calc(100% - 8px);
+    margin-top: 6px;
     aspect-ratio: 1;
     overflow: hidden;
-    border: 2px solid var(--paper);
-    border-radius: 2px;
-    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.18);
+    border-radius: 3px;
+    mask-image: linear-gradient(#000 62%, transparent);
   }
   .book-art img {
     position: absolute;
@@ -3680,24 +3689,18 @@
       --spine-width: 46px;
       --shelf-height: 250px;
       --gap: 5px;
-      --band: 22px;
+      --band: 14px;
       --title-max: 0.9375rem;
     }
-    .shelf-row::before {
-      border-radius: 4px 4px 0 0;
-    }
     .bookshelf {
-      height: calc(var(--shelf-height) + 16px + var(--board));
-      padding: 16px 12px var(--board);
+      height: calc(var(--shelf-height) + 16px + var(--board) - 2px);
+      padding: 16px 12px calc(var(--board) - 2px);
     }
     .book-spine {
       gap: 6px;
     }
     .book-caption a {
       font-size: 1.0625rem;
-    }
-    .book-name small {
-      font-size: 0.625rem;
     }
     .credits {
       grid-template-columns: minmax(0, 1fr);
@@ -3832,6 +3835,7 @@
       gap: 14px;
     }
     .article-row::after {
+      --pocket: 0.16;
       margin: 0 -4px -5px;
     }
     .article-text {

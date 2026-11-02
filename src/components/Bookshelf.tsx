@@ -61,6 +61,8 @@ export default function Bookshelf() {
                 '--length': [...s.title].length,
                 '--face-x': mangaCovers[s.title]?.face[0] ?? 0.5,
                 '--face-y': mangaCovers[s.title]?.face[1] ?? 0.35,
+                '--zoom': mangaCovers[s.title]?.zoom ?? 2.2,
+                '--author-length': [...spineAuthor(s.author)].length,
               }}
               onClick={() => setOpen(i())}
             >
@@ -74,8 +76,8 @@ export default function Bookshelf() {
                 loading="lazy"
               />
               <span class="book-spine" aria-hidden="true">
-                {/* As on a real volume: a character at the head, the title set to fill the spine,
-                    the author at its foot, the volume number, and the band the label sits in. */}
+                {/* As on a real volume: a character at the head, the title set to fill the spine
+                    with the author under it, and the band at the foot. */}
                 <span class="book-art">
                   <img
                     src={seriesCover(s)?.src}
@@ -84,12 +86,15 @@ export default function Bookshelf() {
                     loading="lazy"
                   />
                 </span>
-                <span class="book-name">
+                {/* A long title and its author would not both fit in one line down the spine;
+                    as on such a volume, the author then stands beside the title at its foot. */}
+                <span
+                  class="book-name"
+                  data-beside={[...s.title].length + [...spineAuthor(s.author)].length > 15 || undefined}
+                >
                   <strong>{s.title}</strong>
                   <small>{spineAuthor(s.author)}</small>
                 </span>
-                {/* Every cover on the shelf is a first volume. */}
-                <span class="book-volume">1</span>
               </span>
             </button>
           )}

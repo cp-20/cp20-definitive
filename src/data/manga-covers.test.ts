@@ -19,11 +19,12 @@ describe('漫画の背表紙', () => {
     test(`「${title}」の背表紙の文字は 4.5:1 以上のコントラストで読める`, () => {
       assert.ok(contrast(spine, ink) >= 4.5, `${ink} on ${spine} is ${contrast(spine, ink).toFixed(2)}:1`);
     });
-  // The spine's picture shows 1/2.2 of the cover's width around the face (and as much of its
+  // The spine's picture shows 1/zoom of the cover's width around the face (and as much of its
   // height); a face nearer the edge than that would leave the frame partly empty.
-  for (const [title, { face }] of Object.entries(mangaCovers))
+  for (const [title, { face, zoom }] of Object.entries(mangaCovers))
     test(`「${title}」の背表紙の絵は表紙の内側から切り出す`, () => {
-      const half = 1 / 2.2 / 2;
+      assert.ok(zoom >= 1, `zoom ${zoom}`);
+      const half = 1 / zoom / 2;
       const halfDown = (half * 480) / 682;
       assert.ok(face[0] >= half && face[0] <= 1 - half, `face x ${face[0]}`);
       assert.ok(face[1] >= halfDown && face[1] <= 1 - halfDown, `face y ${face[1]}`);

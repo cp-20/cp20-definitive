@@ -1,19 +1,22 @@
 // Volume 1 covers of the featured manga, saved under public/images/covers.
 // The series list itself comes from the 2026 edition; titles without a cover fall back to its thumbnail.
 // spine / ink: the colours of each book's spine on the shelf, picked from its cover.
-// face: where on the cover (0-1 across, 0-1 down) the main character's face is; the little picture
-// at the head of the spine is cut from there, as real volumes print a character on the spine.
+// face: where on the cover (0-1 across, 0-1 down) the main character's face is, and how far to
+// zoom in on it; the little picture at the head of the spine is cut from there, as real volumes
+// print a character on the spine. The zoom is per book so every face comes out about as large,
+// and the cut stays clear of the cover's lettering.
 // Re-exported by editorial.ts, and shared with scripts/sync/images.ts, which caches only the series thumbnails actually shown: a
 // publisher's key visual behind a cover is never fetched.
 export const mangaCovers: Record<
   string,
-  { image: string; source: string; url: string; spine: string; ink: string; face: [number, number] }
+  { image: string; source: string; url: string; spine: string; ink: string; face: [number, number]; zoom: number }
 > = {
   放課後帰宅びより: {
     image: '/images/covers/houkago-kitaku-biyori.jpg',
     spine: '#f3a6b8',
     ink: '#5b3a86',
     face: [0.66, 0.4],
+    zoom: 2.6,
     source: 'webアクション（双葉社）',
     url: 'https://comic-action.com/episode/4856001361584756651',
   },
@@ -22,6 +25,7 @@ export const mangaCovers: Record<
     spine: '#f27aa6',
     ink: '#2d2a33',
     face: [0.3, 0.33],
+    zoom: 2.6,
     source: '集英社',
     url: 'https://www.shueisha.co.jp/books/items/contents.html?isbn=978-4-08-893745-8',
   },
@@ -29,7 +33,8 @@ export const mangaCovers: Record<
     image: '/images/covers/imouto-wa-shitteiru.jpg',
     spine: '#f08a3c',
     ink: '#2d2a33',
-    face: [0.25, 0.57],
+    face: [0.19, 0.61],
+    zoom: 3.2,
     source: 'BOOK☆WALKER',
     url: 'https://bookwalker.jp/series/513981/list/',
   },
@@ -37,7 +42,8 @@ export const mangaCovers: Record<
     image: '/images/covers/botsuraku-reijou.jpg',
     spine: '#3b1f2b',
     ink: '#e8c66a',
-    face: [0.7, 0.22],
+    face: [0.65, 0.24],
+    zoom: 2.8,
     source: 'BOOK☆WALKER',
     url: 'https://bookwalker.jp/de6a461693-6f23-466a-8db4-99ade8de468f/',
   },
@@ -45,7 +51,8 @@ export const mangaCovers: Record<
     image: '/images/covers/sushi-gaki.jpg',
     spine: '#d63e31',
     ink: '#ffffff',
-    face: [0.74, 0.64],
+    face: [0.75, 0.58],
+    zoom: 4.4,
     source: 'カドコミ（KADOKAWA）',
     url: 'https://comic-walker.com/detail/KC_000933_S',
   },
@@ -53,7 +60,8 @@ export const mangaCovers: Record<
     image: '/images/covers/zako-no-minasan.jpg',
     spine: '#5fc9cf',
     ink: '#2d2a33',
-    face: [0.55, 0.33],
+    face: [0.57, 0.33],
+    zoom: 2.4,
     source: 'BOOK☆WALKER',
     url: 'https://bookwalker.jp/de29709146-f9fd-4e74-979a-8c178c167f77/',
   },
