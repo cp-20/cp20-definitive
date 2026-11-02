@@ -42,8 +42,11 @@ export const milestones: Milestone[] = [
     year: '2026.03',
     grade: '大学3年',
     title: 'フィックスターズ インターン',
-    text: '株式会社フィックスターズでのインターンシップ。',
-    detail: [],
+    text: 'oneDNN の int8 演算を RISC-V のベクトル拡張（RVV）向けに高速化。',
+    detail: [
+      'オープンソースの DNN ライブラリ oneDNN で、RISC-V では fp32 より遅かった int8 の演算を、RISC-V のベクトル拡張（RVV）向けに高速化した。実機（Milk-V Jupiter）で測りながら、キャッシュブロッキングなどでハードウェアの限界近くまで詰めた。',
+      '行列積は約114倍、畳み込みは約14.5倍（1x1 の畳み込みは約1450倍）速くなった。',
+    ],
     links: [],
   },
   {
