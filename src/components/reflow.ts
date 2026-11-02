@@ -34,6 +34,9 @@ export function motionFor(from: Rect | undefined, to: Rect | undefined, viewport
   return null;
 }
 
+// A card that stays put but was caught fading in.
+const still = (): Motion => ({ from: [0, 0], to: [0, 0], opacity: [1, 1], scale: [1, 1] });
+
 const frames = (m: Motion, scaled: boolean): Keyframe[] =>
   [0, 1].map((i) => ({
     transform: `translate(${m[i ? 'to' : 'from'].join('px, ')}px)` + (scaled ? ` scale(${m.scale[i]})` : ''),
@@ -43,6 +46,7 @@ const frames = (m: Motion, scaled: boolean): Keyframe[] =>
 const running = new WeakMap<HTMLElement, Animation[]>();
 
 function settle(row: HTMLElement) {
+  if (!row.classList.contains('leaving')) return;
   row.classList.remove('leaving');
   row.style.removeProperty('inset');
   row.style.removeProperty('width');
@@ -55,27 +59,58 @@ function settle(row: HTMLElement) {
 export function reflow(list: HTMLElement, update: () => void) {
   if (!list.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return update();
   const rows = [...list.children] as HTMLElement[];
-  // Where each card is seen now, mid-animation included.
+  // Where each card is seen now and how faded it is, mid-animation included, so a quick second
+  // choice carries on from there: a card caught fading out fades on from where it is, or comes
+  // back from there.
   const before = new Map<HTMLElement, DOMRect>();
-  for (const row of rows)
-    if (!row.hidden || row.classList.contains('leaving')) before.set(row, row.getBoundingClientRect());
-  for (const a of running.get(list) ?? []) a.cancel();
+  const caught = new Map<HTMLElement, { opacity: number; scale: number }>();
+  const previous = running.get(list) ?? [];
+  for (const a of previous) {
+    const row = (a.effect as KeyframeEffect | null)?.target as HTMLElement | null;
+    if (row?.parentElement !== list || caught.has(row)) continue;
+    const style = getComputedStyle(row);
+    const scale = style.transform === 'none' ? 1 : new DOMMatrixReadOnly(style.transform).a;
+    caught.set(row, { opacity: Number(style.opacity), scale });
+  }
+  const kept = new Map<HTMLElement, [string, string]>();
+  for (const row of rows) {
+    if (row.classList.contains('leaving')) kept.set(row, [row.style.inset, row.style.width]);
+    if (!row.hidden || kept.has(row)) before.set(row, row.getBoundingClientRect());
+  }
+  const box = list.getBoundingClientRect();
+  for (const a of previous) a.cancel();
   for (const row of rows) settle(row);
   update();
-  const box = list.getBoundingClientRect();
+  // The cards that go are taken out of the flow where they were before anything is measured, so
+  // the page is laid out once here and only animated after.
+  for (const row of rows) {
+    const from = before.get(row);
+    if (!row.hidden || !from || from.bottom < -MARGIN || from.top > innerHeight + MARGIN) continue;
+    const [inset, width] = kept.get(row) ?? [
+      `${from.top - box.top}px auto auto ${from.left - box.left}px`,
+      `${from.width}px`,
+    ];
+    row.classList.add('leaving');
+    row.style.inset = inset;
+    row.style.width = width;
+  }
   const after = rows.map((row) => (row.hidden ? undefined : row.getBoundingClientRect()));
   const anims: Animation[] = [];
   const moved: [anchor: string, motion: Motion, timing: KeyframeAnimationOptions, card: Animation][] = [];
   rows.forEach((row, i) => {
     const from = before.get(row);
-    const motion = motionFor(from, after[i], innerHeight);
+    const now = caught.get(row);
+    const motion = motionFor(from, after[i], innerHeight) ?? (now && from && after[i] ? still() : null);
     if (!motion) return;
     const timing = motion.opacity[0] === motion.opacity[1] ? MOVE : FADE;
-    if (!after[i]) {
-      // Kept on the page where it was, out of the flow, until it has faded.
-      row.classList.add('leaving');
-      row.style.inset = `${from!.top - box.top}px auto auto ${from!.left - box.left}px`;
-      row.style.width = `${from!.width}px`;
+    // A card caught mid-animation on screen starts exactly where and as it is seen: no brighter,
+    // and at the size and spot it had shrunk or moved to.
+    if (now && from && from.bottom > 0 && from.top < innerHeight) {
+      const at = after[i] ?? row.getBoundingClientRect();
+      const grown = (1 - now.scale) / 2;
+      motion.opacity[0] = Math.min(motion.opacity[0], now.opacity);
+      motion.scale[0] = now.scale;
+      motion.from = [from.left - at.left - grown * at.width, from.top - at.top - grown * at.height];
     }
     const anim = row.animate(frames(motion, true), timing);
     if (!after[i]) anim.onfinish = () => settle(row);

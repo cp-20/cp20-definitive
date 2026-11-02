@@ -185,7 +185,7 @@ describe('waitsForHold', () => {
     ['page', 'mouse', false],
     ['sheet', 'touch', false],
   ] as const)
-    test(`${from} のシールを ${pointer} で押すと、長押し待ち${waits ? 'になる' : 'にならない'}`, () => {
+    test(`${from} のシールを ${pointer} で押すと、${waits ? 'タップかスクロールになる' : 'ドラッグできる'}`, () => {
       assert.equal(waitsForHold({ from, pointer }), waits);
     });
 });

@@ -1,10 +1,9 @@
 // The sticker in hand, kept free of the DOM so it can be tested in Node: the spring it follows the
 // pointer with, and how a finger handles your own stickers on the page.
 //
-// A swipe that starts on one of your stickers scrolls the page like anywhere else; the sticker
-// only comes up to be dragged once it has been held still for a moment, and then rides above the
-// finger. A short tap on one lying over a link or button presses that control; a tap anywhere
-// else opens its menu (input.ts).
+// A swipe that starts on one of your stickers scrolls the page like anywhere else, however long
+// the finger rested first; a finger never drags it. A tap opens its menu, which moves or peels it
+// (input.ts), even when it lies over a link.
 
 export const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -126,9 +125,7 @@ export function throwCarry(vx: number, vy: number) {
   return { x: (vx / speed) * length, y: (vy / speed) * length };
 }
 
-// How long a finger rests on your sticker before it can be dragged.
-export const HOLD_MS = 350;
-// How far the finger may wander while it is held; any further and the page scrolls instead.
+// How far a finger on your sticker may wander and still tap it; any further and the page scrolls.
 export const HOLD_SLOP = 10;
 // How far above the finger a tapped sticker floats, so the finger does not hide it.
 export const LIFT = 70;
@@ -136,8 +133,8 @@ export const LIFT = 70;
 export const DRAG_RISE = 56;
 
 /**
- * Whether a press waits for a long press before it drags: your stickers on the page, by touch
- * or pen. A mouse drags at once; the sheet sits fixed over the page and never scrolls it.
+ * Whether a press is a tap or a scroll, never a drag: your stickers on the page, by touch or pen.
+ * A mouse drags at once; the sheet sits fixed over the page and never scrolls it.
  */
 export const waitsForHold = (held: { from: string; pointer: string }) =>
   held.from === 'page' && held.pointer !== 'mouse';
@@ -173,7 +170,3 @@ export function keptOnScreen(x: number, y: number, width: number, height: number
     y: clamp(y, Math.min(top + margin, height - margin), height - margin),
   };
 }
-
-// Controls a tap on your sticker presses instead of lifting the sticker.
-export const TAPPABLE =
-  'a[href], button, summary, label, input, select, textarea, [role="button"], [role="link"], [role="tab"]';

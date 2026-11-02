@@ -408,42 +408,61 @@ try {
   if (await visitor.evaluate(() => window.__pageClicks))
     throw Error('Closing the menu or putting a sticker back clicked the page');
   if (db.writes !== writesBefore) throw Error('A swipe or a put-back sticker was saved');
-  // Held still, it can be dragged, riding above the finger, and lands where it was seen.
+  // A finger rested on it before swiping (a thumb while reading) still scrolls: a finger never
+  // drags your sticker, so nothing moves or is saved.
+  const restingAt = (await visitor.locator('.placed-stamp[data-owned]').boundingBox())!;
   await finger('touchStart', 190);
-  await visitor.waitForTimeout(500);
-  for (let i = 1; i <= 6; i++)
-    await cdp.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [{ x: 160 + i * 10, y: 190 + i * 30 }],
-    });
+  await visitor.waitForTimeout(600);
+  for (let y = 170; y >= 10; y -= 20) await finger('touchMove', y);
   await visitor.waitForTimeout(300);
-  const riding = (await visitor.locator('.sticker-ghost').boundingBox())!;
-  if (riding.y + riding.height > 370 - 10) throw Error('A dragged sticker is hidden under the finger');
   await finger('touchEnd');
-  await saved(visitor);
-  const dragged = (await visitor.locator('.placed-stamp[data-owned]').boundingBox())!;
-  if (
-    Math.abs(dragged.x + 23 - riding.x - riding.width / 2) > 2 ||
-    Math.abs(dragged.y + 23 - riding.y - riding.height / 2) > 2
-  )
-    throw Error('A dragged sticker did not land where it was shown');
-  // A long press let go without moving opens the menu too; peeling from it saves.
-  const writesBeforePress = db.writes;
-  await cdp.send('Input.dispatchTouchEvent', {
-    type: 'touchStart',
-    touchPoints: [{ x: dragged.x + 23, y: dragged.y + 23 }],
-  });
-  await visitor.waitForTimeout(500);
+  await expect.poll(() => visitor.evaluate(() => scrollY)).toBeGreaterThan(100);
+  await expect(visitor.locator('.placed-stamp[data-lifted]')).toHaveCount(0);
+  await visitor.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  await expect.poll(() => visitor.evaluate(() => scrollY)).toBe(0);
+  const restedAt = (await visitor.locator('.placed-stamp[data-owned]').boundingBox())!;
+  if (Math.abs(restedAt.x - restingAt.x) > 1 || Math.abs(restedAt.y - restingAt.y) > 1)
+    throw Error('A swipe after resting on your sticker moved it');
+  if (db.writes !== writesBefore) throw Error('A swipe after resting on your sticker was saved');
+  // A long press let go without moving opens the menu, as a tap does; peeling from it saves.
+  await finger('touchStart', 190);
+  await visitor.waitForTimeout(600);
   await finger('touchEnd');
   await expect(touchMenu).toBeVisible();
-  if (db.writes !== writesBeforePress) throw Error('A long press without moving was saved');
+  if (db.writes !== writesBefore) throw Error('A long press without moving was saved');
   await touchMenu.getByRole('button', { name: 'はがす' }).tap();
   await expect(visitor.locator('.placed-stamp')).toHaveCount(0);
   await saved(visitor);
   await expect.poll(() => Object.keys(db.pages.get('home') || {}).length).toBe(0);
   passed(
-    'touch: tap to place, swipes over your sticker scroll; its menu (44px, closed by a tap elsewhere or a scroll) moves and peels; a drag rides above the finger; put back without clicking',
+    'touch: tap to place, swipes over your sticker scroll; its menu (44px, closed by a tap elsewhere or a scroll) moves and peels; a rest then swipe still scrolls; put back without clicking',
   );
+
+  // Your sticker on a card that is a link: a tap opens its menu instead of following the link,
+  // and peels it from there; a tap beside it still follows the link.
+  await visitor.goto(origin + '/articles');
+  await settle(visitor);
+  const card = visitor.locator('a.article-row').nth(1);
+  await card.scrollIntoViewIfNeeded();
+  const cardBox = (await card.boundingBox())!;
+  const onCard = { x: cardBox.x + cardBox.width / 2, y: cardBox.y + cardBox.height * 0.75 };
+  // The sheet stays open from the page before.
+  const heart = visitor.getByRole('button', { name: 'ハートのシールを貼る', exact: true });
+  if (!(await heart.isVisible())) await visitor.locator('.sticker-tab').tap();
+  await heart.tap();
+  await visitor.touchscreen.tap(onCard.x, onCard.y);
+  await saved(visitor);
+  const onLink = (await visitor.locator('.placed-stamp[data-owned]').boundingBox())!;
+  const articlesUrl = visitor.url();
+  await visitor.touchscreen.tap(onLink.x + onLink.width / 2, onLink.y + onLink.height / 2);
+  await expect(touchMenu).toBeVisible();
+  await visitor.waitForTimeout(400);
+  if (visitor.url() !== articlesUrl) throw Error('A tap on your sticker over a link followed the link');
+  await touchMenu.getByRole('button', { name: 'はがす' }).tap();
+  await expect(visitor.locator('.placed-stamp')).toHaveCount(0);
+  await saved(visitor);
+  await expect.poll(() => Object.keys(db.pages.get('articles') || {}).length).toBe(0);
+  passed('touch: a tap on your sticker over a link card opens its menu and peels it, not the link');
 
   // ── Five stickers, and two tabs at once ──
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -606,6 +625,51 @@ try {
     throw Error(`Filtering did not glide the card: ${JSON.stringify(result)}`);
   if (result.drift > 2) throw Error(`A sticker fell behind its moving card by ${result.drift}px`);
   if (result.shifts) throw Error('Filtering shifted the layout');
+  // Choices made in quick succession carry each card on from where it is: at the moment of a
+  // choice no card on screen moves or grows brighter (one caught fading out never flashes back
+  // over another), at full speed and on a slow phone's CPU alike.
+  const glitches: string[] = [];
+  const cpu = await context.newCDPSession(page);
+  for (const rate of [1, 4]) {
+    await cpu.send('Emulation.setCPUThrottlingRate', { rate });
+    for (let i = 0; i < 3; i++)
+      for (const chip of ['zenn.dev', 'sizu.me', 'すべて']) {
+        glitches.push(
+          ...(await page.evaluate((chip) => {
+            const look = () =>
+              new Map(
+                [...document.querySelectorAll<HTMLElement>('.article-list > .article-row')].map((r) => {
+                  const b = r.getBoundingClientRect();
+                  const o =
+                    r.hidden && !r.classList.contains('leaving') ? 0 : Number(getComputedStyle(r).opacity);
+                  return [r, { x: b.left, y: b.top, o, on: b.bottom > 0 && b.top < innerHeight }];
+                }),
+              );
+            const was = look();
+            [...document.querySelectorAll<HTMLElement>('.source-chip')]
+              .find((c) => c.textContent!.includes(chip))!
+              .click();
+            const out: string[] = [];
+            for (const [row, now] of look()) {
+              const then = was.get(row)!;
+              if (!now.on && !then.on) continue;
+              if (then.o > 0.05 && now.o > 0.05 && Math.hypot(now.x - then.x, now.y - then.y) > 2)
+                out.push(
+                  `${chip}: a card jumped by ${Math.round(Math.hypot(now.x - then.x, now.y - then.y))}px`,
+                );
+              if (now.o - then.o > 0.05)
+                out.push(`${chip}: a card brightened ${then.o.toFixed(2)}→${now.o.toFixed(2)}`);
+            }
+            return out;
+          }, chip)),
+        );
+        await page.waitForTimeout(120);
+      }
+  }
+  await cpu.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+  await page.waitForTimeout(600);
+  if (glitches.length) throw Error(`Quick choices in a row: ${glitches.slice(0, 5).join('; ')}`);
+  if (await page.locator('.article-row.leaving').count()) throw Error('A card was left fading');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.locator('.source-chip').first().click();
   const scripted = () =>
@@ -618,7 +682,7 @@ try {
   db.pages.delete('articles');
   await expect(page.locator('.placed-stamp')).toHaveCount(0);
   passed(
-    'filtering glides the cards, keeps stickers on them and shifts nothing; reduced motion switches at once',
+    'filtering glides the cards, keeps stickers on them and shifts nothing, also chosen quickly in a row; reduced motion switches at once',
   );
 
   // ── The keyboard, and saves that fail ──

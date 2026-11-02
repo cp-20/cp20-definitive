@@ -2690,7 +2690,7 @@
     transition: opacity var(--t-hover) var(--ease);
   }
   /* A swipe that starts on your sticker still scrolls the page and a pinch still zooms; a finger
-     drags it only after a long press (stamp-touch.mjs), which neither selects text nor opens a
+     never drags it (spring.ts); a press neither selects text nor opens a
      callout. */
   .placed-stamp[data-owned] {
     pointer-events: auto;

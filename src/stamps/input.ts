@@ -1,17 +1,16 @@
 // How pointers, fingers and keys drive the sticker in hand (hand.ts).
 // - A mouse drags a sticker, or clicks one from the sheet up and clicks again where it goes.
-// - A finger does the same, except that your stickers on the page let a swipe scroll past them:
-//   one comes up to be dragged once held still for a moment (floating above the finger), and a
-//   tap on one lying over a link presses the link (spring.ts).
-// - A click or tap on one of your stickers (or a long press let go without moving) opens its
-//   menu: move it, then click or tap where it goes, or peel it off. The keys open the same menu.
+// - A finger does the same with the sheet. Your stickers on the page let a swipe scroll past
+//   them and are never dragged by a finger (spring.ts), even one lying over a link.
+// - A click or tap on one of your stickers opens its menu: move it, then click or tap where it
+//   goes, or peel it off. The keys open the same menu.
 // - The keys aim a sticker from an overlay: arrows move it, Enter sets it down, Escape or Tab
 //   puts it back.
 import { createSignal, flush, onSettled } from 'solid-js';
 import type { PlacedStamp } from './types.ts';
-import { HOLD_MS, clamp, HOLD_SLOP, TAPPABLE, keptOnScreen, liftedSpot, waitsForHold } from './spring.ts';
+import { clamp, HOLD_SLOP, keptOnScreen, liftedSpot, waitsForHold } from './spring.ts';
 import { menuSpot, visualKey } from './layout.ts';
-import { centerOf, pageElementAt } from './placement.ts';
+import { centerOf } from './placement.ts';
 import type { Held, createHand } from './hand.ts';
 // How far one arrow key press moves the sticker aimed with the keys, and with Shift held.
 const KEY_STEP = 16,
@@ -43,8 +42,7 @@ export function createInput(
   const { held, motion } = hand;
   const byKeys = () => held()?.pointer === 'keys';
   let overlay: HTMLElement | undefined,
-    press = { x: 0, y: 0 },
-    holdTimer = 0;
+    press = { x: 0, y: 0 };
   // ── The menu of one of your stickers ──
   // Which sticker it belongs to, by its look (`key`: its id changes once it is saved), where it
   // sits (fixed, above the sticker or below it near the top), and whether the keys opened it
@@ -145,21 +143,13 @@ export function createInput(
     const pressed: Held = { ...next, mode: 'press', pointer: e.pointerType };
     press = { x: e.clientX, y: e.clientY };
     hand.begin(pressed, centerOf(el), press);
-    // A finger held still on your sticker picks it up to drag.
-    clearTimeout(holdTimer);
-    if (waitsForHold(pressed))
-      holdTimer = window.setTimeout(() => {
-        if (held() !== pressed) return;
-        hand.lift(pressed, 'drag');
-        navigator.vibrate?.(10);
-      }, HOLD_MS);
   }
   function track(x: number, y: number) {
     const h = held();
     if (!h) return;
     const moved = Math.hypot(x - press.x, y - press.y);
     if (h.mode === 'press' && waitsForHold(h)) {
-      // A finger that moves before the long press is scrolling: the sticker stays where it is.
+      // A finger that moves on your sticker is scrolling: the sticker stays where it is.
       if (moved > HOLD_SLOP) cancel(false);
       return;
     }
@@ -167,10 +157,7 @@ export function createInput(
     hand.moveTo(x, y);
   }
   const follow = (e: PointerEvent) => track(e.clientX, e.clientY);
-  function cancel(animated: boolean) {
-    clearTimeout(holdTimer);
-    hand.cancel(animated);
-  }
+  const cancel = (animated: boolean) => hand.cancel(animated);
   // The click that follows a tap which put the sticker in hand down (or back) would land on
   // whatever lies under the finger once the sticker or the overlay is gone, such as a link.
   // Catch that one click; `then` runs in its place, or after a moment if no click comes.
@@ -203,40 +190,12 @@ export function createInput(
   function release(e: PointerEvent) {
     const h = held();
     if (!h) return;
-    clearTimeout(holdTimer);
     if (h.mode === 'drag') {
-      // A finger lets go where it pressed after a long press too, and that tap's click would
-      // follow the link under the sticker as it flies back or lands.
+      // A finger lets go where the sheet's sticker lands; that tap's click would follow a link.
       if (h.pointer !== 'mouse') catchNextClick();
-      // A long press let go without moving opens the menu, as a tap does.
-      if (waitsForHold(h) && h.target && Math.hypot(e.clientX - press.x, e.clientY - press.y) <= HOLD_SLOP) {
-        hand.cancel(true);
-        return openMenu(h.target);
-      }
       return hand.drop(e.clientX, e.clientY);
     }
     if (h.mode !== 'press') return;
-    // A tap on your sticker lying over a link or button presses that instead of lifting it.
-    const control = waitsForHold(h)
-      ? pageElementAt(e.clientX, e.clientY)?.closest<HTMLElement>(TAPPABLE)
-      : null;
-    if (control) {
-      cancel(false);
-      if (!control.matches('input, select, textarea')) return control.click();
-      // A form field is used once the tap's own click is over, or that click would take its
-      // focus (and close a list it opened). A select opens its list: click() does not do that.
-      return catchNextClick(() => {
-        control.focus();
-        if (control instanceof HTMLSelectElement && 'showPicker' in control)
-          try {
-            return control.showPicker();
-          } catch {
-            // Not allowed without a recent tap (the click never came): focus is left on it.
-            return;
-          }
-        control.click();
-      });
-    }
     // A click or tap on one of yours opens its menu (or closes it, if it was already open).
     if (h.from === 'page' && h.target) {
       cancel(false);
@@ -253,16 +212,6 @@ export function createInput(
       hand.aimAt(spot.x, spot.y);
     }
   }
-  // Your stickers let a swipe scroll the page (touch-action in app.css); once one is held long
-  // enough to drag, the finger moves it instead. Only a listener that is not passive can stop that.
-  const pinScroll = (el: HTMLElement) =>
-    el.addEventListener(
-      'touchmove',
-      (e) => {
-        if (held()?.mode === 'drag' && e.cancelable) e.preventDefault();
-      },
-      { passive: false },
-    );
   // ── Keys ──
   function aimWithKeys(kind: number) {
     hand.forgetPlace();
@@ -384,7 +333,6 @@ export function createInput(
       window.removeEventListener('resize', keepInView);
       document.removeEventListener('pointerdown', pinch, true);
       stopCatchingClick?.();
-      clearTimeout(holdTimer);
     };
   });
   return {
@@ -393,7 +341,6 @@ export function createInput(
     follow,
     release,
     cancel,
-    pinScroll,
     aimWithKeys,
     menu,
     menuTarget,
