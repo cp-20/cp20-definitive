@@ -493,6 +493,74 @@ try {
     "other visitors' stickers pass clicks and modifier clicks through, keep off the index tabs, and show their avatar",
   );
 
+  // ── Filtering moves the cards, and their stickers with them ──
+  await page.goto(origin + '/articles');
+  await settle();
+  const source = 'trap.jp';
+  // The first card of `source` that is not first in the list, so filtering moves it.
+  const filtered = await page.evaluate((source) => {
+    const rows = [...document.querySelectorAll<HTMLElement>('[data-article]')];
+    return rows.find(
+      (r, i) => i > 0 && r.querySelector('.article-meta .visually-hidden')!.textContent === source,
+    )!.dataset.stampAnchor!;
+  }, source);
+  db.pages.set('articles', {
+    'other-visitor': {
+      avatar: 'b'.repeat(64),
+      stamps: { 0: { anchor: filtered, x: 0.3, y: 0.3, kind: 1, angle: 0, createdAt: 1700000000000 } },
+    },
+  });
+  await expect(page.locator('.placed-stamp')).toHaveCount(1);
+  const glide = page.evaluate(
+    (anchor) =>
+      new Promise<{ animated: boolean; moved: number; drift: number; shifts: number }>((resolve) => {
+        const card = document.querySelector<HTMLElement>(`[data-stamp-anchor="${anchor}"]`)!;
+        const offset = () => {
+          const a = document.querySelector('.placed-stamp')!.getBoundingClientRect(),
+            b = card.getBoundingClientRect();
+          return [a.left - b.left, a.top - b.top, b.top];
+        };
+        const [x0, y0, top0] = offset();
+        let animated = false,
+          drift = 0,
+          shifts = 0;
+        new PerformanceObserver((list) => {
+          for (const e of list.getEntries() as (PerformanceEntry & { hadRecentInput: boolean })[])
+            if (!e.hadRecentInput) shifts++;
+        }).observe({ type: 'layout-shift' });
+        const t0 = performance.now();
+        const step = () => {
+          animated ||= card.getAnimations().length > 0;
+          const [x, y] = offset();
+          drift = Math.max(drift, Math.abs(x - x0), Math.abs(y - y0));
+          if (performance.now() - t0 < 700) requestAnimationFrame(step);
+          else resolve({ animated, moved: Math.abs(offset()[2] - top0), drift, shifts });
+        };
+        requestAnimationFrame(step);
+      }),
+    filtered,
+  );
+  await page.locator('.source-chip', { hasText: source }).click();
+  const result = await glide;
+  if (!result.animated || result.moved < 10)
+    throw Error(`Filtering did not glide the card: ${JSON.stringify(result)}`);
+  if (result.drift > 2) throw Error(`A sticker fell behind its moving card by ${result.drift}px`);
+  if (result.shifts) throw Error('Filtering shifted the layout');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('.source-chip').first().click();
+  const scripted = () =>
+    document
+      .querySelector('.article-list')!
+      .getAnimations({ subtree: true })
+      .filter((a) => !(a instanceof CSSTransition || a instanceof CSSAnimation)).length;
+  if (await page.evaluate(scripted)) throw Error('Filtering animated with reduced motion');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  db.pages.delete('articles');
+  await expect(page.locator('.placed-stamp')).toHaveCount(0);
+  passed(
+    'filtering glides the cards, keeps stickers on them and shifts nothing; reduced motion switches at once',
+  );
+
   // ── The keyboard, and saves that fail ──
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(origin + '/');
