@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-02T16:09:04.263Z",
+  "updatedAt": "2026-11-03T01:01:49.579Z",
   "articles": [
     {
       "title": "ISUCON2026 に AI Agent と出て学生2位でした",
@@ -466,12 +466,22 @@
   ],
   "repos": [
     {
+      "name": "asterion-manifest",
+      "url": "https://github.com/cp-20/asterion-manifest",
+      "description": "",
+      "language": "JavaScript",
+      "stars": 2,
+      "updatedAt": "2026-11-02T22:43:19Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "cp20-definitive",
       "url": "https://github.com/cp-20/cp20-definitive",
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-02T06:14:16Z",
+      "updatedAt": "2026-11-02T16:09:54Z",
       "fork": false,
       "archived": false
     },
@@ -492,16 +502,6 @@
       "language": "Python",
       "stars": 0,
       "updatedAt": "2026-11-01T14:17:30Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "asterion-manifest",
-      "url": "https://github.com/cp-20/asterion-manifest",
-      "description": "",
-      "language": "JavaScript",
-      "stars": 2,
-      "updatedAt": "2026-11-01T14:11:32Z",
       "fork": false,
       "archived": false
     },
@@ -1349,39 +1349,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T16:09:04.263Z",
+      "lastSuccess": "2026-11-03T01:01:49.579Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T16:09:04.263Z",
+      "lastSuccess": "2026-11-03T01:01:49.579Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T16:09:04.263Z",
+      "lastSuccess": "2026-11-03T01:01:49.579Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T16:09:04.263Z",
+      "lastSuccess": "2026-11-03T01:01:49.579Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T16:09:04.263Z",
+      "lastSuccess": "2026-11-03T01:01:49.579Z",
       "count": 11
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T16:09:04.263Z",
+      "lastSuccess": "2026-11-03T01:01:49.579Z",
       "count": 128
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-02T16:09:04.263Z",
+      "lastSuccess": "2026-11-03T01:01:49.579Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-02T16:09:04.263Z"
+  "checkedAt": "2026-11-03T01:01:49.579Z"
 }
