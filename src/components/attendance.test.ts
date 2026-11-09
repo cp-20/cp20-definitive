@@ -38,15 +38,21 @@ describe('stampsOf', () => {
     article('2025-04-02T05:00:00.000Z', 5),
   ];
   test('その年の記事だけを日付順に並べる', () => {
-    assert.deepEqual(stampsOf(items, 2025).map((s) => s.a.title), ['t4', 't2', 't1', 't5']);
+    assert.deepEqual(
+      stampsOf(items, 2025).map((s) => s.a.title),
+      ['t4', 't2', 't1', 't5'],
+    );
   });
   test('同じ日のスタンプに番号を振り、その日の数を持たせる', () => {
-    assert.deepEqual(stampsOf(items, 2025).map((s) => [s.m, s.d, s.nth, s.of]), [
-      [1, 10, 0, 1],
-      [4, 2, 0, 3],
-      [4, 2, 1, 3],
-      [4, 2, 2, 3],
-    ]);
+    assert.deepEqual(
+      stampsOf(items, 2025).map((s) => [s.m, s.d, s.nth, s.of]),
+      [
+        [1, 10, 0, 1],
+        [4, 2, 0, 3],
+        [4, 2, 1, 3],
+        [4, 2, 2, 3],
+      ],
+    );
   });
 });
 

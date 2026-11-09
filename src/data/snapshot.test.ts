@@ -97,7 +97,7 @@ describe('画像キャッシュ', () => {
             const crop = cache[source]?.crop;
             return crop && Math.abs(crop.width / crop.height - 16 / 9) < 0.01;
           },
-          '元の画像は候補にしない': (source) => !images[source]?.srcset?.includes(cache[source]?.file),
+          元の画像は候補にしない: (source) => !images[source]?.srcset?.includes(cache[source]?.file),
           '原寸の切り出しを src にする': (source) => {
             const largest = cache[source]?.variants?.at(-1);
             return images[source]?.src === largest?.file && largest?.width === cache[source]?.crop?.width;
@@ -125,7 +125,9 @@ describe('画像キャッシュ', () => {
 describe('リンク先のプレビュー', () => {
   test('リポジトリのページの作品は GitHub のアイコンを使わない', () => {
     assert.deepEqual(
-      works.filter((w) => previews[w.url]?.icon?.startsWith('https://github.githubassets.com/')).map((w) => w.id),
+      works
+        .filter((w) => previews[w.url]?.icon?.startsWith('https://github.githubassets.com/'))
+        .map((w) => w.id),
       [],
     );
   });
@@ -191,7 +193,9 @@ describe('作品（works.json）', () => {
       w.comments.flatMap((comment) => {
         const parts = splitLinks(comment);
         const bare = /https?:\/\/|\(\/|\]\(/.test(parts.map((p) => ('text' in p ? p.text : '')).join(''));
-        const broken = parts.flatMap((p) => ('href' in p && p.href.startsWith('/') && !paths.has(p.href) ? [p.href] : []));
+        const broken = parts.flatMap((p) =>
+          'href' in p && p.href.startsWith('/') && !paths.has(p.href) ? [p.href] : [],
+        );
         return [...(bare ? [`${w.id}: URL がむき出し`] : []), ...broken.map((href) => `${w.id}: ${href}`)];
       }),
     );
@@ -209,7 +213,8 @@ describe('作品（works.json）', () => {
             s.src === `/images/screenshots/${s.id}-${s.device}.png`,
           説明がある: (s) => s.alt.trim(),
           画像がある: (s) => names.includes(`${stem(s.src)}.png`),
-          'WebP の縮小版がある': (s) => names.some((n) => new RegExp(`^${stem(s.src)}-\\d+w\\.webp$`).test(n)),
+          'WebP の縮小版がある': (s) =>
+            names.some((n) => new RegExp(`^${stem(s.src)}-\\d+w\\.webp$`).test(n)),
         }),
         stray: names.filter(
           (n) => !shots.some((s) => n === `${stem(s.src)}.png` || n.startsWith(`${stem(s.src)}-`)),
@@ -288,7 +293,9 @@ describe('経歴（editorial.ts）', () => {
           'id は小文字の単語をハイフンでつないだもの': (m) => /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(m.id),
           'work は works.json の id': (m) => !m.work || workIds.has(m.work),
         }),
-        ...highlightIds.filter((id) => !ids.includes(id)).map((id) => `${id}: トップの実績にあるが経歴にない`),
+        ...highlightIds
+          .filter((id) => !ids.includes(id))
+          .map((id) => `${id}: トップの実績にあるが経歴にない`),
       ],
       [],
     );

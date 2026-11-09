@@ -83,13 +83,21 @@ describe('request', () => {
 
   test('HTML の head を読むときは、上限で切り詰める', async () => {
     const { fetch } = fetchOf(big);
-    const html = await request('https://example.com', { format: 'html', fetch, maxBytes: 1000, truncate: true });
+    const html = await request('https://example.com', {
+      format: 'html',
+      fetch,
+      maxBytes: 1000,
+      truncate: true,
+    });
     assert.equal(html.length, 1000);
   });
 
   test('それ以外では、上限を超えたら再試行せずに失敗にする', async () => {
     const { fetch, asked } = fetchOf(big, big);
-    await assert.rejects(request('https://example.com', { format: 'html', fetch, maxBytes: 1000 }), /exceeds/);
+    await assert.rejects(
+      request('https://example.com', { format: 'html', fetch, maxBytes: 1000 }),
+      /exceeds/,
+    );
     assert.equal(asked.length, 1);
   });
 
@@ -142,7 +150,12 @@ describe('各掲載先の応答', () => {
   test('Zenn の記事は path から URL を作り、公開日時を UTC にそろえる', () => {
     assert.deepEqual(
       zennArticle({ title: 'A', path: '/cp20/articles/a', published_at: '2026-01-02T09:00:00+09:00' }),
-      { title: 'A', url: 'https://zenn.dev/cp20/articles/a', date: '2026-01-02T00:00:00.000Z', source: 'zenn.dev' },
+      {
+        title: 'A',
+        url: 'https://zenn.dev/cp20/articles/a',
+        date: '2026-01-02T00:00:00.000Z',
+        source: 'zenn.dev',
+      },
     );
   });
 
@@ -238,7 +251,11 @@ describe('trap.jp の記事が急に減ったとき', () => {
   });
 
   test('半分以上残っていれば、そのまま受け入れる', async () => {
-    const result = await collect(before, { 'trap.jp': async () => articles.slice(0, 6) }, { now, allowShrink: false });
+    const result = await collect(
+      before,
+      { 'trap.jp': async () => articles.slice(0, 6) },
+      { now, allowShrink: false },
+    );
     assert.equal(result.sources['trap.jp'].status, 'ok');
   });
 
@@ -253,6 +270,12 @@ describe('trap.jp の記事が急に減ったとき', () => {
     const kept = await collect(unlinked, { 'trap.jp': async () => articles.slice(1) }, { now, pinned });
     assert.deepEqual(trapUrls(kept), articles.map((a) => a.url).sort());
     const pruned = await collect(unlinked, { 'trap.jp': async () => articles.slice(2) }, { now, pinned });
-    assert.deepEqual(trapUrls(pruned), articles.filter((_, i) => i !== 1).map((a) => a.url).sort());
+    assert.deepEqual(
+      trapUrls(pruned),
+      articles
+        .filter((_, i) => i !== 1)
+        .map((a) => a.url)
+        .sort(),
+    );
   });
 });

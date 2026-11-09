@@ -168,32 +168,32 @@ export async function cacheImages({
   const next: Cache = {};
   let refreshed = 0;
   await eachLimited(urls, 6, async (source) => {
-        const old = previous[source];
-        const kept = old && (await exists(publicFile(dirs, old.file)));
-        // A copy: addVariants rewrites entries in place, and `previous` must stay as it was for the
-        // change check below (a run that only adds or drops variants is still a change).
-        if (kept) next[source] = structuredClone(old);
-        if (!force && kept && Date.now() - Date.parse(old.checkedAt) < REFRESH_MS) return;
-        try {
-          const url = new URL(source);
-          if (url.protocol !== 'https:' || url.username || url.password) throw Error('Invalid source');
-          const bytes = await download(url, fetch);
-          const ext = await decodableRaster(bytes);
-          const filename = `${createHash('sha256').update(bytes).digest('hex').slice(0, 24)}.${ext}`;
-          const file = new URL(filename, directory);
-          const temporary = new URL(
-            `${filename}.${createHash('sha256').update(source).digest('hex').slice(0, 8)}.tmp`,
-            directory,
-          );
-          await writeFile(temporary, bytes);
-          await rename(temporary, file);
-          next[source] = { file: `/media/${filename}`, checkedAt: new Date().toISOString() };
-          refreshed++;
-        } catch {
-          console.warn(
-            `Image cache: ${new URL(source).hostname}; ${kept ? 'kept previous file' : 'unavailable or unsupported raster'}`,
-          );
-        }
+    const old = previous[source];
+    const kept = old && (await exists(publicFile(dirs, old.file)));
+    // A copy: addVariants rewrites entries in place, and `previous` must stay as it was for the
+    // change check below (a run that only adds or drops variants is still a change).
+    if (kept) next[source] = structuredClone(old);
+    if (!force && kept && Date.now() - Date.parse(old.checkedAt) < REFRESH_MS) return;
+    try {
+      const url = new URL(source);
+      if (url.protocol !== 'https:' || url.username || url.password) throw Error('Invalid source');
+      const bytes = await download(url, fetch);
+      const ext = await decodableRaster(bytes);
+      const filename = `${createHash('sha256').update(bytes).digest('hex').slice(0, 24)}.${ext}`;
+      const file = new URL(filename, directory);
+      const temporary = new URL(
+        `${filename}.${createHash('sha256').update(source).digest('hex').slice(0, 8)}.tmp`,
+        directory,
+      );
+      await writeFile(temporary, bytes);
+      await rename(temporary, file);
+      next[source] = { file: `/media/${filename}`, checkedAt: new Date().toISOString() };
+      refreshed++;
+    } catch {
+      console.warn(
+        `Image cache: ${new URL(source).hostname}; ${kept ? 'kept previous file' : 'unavailable or unsupported raster'}`,
+      );
+    }
   });
   if (previousPreviews) {
     let previewsReverted = false;
@@ -373,7 +373,10 @@ export async function addVariants(
       try {
         const fresh = await writeVariant(dirs, entry.file, file, w, crop);
         // Small, flat icons can be smaller as PNG than as WebP: a copy that saves nothing is dropped.
-        if (!crop && (await stat(publicFile(dirs, file))).size >= (await stat(publicFile(dirs, entry.file))).size) {
+        if (
+          !crop &&
+          (await stat(publicFile(dirs, file))).size >= (await stat(publicFile(dirs, entry.file))).size
+        ) {
           await rm(publicFile(dirs, file), { force: true });
           continue;
         }

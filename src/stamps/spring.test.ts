@@ -77,7 +77,6 @@ describe('springStep', () => {
     assert.ok(Math.abs(slanted.tilt - 7) < 1, String(slanted.tilt));
   });
 
-
   test('傾きは速さに応じて増え、普通の速さでは上限に張り付かない', () => {
     // Dragged sideways at a steady speed (px/s) for half a second.
     const lean = (speed: number) => {

@@ -93,7 +93,6 @@ describe('removeFrom', () => {
     const record = fullRecord();
     assert.deepEqual(Object.keys(removeFrom(record, seen(record, '3')).stamps), ['0', '1', '2', '4']);
   });
-
 });
 
 describe('moveIn', () => {
@@ -112,7 +111,6 @@ describe('moveIn', () => {
     const edit = moveIn(record, seen(record, '3'), sticker({ x: 0.57 }));
     assert.deepEqual(edit.stamps['3'], sticker({ x: 0.57, createdAt: 13 }));
   });
-
 });
 
 describe('nextRecord', () => {
