@@ -2,7 +2,7 @@ import { For, Show, createSignal, onSettled } from 'solid-js';
 import { httpStatus } from '@solidjs/web';
 import Icon, { type IconName } from '../components/Icon.tsx';
 import { OriginalIcon } from '../components/Preview.tsx';
-import { WorkImage } from '../components/WorkCard.tsx';
+import WorkCard from '../components/WorkCard.tsx';
 import { works } from '../content/content.ts';
 import { featuredIds } from '../data/editorial.ts';
 import { workPath } from '../site/pages.ts';
@@ -35,21 +35,9 @@ export default function NotFound() {
         fallback={
           <section class="not-found-section" aria-labelledby="not-found-featured">
             <h2 id="not-found-featured">代表作</h2>
-            <ul class="not-found-featured">
-              <For each={featured}>
-                {(w) => (
-                  <li>
-                    <a href={workPath(w.id)}>
-                      <WorkImage work={w} sizes="(max-width: 760px) 96px, 132px" eager />
-                      <span>
-                        <strong>{w.title}</strong>
-                        <span>{w.description}</span>
-                      </span>
-                    </a>
-                  </li>
-                )}
-              </For>
-            </ul>
+            <div class="work-cards-small not-found-featured">
+              <For each={featured}>{(w) => <WorkCard work={w} eager />}</For>
+            </div>
           </section>
         }
       >
@@ -60,7 +48,7 @@ export default function NotFound() {
               {(w) => (
                 <li>
                   <a href={workPath(w.id)}>
-                    <OriginalIcon url={w.url} name={w.title} />
+                    <OriginalIcon url={w.url} />
                     {w.title}
                   </a>
                 </li>

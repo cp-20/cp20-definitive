@@ -24,14 +24,6 @@ export const sections = workSections(
   featuredIds,
   editionWorks.map((e) => e.id),
 );
-/** A work's technologies as listed: without the languages, which its frameworks already imply. */
-export const workStack = (w: Work) => w.techStack.filter((t) => t.type !== 'language');
-/** The few named beside a work in a list: its frameworks. */
-export const keyStack = (w: Work) =>
-  workStack(w)
-    .filter((t) => t.type === 'main' || t.type === 'framework')
-    .slice(0, 3)
-    .map((t) => t.label);
 export const repos = snapshotRepos as {
   name: string;
   url: string;

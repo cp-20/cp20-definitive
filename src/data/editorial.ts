@@ -1,4 +1,6 @@
 export const featuredIds = ['dice-spec-v2', 'c-compiler', 'minna-no-monosashi'];
+/** The history entries the home page shows first, each opening its dialog on /about. */
+export const highlightIds = ['isucon2026', 'wsh2024', 'layerx'];
 /**
  * One entry per line of the history on /about. `id` is its dialog's id, so /about#<id> opens it
  * (the home page links its achievements this way). `text` is the line under the title: what came
@@ -16,6 +18,8 @@ export type Milestone = {
   detail: string[];
   links: { label: string; url: string }[];
   work?: string;
+  /** Still going on (shown as "<year>〜" where the title does not date it). */
+  ongoing?: boolean;
   /** A speed-up for the strip above the history: what got faster, from what to what, and where. */
   speedup?: { what: string; from?: string; to: string; place: string };
 };
@@ -40,6 +44,7 @@ export const milestones: Milestone[] = [
     id: 'layerx',
     kind: 'intern',
     year: '2026.09',
+    ongoing: true,
     grade: '大学4年',
     title: 'LayerX インターン',
     text: '社内の AI エージェント基盤 haro を開発。CI のチェックアウトを **65.9秒→17.5秒**に。',

@@ -1,55 +1,119 @@
 import { createSignal, For } from 'solid-js';
 import Icon from '../components/Icon.tsx';
+import Brand from '../components/Brand.tsx';
+import WorkCard from '../components/WorkCard.tsx';
 import { articleAnchor, responsive, sizes } from '../components/Preview.tsx';
-import Projects from '../components/Projects.tsx';
 import { AttendanceCard, DayStamp } from '../components/AttendanceCard.tsx';
 import { yearOf } from '../components/attendance.ts';
-import { articles, formatDate } from '../content/content.ts';
-import { editions } from '../data/editorial.ts';
+import { articles, formatDate, sections } from '../content/content.ts';
+import { highlightIds, milestones } from '../data/editorial.ts';
 import { localImage, seriesCover } from '../content/images.ts';
+import profile from '../data/profile.json';
 import tracks from '../data/tracks.json';
 import series from '../data/series.json';
+
+// What a visitor is shown first: who, what came of it (each line opens its entry on /about), and
+// where to reach him (Twitter's DMs are the way in; there is no mail address).
+const highlights = highlightIds.map((id) => milestones.find((m) => m.id === id)!);
+const accounts = profile.links.filter((l) => l.name === 'Twitter' || l.name === 'GitHub');
+// The newest works after the featured ones (the years on /works list them newest first).
+const recent = sections.years.flatMap((y) => y.works).slice(0, 2);
+
 export default function Home() {
   const [hot, setHot] = createSignal<string>();
+  const track = tracks[0],
+    book = series[0];
   return (
     <div class="wrap">
       <section data-stamp-anchor="intro" class="home-intro" aria-labelledby="hero-title">
-        <div class="identity">
+        <div class="home-hello">
           <span class="avatar-stamp">
             <img
               src="/images/avatar-384.webp"
               alt="しーぴーのアイコン"
-              width="88"
-              height="88"
+              width="132"
+              height="132"
               fetchpriority="high"
             />
           </span>
-          <div>
-            <h1 id="hero-title">
-              しーぴー<span>cp20</span>
-            </h1>
-            <p>Webアプリや開発ツールをつくっています。</p>
+          <h1 id="hero-title">
+            しーぴー<span>cp20</span>
+          </h1>
+          <p class="home-facts">
+            東京科学大学 情報工学系 学士4年。
+            <br />
+            フロントエンドを中心に開発しています。
+          </p>
+          <div class="home-accounts">
+            <For each={accounts}>
+              {(l) => (
+                <a class="text-button" href={l.url}>
+                  <Brand url={l.url} size={18} />
+                  {l.name}
+                </a>
+              )}
+            </For>
           </div>
         </div>
-        <a href="/about" class="intro-profile">
-          <span>
-            東京科学大学 情報工学系 B4
-            <br />
+        <div class="highlights">
+          <ul>
+            <For each={highlights}>
+              {(m) => (
+                <li>
+                  <a href={`/about#${m.id}`} data-kind={m.kind}>
+                    <span class="highlight-title">
+                      {m.title}
+                      {m.ongoing && <small>{m.year}〜</small>}
+                    </span>
+                    <Icon name="ChevronRight" size={18} />
+                  </a>
+                </li>
+              )}
+            </For>
+          </ul>
+          <a href="/about" class="under-link highlights-more">
             プロフィール・経歴
-          </span>
-        </a>
+            <Icon name="ArrowRight" size={16} />
+          </a>
+        </div>
       </section>
-      <Projects />
+      <section class="home-works" aria-labelledby="featured-title" data-stamp-anchor="featured">
+        <div class="section-heading">
+          <h2 id="featured-title">代表作</h2>
+          <a href="/works" class="under-link">
+            すべての作品
+            <Icon name="ArrowRight" size={16} />
+          </a>
+        </div>
+        <div class="work-cards-large">
+          <For each={sections.featured}>
+            {(w, i) => <WorkCard work={w} variant="large" priority={i() === 0} eager />}
+          </For>
+        </div>
+        <div class="home-recent-works">
+          <h3>最近つくったもの</h3>
+          <ul>
+            <For each={recent}>
+              {(w) => (
+                <li>
+                  <WorkCard work={w} variant="row" />
+                </li>
+              )}
+            </For>
+          </ul>
+        </div>
+      </section>
       <div class="home-middle">
         <section class="home-writing" aria-labelledby="writing-title">
           <div class="section-heading">
             <h2 id="writing-title">最近の記事</h2>
             <a href="/articles" class="under-link">
-              すべて見る
+              すべての記事
+              <Icon name="ArrowRight" size={16} />
             </a>
           </div>
-          {/* The latest year's card, and the newest few by name under it (their stamps on the card
-              are marked while one is pointed at). */}
+          {/* The latest year's card, and the newest few by name beside it (their stamps on the
+              card are marked while one is pointed at). */}
           <AttendanceCard items={articles} year={yearOf(articles[0])} hot={hot()} onHot={setHot} />
           <ul class="recent-articles">
             <For each={articles.slice(0, 3)}>
@@ -74,53 +138,40 @@ export default function Home() {
             </For>
           </ul>
         </section>
-        <aside class="home-profile">
-          <h2>プロフィール</h2>
-          <p>フロントエンドを中心に開発しています。漫画とボカロが好きです。</p>
+        <aside class="home-likes" aria-labelledby="likes-title">
+          <h2 id="likes-title">好きなもの</h2>
           <div class="home-favorites">
             <a href="/about#music">
-              <img
-                src={localImage(tracks[0].thumbnail)?.src}
-                {...responsive(localImage(tracks[0].thumbnail)?.srcset, sizes.homeTrack)}
-                alt={tracks[0].title}
-                width="120"
-                height="90"
-                loading="lazy"
-              />
-              <Icon name="Music" size={16} />
+              <span class="favorite-stamp">
+                <img
+                  src={localImage(track.thumbnail)?.src}
+                  {...responsive(localImage(track.thumbnail)?.srcset, sizes.homeTrack)}
+                  alt=""
+                  width="120"
+                  height="90"
+                  loading="lazy"
+                />
+                <Icon name="Music" size={16} />
+              </span>
+              <span class="favorite-name">{track.title}</span>
             </a>
             <a href="/about#manga">
-              <img
-                src={seriesCover(series[0])?.src}
-                {...responsive(seriesCover(series[0])?.srcset, sizes.homeCover)}
-                alt={series[0].title}
-                width="96"
-                height="136"
-                loading="lazy"
-              />
-              <Icon name="BookOpen" size={16} />
+              <span class="favorite-stamp">
+                <img
+                  src={seriesCover(book)?.src}
+                  {...responsive(seriesCover(book)?.srcset, sizes.homeCover)}
+                  alt=""
+                  width="96"
+                  height="136"
+                  loading="lazy"
+                />
+                <Icon name="BookOpen" size={16} />
+              </span>
+              <span class="favorite-name">{book.title}</span>
             </a>
           </div>
-          <a href="/about" class="under-link">
-            プロフィールを見る
-          </a>
         </aside>
       </div>
-      <section class="editions-section" aria-labelledby="editions-title">
-        <div>
-          <h2 id="editions-title">これまでの cp20.dev</h2>
-        </div>
-        <div class="edition-list">
-          <For each={editions}>
-            {(e) => (
-              <a href={`https://${e.year}.cp20.dev`}>
-                <strong>{e.year}</strong>
-                <span>{e.tech}</span>
-              </a>
-            )}
-          </For>
-        </div>
-      </section>
     </div>
   );
 }

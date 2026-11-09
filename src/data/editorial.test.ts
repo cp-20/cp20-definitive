@@ -4,7 +4,7 @@ import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import baseWorks from './works.json' with { type: 'json' };
 import manual from './manual.json' with { type: 'json' };
-import { milestones, speedups } from './editorial.ts';
+import { highlightIds, milestones, speedups } from './editorial.ts';
 import { splitEmphasis } from '../content/emphasis.ts';
 import { mergeWorks } from '../site/pages.ts';
 
@@ -25,6 +25,13 @@ describe('経歴', () => {
     const works = new Set(mergeWorks(baseWorks, manual).map((w) => w.id));
     assert.deepEqual(
       milestones.filter((m) => m.work && !works.has(m.work)).map((m) => m.id),
+      [],
+    );
+  });
+
+  test('トップに出す実績は、ある経歴を指す', () => {
+    assert.deepEqual(
+      highlightIds.filter((id) => !milestones.some((m) => m.id === id)),
       [],
     );
   });

@@ -191,6 +191,10 @@
   .work-card-large h3 {
     font-size: 1.25rem;
   }
+  /* Wide enough to break between phrases without ragged lines (not so in the narrower lists). */
+  .work-card-large .work-card-description {
+    word-break: auto-phrase;
+  }
   .work-card-large .work-card-text {
     display: flex;
     flex: 1;

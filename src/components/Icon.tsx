@@ -1,6 +1,7 @@
 import { dynamic } from '@solidjs/web';
 import {
   ArrowUpRight,
+  ArrowRight,
   ArrowLeft,
   X,
   Folder,
@@ -33,6 +34,7 @@ import {
 } from 'lucide';
 const icons = {
   ArrowUpRight,
+  ArrowRight,
   ArrowLeft,
   X,
   Folder,

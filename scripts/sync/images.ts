@@ -99,8 +99,8 @@ export async function dimensions(url: string, fetcher: typeof fetch = fetch) {
 
 // ── Which images the pages show ──
 /**
- * Pages whose site icon the pages show: only the works (OriginalIcon in Projects.tsx and the works
- * grid). Articles show their OG image alone, so the platforms' logos in their previews are not cached.
+ * Pages whose site icon the pages show: only the works (WorkCard.tsx, and the names on the 404
+ * page). Articles show their OG image alone, so the platforms' logos in their previews are not cached.
  */
 export const iconPages = (works: { url: string }[]) => new Set(works.map((w) => w.url));
 /** Source URLs of the site icons in previews.json that the pages show (`pages` from iconPages). */

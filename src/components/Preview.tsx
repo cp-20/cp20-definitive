@@ -5,8 +5,6 @@ import { pages } from 'virtual:cp20-media';
 // by scripts/qa/browser-check.ts; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
 export const sizes = {
   articleRow: '(max-width: 600px) 104px, 124px',
-  featured:
-    '(max-width: 760px) calc(100vw - 104px), (max-width: 900px) calc(100vw - 300px), (max-width: 1100px) calc(55vw - 200px), 470px',
   // WorkCard.tsx and a work's page (src/styles/works.css): a featured card (three across, then a
   // row), a list card's stamp, a one-line row, the page's picture and the phone screen on it.
   workCard: '(max-width: 760px) 96px, (max-width: 1000px) 224px, 300px',
@@ -45,23 +43,11 @@ export function responsive(srcset: string | undefined, sizes: string | undefined
     },
   };
 }
-/**
- * The site's own icon. With `placeholder`, a work without one gets a badge with its initial
- * in the same space, so titles in a list start at the same position.
- */
-export function OriginalIcon(props: { url: string; name: string; placeholder?: boolean }) {
+/** The site's own icon, when it has one. */
+export function OriginalIcon(props: { url: string }) {
   const [failed, setFailed] = createSignal(false);
   return (
-    <Show
-      when={previewFor(props.url)?.icon}
-      fallback={
-        props.placeholder && (
-          <span class="original-icon icon-placeholder" aria-hidden="true">
-            {props.name.trim().charAt(0).toUpperCase()}
-          </span>
-        )
-      }
-    >
+    <Show when={previewFor(props.url)?.icon}>
       <img
         class="original-icon"
         style={{ visibility: failed() ? 'hidden' : 'inherit' }}
@@ -125,16 +111,3 @@ export const articleAnchor = (url: string) => {
   for (const c of url) hash = Math.imul(hash ^ c.charCodeAt(0), 16777619);
   return `article-${(hash >>> 0).toString(36)}`;
 };
-// "2023/09/25 ～ 2023/10/13" → "2023.09.25", ISO dates → "2026.07.20".
-export const postmarkDate = (value: string) => {
-  const m = value.match(/(\d{4})[/-](\d{2})(?:[/-](\d{2}))?/);
-  return m ? [m[1], m[2], m[3]].filter(Boolean).join('.') : '';
-};
-// A cancellation mark stamped across a postage-stamp image.
-export function Postmark(props: { date: string }) {
-  return (
-    <span class="postmark" aria-hidden="true">
-      <span class="postmark-date">{props.date}</span>
-    </span>
-  );
-}

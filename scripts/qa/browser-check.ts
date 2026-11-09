@@ -179,6 +179,37 @@ try {
     'pages load with no axe violations, broken or remote images, or sideways scroll at 320-1440px; every character in a font subset of its weight; shared controls are 44px on a phone',
   );
 
+  // ── A phone's first screen (iPhone 13, above the tabs at its foot): the name, the facts, the
+  // accounts, the three results and the featured works' heading, and no link under the sticker tab ──
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto(origin + '/');
+  await settle();
+  {
+    const fold = (await page.locator('.rail nav').boundingBox())!.y;
+    for (const part of ['.home-hello h1', '.home-facts', '.home-accounts', '.highlights', '.home-works h2']) {
+      const box = (await page.locator(part).boundingBox())!;
+      if (box.y + box.height > fold) throw Error(`${part} is below a phone's first screen`);
+    }
+    const sticker = (await page.locator('.sticker-tab').boundingBox())!;
+    const covered = await page.locator('main a').evaluateAll(
+      (links, s) =>
+        links
+          .filter((a) => {
+            const r = a.getBoundingClientRect();
+            return (
+              r.width && r.left < s.x + s.width && r.right > s.x && r.top < s.y + s.height && r.bottom > s.y
+            );
+          })
+          .map((a) => a.textContent),
+      sticker,
+    );
+    if (covered.length) throw Error(`Links under the sticker tab on a phone's first screen: ${covered}`);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  passed(
+    "a phone's first screen holds who, the facts, the accounts, the results and the featured heading, clear of the sticker tab",
+  );
+
   // ── In-app navigation ──
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(origin + '/');
@@ -319,12 +350,7 @@ try {
   await page.keyboard.press('Escape');
   // From another page (the home page's achievements), the page turns, then the dialog opens.
   await page.goto(origin + '/');
-  await page.evaluate(() => {
-    const a = Object.assign(document.createElement('a'), { href: '/about#wsh2024' });
-    document.querySelector('main')!.append(a);
-    a.click();
-    a.remove();
-  });
+  await page.locator('.highlights a[href="/about#wsh2024"]').click();
   await expect(page.locator('#wsh2024')).toBeVisible();
   await expect(page.locator('main h1')).toContainText('しーぴー');
   await page.keyboard.press('Escape');
@@ -882,11 +908,9 @@ try {
   // ── The keyboard, and saves that fail ──
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(origin + '/');
-  await page.locator('[data-project-tab="1"]').click();
   if (
-    (await page
-      .locator('#project-1 .featured-image')
-      .evaluate((el) => getComputedStyle(el).animationName)) !== 'none'
+    (await page.locator('.home-hello .avatar-stamp').evaluate((el) => getComputedStyle(el).animationName)) !==
+    'none'
   )
     throw Error('Reduced motion');
   const outage = async (route: Route) => {
@@ -964,7 +988,8 @@ try {
   await plain.goto(origin + '/articles');
   await expect(plain.locator('[data-article]:visible')).toHaveCount(allArticles);
   await plain.goto(origin + '/');
-  await expect(plain.locator('noscript a')).toHaveCount(3);
+  await expect(plain.locator('.work-cards-large .work-card-link:visible')).toHaveCount(3);
+  await expect(plain.locator('.highlights a:visible')).toHaveCount(4);
   await nojs.close();
   passed('complete static content without JavaScript');
 
