@@ -3812,16 +3812,14 @@
   }
 }
 
-/* ── Article list: attendance cards ──
+/* ── Articles: attendance cards ──
    Like the cards stamped at morning radio exercises: one card per year, twelve months by
-   thirty-one days, with a stamp on each day an article came out (AttendanceCard.tsx). The
-   other years' cards lie stacked behind, their index tabs showing; the open year's articles
-   are listed beside the card (below it on phones). */
+   thirty-one days, with a stamp on each day an article came out (AttendanceCard.tsx). On
+   /articles the other years' cards lie stacked behind with their index tabs showing, and the
+   open year's articles are listed beside the card (under it on narrower screens). Home shows the
+   latest card and the newest few titles under it. The ruled lines are one background, so only
+   the labels and the stamped days are elements. */
 @layer components {
-  .attendance-desk,
-  .home-writing {
-    --ink-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0 0 0 -1.7'/%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
   .attendance-desk {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(300px, 350px);
@@ -3831,41 +3829,64 @@
   .attendance {
     --print: #3b64a8;
     --line: color-mix(in srgb, var(--print) 32%, transparent);
-    --card: #fff4c9;
+    --card: #fff1bd;
+    --tabs: 0px;
+    position: relative;
+    padding: 0 8px 10px 0;
+  }
+  .attendance-desk > .attendance {
     position: sticky;
     top: 24px;
-    padding: 0 10px 10px 0;
   }
-  .attendance[data-year='1'],
-  .attendance-tab[data-year='1'] {
+  .attendance:has(.attendance-tabs) {
+    --tabs: 44px;
+  }
+  :is(.attendance, .attendance-tab)[data-year='1'] {
     --card: #dcecff;
   }
-  .attendance[data-year='2'],
-  .attendance-tab[data-year='2'] {
+  :is(.attendance, .attendance-tab)[data-year='2'] {
     --card: #ffe3ea;
   }
-  .attendance[data-year='3'],
-  .attendance-tab[data-year='3'] {
+  :is(.attendance, .attendance-tab)[data-year='3'] {
     --card: #d9f2dc;
   }
-  .attendance[data-year='0'],
+  /* A tab takes its own year's colour, not the open card's. */
   .attendance-tab[data-year='0'] {
     --card: #fff1bd;
   }
-  /* Index tabs along the top of the stack, one per year; the open one joins its card. */
+  /* The cards of the other years, stacked under this one. */
+  .attendance::before,
+  .attendance::after {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    inset: var(--tabs) 8px 10px 0;
+    border: 2px solid var(--edge);
+    border-radius: 12px;
+    background: #fbf3dc;
+    rotate: 1.2deg;
+    translate: 7px 6px;
+  }
+  .attendance::after {
+    z-index: -1;
+    background: #e9f2fb;
+    rotate: -0.8deg;
+    translate: 2px 11px;
+  }
+  /* Index tabs along the top of the stack, one per year. The open one comes up and joins its
+     card; the others sit lower, behind it. Only their position moves. */
   .attendance-tabs {
+    position: relative;
     display: flex;
     gap: 4px;
     padding-left: 14px;
     margin-bottom: -2px;
   }
   .attendance-tab {
-    position: relative;
     display: flex;
     align-items: baseline;
     gap: 5px;
-    height: 40px;
-    margin-top: 6px;
+    height: 46px;
     padding: 0 12px;
     border: 2px solid var(--edge);
     border-bottom: 0;
@@ -3876,30 +3897,30 @@
     font-weight: 600;
     line-height: 38px;
     color: var(--muted);
-    transition:
-      margin var(--t-hover) var(--ease),
-      height var(--t-hover) var(--ease);
+    translate: 0 6px;
+    transition: translate var(--t-hover) var(--ease);
   }
   .attendance-tab small {
     font-size: 0.6875rem;
     font-weight: 500;
   }
+  .attendance-tab[data-empty] small {
+    opacity: 0.5;
+  }
   .attendance-tab[aria-pressed='true'] {
+    position: relative;
     z-index: 2;
-    height: 46px;
-    margin-top: 0;
+    translate: none;
     background: var(--card);
     color: var(--ink);
   }
   @media (hover: hover) {
     .attendance-tab[aria-pressed='false']:hover {
-      height: 44px;
-      margin-top: 2px;
+      translate: 0 3px;
       color: var(--ink);
     }
   }
   .attendance-tab:focus-visible {
-    outline: 3px dashed var(--seal);
     outline-offset: 2px;
   }
   .attendance-card {
@@ -3914,30 +3935,8 @@
       var(--card);
     box-shadow: 4px 4px 0 var(--drop);
   }
-  /* The cards of the other years, stacked under this one. */
-  .attendance {
-    --tabs: 0px;
-  }
-  .attendance:has(.attendance-tabs) {
-    --tabs: 44px;
-  }
-  .attendance::before,
-  .attendance::after {
-    content: '';
-    position: absolute;
-    z-index: 0;
-    inset: var(--tabs) 10px 10px 0;
-    border: 2px solid var(--edge);
+  .attendance:not(:has(.attendance-tabs)) .attendance-card {
     border-radius: 12px;
-    background: #fbf3dc;
-    rotate: 1.8deg;
-    translate: 9px 8px;
-  }
-  .attendance::after {
-    z-index: -1;
-    background: #e9f2fb;
-    rotate: -1.1deg;
-    translate: 3px 13px;
   }
   .attendance-head {
     display: flex;
@@ -3955,7 +3954,6 @@
     margin-right: auto;
     font-family: var(--mono);
     font-size: 2rem;
-    font-weight: 700;
     line-height: 1;
     letter-spacing: -0.02em;
   }
@@ -3996,20 +3994,21 @@
     font-family: var(--mono);
     font-size: 1.125rem;
   }
-  /* The ruled grid: month labels down the side, days across the top. The lines are drawn
-     under the grid's cells, so only the days with stamps are elements. */
+  /* The ruled grid: month labels down the side, days across the top, every fifth column a shade
+     lighter. A day is a column of the card's width; the rows are a little taller, up to a limit
+     on wide cards. */
   .attendance-grid {
     --label: 34px;
     --cell: calc((100cqw - var(--label)) / 31);
+    --row: min(var(--cell) * 1.7, 30px);
     position: relative;
     display: grid;
     grid-template-columns: var(--label) repeat(31, var(--cell));
-    --row: calc(var(--cell) * 1.7);
     grid-template-rows: 20px repeat(12, var(--row));
   }
   .attendance-grid::before {
     content: '';
-    grid-area: 2 / 2 / 14 / 33;
+    grid-area: 2 / 2 / -1 / -1;
     background:
       linear-gradient(to right, var(--line) 1px, transparent 1px) 0 0 / var(--cell) 100%,
       linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 100% var(--row),
@@ -4020,60 +4019,94 @@
       inset -1px -1px 0 var(--line),
       0 0 0 1.5px var(--print);
   }
+  .attendance-corner,
+  .attendance-day,
+  .attendance-month {
+    font-size: 0.5625rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--print);
+    white-space: nowrap;
+  }
   .attendance-corner {
     grid-area: 1 / 1;
     align-self: center;
-    font-size: 0.5625rem;
-    font-weight: 700;
-    color: var(--print);
-    white-space: nowrap;
   }
   .attendance-day {
     grid-row: 1;
     align-self: end;
     padding-bottom: 3px;
     font-family: var(--mono);
-    font-size: 0.5625rem;
-    line-height: 1;
+    font-weight: 400;
     text-align: center;
-    color: var(--print);
-    font-variant-numeric: tabular-nums;
   }
   .attendance-month {
     grid-column: 1;
     align-self: center;
     padding-right: 7px;
     font-size: 0.6875rem;
-    font-weight: 700;
-    line-height: 1;
     text-align: right;
-    color: var(--print);
-    white-space: nowrap;
   }
   /* Days the month does not have. */
   .attendance-void {
     margin: 1px 0 0 1px;
     background: repeating-linear-gradient(-45deg, var(--line) 0 1px, transparent 1px 4px);
   }
-  /* A stamp: the source's face in its ink, a little larger than the day so it spills over the
-     lines as a hand-pressed stamp does, with speckles where the rubber missed. */
+  /* A source's stamp: its face (24×24, even-odd cutouts) in its ink, with speckles where the
+     rubber missed. Drawn once here, so a stamp on the page is one empty element. */
+  .day-stamp {
+    --ink: var(--seal);
+    --face: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 2a10 10 0 1 0 .01 0z'/%3E%3C/svg%3E");
+    display: block;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    background: var(--ink);
+    mask:
+      var(--face) center / contain no-repeat,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0 0 0 -1.7'/%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23n)'/%3E%3C/svg%3E")
+        0 0 / 60px 60px;
+    mask-composite: intersect;
+    mix-blend-mode: multiply;
+    opacity: 0.92;
+  }
+  .day-stamp[data-ink='trap.jp'] {
+    --ink: #2f4c9c;
+    --face: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.6l-6.4 3.5L7 14l-5.3-5 7.2-.9zM12 9.6a2.6 2.6 0 1 0 .01 0z'/%3E%3C/svg%3E");
+  }
+  .day-stamp[data-ink='zenn.dev'] {
+    --ink: #1f86c8;
+    --face: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 2a10 10 0 1 0 .01 0zm0 4a6 6 0 1 1-.01 0zm0 3.6a2.4 2.4 0 1 0 .01 0z'/%3E%3C/svg%3E");
+  }
+  .day-stamp[data-ink='qiita.com'] {
+    --ink: #3a8a2e;
+    --face: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M5.5 2h13A3.5 3.5 0 0 1 22 5.5v13a3.5 3.5 0 0 1-3.5 3.5h-13A3.5 3.5 0 0 1 2 18.5v-13A3.5 3.5 0 0 1 5.5 2zm1 10.6 3.6 3.6 7.6-8.1-1.7-1.6-5.9 6.3-1.9-1.9z'/%3E%3C/svg%3E");
+  }
+  .day-stamp[data-ink='note.com'] {
+    --ink: #35323a;
+    --face: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 21.5S2.5 15.6 2.5 9A5.2 5.2 0 0 1 12 6.2 5.2 5.2 0 0 1 21.5 9c0 6.6-9.5 12.5-9.5 12.5zM7.4 7.4a2 2 0 1 0 .01 0z'/%3E%3C/svg%3E");
+  }
+  .day-stamp[data-ink='sizu.me'] {
+    --ink: #7b4aa6;
+    --face: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 1.8a4 4 0 0 1 3.9 4.9 4 4 0 0 1 3.7 6.6 4 4 0 0 1-2.6 6.9 4 4 0 0 1-5 2.6 4 4 0 0 1-5-2.6 4 4 0 0 1-2.6-6.9 4 4 0 0 1 3.7-6.6A4 4 0 0 1 12 1.8zm0 7.6a2.8 2.8 0 1 0 .01 0z'/%3E%3C/svg%3E");
+  }
+  .day-stamp[data-ink='blog.cp20.dev'] {
+    --ink: #d1402c;
+    --face: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 11.2C9 11.4 3.4 10 4.4 5.6S10.6 2 12 6.4C13.4 2 18.6 1.2 19.6 5.6S15 11.4 12 11.2zm0 1.6c3 .2 8.6-1.2 7.6 3.2S13.4 19.6 12 15.2C10.6 19.6 5.4 20.4 4.4 16s5.2-3.4 7.6-3.2z'/%3E%3C/svg%3E");
+  }
+  .day-stamp[data-ink='m3tech.blog'] {
+    --ink: #9a5a26;
+    --face: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 1.5 22.5 12 12 22.5 1.5 12zm0 5L6.5 12l5.5 5.5 5.5-5.5z'/%3E%3C/svg%3E");
+  }
+  /* On the card a stamp is a little larger than its day, so it spills over the lines as a
+     hand-pressed stamp does; a second one that day is pressed beside the first. */
   .attendance-stamp {
     position: relative;
     display: grid;
     place-items: center;
-    outline-offset: 1px;
-  }
-  .day-stamp {
-    width: 18px;
-    height: 18px;
-    mix-blend-mode: multiply;
-    mask: var(--ink-grain, none) 0 0 / 60px 60px;
-    filter: drop-shadow(0.5px 0.4px 0 color-mix(in srgb, currentColor 35%, transparent));
-    opacity: 0.92;
   }
   .attendance-stamp .day-stamp {
     width: calc(var(--row) * 0.92);
-    max-width: none;
     height: calc(var(--row) * 0.92);
     transition:
       scale var(--t-hover) var(--ease),
@@ -4082,121 +4115,118 @@
   .attendance-stamp[data-nth] .day-stamp {
     translate: 35% -30%;
   }
-  .attendance-stamp[data-off] .day-stamp {
-    opacity: 0.16;
-    filter: grayscale(1);
+  .attendance-stamp[data-off] {
+    pointer-events: none;
   }
-  .attendance-stamp:hover,
-  .attendance-stamp:focus-visible,
-  .attendance-stamp[data-hot] {
+  .attendance-stamp[data-off] .day-stamp {
+    --ink: var(--faint);
+    opacity: 0.3;
+  }
+  .attendance-stamp:is(:focus-visible, [data-hot], [data-picked]) {
     z-index: 3;
   }
-  .attendance-stamp:hover .day-stamp,
-  .attendance-stamp:focus-visible .day-stamp,
-  .attendance-stamp[data-hot] .day-stamp {
+  .attendance-stamp:is(:focus-visible, [data-hot], [data-picked]) .day-stamp {
     scale: 1.45;
   }
   .attendance-stamp:focus-visible {
-    outline: 2px dashed var(--seal);
+    outline-width: 2px;
+    outline-offset: 1px;
   }
-  /* What the stamp is for, written on a slip above it. */
+  /* What a stamp is for, written on a slip that opens toward the middle of the card. It is only
+     faded out, so it stays the link's text for screen readers. */
   .attendance-tip {
+    --x: -50%;
+    --y: 4px;
     position: absolute;
-    bottom: calc(100% + 10px);
+    bottom: calc(100% + 8px);
     left: 50%;
     display: grid;
     gap: 3px;
     width: max-content;
-    max-width: 250px;
+    max-width: min(250px, 66cqw);
     padding: 8px 11px 9px;
     border: 2px solid var(--edge);
     border-radius: 8px;
     background: var(--paper);
     box-shadow: 3px 3px 0 var(--drop);
-    translate: -50% 4px;
+    translate: var(--x) var(--y);
     opacity: 0;
-    visibility: hidden;
     pointer-events: none;
     transition:
       opacity var(--t-hover) var(--ease),
-      translate var(--t-hover) var(--ease),
-      visibility 0s var(--t-hover);
+      translate var(--t-hover) var(--ease);
   }
   .attendance-stamp[data-edge='start'] .attendance-tip {
+    --x: 0px;
     left: -6px;
-    translate: 0 4px;
   }
   .attendance-stamp[data-edge='end'] .attendance-tip {
+    --x: 0px;
     left: auto;
     right: -6px;
-    translate: 0 4px;
   }
-  .attendance-stamp:hover .attendance-tip,
-  .attendance-stamp:focus-visible .attendance-tip {
+  .attendance-stamp[data-below] .attendance-tip {
+    --y: -4px;
+    top: calc(100% + 8px);
+    bottom: auto;
+  }
+  .attendance-stamp:is(:focus-visible, [data-picked]) .attendance-tip {
+    --y: 0px;
     opacity: 1;
-    visibility: visible;
-    translate: -50% 0;
-    transition-delay: 0s;
+    pointer-events: auto;
   }
-  .attendance-stamp:is(:hover, :focus-visible):is([data-edge]) .attendance-tip {
-    translate: 0 0;
+  @media (hover: hover) {
+    .attendance-stamp:hover {
+      z-index: 3;
+    }
+    .attendance-stamp:hover .day-stamp {
+      scale: 1.45;
+    }
+    .attendance-stamp:hover .attendance-tip {
+      --y: 0px;
+      opacity: 1;
+    }
   }
-  .attendance-tip-title {
+  .attendance-tip strong {
     font-size: 0.8125rem;
-    font-weight: 700;
     line-height: 1.5;
-    color: var(--ink);
   }
-  .attendance-tip-meta {
+  .attendance-tip small {
     font-family: var(--mono);
     font-size: 0.6875rem;
     color: var(--muted);
   }
-  /* The year's articles, each with its picture and the stamp of its day. */
-  .attendance-desk .article-list,
-  .home-writing .article-list {
+  /* The open year's articles: each with its OG image as a small postage stamp, its title, and
+     its day's stamp by the date. */
+  .attendance-desk .article-list {
     position: relative;
     display: grid;
-    gap: 0;
   }
   .article-row {
+    --perf: 6px;
+    --perf-hole: 1.8px;
     display: grid;
     grid-template-columns: 124px minmax(0, 1fr);
     gap: 14px;
     align-items: start;
-    padding: 14px 10px 14px 6px;
+    padding: 14px 4px;
     border-bottom: 1.5px dashed color-mix(in srgb, var(--edge) 22%, transparent);
-    border-radius: 6px;
-    transition: background-color var(--t-hover) var(--ease);
   }
   .article-row[hidden] {
     display: none;
   }
+  /* Filtered out: kept where it was, out of the flow, while it fades (reflow.ts). */
   .article-row.leaving {
     display: grid;
     position: absolute;
     pointer-events: none;
   }
-  .article-row[data-hot] {
-    background-color: color-mix(in srgb, var(--hi-soft) 75%, transparent);
-  }
   .article-row > .og-image {
-    --perf: 4.4px;
     aspect-ratio: 1200 / 630;
-    margin-top: 3px;
-    background: #fff;
-    filter: drop-shadow(1px 2px 0 rgb(45 42 51 / 0.16));
     rotate: -1.5deg;
-    transition: rotate var(--t-hover) var(--ease);
   }
-  .article-row:nth-child(even) > .og-image {
+  .article-row:nth-child(even of :not([hidden])) > .og-image {
     rotate: 1.2deg;
-  }
-  .article-row > .og-image::before {
-    display: none;
-  }
-  .article-row > .og-image img {
-    object-fit: cover;
   }
   .article-text {
     min-width: 0;
@@ -4207,45 +4237,50 @@
   }
   .article-meta {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 4px 6px;
+    gap: 6px;
     margin-top: 6px;
     font-family: var(--mono);
     font-size: 0.6875rem;
     color: var(--muted);
+    line-height: 1.5;
     font-variant-numeric: tabular-nums;
   }
-  .article-meta .day-stamp {
-    width: 17px;
-    height: 17px;
-    margin-right: 2px;
+  /* A title is marked while it or its stamp on the card is pointed at. Only the way in is
+     animated: leaving clears it at once, so scanning down the list leaves no trail. */
+  .article-row[data-hot] h3,
+  .recent-articles a[data-hot] .recent-title {
+    background-size: 100% 100%;
+    transition: background-size var(--t-state) var(--ease);
   }
-  .article-source {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    margin-left: 6px;
-    white-space: nowrap;
-  }
-  @media (hover: hover) {
-    .article-row:hover h3 {
-      background-size: 100% 100%;
-      transition: background-size var(--t-state) var(--ease);
-    }
-    .article-row:hover > .og-image {
-      rotate: 0deg;
-    }
-  }
-  /* Home: this year's card, then the latest four under it in two columns. */
+  /* Home: the latest card, then the newest few by name. */
   .home-writing .attendance {
-    position: relative;
-    top: 0;
-    margin-bottom: 18px;
+    margin-bottom: 10px;
   }
-  .home-writing .article-row {
-    grid-template-columns: 104px minmax(0, 1fr);
-    padding-block: 10px;
+  .recent-articles a {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1.5px dashed color-mix(in srgb, var(--edge) 22%, transparent);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.6;
+  }
+  .recent-title {
+    justify-self: start;
+    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
+      no-repeat 0 0 / 0% 100%;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .recent-articles time {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    font-weight: 400;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
   }
 }
 @layer responsive {
@@ -4253,62 +4288,40 @@
     .attendance-desk {
       grid-template-columns: minmax(0, 1fr);
     }
-    .attendance {
+    .attendance-desk > .attendance {
       position: relative;
       top: 0;
     }
     .attendance-desk .article-list {
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      column-gap: 18px;
+      column-gap: 24px;
     }
   }
+  /* Phones: the card fills the width and its rows are taller than the days are wide; the
+     stamps, pressed larger than their days, are found by the nearest tap (AttendanceCard.tsx). */
   @media (max-width: 600px) {
     .attendance-desk {
       gap: 14px;
-    }
-    .attendance {
-      padding: 0 6px 10px 0;
-    }
-    .attendance::before,
-    .attendance::after {
-      inset: var(--tabs) 6px 10px 0;
-    }
-    .attendance::before {
-      rotate: 0.8deg;
-      translate: 5px 5px;
-    }
-    .attendance::after {
-      rotate: -0.6deg;
-      translate: 2px 9px;
     }
     .attendance-tabs {
       gap: 3px;
       padding: 0 4px;
     }
-    .attendance:has(.attendance-tabs) {
-      --tabs: 42px;
-    }
     .attendance-tab {
       flex: 1 1 0;
       justify-content: center;
       min-width: 0;
-      height: 38px;
-      margin-top: 6px;
       padding: 0;
       font-size: 0.75rem;
-      line-height: 36px;
     }
     .attendance-tab small {
       display: none;
     }
-    .attendance-tab[aria-pressed='true'] {
-      height: 44px;
-    }
     .attendance-card {
-      padding: 12px 10px 12px;
+      padding: 12px 10px;
     }
     .attendance-head {
-      flex-wrap: wrap;
+      align-items: center;
       margin-bottom: 10px;
       padding-bottom: 8px;
     }
@@ -4318,9 +4331,8 @@
     .attendance-head h3 small {
       font-size: 0.75rem;
     }
-    .attendance-name span {
-      min-width: 70px;
-      font-size: 0.8125rem;
+    .attendance-name {
+      display: none;
     }
     .attendance-count {
       width: 42px;
@@ -4331,15 +4343,9 @@
       font-size: 0.9375rem;
     }
     .attendance-grid {
-      --label: 28px;
+      --label: 26px;
+      --row: calc(var(--cell) * 2.2);
       grid-template-rows: 16px repeat(12, var(--row));
-    }
-    .attendance-name {
-      display: none;
-    }
-    .attendance-head {
-      flex-wrap: nowrap;
-      align-items: center;
     }
     .attendance-day:not([data-tick]) {
       visibility: hidden;
@@ -4348,24 +4354,33 @@
       padding-right: 4px;
       font-size: 0.5625rem;
     }
-    /* Too small to aim at with a finger: the list below holds the same articles. */
-    .attendance-stamp {
-      pointer-events: none;
-    }
-    .attendance-tip {
-      display: none;
-    }
-    .attendance-desk .article-list,
-    .home-writing .article-list {
+    .attendance-desk .article-list {
       grid-template-columns: minmax(0, 1fr);
     }
     .article-row {
       grid-template-columns: 104px minmax(0, 1fr);
       gap: 12px;
-      padding: 12px 4px 12px 2px;
+      padding: 12px 2px;
     }
     .article-row h3 {
       font-size: 0.8125rem;
+    }
+  }
+  /* Without JavaScript the open year cannot change, so every article is listed. */
+  @media (scripting: none) {
+    .article-row[hidden] {
+      display: grid;
+    }
+    .attendance-tabs,
+    .article-sort-row {
+      display: none;
+    }
+  }
+  @media (forced-colors: active) {
+    .attendance-tab[aria-pressed='true'] {
+      forced-color-adjust: none;
+      background: Highlight;
+      color: HighlightText;
     }
   }
 }

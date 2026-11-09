@@ -4,9 +4,9 @@ import { OGImage, articleAnchor, sizes } from './Preview.tsx';
 import { DayStamp } from './AttendanceCard.tsx';
 import { formatDate, type Article } from '../content/content.ts';
 /**
- * The articles beside an attendance card: each with its picture, title, and the day's stamp
- * by its date. The row whose stamp is pointed at on the card is marked, and pointing at a row
- * marks its stamp (`hot`, `onHot`).
+ * The articles beside an attendance card: each with its OG image as a postage stamp, its title,
+ * and the day's stamp from the card by its date. The row whose stamp is pointed at on the card is
+ * marked (`hot`), and pointing at a row marks its stamp (`onHot`).
  * With `shown`, every row stays in the DOM and rows it rejects are only hidden, so filtering
  * neither rebuilds the list nor detaches images (see /articles).
  */
@@ -30,9 +30,9 @@ export function ArticleRows(props: {
               data-stamp-anchor={id}
               data-article
               data-date={a.date}
-              data-hot={props.hot === id ? '' : undefined}
-              onPointerEnter={() => props.onHot?.(id)}
-              onPointerLeave={() => props.onHot?.(undefined)}
+              data-hot={props.hot === id || undefined}
+              onPointerEnter={(e) => e.pointerType === 'mouse' && props.onHot?.(id)}
+              onPointerLeave={(e) => e.pointerType === 'mouse' && props.onHot?.(undefined)}
             >
               <OGImage url={a.url} alt="" sizes={sizes.articleRow} />
               <div class="article-text">
@@ -40,10 +40,8 @@ export function ArticleRows(props: {
                 <p class="article-meta">
                   <DayStamp source={a.source} url={a.url} />
                   <time datetime={a.date}>{formatDate(a.date)}</time>
-                  <span class="article-source">
-                    <Brand url={a.source} size={14} />
-                    {a.source}
-                  </span>
+                  <Brand url={a.source} size={14} />
+                  <span class="visually-hidden">{a.source}</span>
                 </p>
               </div>
             </a>

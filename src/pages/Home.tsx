@@ -1,10 +1,10 @@
 import { createSignal, For } from 'solid-js';
 import Icon from '../components/Icon.tsx';
-import { responsive, sizes } from '../components/Preview.tsx';
+import { articleAnchor, responsive, sizes } from '../components/Preview.tsx';
 import Projects from '../components/Projects.tsx';
-import { ArticleRows } from '../components/ArticleRows.tsx';
-import { AttendanceCard, yearOf } from '../components/AttendanceCard.tsx';
-import { articles } from '../content/content.ts';
+import { AttendanceCard, DayStamp } from '../components/AttendanceCard.tsx';
+import { yearOf } from '../components/attendance.ts';
+import { articles, formatDate } from '../content/content.ts';
 import { editions } from '../data/editorial.ts';
 import { localImage, seriesCover } from '../content/images.ts';
 import tracks from '../data/tracks.json';
@@ -48,8 +48,31 @@ export default function Home() {
               すべて見る
             </a>
           </div>
+          {/* The latest year's card, and the newest few by name under it (their stamps on the card
+              are marked while one is pointed at). */}
           <AttendanceCard items={articles} year={yearOf(articles[0])} hot={hot()} onHot={setHot} />
-          <ArticleRows items={articles.slice(0, 4)} hot={hot()} onHot={setHot} />
+          <ul class="recent-articles">
+            <For each={articles.slice(0, 3)}>
+              {(a) => {
+                const id = articleAnchor(a.url);
+                return (
+                  <li>
+                    <a
+                      href={a.url}
+                      data-stamp-anchor={id}
+                      data-hot={hot() === id || undefined}
+                      onPointerEnter={(e) => e.pointerType === 'mouse' && setHot(id)}
+                      onPointerLeave={(e) => e.pointerType === 'mouse' && setHot()}
+                    >
+                      <DayStamp source={a.source} url={a.url} />
+                      <span class="recent-title">{a.title}</span>
+                      <time datetime={a.date}>{formatDate(a.date)}</time>
+                    </a>
+                  </li>
+                );
+              }}
+            </For>
+          </ul>
         </section>
         <aside class="home-profile">
           <h2>プロフィール</h2>

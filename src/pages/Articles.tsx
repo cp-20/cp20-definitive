@@ -1,32 +1,45 @@
 import { createSignal, createStore, createMemo, createEffect, onSettled, flush, For, Show } from 'solid-js';
 import Icon from '../components/Icon.tsx';
 import { ArticleRows } from '../components/ArticleRows.tsx';
-import { AttendanceCard, yearOf } from '../components/AttendanceCard.tsx';
+import { AttendanceCard } from '../components/AttendanceCard.tsx';
+import { yearOf, yearsOf } from '../components/attendance.ts';
 import Brand from '../components/Brand.tsx';
 import { reflow } from '../components/reflow.ts';
 import { articles, type Article } from '../content/content.ts';
+// One year's attendance card is open at a time (the latest by default), with that year's
+// articles listed beside it. The year, the source and the order are kept in the URL.
+const years = yearsOf(articles);
+const latest = years.at(-1)!;
 export default function Articles() {
-  const [filters, setFilters] = createStore({ source: '', order: 'newest' });
+  const [filters, setFilters] = createStore({ source: '', order: 'newest', year: latest });
   const [ready, setReady] = createSignal(false);
   const names = [...new Set(articles.map((a) => a.source))];
   const readFilters = () => {
     const params = new URLSearchParams(location.search);
+    const year = Number(params.get('year'));
     setFilters((d) => {
       d.source = names.includes(params.get('source') || '') ? params.get('source')! : '';
       d.order = params.get('order') === 'oldest' ? 'oldest' : 'newest';
+      d.year = years.includes(year) ? year : latest;
     });
   };
   onSettled(() => {
     readFilters();
     setReady(true);
     document.addEventListener('cp20:navigation', readFilters);
-    return () => document.removeEventListener('cp20:navigation', readFilters);
+    return () => {
+      document.removeEventListener('cp20:navigation', readFilters);
+      // A glide still running when the page is swapped out would hold the old page in the
+      // document's animation timeline until the next animation frame, which may be a while.
+      for (const a of results.getAnimations({ subtree: true })) a.cancel();
+    };
   });
   createEffect(
-    () => ({ ready: ready(), source: filters.source, order: filters.order }),
+    () => ({ ready: ready(), source: filters.source, order: filters.order, year: filters.year }),
     (value) => {
       if (!value.ready) return;
       const params = new URLSearchParams();
+      if (value.year !== latest) params.set('year', String(value.year));
       if (value.source) params.set('source', value.source);
       if (value.order === 'oldest') params.set('order', 'oldest');
       history.replaceState(history.state, '', location.pathname + (params.size ? '?' + params : ''));
@@ -34,15 +47,9 @@ export default function Articles() {
   );
   const ordered = createMemo(() => (filters.order === 'oldest' ? [...articles].reverse() : articles));
   const shown = (a: Article) => !filters.source || a.source === filters.source;
-  // One year's card is open at a time; the list beside it holds that year's articles.
-  const years = [...new Set(articles.map(yearOf))].sort();
-  const [year, setYear] = createSignal(years.at(-1)!);
-  const [hot, setHot] = createSignal<string>();
-  const inYear = (a: Article) => shown(a) && yearOf(a) === year();
-  const yearCounts = createMemo(() =>
-    years.map((y) => ({ year: y, count: articles.filter((a) => shown(a) && yearOf(a) === y).length })),
-  );
+  const inYear = (a: Article) => shown(a) && yearOf(a) === filters.year;
   const count = createMemo(() => articles.filter(inYear).length);
+  const [hot, setHot] = createSignal<string>();
   let results!: HTMLDivElement;
   // A choice made here moves the cards to their new places (a page arrival just shows them).
   const choose = (change: (d: typeof filters) => void) =>
@@ -50,11 +57,22 @@ export default function Articles() {
       setFilters(change);
       flush();
     });
-  const chooseYear = (y: number) =>
-    reflow(results.querySelector('.article-list')!, () => {
-      setYear(y);
-      flush();
+  // A source the open year has none of opens the latest year that has some.
+  const chooseSource = (source: string) =>
+    choose((d) => {
+      d.source = source;
+      if (source && !articles.some((a) => a.source === source && yearOf(a) === d.year))
+        d.year = yearOf(articles.find((a) => a.source === source)!);
     });
+  // Another year starts its list from the top: from far down a long year, the card (which
+  // stays on screen beside the list) would open a shorter list above the screen.
+  const chooseYear = (year: number) => {
+    const top = results.getBoundingClientRect().top;
+    if (top < 0) scrollBy({ top: top - 24, behavior: 'instant' });
+    choose((d) => {
+      d.year = year;
+    });
+  };
   return (
     <div class="wrap">
       <header data-stamp-anchor="heading" class="page-heading">
@@ -71,11 +89,7 @@ export default function Articles() {
                 <button
                   class="source-chip"
                   aria-pressed={filters.source === source ? 'true' : 'false'}
-                  onClick={() =>
-                    choose((d) => {
-                      d.source = source;
-                    })
-                  }
+                  onClick={() => chooseSource(source)}
                 >
                   {source && <Brand url={source} />}
                   <span>{source || 'すべて'}</span>
@@ -88,7 +102,7 @@ export default function Articles() {
           </div>
           <div class="article-sort-row">
             <p id="filter-count" class="meta" role="status">
-              {year()}年 {count()} 件
+              {filters.year}年 {count()} 件
             </p>
             <div class="sort-control">
               <label for="article-sort">並び順</label>
@@ -114,8 +128,8 @@ export default function Articles() {
         <div class="article-results attendance-desk" ref={results}>
           <AttendanceCard
             items={articles}
-            year={year()}
-            years={yearCounts()}
+            year={filters.year}
+            years={years}
             onYear={chooseYear}
             shown={shown}
             hot={hot()}
@@ -123,7 +137,7 @@ export default function Articles() {
           />
           {/* The rows stay mounted: filtering hides them and sorting moves them (keyed), so the
               list is never rebuilt and the cards glide to their new places (reflow.ts). */}
-          <div class="attendance-list">
+          <div>
             <ArticleRows items={ordered()} shown={inYear} hot={hot()} onHot={setHot} />
             <Show when={!count()}>
               <p id="article-empty" class="empty-state">

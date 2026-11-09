@@ -140,8 +140,21 @@ try {
   await expect(page.locator('main h1')).toHaveText('みんなのものさし');
   await page.locator('.rail nav a[href="/articles"]').click();
   await page.getByRole('button', { name: /^zenn.dev/ }).click();
+  // The other year with the most, from its tab on the stack of cards.
+  const year = await page
+    .locator('.attendance-tab[aria-pressed="false"]')
+    .evaluateAll(
+      (tabs) =>
+        tabs
+          .map((t) => [t.textContent!.slice(0, 4), parseInt(t.textContent!.slice(4))] as const)
+          .sort((a, b) => b[1] - a[1])[0][0],
+    );
+  await page.locator('.attendance-tab', { hasText: year }).click();
+  await expect(page).toHaveURL(new RegExp(`year=${year}`));
   // Filtering hides rows instead of rebuilding the list, so only the rows shown are counted.
   const zenn = await page.locator('[data-article]:not([hidden])').count();
+  if (zenn !== (await page.locator('.attendance-stamp:not([data-off])').count()))
+    throw Error("The list and the card disagree on the year's articles");
   await page.locator('#article-sort').selectOption('oldest');
   const dates = await page
     .locator('[data-article]:not([hidden])')
@@ -163,6 +176,7 @@ try {
   await page.goBack();
   await expect(page.locator('[data-article]:not([hidden])')).toHaveCount(zenn);
   await expect(page.locator('#article-sort')).toHaveValue('oldest');
+  await expect(page.locator('.attendance-tab[aria-pressed="true"]')).toContainText(year);
   if (Math.abs((await page.evaluate(() => scrollY)) - scroll) > 2) throw Error('Back scroll restoration');
   if (
     documents.length !== navigationBefore ||
@@ -188,15 +202,20 @@ try {
     await other.route(/firebasedatabase\.app|googleapis\.com/, (route) => route.abort());
     const tab = await other.newPage();
     await tab.goto(origin + '/articles');
-    await tab.evaluate(() => scrollTo({ top: 2500, behavior: 'instant' }));
+    // Far down the page (how far depends on the open year's articles).
+    const far = await tab.evaluate(() => {
+      scrollTo({ top: document.documentElement.scrollHeight - innerHeight - 40, behavior: 'instant' });
+      return scrollY;
+    });
+    if (far < 800) throw Error(`/articles is too short to check scroll restoration (${far}px)`);
     await tab.waitForTimeout(200);
     await tab.reload();
     await tab.waitForTimeout(800);
-    if (Math.abs((await tab.evaluate(() => scrollY)) - 2500) > 2) throw Error('Reload scroll restoration');
+    if (Math.abs((await tab.evaluate(() => scrollY)) - far) > 2) throw Error('Reload scroll restoration');
     await tab.goto(origin + '/feed.xml');
     await tab.goBack();
     await tab.waitForTimeout(800);
-    if (Math.abs((await tab.evaluate(() => scrollY)) - 2500) > 2) throw Error('Cross-document back scroll');
+    if (Math.abs((await tab.evaluate(() => scrollY)) - far) > 2) throw Error('Cross-document back scroll');
     await other.close();
   }
   // The credits dialog: Esc and a click on the backdrop close it, and focus goes back to its button.
@@ -464,6 +483,56 @@ try {
   await expect.poll(() => Object.keys(db.pages.get('articles') || {}).length).toBe(0);
   passed('touch: a tap on your sticker over a link card opens its menu and peels it, not the link');
 
+  // ── The attendance card: one Tab stop the arrow keys walk, and taps that find a stamp ──
+  {
+    await page.goto(origin + '/articles');
+    await settle();
+    const stamps = page.locator('.attendance-stamp:not([data-off])');
+    await page.locator('.attendance-tab[aria-pressed="true"]').focus();
+    await page.keyboard.press('Tab');
+    await expect(stamps.first()).toBeFocused();
+    await expect(stamps.first().locator('.attendance-tip')).toHaveCSS('opacity', '1');
+    await page.keyboard.press('ArrowRight');
+    await expect(stamps.nth(1)).toBeFocused();
+    await page.keyboard.press('Tab');
+    if (!(await page.evaluate(() => document.activeElement?.matches('.article-row:not([hidden])'))))
+      throw Error('The card is more than one Tab stop');
+    // A finger a few pixels off a stamp (days are narrower than a fingertip) picks it and shows
+    // its slip instead of following the link; a tap on the picked stamp follows it.
+    const follows = () =>
+      visitor.evaluate(() => {
+        window.addEventListener(
+          'click',
+          (e) => {
+            (window as any).__followed = !e.defaultPrevented;
+            e.preventDefault();
+          },
+          { once: true },
+        );
+      });
+    const lone = visitor.locator('.attendance-stamp').nth(
+      await visitor.locator('.attendance-stamp').evaluateAll((all) => {
+        const at = all.map((s) => s.getBoundingClientRect());
+        return at.findIndex((a) => at.every((b) => a === b || Math.hypot(a.x - b.x, a.y - b.y) > 30));
+      }),
+    );
+    await lone.evaluate((s) => s.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    const spot = (await lone.boundingBox())!;
+    await follows();
+    await visitor.touchscreen.tap(spot.x + spot.width / 2 + 7, spot.y + spot.height / 2 + 6);
+    await expect(lone).toHaveAttribute('data-picked', '');
+    if (await visitor.evaluate(() => (window as any).__followed)) throw Error('A tap by a stamp opened it');
+    await follows();
+    await visitor.touchscreen.tap(spot.x + spot.width / 2, spot.y + spot.height / 2);
+    if (!(await visitor.evaluate(() => (window as any).__followed)))
+      throw Error('A tap on the picked stamp did not open it');
+    await visitor.locator('main h1').tap();
+    await expect(visitor.locator('[data-picked]')).toHaveCount(0);
+  }
+  passed(
+    'the attendance card is one Tab stop walked by arrows; a tap near a stamp picks it, a second opens it',
+  );
+
   // ── Five stickers, and two tabs at once ──
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(origin + '/about');
@@ -575,14 +644,18 @@ try {
   // ── Filtering moves the cards, and their stickers with them ──
   await page.goto(origin + '/articles');
   await settle();
-  const source = 'trap.jp';
-  // The first card of `source` that is not first in the list, so filtering moves it.
-  const filtered = await page.evaluate((source) => {
-    const rows = [...document.querySelectorAll<HTMLElement>('[data-article]')];
-    return rows.find(
-      (r, i) => i > 0 && r.querySelector('.article-meta .visually-hidden')!.textContent === source,
-    )!.dataset.stampAnchor!;
-  }, source);
+  // The first card on screen with a card from another source above it, so filtering to its
+  // source moves it up and it stays on screen.
+  const [filtered, source] = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll<HTMLElement>('[data-article]:not([hidden])')];
+    const sourceOf = (r: HTMLElement) => r.querySelector('.article-meta .visually-hidden')!.textContent!;
+    const row = rows.find(
+      (r, i) =>
+        r.getBoundingClientRect().bottom < innerHeight &&
+        rows.slice(0, i).some((above) => sourceOf(above) !== sourceOf(r)),
+    )!;
+    return [row.dataset.stampAnchor!, sourceOf(row)];
+  });
   db.pages.set('articles', {
     'other-visitor': {
       avatar: 'b'.repeat(64),
@@ -761,12 +834,14 @@ try {
   );
 
   // ── Without JavaScript every article and the featured works are there ──
+  // With JavaScript the list shows one year at a time (the other rows stay in it, hidden);
+  // without, the open year cannot change, so every row is shown.
   await page.goto(origin + '/articles');
-  const allArticles = await page.locator('[data-article]:not([hidden])').count();
+  const allArticles = await page.locator('[data-article]').count();
   const nojs = await browser.newContext({ javaScriptEnabled: false });
   const plain = await nojs.newPage();
   await plain.goto(origin + '/articles');
-  await expect(plain.locator('[data-article]')).toHaveCount(allArticles);
+  await expect(plain.locator('[data-article]:visible')).toHaveCount(allArticles);
   await plain.goto(origin + '/');
   await expect(plain.locator('noscript a')).toHaveCount(3);
   await nojs.close();
@@ -777,7 +852,7 @@ try {
   const workPage = (await page.locator('a[href^="/works/"]').first().getAttribute('href'))!;
   for (const width of [360, 380, 450, 600, 760, 761, 900, 901, 1100, 1101, 1440, 1920]) {
     await page.setViewportSize({ width, height: 1000 });
-    for (const route of ['/', '/works', '/about', workPage]) {
+    for (const route of ['/', '/articles', '/works', '/about', workPage]) {
       await page.goto(origin + route);
       const short = await page.evaluate(() =>
         [...document.querySelectorAll<HTMLImageElement>('img[sizes]')].flatMap((img) => {
