@@ -25,7 +25,7 @@ const escapeXml = (s: string) =>
 export function buildFeed(articles: Article[]) {
   const newest = articles.reduce((max, a) => (a.date > max ? a.date : max), '');
   const lastBuild = newest ? `<lastBuildDate>${new Date(newest).toUTCString()}</lastBuildDate>` : '';
-  return `<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>${escapeXml(FEED.title)}</title><link>https://cp20.dev/articles</link><atom:link href="${canonicalUrl(FEED.path)}" rel="self" type="application/rss+xml"/><description>しーぴーの記事</description><language>ja</language>${lastBuild}${articles
+  return `<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>${escapeXml(FEED.title)}</title><link>${canonicalUrl('/articles')}</link><atom:link href="${canonicalUrl(FEED.path)}" rel="self" type="application/rss+xml"/><description>しーぴーの記事</description><language>ja</language>${lastBuild}${articles
     .map(
       (a) =>
         `<item><title>${escapeXml(a.title)}</title><link>${escapeXml(a.url)}</link><guid isPermaLink="true">${escapeXml(a.url)}</guid><pubDate>${new Date(a.date).toUTCString()}</pubDate><description>${escapeXml(`${a.source} に掲載`)}</description></item>`,

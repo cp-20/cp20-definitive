@@ -42,18 +42,12 @@ type Thumbnail = { thumbnail?: string | null };
 
 // ── Accepting an image ──
 export const maxImageBytes = 15_000_000;
+const rasterTypes = new Set(['jpg', 'png', 'gif', 'webp', 'avif', 'ico']);
+/** The file extension of a raster image (image-size's type name), or throws for anything else. */
 export function rasterExtension(bytes: Buffer) {
   const type = imageSize(bytes).type ?? '';
-  const extensions: Record<string, string> = {
-    jpg: 'jpg',
-    png: 'png',
-    gif: 'gif',
-    webp: 'webp',
-    avif: 'avif',
-    ico: 'ico',
-  };
-  if (!extensions[type]) throw Error('Unsupported image format');
-  return extensions[type];
+  if (!rasterTypes.has(type)) throw Error('Unsupported image format');
+  return type;
 }
 /**
  * Like rasterExtension, but also decodes the whole image (ICO aside, which sharp cannot read), so a
@@ -169,15 +163,8 @@ export async function cacheImages({
   // Only the icons the pages show (the works'): the article previews' platform logos stay uncached.
   const shownIcons = iconPages(works);
   const icons = iconSources(previews, shownIcons);
-  const urls = [
-    ...new Set(
-      [
-        ...Object.values(previews).map((p) => p.image),
-        ...icons,
-        ...shownItems(tracks, series).map((i) => i.thumbnail),
-      ].filter((source): source is string => !!source),
-    ),
-  ];
+  const thumbnails = thumbnailSources(previews, shownItems(tracks, series));
+  const urls = [...new Set([...thumbnails, ...icons])];
   const next: Cache = {};
   let refreshed = 0;
   await eachLimited(urls, 6, async (source) => {
@@ -227,13 +214,7 @@ export async function cacheImages({
     }
     if (previewsReverted) await writeData(dirs, 'previews', previews);
   }
-  await addVariants(
-    next,
-    thumbnailSources(previews, shownItems(tracks, series)),
-    icons,
-    framedSources(tracks),
-    dirs,
-  );
+  await addVariants(next, thumbnails, icons, framedSources(tracks), dirs);
   const files = (entry: CacheEntry) => [entry.file, ...(entry.variants ?? []).map((v) => v.file)];
   const content = (object: Cache) =>
     Object.fromEntries(

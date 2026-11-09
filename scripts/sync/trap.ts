@@ -6,6 +6,7 @@
 import { XMLParser } from 'fast-xml-parser';
 import { parse } from 'node-html-parser';
 import type { Article } from '../../src/content/normalize.ts';
+import { headElements } from './head.ts';
 import type { Format } from './sync.ts';
 
 const ORIGIN = 'https://trap.jp';
@@ -28,11 +29,8 @@ export function parseAuthorPage(html: string) {
 }
 
 /** The `<link rel="next">` Ghost puts in the head of every page except the last. */
-export function nextPage(html: string) {
-  const end = html.indexOf('</head>');
-  const head = parse(end >= 0 ? html.slice(0, end) : html.slice(0, 200_000));
-  return head.querySelector('link[rel="next"]')?.getAttribute('href') ?? null;
-}
+export const nextPage = (html: string) =>
+  headElements(html, 'link[rel="next"]')[0]?.getAttribute('href') ?? null;
 
 const rssParser = new XMLParser({ processEntities: true, parseTagValue: false });
 /** Post URL → RFC 822 pubDate. */
