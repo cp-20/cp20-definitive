@@ -99,9 +99,11 @@ describe('request', () => {
       () => Response.json({ ok: true }),
     );
     assert.deepEqual(await request('https://example.com', { fetch: busy.fetch, retryDelay: 0 }), { ok: true });
+    const stillBusy = fetchOf(...Array.from({ length: 3 }, () => () => new Response('busy', { status: 503 })));
+    await assert.rejects(request('https://example.com', { fetch: stillBusy.fetch, retryDelay: 0 }), /503/);
     const gone = fetchOf(() => new Response('', { status: 404 }));
     await assert.rejects(request('https://example.com', { fetch: gone.fetch, retryDelay: 0 }), /404/);
-    assert.deepEqual([busy.asked.length, gone.asked.length], [2, 1]);
+    assert.deepEqual([busy.asked.length, stillBusy.asked.length, gone.asked.length], [2, 2, 1]);
   });
 
   test('GITHUB_TOKEN は api.github.com にだけ送る', async () => {

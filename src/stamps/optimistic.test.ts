@@ -165,9 +165,10 @@ describe('serialWrites', () => {
       const waits: number[] = [];
       const queue = serialWrites((ms) => (waits.push(ms), pause.promise), 1100);
       await queue(write).catch(() => {});
-      const next = queue(async () => 'next');
+      let started = false;
+      const next = queue(async () => ((started = true), 'next'));
       await flush();
-      assert.deepEqual(waits, [1100]);
+      assert.deepEqual([waits, started], [[1100], false]);
       pause.resolve();
       assert.equal(await next, 'next');
     });
