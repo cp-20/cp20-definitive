@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-09T06:58:49.069Z",
+  "updatedAt": "2026-11-09T09:44:44.654Z",
   "articles": [
     {
       "title": "社会性",
@@ -477,7 +477,7 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-09T06:58:16Z",
+      "updatedAt": "2026-11-09T09:44:07Z",
       "fork": false,
       "archived": false
     },
@@ -1365,39 +1365,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-09T06:58:49.069Z",
+      "lastSuccess": "2026-11-09T09:44:44.654Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-09T06:58:49.069Z",
+      "lastSuccess": "2026-11-09T09:44:44.654Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-09T06:58:49.069Z",
+      "lastSuccess": "2026-11-09T09:44:44.654Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-09T06:58:49.069Z",
+      "lastSuccess": "2026-11-09T09:44:44.654Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-09T06:58:49.069Z",
+      "lastSuccess": "2026-11-09T09:44:44.654Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-09T06:58:49.069Z",
+      "lastSuccess": "2026-11-09T09:44:44.654Z",
       "count": 129
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-09T06:58:49.069Z",
+      "lastSuccess": "2026-11-09T09:44:44.654Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-09T06:58:49.069Z"
+  "checkedAt": "2026-11-09T09:44:44.654Z"
 }
