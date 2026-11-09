@@ -3,6 +3,7 @@ import { currentUrl, pageInfo } from './route.ts';
 import { works } from '../content/content.ts';
 import { SCROLL_KEY, readPositions, writePositions } from './scroll-positions.ts';
 import { canonicalUrl, normalizePath, sitePaths, tabIndex } from './pages.ts';
+import { openFromHash, openerOf } from '../components/Modal.tsx';
 const paths = new Set(sitePaths(works));
 function flipDirection(from: string, to: string) {
   const a = tabIndex(from),
@@ -66,6 +67,18 @@ function focusableTarget(target: HTMLElement) {
   )
     return target;
   return target.querySelector<HTMLElement>('h1, h2, h3, h4, h5, h6') || target;
+}
+// The element a URL's #fragment names on the current page.
+const hashTarget = (url: { hash: string }) =>
+  url.hash ? document.getElementById(decodeURIComponent(url.hash.slice(1))) : null;
+// A fragment can name a dialog (/about#isucon2026, /#qr). Behind one opened from the page's
+// content, the page shows the button that opens it, to come back to when the dialog closes; the
+// shell's own (the QR code in the footer) leave the page where it starts.
+function showOpener(dialog: HTMLDialogElement) {
+  const opener = openerOf(dialog.id);
+  if (!opener?.closest('main')) return false;
+  opener.scrollIntoView({ block: 'center', behavior: 'instant' });
+  return true;
 }
 export function createNavigation() {
   const [path, setPath] = createSignal(normalizePath(currentUrl().pathname));
@@ -133,6 +146,12 @@ export function createNavigation() {
       transition?.skipTransition();
       // A dialog belongs to the page it was opened on (the credits live in the shell and would stay).
       for (const d of document.querySelectorAll<HTMLDialogElement>('dialog[open]')) d.close();
+      // A dialog the URL names opens once the page has turned: during the turn the tabs are drawn
+      // above everything, its backdrop included.
+      let dialog: HTMLDialogElement | null = null;
+      const openDialog = () => {
+        if (dialog && ticket === version) openFromHash(dialog);
+      };
       const update = () => {
         if (ticket !== version) return;
         // From now on pages arrive with the turn alone: the first page's entrance is not repeated.
@@ -146,9 +165,12 @@ export function createNavigation() {
         document.querySelector('meta[property="og:title"]')?.setAttribute('content', info.title);
         syncIndexing(info.found ? canonicalUrl(info.path) : undefined);
         document.dispatchEvent(new Event('cp20:navigation'));
-        const target = url.hash ? document.getElementById(decodeURIComponent(url.hash.slice(1))) : null;
+        const target = hashTarget(url);
+        if (target instanceof HTMLDialogElement) dialog = target;
         if (restore) window.scrollTo({ left: restore[0], top: restore[1], behavior: 'instant' });
-        else if (target) {
+        else if (dialog) {
+          if (!showOpener(dialog)) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        } else if (target) {
           target.scrollIntoView({ behavior: 'instant' });
           // A smooth scroll still running when the link was clicked can leave the jump short.
           aim = target;
@@ -157,7 +179,7 @@ export function createNavigation() {
         // Otherwise the next Tab would start back at the top of the page.
         const heading =
           (restore && restoredFocus(focusLink)) ||
-          (target && !restore && focusableTarget(target)) ||
+          (target && !restore && !dialog && focusableTarget(target)) ||
           document.querySelector<HTMLElement>('main h1');
         if (heading && heading.tabIndex < 0 && !heading.hasAttribute('tabindex')) heading.tabIndex = -1;
         heading?.focus({ preventScroll: true });
@@ -180,10 +202,20 @@ export function createNavigation() {
             if (transition !== current) return;
             delete root.dataset.flip;
             settleAim();
+            openDialog();
           });
       } else {
         update();
         requestAnimationFrame(settleAim);
+        openDialog();
+      }
+    };
+    // A link to a dialog on the same page changes only the fragment.
+    const hashchange = () => {
+      const target = hashTarget(location);
+      if (target instanceof HTMLDialogElement && !target.open) {
+        showOpener(target);
+        openFromHash(target);
       }
     };
     // While a page turns, the transition's snapshots take every hit and a click lands on <html>.
@@ -230,12 +262,16 @@ export function createNavigation() {
     window.addEventListener('scroll', remember, { passive: true });
     window.addEventListener('popstate', pop);
     window.addEventListener('pagehide', persist);
+    window.addEventListener('hashchange', hashchange);
+    // The page was opened at a dialog's URL.
+    hashchange();
     return () => {
       transition?.skipTransition();
       document.removeEventListener('click', relay, true);
       document.removeEventListener('click', click);
       window.removeEventListener('scroll', remember);
       window.removeEventListener('popstate', pop);
+      window.removeEventListener('hashchange', hashchange);
       window.removeEventListener('pagehide', persist);
       history.scrollRestoration = oldRestoration;
     };

@@ -3,7 +3,9 @@ import type { JSX } from '@solidjs/web';
 import Icon, { type IconName } from '../components/Icon.tsx';
 import Brand from '../components/Brand.tsx';
 import Credits from '../components/Credits.tsx';
+import QrCode from '../components/QrCode.tsx';
 import { openModal } from '../components/Modal.tsx';
+import profile from '../data/profile.json';
 import { TAB_PATHS, sectionName, tabIndex } from './pages.ts';
 // The index tabs, in TAB_PATHS order.
 const tabs: Record<(typeof TAB_PATHS)[number], { label: string; icon: IconName }> = {
@@ -12,6 +14,8 @@ const tabs: Record<(typeof TAB_PATHS)[number], { label: string; icon: IconName }
   '/articles': { label: '記事', icon: 'FileText' },
   '/about': { label: 'プロフィール', icon: 'UserRound' },
 };
+// Every page ends with the same accounts as the profile, and the feed.
+const footerLinks = [...profile.links, { name: 'RSS', url: '/feed.xml' }];
 export default function Shell(props: { path: string; children: JSX.Element }) {
   return (
     <>
@@ -44,30 +48,39 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
         <main id="main">{props.children}</main>
         <footer class="site-footer wrap" data-stamp-anchor="footer">
           <div class="footer-links">
-            <a href="https://github.com/cp-20">
-              <Brand url="https://github.com/cp-20" />
-              GitHub
-            </a>
-            <a href="https://twitter.com/__cp20__">
-              <Brand url="https://twitter.com/__cp20__" />Twitter
-            </a>
-            <a href="https://mixi.social/@cp20">
-              <Brand url="https://mixi.social/@cp20" />
-              mixi2
-            </a>
-            <a href="/feed.xml">
-              <Brand url="/feed.xml" />
-              RSS
-            </a>
+            <For each={footerLinks}>
+              {(l) => (
+                <a href={l.url}>
+                  <Brand url={l.url} />
+                  {l.name}
+                </a>
+              )}
+            </For>
           </div>
           <div class="footer-bottom">
             <span>© 2026 cp20</span>
-            <button type="button" class="credits-open" onClick={() => openModal('credits')}>
+            <button
+              type="button"
+              class="footer-button"
+              aria-haspopup="dialog"
+              data-opens="qr"
+              onClick={() => openModal('qr')}
+            >
+              <Icon name="QrCode" size={16} />
+              QR コード
+            </button>
+            <button
+              type="button"
+              class="footer-button credits-open"
+              aria-haspopup="dialog"
+              onClick={() => openModal('credits')}
+            >
               クレジット・ライセンス
             </button>
           </div>
         </footer>
         <Credits />
+        <QrCode />
       </div>
     </>
   );

@@ -4,10 +4,23 @@ import { responsive, sizes } from '../components/Preview.tsx';
 import Bookshelf from '../components/Bookshelf.tsx';
 import Brand from '../components/Brand.tsx';
 import Modal, { openModal } from '../components/Modal.tsx';
-import { milestones } from '../data/editorial.ts';
+import { milestones, speedups } from '../data/editorial.ts';
 import { localImage } from '../content/images.ts';
+import { splitEmphasis } from '../content/emphasis.ts';
+import { works } from '../content/content.ts';
+import { workPath } from '../site/pages.ts';
 import profile from '../data/profile.json';
 import tracks from '../data/tracks.json';
+// A line of the history with its figures in bold and a name that is code in the monospace face.
+function Emphasis(props: { text: string }) {
+  return (
+    <>
+      {splitEmphasis(props.text).map((p) =>
+        'strong' in p ? <strong>{p.strong}</strong> : 'code' in p ? <code>{p.code}</code> : p.text,
+      )}
+    </>
+  );
+}
 export default function About() {
   return (
     <div class="wrap about-page">
@@ -46,9 +59,118 @@ export default function About() {
           </div>
         </div>
       </header>
+      <section class="speed-section" data-stamp-anchor="speed" aria-labelledby="speed-title">
+        <div class="section-heading">
+          <h2 id="speed-title">速くしてきたもの</h2>
+        </div>
+        <ul class="speed-stamps">
+          <For each={speedups}>
+            {(s) => (
+              <li>
+                <button type="button" aria-haspopup="dialog" onClick={() => openModal(s.id)}>
+                  <span class="speed-place">{s.place}</span>
+                  <span class="speed-what">{s.what}</span>
+                  <span class="speed-figure">
+                    {s.from && (
+                      <span class="speed-from">
+                        {s.from}
+                        <span aria-hidden="true"> →</span>
+                        <span class="visually-hidden">から</span>
+                      </span>
+                    )}
+                    <strong>
+                      {/* The digits are the denomination; 約, the unit and the like stay small. */}
+                      {s.to.split(/([\d.,]+)/).map((part, i) => (i % 2 ? <span>{part}</span> : part))}
+                    </strong>
+                  </span>
+                </button>
+              </li>
+            )}
+          </For>
+        </ul>
+      </section>
       <div class="profile-history-layout">
-        <aside class="profile-details">
-          <h2>所属</h2>
+        <section data-stamp-anchor="history" class="history" aria-labelledby="history-title">
+          <div class="section-heading">
+            <h2 id="history-title">経歴</h2>
+          </div>
+          <div class="timeline">
+            <For each={milestones}>
+              {(m) => {
+                const work = m.work ? works.find((w) => w.id === m.work) : undefined;
+                // An entry opens its dialog only when there is more to say than the line itself.
+                const expandable = m.detail.length > 0 || m.links.length > 0 || !!work;
+                return (
+                  <>
+                    <div class="timeline-item" data-kind={m.kind} data-expandable={expandable || undefined}>
+                      <div class="timeline-date">
+                        <time datetime={m.year.replace('.', '-')}>{m.year}</time>
+                        <span>{m.grade}</span>
+                      </div>
+                      <div>
+                        <h3>
+                          {expandable ? (
+                            <button
+                              type="button"
+                              aria-haspopup="dialog"
+                              data-opens={m.id}
+                              onClick={() => openModal(m.id)}
+                            >
+                              {m.title}
+                              <span class="timeline-more" aria-hidden="true">
+                                <Icon name="Plus" size={14} stroke={3} />
+                              </span>
+                            </button>
+                          ) : (
+                            m.title
+                          )}
+                        </h3>
+                        <p>
+                          <Emphasis text={m.text} />
+                        </p>
+                      </div>
+                    </div>
+                    {expandable && (
+                      <Modal id={m.id} title={m.title}>
+                        <p class="modal-meta">
+                          <time datetime={m.year.replace('.', '-')}>{m.year}</time>
+                          <span>{m.grade}</span>
+                        </p>
+                        {(m.detail.length ? m.detail : [m.text]).map((d) => (
+                          <p>
+                            <Emphasis text={d} />
+                          </p>
+                        ))}
+                        {(work || m.links.length > 0) && (
+                          <ul class="modal-links">
+                            {work && (
+                              <li>
+                                <a href={workPath(work.id)}>
+                                  <Icon name="Folder" size={16} />
+                                  {work.title}
+                                </a>
+                              </li>
+                            )}
+                            {m.links.map((l) => (
+                              <li>
+                                <a href={l.url}>
+                                  <Brand url={l.url} />
+                                  {l.label}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </Modal>
+                    )}
+                  </>
+                );
+              }}
+            </For>
+          </div>
+        </section>
+        <aside class="profile-details" aria-labelledby="affiliations-title">
+          <h2 id="affiliations-title">所属</h2>
           <ul class="profile-affiliations">
             <For each={profile.affiliations}>
               {(a) => (
@@ -70,66 +192,6 @@ export default function About() {
             </For>
           </ul>
         </aside>
-        <section data-stamp-anchor="history" class="history" aria-labelledby="history-title">
-          <div class="section-heading">
-            <h2 id="history-title">経歴</h2>
-          </div>
-          <div class="timeline">
-            <For each={milestones}>
-              {(m, i) => {
-                const id = `milestone-${i()}`;
-                // An entry opens its dialog only when there is more to say than the line itself.
-                const expandable = m.detail.length > 0 || m.links.length > 0;
-                return (
-                  <>
-                    <div class="timeline-item" data-expandable={expandable || undefined}>
-                      <div class="timeline-date">
-                        <time datetime={m.year.replace('.', '-')}>{m.year}</time>
-                        <span>{m.grade}</span>
-                      </div>
-                      <div>
-                        <h3>
-                          {expandable ? (
-                            <button type="button" aria-haspopup="dialog" onClick={() => openModal(id)}>
-                              {m.title}
-                              <Icon name="Plus" size={15} stroke={2.5} />
-                            </button>
-                          ) : (
-                            m.title
-                          )}
-                        </h3>
-                        <p>{m.text}</p>
-                      </div>
-                    </div>
-                    {expandable && (
-                      <Modal id={id} title={m.title}>
-                        <p class="modal-meta">
-                          <time datetime={m.year.replace('.', '-')}>{m.year}</time>
-                          <span>{m.grade}</span>
-                        </p>
-                        {(m.detail.length ? m.detail : [m.text]).map((d) => (
-                          <p>{d}</p>
-                        ))}
-                        {m.links.length > 0 && (
-                          <ul class="modal-links">
-                            {m.links.map((l) => (
-                              <li>
-                                <a href={l.url}>
-                                  <Brand url={l.url} />
-                                  {l.label}
-                                </a>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </Modal>
-                    )}
-                  </>
-                );
-              }}
-            </For>
-          </div>
-        </section>
       </div>
       <div class="favorites-heading">
         <h2>好きなもの</h2>

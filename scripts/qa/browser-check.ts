@@ -6,6 +6,10 @@ import { chromium, expect, type BrowserContext, type Page, type Route } from '@p
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { mockFirebase, signInAs } from './firebase-mock.ts';
+import profile from '../../src/data/profile.json' with { type: 'json' };
+import works from '../../src/data/works.json' with { type: 'json' };
+import manual from '../../src/data/manual.json' with { type: 'json' };
+import { mergeWorks } from '../../src/site/pages.ts';
 
 declare global {
   interface Window {
@@ -109,6 +113,40 @@ try {
           .map((i) => i.getAttribute('src')),
       );
     if (broken.length) throw Error(`Broken local images: ${broken}`);
+    // Every character on the page, its dialogs included, is in a Zen Maru Gothic file of its weight
+    // (scripts/build/fonts.ts subsets bold to what the stylesheet sets in bold).
+    const missing = await page.evaluate(() => {
+      const faces = [...document.fonts].filter((f) => f.family.replaceAll(/["']/g, '') === 'Zen Maru Gothic');
+      const covered = (weight: string, c: string) =>
+        faces.some(
+          (f) =>
+            f.weight === weight &&
+            f.unicodeRange.split(',').some((r) => {
+              const [a, b = a] = r.trim().replace(/^U\+/i, '').split('-');
+              const p = c.codePointAt(0)!;
+              return p >= parseInt(a, 16) && p <= parseInt(b, 16);
+            }),
+        );
+      const out = new Set<string>();
+      const look = () => {
+        const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+          const el = n.parentElement!;
+          if (!el.checkVisibility() || !/Zen Maru/.test(getComputedStyle(el).fontFamily.split(',')[0]))
+            continue;
+          const weight = parseInt(getComputedStyle(el).fontWeight) >= 600 ? '700' : '500';
+          for (const c of n.textContent!) if (c.trim() && !covered(weight, c)) out.add(`${weight}:${c}`);
+        }
+      };
+      look();
+      for (const d of document.querySelectorAll('dialog')) {
+        d.showModal();
+        look();
+        d.close();
+      }
+      return [...out];
+    });
+    if (missing.length) throw Error(`Characters outside the font subsets on ${path}: ${missing.join(' ')}`);
   }
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
@@ -117,9 +155,29 @@ try {
       await settle();
       if ((await page.evaluate(() => document.documentElement.scrollWidth)) > width)
         throw Error(`Overflow ${path} at ${width}`);
+      // On a phone the shared controls are a fingertip (44px) in both directions.
+      if (width === 390) {
+        const small = await page
+          .locator(
+            '.footer-links a, .footer-button, .profile-links a, .under-link, .speed-stamps button, .rail nav a, .sticker-tab',
+          )
+          .evaluateAll((els) =>
+            els.flatMap((el) => {
+              const r = el.getBoundingClientRect();
+              return r.width && (Math.round(r.width) < 44 || Math.round(r.height) < 44)
+                ? [
+                    `${el.className || el.tagName} ${el.textContent?.trim().slice(0, 12)} ${Math.round(r.width)}×${Math.round(r.height)}`,
+                  ]
+                : [];
+            }),
+          );
+        if (small.length) throw Error(`Tap targets under 44px on ${path}: ${small.join('; ')}`);
+      }
     }
   }
-  passed('pages load with no axe violations, broken or remote images, or sideways scroll at 320-1440px');
+  passed(
+    'pages load with no axe violations, broken or remote images, or sideways scroll at 320-1440px; every character in a font subset of its weight; shared controls are 44px on a phone',
+  );
 
   // ── In-app navigation ──
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -244,9 +302,64 @@ try {
     throw Error('Scroll lock left after back closed the credits');
   await page.goto(origin + '/about');
   await page.locator('.timeline-item h3 button').first().click();
-  await expect(page.locator('#milestone-0')).toBeVisible();
+  await expect(page.locator('#isucon2026')).toBeVisible();
   await page.mouse.click(5, 5);
-  await expect(page.locator('#milestone-0')).toBeHidden();
+  await expect(page.locator('#isucon2026')).toBeHidden();
+  // A history entry's address opens its dialog over the entry; closing it drops the address and
+  // leaves focus on the entry. A speed-up stamp opens the same dialog.
+  await page.goto(origin + '/about#m3');
+  await expect(page.locator('#m3')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#m3')).toBeHidden();
+  await expect(page).toHaveURL(origin + '/about');
+  await expect(page.locator('[data-opens="m3"]')).toBeFocused();
+  await expect(page.locator('[data-opens="m3"]')).toBeInViewport();
+  await page.locator('.speed-stamps button', { hasText: 'LayerX' }).click();
+  await expect(page.locator('#layerx')).toBeVisible();
+  await page.keyboard.press('Escape');
+  // From another page (the home page's achievements), the page turns, then the dialog opens.
+  await page.goto(origin + '/');
+  await page.evaluate(() => {
+    const a = Object.assign(document.createElement('a'), { href: '/about#wsh2024' });
+    document.querySelector('main')!.append(a);
+    a.click();
+    a.remove();
+  });
+  await expect(page.locator('#wsh2024')).toBeVisible();
+  await expect(page.locator('main h1')).toContainText('しーぴー');
+  await page.keyboard.press('Escape');
+  await expect(page).toHaveURL(origin + '/about');
+  // The QR code: https://cp20.dev/#qr opens it straight away, and so does the footer's button.
+  await page.goto(origin + '/#qr');
+  await expect(page.locator('#qr')).toBeVisible();
+  await expect
+    .poll(() => page.locator('#qr .qr-code').evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+  await expect(page).toHaveURL(origin + '/');
+  if ((await page.evaluate(() => scrollY)) !== 0) throw Error('Closing the QR code moved the page');
+  await page.locator('[data-opens="qr"]').click();
+  await expect(page.locator('#qr')).toBeVisible();
+  await page.keyboard.press('Escape');
+  // The footer lists the profile's accounts (profile.json) and the feed.
+  const footerLinks = await page
+    .locator('.footer-links a')
+    .evaluateAll((links) => links.map((a) => a.getAttribute('href')));
+  if (footerLinks.join() !== [...profile.links.map((l) => l.url), '/feed.xml'].join())
+    throw Error(`Footer links ${footerLinks} are not profile.json's`);
+  // A missing page offers the featured works, or every work for a missing work's address.
+  await page.goto(origin + '/works/no-such-work');
+  await expect(page.locator('.not-found-all a')).toHaveCount(mergeWorks(works, manual).length);
+  await page.goto(origin + '/no-such-page');
+  await expect(page.locator('.not-found-featured a')).toHaveCount(3);
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const h1 = await page
+      .locator('main h1')
+      .evaluate((h) => [h.clientHeight, parseFloat(getComputedStyle(h).lineHeight)]);
+    if (h1[0] > h1[1] * 1.5) throw Error(`The 404 heading wraps at ${width}px`);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
   // Back returns focus to the link the keyboard followed.
   await page.goto(origin + '/works');
   const lastWork = page.locator('main a[href^="/works/"]:not([tabindex="-1"])').last();
@@ -257,7 +370,7 @@ try {
   await page.goBack();
   await expect(lastWork).toBeFocused();
   passed(
-    'navigation keeps the document and header; back/forward, reloads and other documents restore scroll, filters and focus; one sticker stream',
+    'navigation keeps the document and header; back/forward, reloads and other documents restore scroll, filters and focus; one sticker stream; history entries and the QR code open from their URLs; the footer is profile.json; a missing page offers the works',
   );
 
   // ── Stickers with a mouse ──
@@ -281,6 +394,8 @@ try {
   await expect(guest.locator('.sticker-sheet')).toBeHidden();
   await guest.locator('.sticker-tab').click();
   await expect(guest.getByRole('button', { name: 'Google でログイン' })).toBeVisible();
+  // One line says what signing in is for; once signed in it is gone.
+  await expect(guest.locator('.sticker-hint')).toContainText('みんなに見えます');
   await guest.getByRole('button', { name: /^クローバー/ }).click();
   await expect(guest.locator('.stamp-overlay')).toHaveCount(0);
   await page.locator('.sticker-tab').click();
@@ -289,6 +404,7 @@ try {
     /gravatar\.com\/avatar\/[0-9a-f]{64}/,
   );
   await axe('/#sticker-sheet');
+  await expect(page.locator('.sticker-hint')).toHaveCount(0);
   // The sticker shows before the save answers.
   const gate = new Promise<void>((resolve) => (release = resolve));
   let held = false;

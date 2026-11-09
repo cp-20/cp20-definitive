@@ -1,6 +1,7 @@
 import './styles/app.css';
 import './styles/works.css';
 import { For, createMemo } from 'solid-js';
+import { isServer } from '@solidjs/web';
 import Shell from './site/Shell.tsx';
 import { StampProvider } from './stamps/StampProvider.tsx';
 import Home from './pages/Home.tsx';
@@ -11,13 +12,23 @@ import WorkDetail from './pages/WorkDetail.tsx';
 import NotFound from './pages/NotFound.tsx';
 import { pageInfo } from './site/route.ts';
 import { createNavigation } from './site/navigation.ts';
-// Built pages get Zen Maru Gothic as one subset WOFF2 per weight (scripts/build/fonts.ts, run by prerender);
+// Built pages get Zen Maru Gothic as subset WOFF2 files (scripts/build/fonts.ts, run by prerender);
 // the dev server, which has no prerender step, uses the full @fontsource split instead.
 if (import.meta.env.DEV)
   void Promise.all([
     import('@fontsource/zen-maru-gothic/500.css'),
     import('@fontsource/zen-maru-gothic/700.css'),
   ]);
+// The subset is split by page, so a page loads only the files for the characters it shows. Once
+// the page has loaded, the other files follow, so the next page's text is ready when it is opened.
+else if (!isServer) {
+  const rest = () => {
+    for (const face of document.fonts) if (face.status === 'unloaded') face.load().catch(() => {});
+  };
+  const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(rest) : setTimeout(rest, 200));
+  if (document.readyState === 'complete') idle();
+  else addEventListener('load', idle, { once: true });
+}
 function Page(props: { path: string }) {
   const info = pageInfo(props.path);
   return info.path === '/' ? (

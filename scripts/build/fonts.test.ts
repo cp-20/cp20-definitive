@@ -9,11 +9,15 @@ import { fileURLToPath } from 'node:url';
 import { brotliDecompressSync } from 'node:zlib';
 import subsetFont from 'subset-font';
 import {
+  boldRules,
+  boldTexts,
   collectCharacters,
   dropWoffFallback,
   fontHead,
   isFontFile,
+  slices,
   subsetOptions,
+  unicodeRange,
   weights,
 } from './fonts.ts';
 
@@ -48,6 +52,66 @@ test('fontHead は太さごとに、1つの WOFF2 だけを指す @font-face を
     ],
     [2, true],
   );
+});
+
+test('fontHead は渡されたファイルを preload し、unicode-range を書く', () => {
+  const head = fontHead(
+    [{ weight: 700, href: '/assets/z-700-a.woff2', range: 'U+20-7e' }],
+    ['/assets/z-700-a.woff2'],
+  );
+  assert.deepEqual(
+    [
+      head.startsWith(
+        '<link rel="preload" href="/assets/z-700-a.woff2" as="font" type="font/woff2" crossorigin>',
+      ),
+      head.includes("format('woff2');unicode-range:U+20-7e}"),
+    ],
+    [true, true],
+  );
+});
+
+test('unicodeRange は続いたコードポイントを1つの範囲にまとめる', () => {
+  assert.equal(unicodeRange('xcab'), 'U+61-63,U+78');
+});
+
+test('slices はページごとに、それより前のページにない文字を分け、残りを最後に置く', () => {
+  assert.deepEqual(slices('あいうえおか', ['あい', 'いう']), ['あい', 'う', 'えおか']);
+});
+
+describe('太字の文字', () => {
+  const css =
+    '@layer c{.title,.tab:hover{font-weight:700}.x:before{content:"賞"/"";font-weight:700}@media (width<9px){.y{font:700 1rem/1 a}}p{font-weight:500}}';
+
+  test('boldRules は太字の規則のセレクタと、content の文字を拾う', () => {
+    assert.deepEqual(boldRules(css), {
+      selectors: ['.title', '.tab:hover', '.x:before', '.y'],
+      content: ['賞'],
+    });
+  });
+
+  const texts = boldTexts(
+    ['<h2>見出し</h2><p class="title">題名</p><a class="tab">札</a><p class="x">本文</p><p>地の文</p>'],
+    [css],
+    ['"保存できませんでした"', '"地の文"'],
+  ).join('');
+
+  test('見出しと、太字の規則が当たる要素の文字を含む（ホバーしていなくても）', () => {
+    assert.deepEqual(
+      ['見', '題', '札', '賞'].filter((c) => !texts.includes(c)),
+      [],
+    );
+  });
+
+  test('疑似要素の規則では要素の本文を太字にしない', () => {
+    assert.deepEqual(
+      ['本', '地'].filter((c) => texts.includes(c)),
+      [],
+    );
+  });
+
+  test('ページになく、スクリプトだけが出す文字は含める', () => {
+    assert.ok(texts.includes('保'));
+  });
 });
 
 for (const weight of weights)
@@ -138,8 +202,37 @@ describe.skipIf(skip)('ビルドした Zen Maru Gothic', () => {
     ? []
     : readdirSync(built('assets')).filter((f) => /^zen-maru-gothic-\d+-.*\.woff2$/.test(f));
 
-  test('太さ2つぶんのファイルがある', () => {
-    assert.equal(fonts.length, 2);
+  // The @font-face rules every page declares: weight, file and unicode-range.
+  const faces = skip
+    ? []
+    : [...readFileSync(built('index.html'), 'utf8').matchAll(/@font-face\{([^}]*)\}/g)].map(([, rule]) => ({
+        weight: rule.match(/font-weight:(\d+)/)![1],
+        href: rule.match(/url\(([^)]+)\)/)![1],
+        range: rule.match(/unicode-range:([^;}]*)/)?.[1] ?? '',
+      }));
+  const points = (range: string) =>
+    range.split(',').flatMap((r) => {
+      const [a, b = a] = r.replace('U+', '').split('-');
+      return Array.from({ length: parseInt(b, 16) - parseInt(a, 16) + 1 }, (_, i) => parseInt(a, 16) + i);
+    });
+
+  test('どのファイルも @font-face で宣言され、太さごとに文字の範囲が重ならない', () => {
+    assert.deepEqual(faces.map((f) => f.href.slice('/assets/'.length)).sort(), [...fonts].sort());
+    for (const weight of weights) {
+      const all = faces.filter((f) => f.weight === String(weight)).flatMap((f) => points(f.range));
+      assert.equal(new Set(all).size, all.length, `${weight}`);
+    }
+  });
+
+  test('トップは太さごとに1つずつ、プロフィールは2つずつのファイルを preload する', () => {
+    const preloads = (page: string) =>
+      [...readFileSync(built(page), 'utf8').matchAll(/<link rel="preload" href="([^"]+)" as="font"/g)].map(
+        ([, href]) => faces.find((f) => f.href === href)?.weight,
+      );
+    assert.deepEqual(
+      [preloads('index.html').sort(), preloads('about/index.html').sort(), preloads('articles/index.html')],
+      [['500', '700'], ['500', '500', '700', '700'], []],
+    );
   });
 
   for (const font of fonts)
