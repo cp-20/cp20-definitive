@@ -1,7 +1,6 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { article } from '../../src/content/normalize.ts';
-import { collect } from './sync.ts';
 import { fetchTrapPosts, nextPage, parseAuthorPage } from './trap.ts';
 
 const card = (id: number, title: string, day = '2026年7月5日') => `
@@ -110,26 +109,10 @@ describe('fetchTrapPosts', () => {
       await assert.rejects(crawlWith(second, next), error);
     });
 
-  test('著者ページのつくりが変わったら失敗にする', async () => {
+  test('著者ページのつくりが変わったら、1ページ目から失敗にする', async () => {
     await assert.rejects(
       fetchTrapPosts(async (url) => (url.endsWith('/rss/') ? '<rss/>' : '<html>redesigned</html>'), article),
-    );
-  });
-
-  test('取得に失敗したら、収集では前回の trap.jp の記事を残して stale にする', async () => {
-    const previous = {
-      articles: [article('kept', 'https://trap.jp/post/9/', '2025-01-01', 'trap.jp')],
-      repos: [],
-      sources: { 'trap.jp': { status: 'ok' } },
-      updatedAt: '2025-01-01',
-    };
-    const failed = await collect(previous, {
-      'trap.jp': () => crawlWith(async () => Promise.reject(fail(500))),
-      'zenn.dev': async () => [article('z', 'https://zenn.dev/cp20/articles/1', '2026-01-01', 'zenn.dev')],
-    });
-    assert.deepEqual(
-      [failed.sources['trap.jp'].status, failed.articles.some((a) => a.url === 'https://trap.jp/post/9/')],
-      ['stale', true],
+      /listed no posts/,
     );
   });
 });

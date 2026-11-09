@@ -1,8 +1,9 @@
-// Collecting the article list: feeds, paginated APIs, and a source that is down or shrinks.
-import { describe, test } from 'vitest';
+// Collecting the article list: feeds, paginated APIs, what each source answers, and a source
+// that is down or shrinks.
+import { afterEach, describe, test, vi } from 'vitest';
 import assert from 'node:assert/strict';
-import { article, type Article } from '../../src/content/normalize.ts';
-import { collect, paginated, parseFeed, request, type Snapshot } from './sync.ts';
+import { article, type Article, type Repo, type Snapshot } from '../../src/content/normalize.ts';
+import { collect, githubRepo, paginated, parseFeed, request, zennArticle } from './sync.ts';
 
 const old: Article = {
   title: 'Old',
@@ -21,8 +22,7 @@ const previous = (): Snapshot => ({
 const offline = async (): Promise<Article[]> => {
   throw Error('offline');
 };
-// zenn.dev is down while note.com answers.
-const zennDown = { 'zenn.dev': offline, 'note.com': async () => parseFeed(noteFeed, 'note.com') };
+const now = '2026-09-01T00:00:00Z';
 
 describe('parseFeed', () => {
   const item = (title: string, n: number, date = 'Tue, 01 Sep 2026 00:00:00 GMT') =>
@@ -66,15 +66,56 @@ describe('parseFeed', () => {
   });
 });
 
-describe('レスポンスの大きさの上限', () => {
-  const big = async () => new Response('x'.repeat(3000));
+describe('request', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+  // A fetch that answers from `answers` in turn and records each request.
+  const fetchOf = (...answers: (() => Response)[]) => {
+    const asked: { url: string; headers: Record<string, string> }[] = [];
+    const fetch = (async (url: string, init: RequestInit) => {
+      asked.push({ url, headers: init.headers as Record<string, string> });
+      return answers[asked.length - 1]();
+    }) as unknown as typeof globalThis.fetch;
+    return { fetch, asked };
+  };
+  const big = () => new Response('x'.repeat(3000));
+
   test('HTML の head を読むときは、上限で切り詰める', async () => {
-    const html = await request('https://example.com', 'html', big, {}, { maxBytes: 1000, truncate: true });
+    const { fetch } = fetchOf(big);
+    const html = await request('https://example.com', { format: 'html', fetch, maxBytes: 1000, truncate: true });
     assert.equal(html.length, 1000);
   });
 
-  test('それ以外では、上限を超えたら失敗にする', async () => {
-    await assert.rejects(request('https://example.com', 'html', big, {}, { maxBytes: 1000 }));
+  test('それ以外では、上限を超えたら再試行せずに失敗にする', async () => {
+    const { fetch, asked } = fetchOf(big, big);
+    await assert.rejects(request('https://example.com', { format: 'html', fetch, maxBytes: 1000 }), /exceeds/);
+    assert.equal(asked.length, 1);
+  });
+
+  test('混んでいたサーバーには1回だけ聞き直し、404 には聞き直さない', async () => {
+    const busy = fetchOf(
+      () => new Response('busy', { status: 503 }),
+      () => Response.json({ ok: true }),
+    );
+    assert.deepEqual(await request('https://example.com', { fetch: busy.fetch, retryDelay: 0 }), { ok: true });
+    const gone = fetchOf(() => new Response('', { status: 404 }));
+    await assert.rejects(request('https://example.com', { fetch: gone.fetch, retryDelay: 0 }), /404/);
+    assert.deepEqual([busy.asked.length, gone.asked.length], [2, 1]);
+  });
+
+  test('GITHUB_TOKEN は api.github.com にだけ送る', async () => {
+    vi.stubEnv('GITHUB_TOKEN', 'secret');
+    const { fetch, asked } = fetchOf(
+      () => Response.json([]),
+      () => Response.json([]),
+    );
+    await request('https://api.github.com/users/cp-20/repos', { fetch });
+    await request('https://zenn.dev/api/articles', { fetch });
+    assert.deepEqual(
+      asked.map((r) => r.headers.Authorization),
+      ['Bearer secret', undefined],
+    );
   });
 });
 
@@ -88,15 +129,31 @@ test('paginated は続きがある間ページを読み進める', async () => {
   assert.deepEqual(rows, [1, 2]);
 });
 
-describe('collect', () => {
-  test('取得に失敗した掲載先は、前回の記事を残す', async () => {
-    const next = await collect(previous(), zennDown, '2026-09-01T00:00:00Z');
-    assert.ok(next.articles.some((a) => a.url === old.url));
+describe('各掲載先の応答', () => {
+  test('Zenn の記事は path から URL を作り、公開日時を UTC にそろえる', () => {
+    assert.deepEqual(
+      zennArticle({ title: 'A', path: '/cp20/articles/a', published_at: '2026-01-02T09:00:00+09:00' }),
+      { title: 'A', url: 'https://zenn.dev/cp20/articles/a', date: '2026-01-02T00:00:00.000Z', source: 'zenn.dev' },
+    );
   });
 
-  test('取得に失敗した掲載先は stale になり、最後に成功した日時を保つ', async () => {
-    const next = await collect(previous(), zennDown, '2026-09-01T00:00:00Z');
+  test('GitHub のリポジトリは、名前と push 日時がなければ受け付けない', () => {
+    const repo = { name: 'a', html_url: 'https://github.com/cp-20/a', pushed_at: '2026-01-01T00:00:00Z' };
+    assert.equal(githubRepo(repo).url, 'https://github.com/cp-20/a');
+    assert.throws(() => githubRepo({ ...repo, name: 1 }));
+    assert.throws(() => githubRepo({ ...repo, pushed_at: 'yesterday' }));
+  });
+});
+
+describe('collect', () => {
+  test('取得に失敗した掲載先は前回の記事を残し、stale にして最後に成功した日時を保つ', async () => {
+    const next = await collect(
+      previous(),
+      { 'zenn.dev': offline, 'note.com': async () => parseFeed(noteFeed, 'note.com') },
+      { now },
+    );
     const { status, lastSuccess } = next.sources['zenn.dev'];
+    assert.ok(next.articles.some((a) => a.url === old.url));
     assert.deepEqual({ status, lastSuccess }, { status: 'stale', lastSuccess: '2024-01-01' });
   });
 
@@ -105,8 +162,38 @@ describe('collect', () => {
   });
 
   test('何も変わらなければ updatedAt を変えない', async () => {
-    const same = await collect(previous(), { 'zenn.dev': async () => [old] }, '2026-09-01T00:00:00Z');
+    const same = await collect(previous(), { 'zenn.dev': async () => [old] }, { now });
     assert.equal(same.updatedAt, '2024-01-01');
+  });
+
+  test('GitHub からは、フォークでもアーカイブでもない自分のリポジトリを、新しく push した順に載せる', async () => {
+    const repo = (name: string, updatedAt: string, fields: Partial<Repo> = {}): Repo => ({
+      name,
+      url: `https://github.com/cp-20/${name}`,
+      description: '',
+      language: '',
+      stars: 0,
+      updatedAt,
+      fork: false,
+      archived: false,
+      ...fields,
+    });
+    const next = await collect(
+      previous(),
+      {
+        'github.com': async () => [
+          repo('old', '2024-01-01'),
+          repo('forked', '2026-01-01', { fork: true }),
+          repo('new', '2025-01-01'),
+          repo('archived', '2026-02-01', { archived: true }),
+        ],
+      },
+      { now },
+    );
+    assert.deepEqual(
+      next.repos.map((r) => r.name),
+      ['new', 'old'],
+    );
   });
 });
 
@@ -127,8 +214,7 @@ describe('trap.jp の記事が急に減ったとき', () => {
     const result = await collect(
       before,
       { 'trap.jp': async () => articles.slice(0, 3), 'zenn.dev': zenn },
-      'now',
-      false,
+      { now, allowShrink: false },
     );
     assert.deepEqual([result.sources['trap.jp'].status, trapCount(result)], ['stale', 10]);
   });
@@ -137,37 +223,27 @@ describe('trap.jp の記事が急に減ったとき', () => {
     const result = await collect(
       before,
       { 'trap.jp': async () => articles.slice(0, 3), 'zenn.dev': zenn },
-      'now',
-      true,
+      { now, allowShrink: true },
     );
     assert.equal(trapCount(result), 3);
   });
 
   test('半分以上残っていれば、そのまま受け入れる', async () => {
-    const result = await collect(before, { 'trap.jp': async () => articles.slice(0, 6) }, 'now', false);
+    const result = await collect(before, { 'trap.jp': async () => articles.slice(0, 6) }, { now, allowShrink: false });
     assert.equal(result.sources['trap.jp'].status, 'ok');
   });
 
-  test('作品が関連記事にしている記事は、著者ページから消えても残す', async () => {
+  test('作品が関連記事にしている記事は、著者ページから消えても残し、ほかの消えた記事は除く', async () => {
     const pinned = new Set(['https://trap.jp/post/0/']);
     const unlinked = { ...before, sources: {} };
-    const next = await collect(unlinked, { 'trap.jp': async () => articles.slice(1) }, 'now', false, pinned);
-    assert.equal(next.sources['trap.jp'].status, 'ok');
-    assert.deepEqual(
-      next.articles
+    const trapUrls = (s: Snapshot) =>
+      s.articles
         .filter((a) => a.source === 'trap.jp')
         .map((a) => a.url)
-        .sort(),
-      articles.map((a) => a.url).sort(),
-    );
-    // Unlinked posts are still removed.
-    const pruned = await collect(
-      unlinked,
-      { 'trap.jp': async () => articles.slice(2) },
-      'now',
-      false,
-      pinned,
-    );
-    assert.equal(pruned.articles.filter((a) => a.source === 'trap.jp').length, 9);
+        .sort();
+    const kept = await collect(unlinked, { 'trap.jp': async () => articles.slice(1) }, { now, pinned });
+    assert.deepEqual(trapUrls(kept), articles.map((a) => a.url).sort());
+    const pruned = await collect(unlinked, { 'trap.jp': async () => articles.slice(2) }, { now, pinned });
+    assert.deepEqual(trapUrls(pruned), articles.filter((_, i) => i !== 1).map((a) => a.url).sort());
   });
 });

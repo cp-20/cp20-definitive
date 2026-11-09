@@ -1,38 +1,38 @@
 // npm run sync: collects the public content (articles, repositories, the featured music and manga,
 // link previews and their images) into src/data, keeping the last good data of any source that
 // fails (health.ts reports a source that keeps failing).
-import { readFile, writeFile, rename, appendFile } from 'node:fs/promises';
+import { appendFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
-import { article, mergeArticles, safeUrl, type Article } from '../../src/content/normalize.ts';
+import {
+  article,
+  mergeArticles,
+  safeUrl,
+  type Article,
+  type Repo,
+  type Snapshot,
+} from '../../src/content/normalize.ts';
 import { mergeWorks } from '../../src/site/pages.ts';
 import { fetchTrapPosts } from './trap.ts';
-import { syncMedia, syncPreviews } from './previews.ts';
+import { syncPreviews } from './previews.ts';
+import { syncPicks } from './picks.ts';
 import { cacheImages } from './images.ts';
+import { readData, repoDirs, writeData } from './files.ts';
 
-type Repo = {
-  name: string;
-  url: string;
-  description: string;
-  language: string;
-  stars: number;
-  updatedAt: string;
-  fork: boolean;
-  archived: boolean;
-};
-export type Source = { status: string; lastSuccess?: string; count?: number; reason?: string };
-export type Snapshot = {
-  articles: Article[];
-  repos: Repo[];
-  sources: Record<string, Source>;
-  updatedAt: string;
-  checkedAt?: string;
-};
 export type Format = 'json' | 'html' | 'xml';
+export type RequestOptions = {
+  format?: Format;
+  fetch?: typeof globalThis.fetch;
+  headers?: Record<string, string>;
+  /** The most bytes read; past it the request fails, or with `truncate` keeps the first ones. */
+  maxBytes?: number;
+  truncate?: boolean;
+  /** How long to wait before the one retry. */
+  retryDelay?: number;
+};
 export type Request = typeof request;
 
-const dataPath = new URL('../../src/data/generated.json', import.meta.url);
 // Tag values stay strings ('2024', '1e3', 'true' are valid titles); numeric/hex references are decoded.
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -59,20 +59,30 @@ export function parseFeed(xml: string, source: string) {
   if (!rows.length) throw new Error('Feed contained no valid articles');
   return rows;
 }
-/**
- * GETs `url` (retrying once), as parsed JSON or as text.
- * @param options truncate keeps the first maxBytes instead of failing.
- */
+
+// Worth asking once more: the network failed or timed out, or the server is busy. An answer that
+// will be the same next time (a 404, a page too large, malformed JSON) is not.
+const retryable = (error: unknown) => {
+  const status = (error as { status?: number }).status;
+  if (status !== undefined) return status >= 500 || status === 429;
+  return ['TypeError', 'TimeoutError', 'AbortError'].includes((error as Error).name);
+};
+
+/** GETs `url` as parsed JSON or as text, asking once more after a failure worth retrying. */
 export async function request(
   url: string,
-  format: Format = 'json',
-  fetcher: typeof fetch = fetch,
-  extraHeaders: Record<string, string> = {},
-  { maxBytes = 5_000_000, truncate = false } = {},
+  {
+    format = 'json',
+    fetch = globalThis.fetch,
+    headers = {},
+    maxBytes = 5_000_000,
+    truncate = false,
+    retryDelay = 800,
+  }: RequestOptions = {},
 ): Promise<any> {
   for (let attempt = 0; ; attempt++) {
     try {
-      const headers: Record<string, string> = {
+      const sent: Record<string, string> = {
         'User-Agent': 'cp20-definitive-content-sync',
         Accept:
           format === 'json'
@@ -80,14 +90,12 @@ export async function request(
             : format === 'html'
               ? 'text/html'
               : 'application/rss+xml, application/xml',
+        ...headers,
       };
+      // The token only ever goes to the API it is for.
       if (new URL(url).hostname === 'api.github.com' && process.env.GITHUB_TOKEN)
-        headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-      const response = await fetcher(url, {
-        headers: { ...headers, ...extraHeaders },
-        redirect: 'follow',
-        signal: AbortSignal.timeout(20000),
-      });
+        sent.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+      const response = await fetch(url, { headers: sent, redirect: 'follow', signal: AbortSignal.timeout(20000) });
       if (!response.ok)
         throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status });
       let size = 0;
@@ -104,11 +112,12 @@ export async function request(
       const text = Buffer.concat(chunks).toString('utf8');
       return format === 'json' ? JSON.parse(text) : text;
     } catch (error) {
-      if (attempt === 1 || (error as { status?: number }).status === 404) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      if (attempt === 1 || !retryable(error)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
   }
 }
+
 export async function paginated<Raw, Row, T>(
   load: (page: number) => Promise<Raw>,
   select: (raw: Raw) => Row[],
@@ -125,106 +134,120 @@ export async function paginated<Raw, Row, T>(
   }
   throw new Error('Pagination exceeded 100 pages; preserving previous snapshot');
 }
+
+// ── What each source answers, as the site stores it ──
+export const zennArticle = (a: any) =>
+  article(a?.title, `https://zenn.dev${a?.path}`, a?.published_at, 'zenn.dev');
+export const qiitaArticle = (a: any) => article(a?.title, a?.url, a?.created_at, 'qiita.com');
+export function githubRepo(r: any): Repo {
+  if (typeof r?.name !== 'string' || !Number.isFinite(Date.parse(r.pushed_at)))
+    throw new Error('Invalid repository');
+  return {
+    name: r.name,
+    url: safeUrl(r.html_url),
+    description: r.description || '',
+    language: r.language || '',
+    stars: Number(r.stargazers_count) || 0,
+    updatedAt: r.pushed_at,
+    fork: Boolean(r.fork),
+    archived: Boolean(r.archived),
+  };
+}
+/** The repositories the site lists: the owner's own, still maintained, most recently pushed first. */
+export const ownRepos = (repos: Repo[]) =>
+  repos.filter((r) => !r.fork && !r.archived).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+
 type Loaders = Record<string, () => Promise<(Article | Repo)[]>>;
+const feed = (url: string, source: string) => async () =>
+  parseFeed(await request(url, { format: 'xml' }), source);
 const providers: Loaders = {
   'zenn.dev': () =>
     paginated(
       (page) => request(`https://zenn.dev/api/articles?username=cp20&count=100&page=${page}`),
       (d) => d.articles,
-      (a: any) => article(a.title, `https://zenn.dev${a.path}`, a.published_at, 'zenn.dev'),
+      zennArticle,
       (d) => Boolean(d.next_page),
     ),
   'qiita.com': () =>
     paginated(
       (page) => request(`https://qiita.com/api/v2/users/cp20/items?per_page=100&page=${page}`),
       (d) => d,
-      (a: any) => article(a.title, a.url, a.created_at, 'qiita.com'),
+      qiitaArticle,
       (_, rows) => rows.length === 100,
     ),
-  'note.com': async () => parseFeed(await request('https://note.com/cp20/rss', 'xml'), 'note.com'),
-  'trap.jp': () => fetchTrapPosts(request, article),
-  'sizu.me': async () => parseFeed(await request('https://sizu.me/cp20/rss', 'xml'), 'sizu.me'),
-  'blog.cp20.dev': async () =>
-    parseFeed(await request('https://blog.cp20.dev/rss.xml', 'xml'), 'blog.cp20.dev'),
+  'note.com': feed('https://note.com/cp20/rss', 'note.com'),
+  'trap.jp': () => fetchTrapPosts((url, format) => request(url, { format }), article),
+  'sizu.me': feed('https://sizu.me/cp20/rss', 'sizu.me'),
+  'blog.cp20.dev': feed('https://blog.cp20.dev/rss.xml', 'blog.cp20.dev'),
   'github.com': () =>
     paginated(
       (page) => request(`https://api.github.com/users/cp-20/repos?per_page=100&sort=updated&page=${page}`),
       (d) => d,
-      (r: any): Repo => {
-        if (typeof r.name !== 'string' || !Number.isFinite(Date.parse(r.pushed_at)))
-          throw new Error('Invalid repository');
-        return {
-          name: r.name,
-          url: safeUrl(r.html_url),
-          description: r.description || '',
-          language: r.language || '',
-          stars: Number(r.stargazers_count) || 0,
-          updatedAt: r.pushed_at,
-          fork: Boolean(r.fork),
-          archived: Boolean(r.archived),
-        };
-      },
+      githubRepo,
       (_, rows) => rows.length === 100,
     ),
 };
+
+// ── trap.jp ──
+// Its complete author-page listing replaces its previous posts, so a sudden large drop (a
+// redesigned or half-loaded page) is treated as a failure unless confirmed with ALLOW_TRAP_SHRINK.
+const shrank = (before: number, after: number) => before >= 4 && after * 2 < before;
+/**
+ * The previous articles to keep beside a complete trap.jp listing: the other sources' and the trap.jp
+ * posts a work links as related (so the build's related-article check cannot jam every source).
+ */
+function keptBesideTrap(previous: Article[], listed: Article[], pinned: ReadonlySet<string>) {
+  const returned = new Set(listed.map((a) => a.url));
+  return previous.filter((a) => {
+    if (a.source !== 'trap.jp') return true;
+    if (!pinned.has(a.url) || returned.has(a.url)) return false;
+    console.warn(`::warning::trap.jp: ${a.url} is linked by a work but was not returned; keeping it`);
+    return true;
+  });
+}
+
+/**
+ * The next snapshot: each source that answered replaces its part, each that failed keeps its
+ * last good data and is marked stale. Fails only when every source fails.
+ * @param pinned trap.jp posts that works link as related, kept even when unlisted
+ */
 export async function collect(
   previous: Snapshot,
   loaders: Loaders = providers,
-  now = new Date().toISOString(),
-  allowShrink = process.env.ALLOW_TRAP_SHRINK === '1',
-  pinned = new Set<string>(),
+  {
+    now = new Date().toISOString(),
+    allowShrink = process.env.ALLOW_TRAP_SHRINK === '1',
+    pinned = new Set<string>(),
+  }: { now?: string; allowShrink?: boolean; pinned?: ReadonlySet<string> } = {},
 ) {
   const next = structuredClone(previous);
   const incoming: Article[] = [];
   let successes = 0;
   let retained = previous.articles;
-  const results = await Promise.allSettled(Object.values(loaders).map((load) => load()));
-  // trap.jp replaces its previous articles, so a sudden large drop is treated as a failure unless confirmed.
-  const trapIndex = Object.keys(loaders).indexOf('trap.jp');
-  const trap = results[trapIndex];
+  const sources = Object.keys(loaders);
+  const results = await Promise.allSettled(sources.map((source) => loaders[source]()));
+  const trap = sources.indexOf('trap.jp');
   const trapBefore = previous.articles.filter((a) => a.source === 'trap.jp').length;
-  if (
-    trap &&
-    !allowShrink &&
-    trap.status === 'fulfilled' &&
-    trapBefore >= 4 &&
-    trap.value.length * 2 < trapBefore
-  ) {
+  const listed = results[trap];
+  if (listed?.status === 'fulfilled' && !allowShrink && shrank(trapBefore, listed.value.length)) {
     console.warn(
-      `::warning::trap.jp: ${trap.value.length} of ${trapBefore} posts returned; set ALLOW_TRAP_SHRINK=1 to accept`,
+      `::warning::trap.jp: ${listed.value.length} of ${trapBefore} posts returned; set ALLOW_TRAP_SHRINK=1 to accept`,
     );
-    results[trapIndex] = { status: 'rejected', reason: Error('Unconfirmed trap.jp shrink') };
+    results[trap] = { status: 'rejected', reason: Error('Unconfirmed trap.jp shrink') };
   }
-  Object.keys(loaders).forEach((source, index) => {
+  sources.forEach((source, index) => {
     const result = results[index];
     if (result.status === 'fulfilled' && (result.value.length || source === 'trap.jp')) {
       successes++;
-      if (source === 'github.com')
-        next.repos = (result.value as Repo[])
-          .filter((r) => !r.fork && !r.archived)
-          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      if (source === 'github.com') next.repos = ownRepos(result.value as Repo[]);
       else {
         const posts = result.value as Article[];
-        // A complete author-page listing is authoritative: remove unpublished or deleted posts.
-        // Posts a work links as related are kept, so the build's related-article check cannot jam every source.
-        if (source === 'trap.jp') {
-          const returned = new Set(posts.map((a) => a.url));
-          retained = retained.filter((a) => {
-            if (a.source !== 'trap.jp') return true;
-            if (!pinned.has(a.url) || returned.has(a.url)) return false;
-            console.warn(`::warning::trap.jp: ${a.url} is linked by a work but was not returned; keeping it`);
-            return true;
-          });
-        }
+        if (source === 'trap.jp') retained = keptBesideTrap(retained, posts, pinned);
         incoming.push(...posts);
       }
       next.sources[source] = { status: 'ok', lastSuccess: now, count: result.value.length };
     } else {
-      next.sources[source] = {
-        ...previous.sources[source],
-        status: 'stale',
-        reason: 'unavailable',
-      };
+      next.sources[source] = { ...previous.sources[source], status: 'stale', reason: 'unavailable' };
       const why = result.status === 'rejected' ? result.reason?.message : 'no items returned';
       console.warn(`::warning::${source}: fetch failed (${why}); keeping last successful data`);
     }
@@ -239,30 +262,26 @@ export async function collect(
 }
 
 async function main() {
-  const previous: Snapshot = JSON.parse(await readFile(dataPath, 'utf8'));
-  const load = async (name: string) =>
-    JSON.parse(await readFile(new URL(`./${name}.json`, dataPath), 'utf8'));
-  const [works, manual] = await Promise.all([load('works'), load('manual')]);
+  const dirs = repoDirs;
+  const [previous, works, manual] = await Promise.all(
+    ['generated', 'works', 'manual'].map((name) => readData(dirs, name)),
+  );
   const pinned = new Set<string>(
     mergeWorks<{ id: string; relatedArticles?: string[] }>(works, manual).flatMap(
       (w) => w.relatedArticles ?? [],
     ),
   );
-  const next = await collect(previous, providers, undefined, undefined, pinned);
-  const mediaChanged = await syncMedia(request);
-
-  const tmp = new URL('./generated.json.tmp', dataPath);
-  await writeFile(tmp, JSON.stringify(next, null, 2) + '\n');
-  await rename(tmp, dataPath);
-  const previewsPath = new URL('./previews.json', dataPath);
-  const previousPreviews = JSON.parse(await readFile(previewsPath, 'utf8').catch(() => '{}'));
+  const next: Snapshot = await collect(previous, providers, { pinned });
+  const picksChanged = await syncPicks(request);
+  await writeData(dirs, 'generated', next);
+  const previousPreviews = await readData(dirs, 'previews').catch(() => ({}));
   const previewChanged = await syncPreviews(request);
   // A new OG image that cannot be cached falls back to the page's previous image and file.
-  const imagesChanged = await cacheImages(false, previousPreviews);
+  const imagesChanged = await cacheImages({ previousPreviews });
   const changed =
     imagesChanged ||
     previewChanged ||
-    mediaChanged ||
+    picksChanged ||
     next.updatedAt !== previous.updatedAt ||
     Object.keys(next.sources).some(
       (k) =>

@@ -8,7 +8,7 @@ import manual from '../data/manual.json';
 import baseWorks from '../data/works.json';
 import { mergeWorks } from '../site/pages.ts';
 import { editions, featuredIds } from '../data/editorial.ts';
-import type { Article } from './normalize.ts';
+import type { Article, Repo, Source } from './normalize.ts';
 import { workSections, type Work } from './works.ts';
 export type { Article, Work };
 // Merged with manual.json, validated and sorted at build time (vite.config.ts).
@@ -24,18 +24,8 @@ export const sections = workSections(
   featuredIds,
   editionWorks.map((e) => e.id),
 );
-export const repos = snapshotRepos as {
-  name: string;
-  url: string;
-  description: string;
-  language: string;
-  stars: number;
-  updatedAt: string;
-}[];
-export const sources = snapshotSources as Record<
-  string,
-  { status: string; lastSuccess?: string; count?: number; reason?: string }
->;
+export const repos = snapshotRepos as Repo[];
+export const sources = snapshotSources as Record<string, Source>;
 export const updatedAt = snapshotUpdatedAt;
 // One formatter for every date: creating an Intl.DateTimeFormat per call is the slow part.
 const dateFormat = new Intl.DateTimeFormat('ja-JP', {

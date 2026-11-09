@@ -3,7 +3,7 @@
 // nothing outside Node, because the job that runs it (refresh.yml's persist) installs no packages.
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-import type { Source } from './sync.ts';
+import type { Source } from '../../src/content/normalize.ts';
 
 export const MAX_STALE_HOURS = 48;
 /** The sources that have been failing for longer than `maxHours`. */

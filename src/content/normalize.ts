@@ -1,6 +1,25 @@
-// Articles as the site stores them: checked HTTPS URLs on the source's own host, valid dates and
-// titles without characters XML forbids. Shared by the collector (scripts/sync) and the build.
+// The collected snapshot (src/data/generated.json) as the site stores it: articles with checked
+// HTTPS URLs on the source's own host, valid dates and titles without characters XML forbids, the
+// public repositories, and how each source fared. Shared by the collector (scripts/sync) and the build.
 export type Article = { title: string; url: string; date: string; source: string };
+export type Repo = {
+  name: string;
+  url: string;
+  description: string;
+  language: string;
+  stars: number;
+  updatedAt: string;
+  fork: boolean;
+  archived: boolean;
+};
+export type Source = { status: string; lastSuccess?: string; count?: number; reason?: string };
+export type Snapshot = {
+  articles: Article[];
+  repos: Repo[];
+  sources: Record<string, Source>;
+  updatedAt: string;
+  checkedAt?: string;
+};
 export type ManualArticles = {
   articles: Article[];
   exclude: string[];

@@ -1,33 +1,12 @@
 // What the pages show of the pages they link: each work's and article's OG image and site icon
-// (previews.json), and the featured music and manga with the manga publishers' thumbnails
-// (tracks.json, series.json). Only the head of each third-party page is read.
-import { readFile, writeFile, rename } from 'node:fs/promises';
-import { parse } from 'node-html-parser';
+// (previews.json). Only the head of each third-party page is read.
 import { mergeArticles } from '../../src/content/normalize.ts';
+import type { Preview } from '../../src/content/media.ts';
 import { dimensions, size } from './images.ts';
+import { headElements, headRequest } from './head.ts';
+import { REFRESH_MS, eachLimited, readData, repoDirs, writeData, type Dirs } from './files.ts';
 import type { Request } from './sync.ts';
 
-const data = (name: string) => new URL(`../../src/data/${name}.json`, import.meta.url);
-const load = (name: string) => readFile(data(name), 'utf8').then(JSON.parse);
-async function saveIfChanged(file: URL, previous: unknown, next: unknown) {
-  if (JSON.stringify(previous) === JSON.stringify(next)) return false;
-  const tmp = new URL(file.href + '.tmp');
-  await writeFile(tmp, JSON.stringify(next, null, 2) + '\n');
-  await rename(tmp, file);
-  return true;
-}
-// Only the head is parsed, so a large page is truncated instead of downloaded in full.
-const htmlLimit = { maxBytes: 1_000_000, truncate: true };
-
-// The <meta> and <link> elements of a page's head. Only the head is parsed (and at most maxScan
-// characters of it), so a hostile page cannot make the parse run over its whole body.
-const maxScan = 512_000;
-const headElements = (html: string, selector: string) => {
-  const end = html.search(/<\/head\s*>/i);
-  return parse(html.slice(0, Math.min(end < 0 ? html.length : end, maxScan))).querySelectorAll(selector);
-};
-
-// ── Link previews ──
 const https = (s: string, base: string) => {
   if (!s.trim()) return null;
   try {
@@ -36,13 +15,6 @@ const https = (s: string, base: string) => {
   } catch {
     return null;
   }
-};
-type Preview = {
-  image: string | null;
-  icon: string | null;
-  width: number;
-  height: number;
-  checkedAt?: string;
 };
 export function parsePreview(html: string, url: string): Preview {
   const metas: Record<string, string> = {},
@@ -62,12 +34,13 @@ export function parsePreview(html: string, url: string): Preview {
     height: size(metas['og:image:height'], 630),
   };
 }
+type Stated = { image?: string; icon?: string | null };
 /**
  * A work's eyecatch and icon stated in works.json (`image`, `icon`) win over its page's: for a
  * page whose own are missing or not the work's (a repository page offers GitHub's). `"icon": null`
  * states that the work has none.
  */
-export const withStated = (preview: Preview, work?: { image?: string; icon?: string | null }): Preview => ({
+export const withStated = (preview: Preview, work?: Stated): Preview => ({
   ...preview,
   ...(work?.image && { image: work.image }),
   ...(work && 'icon' in work && { icon: work.icon ?? null }),
@@ -93,14 +66,23 @@ export const keepReferenced = <T>(previews: Record<string, T>, urls: string[]) =
   const linked = new Set(urls);
   return Object.fromEntries(Object.entries(previews).filter(([url]) => linked.has(url)));
 };
-export async function syncPreviews(request: Request, force = false) {
-  const file = data('previews');
-  const [previous, works, manual, snapshot] = await Promise.all([
-    load('previews').catch(() => ({})) as Promise<Record<string, Preview>>,
-    load('works'),
-    load('manual'),
-    load('generated'),
-  ]);
+
+/**
+ * Refreshes previews.json for every page the site links (weekly, sooner for one without an image
+ * or with a newly stated one). A page that cannot be read keeps its previous preview.
+ * @returns whether anything but the check times changed
+ */
+export async function syncPreviews(
+  request: Request,
+  { force = false, dirs = repoDirs, fetch = globalThis.fetch }: { force?: boolean; dirs?: Dirs; fetch?: typeof globalThis.fetch } = {},
+) {
+  const [previous, works, manual, snapshot]: [Record<string, Preview>, ({ url: string } & Stated)[], any, any] =
+    await Promise.all([
+      readData(dirs, 'previews').catch(() => ({})),
+      readData(dirs, 'works'),
+      readData(dirs, 'manual'),
+      readData(dirs, 'generated'),
+    ]);
   const urls: string[] = [
     ...new Set(
       [...works, ...manual.projects, ...mergeArticles(snapshot.articles, [], manual)].map(
@@ -108,9 +90,7 @@ export async function syncPreviews(request: Request, force = false) {
       ),
     ),
   ];
-  const stated = new Map<string, { image?: string; icon?: string | null }>(
-    works.map((w: { url: string }) => [w.url, w]),
-  );
+  const stated = new Map<string, Stated>(works.map((w) => [w.url, w]));
   const next = keepReferenced(previous, urls);
   let fetched = 0;
   // A newly stated image or icon is picked up on the next run.
@@ -124,178 +104,58 @@ export async function syncPreviews(request: Request, force = false) {
       force ||
       !previous[url]?.image ||
       restated(url) ||
-      Date.now() - Date.parse(previous[url].checkedAt!) > 7 * 86400000,
+      Date.now() - Date.parse(previous[url].checkedAt!) > REFRESH_MS,
   );
-  await Promise.all(
-    Array.from({ length: 6 }, async () => {
-      for (let url; (url = queue.shift()); ) {
+  await eachLimited(queue, 6, async (url) => {
+    try {
+      const html = await request(url, {
+        ...headRequest,
+        fetch,
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; cp20.dev link preview collector)' },
+      });
+      const preview = withStated(parsePreview(html, url), stated.get(url));
+      const old = previous[url];
+      const keepOldImage = () => {
+        // Image, width and height travel together so a stale image never gets new dimensions.
+        preview.image = old?.image || null;
+        preview.width = (old?.image && old.width) || 1200;
+        preview.height = (old?.image && old.height) || 630;
+      };
+      if (!preview.image) keepOldImage();
+      else {
         try {
-          const html = await request(
-            url,
-            'html',
-            fetch,
-            {
-              Accept: 'text/html',
-              'User-Agent': 'Mozilla/5.0 (compatible; cp20.dev link preview collector)',
-            },
-            htmlLimit,
-          );
-          const preview = withStated(parsePreview(html, url), stated.get(url));
-          const old = previous[url];
-          const keepOldImage = () => {
-            // Image, width and height travel together so a stale image never gets new dimensions.
-            preview.image = old?.image || null;
-            preview.width = (old?.image && old.width) || 1200;
-            preview.height = (old?.image && old.height) || 630;
-          };
-          if (!preview.image) keepOldImage();
-          else {
-            try {
-              Object.assign(preview, await dimensions(preview.image));
-            } catch {
-              keepOldImage();
-            }
-          }
-          if (preview.icon && !(await reachable(preview.icon))) preview.icon = previous[url]?.icon || null;
-          next[url] = { ...preview, checkedAt: new Date().toISOString() };
-          fetched++;
+          Object.assign(preview, await dimensions(preview.image, fetch));
         } catch {
-          // A page behind a login (a club's members-only service) cannot be read, but the image
-          // works.json states for it can still be shown.
-          const image = stated.get(url)?.image;
-          if (image && previous[url]?.image !== image) {
-            try {
-              next[url] = {
-                ...withStated({ image: null, icon: null, width: 1200, height: 630 }, stated.get(url)),
-                ...(await dimensions(image)),
-                checkedAt: new Date().toISOString(),
-              };
-              fetched++;
-              continue;
-            } catch {}
-          }
-          console.warn(`Preview unavailable: ${new URL(url).hostname}; retaining previous metadata`);
+          keepOldImage();
         }
       }
-    }),
-  );
+      if (preview.icon && !(await reachable(preview.icon, fetch))) preview.icon = old?.icon || null;
+      next[url] = { ...preview, checkedAt: new Date().toISOString() };
+      fetched++;
+    } catch {
+      // A page behind a login (a club's members-only service) cannot be read, but the image
+      // works.json states for it can still be shown.
+      const image = stated.get(url)?.image;
+      if (image && previous[url]?.image !== image) {
+        try {
+          next[url] = {
+            ...withStated({ image: null, icon: null, width: 1200, height: 630 }, stated.get(url)),
+            ...(await dimensions(image, fetch)),
+            checkedAt: new Date().toISOString(),
+          };
+          fetched++;
+          return;
+        } catch {}
+      }
+      console.warn(`Preview unavailable: ${new URL(url).hostname}; retaining previous metadata`);
+    }
+  });
   const content = (o: Record<string, Preview>) =>
-    Object.fromEntries(Object.entries(o).map(([url, { checkedAt, ...p }]) => [url, p]));
+    Object.fromEntries(Object.entries(o).map(([url, { checkedAt: _, ...p }]) => [url, p]));
   const changed = JSON.stringify(content(previous)) !== JSON.stringify(content(next));
-  await writeFile(new URL(file.href + '.tmp'), JSON.stringify(next, null, 2) + '\n');
-  await rename(new URL(file.href + '.tmp'), file);
+  await writeData(dirs, 'previews', next);
   console.log(
     `OG previews: ${Object.values(next).filter((p) => p.image).length}/${urls.length}; fetched ${fetched}`,
   );
   return changed;
-}
-
-// ── Featured music and manga ──
-const allowedImages = new Set([
-  'cdn-img.comic-action.com',
-  'public.ynjn.jp',
-  'eh96lnrmau.user-space.cdn.idcfcloud.net',
-  'deliver.cdn.nicomanga.jp',
-  'cdn.comic-walker.com',
-]);
-const publishers: Record<string, string> = {
-  'comic-action.com': '双葉社 / webアクション',
-  'ynjn.jp': '集英社 / ヤンジャン！',
-  'yanmaga.jp': '講談社 / ヤンマガWeb',
-  'manga.nicovideo.jp': 'ニコニコ漫画',
-  'comic-walker.com': 'KADOKAWA / カドコミ',
-};
-/** The publisher thumbnail of a manga page: its og:image, if it is served from a known publisher CDN. */
-export function ogImage(html: string) {
-  for (const meta of headElements(html, 'meta[property="og:image"][content]')) {
-    const u = new URL(meta.getAttribute('content')!);
-    if (u.protocol === 'https:' && allowedImages.has(u.hostname)) return u.href;
-  }
-  throw Error('No supported publisher thumbnail');
-}
-type Track = { title: string; composer: string; link: string; thumbnail: string };
-type Series = { title: string; author: string; link: string; thumbnail: string; credit: string };
-/**
- * The largest thumbnail YouTube has for video `id`: maxresdefault (1280×720) or sddefault (640×480)
- * when they exist (both answer 404 otherwise), else hqdefault (480×360), which every video has.
- */
-export async function youtubeThumbnail(id: string, fetcher: typeof fetch = fetch) {
-  for (const name of ['maxresdefault', 'sddefault']) {
-    const url = `https://i.ytimg.com/vi/${id}/${name}.jpg`;
-    try {
-      const response = await fetcher(url, { method: 'HEAD', signal: AbortSignal.timeout(20000) });
-      if (response.ok) return url;
-    } catch {}
-  }
-  return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-}
-export async function syncMedia(request: Request, fetcher: typeof fetch = fetch) {
-  const trackPath = data('tracks'),
-    seriesPath = data('series');
-  const [tracks, series]: [Track[], Series[]] = await Promise.all([load('tracks'), load('series')]);
-  let nextTracks = tracks,
-    nextSeries = structuredClone(series);
-  try {
-    const raw = await request('https://2026.cp20.dev/featured-tracks?raw=true');
-    if (!Array.isArray(raw) || !raw.length) throw Error();
-    nextTracks = await Promise.all(
-      raw.map(async (t) => {
-        const u = new URL(t.link);
-        const id = u.pathname.slice(1);
-        if (
-          u.protocol !== 'https:' ||
-          u.hostname !== 'youtu.be' ||
-          !/^[-_a-zA-Z0-9]{11}$/.test(id) ||
-          typeof t.title !== 'string' ||
-          typeof t.composer !== 'string'
-        )
-          throw Error();
-        return {
-          title: t.title,
-          composer: t.composer,
-          // Rebuilt from the checked ID so no scheme, query or hash from the source reaches the href.
-          link: `https://youtu.be/${id}`,
-          thumbnail: await youtubeThumbnail(id, fetcher),
-        };
-      }),
-    );
-  } catch {
-    console.warn('::warning::Music source unavailable; keeping previous selection');
-  }
-  try {
-    const raw = await request('https://2026.cp20.dev/featured-series?raw=true');
-    if (!Array.isArray(raw) || !raw.length) throw Error();
-    nextSeries = raw.map((s) => {
-      const u = new URL(s.link);
-      if (
-        u.protocol !== 'https:' ||
-        !publishers[u.hostname] ||
-        typeof s.title !== 'string' ||
-        typeof s.author !== 'string'
-      )
-        throw Error();
-      const old = series.find((p) => p.link === s.link);
-      return {
-        title: s.title,
-        author: s.author,
-        link: s.link,
-        thumbnail: old?.thumbnail || '',
-        credit: publishers[u.hostname],
-      };
-    });
-  } catch {
-    console.warn('::warning::Manga selection unavailable; keeping previous selection');
-  }
-  const results = await Promise.allSettled(
-    nextSeries.map(async (s) => ({
-      ...s,
-      thumbnail: ogImage(await request(s.link, 'html', fetch, {}, htmlLimit)),
-    })),
-  );
-  nextSeries = results.map((r, i) => (r.status === 'fulfilled' ? r.value : nextSeries[i]));
-  // An inaccessible new entry must not replace the previously working shelf.
-  if (nextSeries.some((s) => !s.thumbnail)) nextSeries = series;
-  const a = await saveIfChanged(trackPath, tracks, nextTracks);
-  const b = await saveIfChanged(seriesPath, series, nextSeries);
-  return a || b;
 }
