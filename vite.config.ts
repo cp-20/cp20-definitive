@@ -8,6 +8,7 @@ import { clientMedia, coverSrcsets } from './src/content/media.ts';
 import { shownSeriesThumbnail } from './src/data/manga-covers.ts';
 import { mergeArticles } from './src/content/normalize.ts';
 import { thirdPartyLicenses } from './scripts/build/licenses.ts';
+import { phrased, phraseWorks } from './scripts/build/phrases.ts';
 // Every browser that runs this site reads WOFF2, so the WOFF fallback in @fontsource's
 // @font-face rules only adds weight to the render-blocking stylesheet.
 const woff2Only = (): Plugin => ({
@@ -75,15 +76,30 @@ const articles = (): Plugin => {
       if (resolved !== '\0' + id) return;
       for (const file of data) this.addWatchFile(file.pathname);
       const [snapshot, manual] = data.map((file) => JSON.parse(readFileSync(file, 'utf8')));
-      return `export const articles = ${JSON.stringify(mergeArticles(snapshot.articles, [], manual))};\n`;
+      // Titles break between phrases like the works' sentences (not in the tests: see below).
+      const list = mergeArticles(snapshot.articles, [], manual).map((a) =>
+        process.env.VITEST ? a : { ...a, title: phrased(a.title) },
+      );
+      return `export const articles = ${JSON.stringify(list)};\n`;
     },
   };
 };
+// The works' sentences with their phrase boundaries marked (scripts/build/phrases.ts), so they
+// break between phrases on an iPhone too. Not in the tests, which check the data as written.
+const phrasedWorks = (): Plugin => ({
+  name: 'cp20-phrased-works',
+  enforce: 'pre',
+  transform(code, id) {
+    if (process.env.VITEST || !/[\\/]src[\\/]data[\\/]works\.json$/.test(id)) return;
+    return { code: JSON.stringify(phraseWorks(JSON.parse(code))), map: null };
+  },
+});
 export default defineConfig({
   plugins: [
     woff2Only(),
     media(),
     articles(),
+    phrasedWorks(),
     thirdPartyLicenses(),
     solid({ start: { renderMode: 'async', devtools: false }, ssr: true }),
   ],

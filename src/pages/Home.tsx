@@ -1,6 +1,6 @@
 import { createSignal, For } from 'solid-js';
 import Icon from '../components/Icon.tsx';
-import Brand from '../components/Brand.tsx';
+import Brand, { accountId } from '../components/Brand.tsx';
 import WorkCard from '../components/WorkCard.tsx';
 import { articleAnchor, responsive, sizes } from '../components/Preview.tsx';
 import { AttendanceCard, DayStamp } from '../components/AttendanceCard.tsx';
@@ -42,7 +42,9 @@ export default function Home() {
           <p class="home-facts">
             東京科学大学 情報工学系 学士4年。
             <br />
-            フロントエンドを中心に開発しています。
+            フロントエンドを中心に、
+            <wbr />
+            バックエンドも。
           </p>
           <div class="home-accounts">
             <For each={accounts}>
@@ -50,6 +52,7 @@ export default function Home() {
                 <a class="text-button" href={l.url}>
                   <Brand url={l.url} size={18} />
                   {l.name}
+                  {accountId(l.url) && <span class="account-id">{accountId(l.url)}</span>}
                 </a>
               )}
             </For>
@@ -62,7 +65,9 @@ export default function Home() {
                 <li>
                   <a href={`/about#${m.id}`} data-kind={m.kind}>
                     <span class="highlight-title">
-                      {m.title}
+                      {/* The result (優勝, 学生2位) never splits, and goes to the next line whole. */}
+                      {m.title.replace(/\S+$/, '')}
+                      <span class="nowrap">{m.title.match(/\S+$/)?.[0]}</span>
                       {m.ongoing && <small>{m.year}〜</small>}
                     </span>
                     <Icon name="ChevronRight" size={18} />

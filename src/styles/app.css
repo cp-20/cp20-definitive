@@ -94,11 +94,33 @@
     overflow-wrap: anywhere;
     text-wrap: pretty;
   }
-  /* Japanese has no spaces, so balance/wrapping would split words mid-phrase; break between phrases instead.
-     Not in narrow columns (article titles) or for long words the dictionary cannot split (見つかりません):
-     there it gives up mid-word anyway and only adds lines, leaving fragments like 「ん。」 alone. */
-  :lang(ja) :is(h1, h2, h3, h4, .home-facts, .timeline-item p):not(.article-row h3, .not-found h1) {
+  /* Japanese has no spaces, so balance/wrapping would split words mid-phrase; break between phrases instead
+     (in Chromium; the sentences below are marked for every browser). Not in narrow columns (article
+     titles, which are marked) or for long words the dictionary cannot split (見つかりません): there it
+     gives up mid-word anyway and only adds lines, leaving fragments like 「ん。」 alone. */
+  :lang(ja) :is(h1, h2, h3, h4, .timeline-item p):not(.article-row h3, .not-found h1) {
     word-break: auto-phrase;
+  }
+  /* Sentences whose phrase boundaries are marked (zero-width spaces from scripts/build/phrases.ts,
+     or <wbr> in a page's own text) break only there, so Safari, which has no auto-phrase, breaks
+     between phrases too. A phrase wider than the line still breaks rather than overflowing. */
+  :is(
+    .work-card-description,
+    .work-card-meta,
+    .work-outcome,
+    .work-summary,
+    .work-facts dd,
+    .work-row-description,
+    .article-row h3,
+    .recent-title,
+    .home-facts,
+    .profile-intro > p
+  ) {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+  .nowrap {
+    white-space: nowrap;
   }
   input,
   select {
@@ -345,8 +367,14 @@
   section[id] {
     scroll-margin-top: 24px;
   }
+  /* A line break only where both sentences fit a line each. */
   .desktop-break {
-    display: inline;
+    display: none;
+  }
+  @media (min-width: 1280px) {
+    .desktop-break {
+      display: inline;
+    }
   }
 }
 
@@ -527,6 +555,29 @@
     width: 22px;
     height: 22px;
     transition: transform var(--t-state) var(--ease);
+  }
+  /* The QR code's button beside the tag: only on a phone (see the responsive layer). */
+  .header-qr {
+    display: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-right: -6px;
+    border: 2px solid var(--edge);
+    border-radius: 12px;
+    background: var(--paper);
+    box-shadow: 2px 2px 0 var(--drop);
+  }
+  .header-qr:active {
+    translate: 2px 2px;
+    box-shadow: 0 0 0 var(--drop);
+  }
+  /* An account's ID beside its name, where the site's name does not tell it (Twitter). */
+  .account-id {
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0;
   }
   @media (hover: hover) {
     .brand:hover img {
@@ -1002,9 +1053,11 @@
     padding-top: 20px;
     border-top: 2px dashed var(--rule);
   }
+  /* A label for the two rows, a step below their names. */
   .home-recent-works h3 {
-    padding-top: 7px;
-    font-size: 0.9375rem;
+    padding-top: 12px;
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
     white-space: nowrap;
   }
   .home-recent-works ul {
@@ -1022,7 +1075,6 @@
   }
   .home-recent-works .work-row-description {
     white-space: normal;
-    word-break: auto-phrase;
   }
 
   /* ── Home: writing and the things he likes ── */
@@ -3121,6 +3173,34 @@
 
 /* ───────────────────────── responsive ───────────────────────── */
 @layer responsive {
+  /* Until the desk beside the paper is wider than the labelled tab, the sticker tab is the clover
+     alone, in the margin right of the paper (and right of the text on a phone), so it never sits
+     on a link. Its name is its aria-label; the label comes back to say a change was not saved. */
+  @media (max-width: 1399px) {
+    .sticker-tab {
+      right: 12px;
+      width: 46px;
+      justify-content: center;
+      padding: 0;
+    }
+    .sticker-tab:not([data-failed]) .sticker-tab-label {
+      display: none;
+    }
+    .sticker-tab[data-failed] {
+      width: auto;
+      padding: 0 14px 0 10px;
+    }
+    .sticker-count {
+      position: absolute;
+      top: -9px;
+      right: -9px;
+      min-width: 26px;
+      height: 26px;
+      margin: 0;
+      padding: 0 6px;
+      border: 2px solid var(--paper);
+    }
+  }
   @media (max-width: 1100px) {
     .wrap {
       padding-inline: 28px;
@@ -3307,6 +3387,9 @@
       font-size: 1rem;
       padding: 3px 10px 3px 8px;
     }
+    .header-qr {
+      display: grid;
+    }
     .section-heading {
       flex-wrap: wrap;
       align-items: center;
@@ -3315,8 +3398,8 @@
        the featured works' heading shows under them. */
     .home-intro {
       grid-template-columns: minmax(0, 1fr);
-      gap: 18px;
-      padding: 0 0 28px;
+      gap: 16px;
+      padding: 0 0 22px;
     }
     .home-hello {
       grid-template-areas:
@@ -3354,8 +3437,8 @@
     }
     .highlights li a {
       gap: 10px;
-      min-height: 46px;
-      padding: 3px 0;
+      min-height: 44px;
+      padding: 2px 0;
       font-size: 0.9375rem;
     }
     /* The profile's tab is in reach at the foot of the screen, and without this line the first
@@ -3364,7 +3447,12 @@
       display: none;
     }
     .home-works .section-heading {
-      margin-bottom: 18px;
+      margin-bottom: 8px;
+    }
+    /* The works' tab is at the foot of the screen, and on a short phone (375×548) this link would sit
+       under the sticker tab. */
+    .home-works .section-heading .under-link {
+      display: none;
     }
     .home-recent-works {
       grid-template-columns: minmax(0, 1fr);
@@ -3495,7 +3583,8 @@
     .sticker-tab {
       right: 10px;
       bottom: 66px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       font-size: 0.8125rem;
     }
     .stamp-choices {
@@ -3638,6 +3727,24 @@
       font-size: 0.8125rem;
     }
   }
+  /* A 360px phone: the two facts and the two accounts each still on one line. */
+  @media (max-width: 370px) {
+    .home-facts {
+      font-size: 0.875rem;
+    }
+    .home-accounts .text-button {
+      gap: 6px;
+      padding-inline: 13px;
+    }
+  }
+  /* A 375px phone (SE, mini): the longest result (Web Speed Hackathon 2024 優勝) still on one line. */
+  @media (max-width: 400px) {
+    .highlights li a {
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      gap: 8px;
+      font-size: 0.875rem;
+    }
+  }
   /* プロフィール still fits a tab at 13px down to a 361px screen. */
   @media (max-width: 430px) {
     .rail nav a {
@@ -3722,10 +3829,12 @@
    only the labels and the stamped days are elements. A narrow card (not a narrow screen) is
    drawn tighter: see the @container rules at the end. */
 @layer components {
+  /* The card as wide as its days need (512px keeps it out of its narrow layout below), and the
+     list the rest, so a title has about 300px at 1440px. */
   .attendance-desk {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 350px);
-    gap: 32px 40px;
+    grid-template-columns: minmax(0, 512px) minmax(0, 1fr);
+    gap: 32px 28px;
     align-items: start;
   }
   .attendance {
@@ -4118,10 +4227,10 @@
     --perf: 6px;
     --perf-hole: 1.8px;
     display: grid;
-    grid-template-columns: 124px minmax(0, 1fr);
-    gap: 14px;
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 12px;
     align-items: start;
-    padding: 14px 4px;
+    padding: 14px 2px;
     border-bottom: 1.5px dashed color-mix(in srgb, var(--edge) 22%, transparent);
   }
   .article-row[hidden] {
@@ -4153,7 +4262,7 @@
     gap: 6px;
     margin-top: 6px;
     font-family: var(--mono);
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     color: var(--muted);
     line-height: 1.5;
     font-variant-numeric: tabular-nums;
@@ -4183,7 +4292,6 @@
   }
   .recent-title {
     justify-self: start;
-    word-break: auto-phrase;
     text-wrap: pretty;
     background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
       no-repeat 0 0 / 0% 100%;
@@ -4297,7 +4405,7 @@
       padding: 12px 2px;
     }
     .article-row h3 {
-      font-size: 0.8125rem;
+      font-size: 0.9375rem;
     }
   }
   /* Without JavaScript the open year cannot change, so every article is listed, and the card

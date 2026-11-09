@@ -12,6 +12,7 @@ import {
   kindLabel,
   longPeriod,
   neighbours,
+  membersSite,
   openLink,
   period,
   publicRepositories,
@@ -77,6 +78,36 @@ describe('ボタンの行き先と文言', () => {
       openLink(work({ status: 'ended', links: [{ label: '成果ページ', url: 'https://example.org/' }] })),
       { href: 'https://example.org/', label: '成果ページ', short: '成果ページ' },
     );
+  });
+
+  // Outside traP these sites end at a login page that says "Not authorized".
+  test('部員向けのサイトは主ボタンにせず、記事かリポジトリを開く。サイトは部員向けと書いて添える', () => {
+    const repo = 'https://github.com/traP-jp/a';
+    const article = 'https://trap.jp/post/1/';
+    const members = (fields: Partial<Work>) => work({ status: 'members-only', ...fields });
+    assert.equal(openLink(members({ repositories: [repo], relatedArticles: [article] }))?.href, article);
+    assert.deepEqual(openLink(members({ repositories: ['private', repo] })), {
+      href: repo,
+      label: 'GitHub で見る',
+      short: 'GitHub',
+    });
+    assert.equal(openLink(members({})), undefined);
+    assert.deepEqual(membersSite(members({})), { href: 'https://example.com/', label: 'サイト（部員向け）' });
+    assert.equal(membersSite(work({})), undefined);
+    for (const w of works.filter((w) => w.status === 'members-only')) {
+      assert.notEqual(openLink(w)?.label, 'サイトを開く', w.id);
+      assert.notEqual(openLink(w)?.href, w.url, w.id);
+    }
+  });
+
+  test('主ボタンが開くリポジトリは、2つ目のボタンにしない', () => {
+    const repo = 'https://github.com/traP-jp/a';
+    const w = work({ status: 'members-only', repositories: [repo] });
+    assert.deepEqual(publicRepositories(w, openLink(w)?.href), []);
+  });
+
+  test('作品の説明は、何なのかを1文で言い切る', () => {
+    for (const w of works) assert.ok(w.description.endsWith('。'), `${w.id}: ${w.description}`);
   });
 
   test('ボタンと同じリポジトリは2つ目のボタンにしない', () => {

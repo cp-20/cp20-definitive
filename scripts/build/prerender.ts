@@ -1,5 +1,6 @@
 // Runs after `vite build`: renders every page of the SSR build to static HTML in dist/client,
-// writes the RSS feed and the sitemap, and subsets the web font to the characters the site uses.
+// writes the RSS feed, the sitemap and the picture of a shared link, and subsets the web font to
+// the characters the site uses.
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { mergeArticles, stripInvalidText, type Article } from '../../src/content/normalize.ts';
@@ -11,6 +12,7 @@ import {
   sitePaths,
 } from '../../src/site/pages.ts';
 import { subsetSiteFonts } from './fonts.ts';
+import { writeOgImage } from './og.ts';
 
 // Shared with the <link rel="alternate"> in src/Document.tsx (checked by prerender.test.ts).
 export const feedTitle = 'cp20.dev — Articles';
@@ -68,6 +70,8 @@ async function prerender() {
       .join('')}</urlset>`,
   );
   await writeFile('dist/client/feed.xml', buildFeed(articles));
+  // The picture of a shared link (og:image in src/Document.tsx).
+  await writeOgImage('dist/client/images/og.png');
   // The Vite manifest is only for the build; dist/client is published as-is.
   await rm('dist/client/.vite', { recursive: true, force: true });
   const fonts = await subsetSiteFonts('dist/client');

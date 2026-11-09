@@ -91,10 +91,10 @@ scripts はNodeの型除去でTypeScriptをそのまま実行します（tsx等�
 - 代表作：ダイススペック v2、自作Cコンパイラ、みんなのものさし（`editorial.ts` の `featuredIds`）。
 - 残りは作品一覧から閲覧。作品一覧は代表作3つ、始めた年ごと（新しい順、年の見出しは消印）、主催したイベント、歴代の cp20.dev（毎年変えたフレームワークを添える）、GitHub の最近の動き（説明のあるリポジトリ6件まで）の順。
 - 作品のページは名前・要約・事実（成果・役割・期間・公開の状態）・行き先で名前を変えるボタン（サイトを開く／GitHub で見る／VS Code Marketplace で見る／開催記を読む。公開を終えたものはボタンなし）・画像を最初に並べ、そのあと本人の制作メモ・関連記事・一覧で前後の作品。
-- 作品：`src/data/works.json`。新作の説明はユーザー指定の公開サイトとREADMEを確認。任意の項目は値があるときだけ表示します：`summary`（作品ページの要約）、`role`（役割。1人でつくったものは「1人で企画・デザイン・実装」）、`outcome`（数字や賞のある成果。分かっている数字だけ）、`status`（`ended` 公開終了／`members-only` traP 部員向け）、`kind: "event"`（主催したイベント）、`links`（公開を終えた作品のボタンの代わりのページなど）、`screenshots`（公開サイトの画面）。使用技術（`techStack`）は表示しません（歴代の cp20.dev のフレームワークだけ `editorial.ts` の `editions` から添える）。
+- 作品：`src/data/works.json`。新作の説明はユーザー指定の公開サイトとREADMEを確認。任意の項目は値があるときだけ表示します：`summary`（作品ページの要約）、`role`（役割。1人でつくったものは「1人で企画・デザイン・実装」）、`outcome`（数字や賞のある成果。分かっている数字だけ）、`status`（`ended` 公開終了／`members-only` traP 部員向け）、`kind: "event"`（主催したイベント）、`links`（公開を終えた作品のボタンの代わりのページなど）、`screenshots`（公開サイトの画面）。`status: "members-only"` の作品は部外者にはログイン画面になるので、主ボタンは traP の記事（なければ公開リポジトリ）にし、サイトは「サイト（部員向け）」として添えます。使用技術（`techStack`）は表示しません（歴代の cp20.dev のフレームワークだけ `editorial.ts` の `editions` から添える）。
 - プロフィール（/about）：名乗りとリンク → 「速くしてきたもの」（性能改善5件を「どこで・何を・前→後」の切手で。押すとその経歴のダイアログ）→ 経歴 → 所属 → 好きなもの（音楽・漫画）。スマートフォンでは切手が横にすべる帯、音楽は2列。
 - 経歴：`src/data/editorial.ts`。月と学年を併記。1行（`text`）は成果を書き、数字は `**…**` で太字（`` `…` `` は等幅。ISUCON のチーム名「`[object Object]`」）。種類（`kind`）は点の印で示す：受賞は朱色の「賞」の判子、インターンはテープ、学校・プログラムは無印。`id` がダイアログの id で、`/about#<id>`（例 `/about#isucon2026`）で開く（トップの実績が使う）。閉じると URL の `#` は外れ、フォーカスはその項目に戻る。`work` は関連作品（ダイアログからリンク）、`speedup` は「速くしてきたもの」の切手。各項目の詳しい説明（`detail`）は参加記や主催の発表にあることだけを書き、1行と切手の数字は `detail` にあるものだけ（`npm test` が照合）。資格は非掲載。
-- フッター：リンクは `src/data/profile.json` の `links`（プロフィールと同じ）と RSS。「QR コード」で cp20.dev の QR コードと大きな「cp20.dev」のダイアログ（`https://cp20.dev/#qr` で直接開く。対面で相手のスマホに読ませる用）。QR は `public/images/qr-cp20.svg` の静的ファイルで、`node scripts/build/qr.ts` が開発用の `uqr` で生成（サイトは QR のライブラリを持たない。`npm test` が生成結果との一致を検査）。
+- フッター：リンクは `src/data/profile.json` の `links`（プロフィールと同じ）と RSS。「QR コード」で cp20.dev の QR コードと大きな「cp20.dev」のダイアログ（`https://cp20.dev/#qr` で直接開く。対面で相手のスマホに読ませる用）。QR は `public/images/qr-cp20.svg` の静的ファイルで、`node scripts/build/qr.ts` が開発用の `uqr` で生成（サイトは QR のライブラリを持たない。`npm test` が生成結果との一致を検査）。スマホではヘッダーの右端にも QR のボタンがあります（見せた流れのまま同じスマホで出せるように）。
 - 404：1行の説明、代表作3つ、作品一覧・プロフィール・記事へのリンク。`/works/` で始まるアドレスなら全作品の名前を並べる（静的な1ページなので、ブラウザでアドレスを見て切り替える）。
 - 手動追加・除外・上書き：`src/data/manual.json`。
 - スナップショット：`src/data/generated.json`。
@@ -106,7 +106,11 @@ scripts はNodeの型除去でTypeScriptをそのまま実行します（tsx等�
 
 `manual.json` の `articles` はURLで自動取得と合成、`overrides` はタイトル等を上書き、`exclude` は対象URLを非掲載、`projects` は作品を追加します。作品には `works.json` と同じフィールドを指定してください。
 
-**作品のスクリーンショット**：`works.json` の `screenshots` に書いた画面（PC は1280×720、スマートフォンは iPhone 13 の2倍）を `npm run screenshots` が Playwright で撮り、`public/images/screenshots/<id>-<pc|mobile>.png` と WebP の縮小版（320〜960px と原寸）を書きます。どの画面を撮るかは `scripts/sync/screenshots.ts` にあります（フォームに入力して計算させるだけで、送信はしません）。定期処理では撮りません。公開サイトのない作品は OG 画像のままです。
+**作品のスクリーンショット**：`works.json` の `screenshots` に書いた画面（PC は1280×720、スマートフォンは iPhone 13 の2倍）を `npm run screenshots` が Playwright で撮り、`public/images/screenshots/<id>-<pc|mobile>.png` と WebP の縮小版（320〜960px と原寸）を書きます。どの画面を撮るかは `scripts/sync/screenshots.ts` にあります（フォームに入力して計算させるだけで、送信はしません）。定期処理では撮りません。PC の画面は作品の中身（ダイススペックの計算結果とグラフ、みんなのものさしのお題）の部分を 16:9 に切り抜き、カードの幅でも読めるようにしています。公開サイトのない自作Cコンパイラは、制作記事（trap.jp/post/2313）の見出し画像からエディタの部分を切り抜きます。それ以外の公開サイトのない作品は OG 画像のままです。
+
+**共有したときの画像と説明**：`og:image` は `scripts/build/og.ts` がビルドのたびに描きます（アイコン、名前、`profile.json` の所属、トップの実績3つ。文字は Zen Maru Gothic を HarfBuzz で輪郭にするので、ビルドする機械のフォントに左右されません）。説明（`description`）はページごとで、`src/site/route.ts` にあります。作品のページは作品の説明です。
+
+**日本語の改行**：作品の説明・要約・成果・役割（`works.json`）と記事の題名は、ビルド時に BudouX（`word-break: auto-phrase` と同じ分かち書き）で文節の切れ目にゼロ幅スペースを入れ（`scripts/build/phrases.ts`、`vite.config.ts` から）、`word-break: keep-all` で折り返します。iPhone の Safari は auto-phrase を解釈しないため。ページに直接書いた文は `<wbr />` で区切ります。meta の説明などページの外に出す文は `plain()` で印を取ります。
 
 **作品の追加方法**
 

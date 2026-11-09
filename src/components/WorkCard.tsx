@@ -97,7 +97,9 @@ export default function WorkCard(props: {
       <a class="work-row" href={href} data-stamp-anchor={`work-${w.id}`}>
         <span class="work-row-picture" aria-hidden="true">
           {previewFor(w.url)?.icon ? (
-            <img src={previewFor(w.url)?.icon} alt="" width="36" height="36" loading="lazy" />
+            <span class="og-image work-row-icon">
+              <img src={previewFor(w.url)?.icon} alt="" width="36" height="36" loading="lazy" />
+            </span>
           ) : (
             <WorkImage work={w} sizes={sizes.workRow} />
           )}
@@ -124,7 +126,7 @@ export default function WorkCard(props: {
       <div class="work-card-picture">
         <WorkImage
           work={w}
-          sizes={variant === 'large' ? sizes.workCard : sizes.workThumb}
+          sizes={variant === 'large' ? (phone ? sizes.workCard : sizes.workCardCropped) : sizes.workThumb}
           priority={props.priority && !phone}
           eager={props.eager && !phone}
         />

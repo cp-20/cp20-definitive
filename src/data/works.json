@@ -85,7 +85,7 @@
       {
         "src": "/images/screenshots/minna-no-monosashi-pc.png",
         "device": "pc",
-        "alt": "みんなのものさしのトップ。回答数の付いたお題が並ぶ"
+        "alt": "みんなのものさしのトップ。「あなたなら、どのくらい？」の下に、回答数の付いたお題が並ぶ"
       },
       {
         "src": "/images/screenshots/minna-no-monosashi-mobile.png",
@@ -342,7 +342,7 @@
   {
     "id": "trap-conference",
     "title": "traP Conference イベントページ",
-    "description": "2024年10月に行われたイベントの公式ページ",
+    "description": "traP の現役部員と OB・OG が集まる、2024年10月のイベントの公式ページ。",
     "role": "1人で企画・デザイン・実装",
     "url": "https://trap-conference.trap.show/",
     "repositories": ["private"],
@@ -441,12 +441,19 @@
   {
     "id": "c-compiler",
     "title": "自作Cコンパイラ",
-    "description": "C で書いた、自分自身をコンパイルできる C コンパイラ。",
-    "summary": "C 言語で書いた C コンパイラで、C のソースを LLVM IR に変換する。約4,800行の自分自身のソースもコンパイルでき、2世代目と3世代目のコンパイラの出力が一致する（セルフホスト）。テストは165件。",
+    "description": "C で書いた、自分自身をコンパイルできる Cコンパイラ。",
+    "summary": "C 言語で書いた Cコンパイラで、C のソースを LLVM IR に変換する。約4,800行の自分自身のソースもコンパイルでき、2世代目と3世代目のコンパイラの出力が一致する（セルフホスト）。テストは165件。",
     "role": "1人で企画・デザイン・実装",
     "outcome": "セルフホストを達成",
     "url": "https://github.com/cp-20/c-compiler",
     "image": "https://2025.cp20.dev/works/og/c-compiler.avif",
+    "screenshots": [
+      {
+        "src": "/images/screenshots/c-compiler-pc.png",
+        "device": "pc",
+        "alt": "VS Code で開いた自作Cコンパイラのソース。for 文を LLVM IR に変換するコード"
+      }
+    ],
     "icon": null,
     "repositories": ["https://github.com/cp-20/c-compiler"],
     "productionTime": "2024/04/01 ～ 2024/08/22",
@@ -612,7 +619,7 @@
   {
     "id": "tokyo-tech-syllabus",
     "title": "東工大シラバス",
-    "description": "東工大の講義を爆速で検索できるサイト",
+    "description": "東工大講義リストを作り直した2024年度版。データベースを設計し直して、検索を速くした。",
     "role": "1人で企画・デザイン・実装",
     "url": "https://tokyo-tech-syllabus.cp20.dev",
     "repositories": ["https://github.com/cp-20/tokyo-tech-syllabus"],
@@ -798,7 +805,7 @@
   {
     "id": "dice-spec-v2",
     "title": "ダイススペック v2",
-    "description": "TRPGのちょっとしたツールを集めたサービス",
+    "description": "TRPG のダイスの確率計算やロール、ログ解析ができる Web サービス。",
     "summary": "TRPG で使う、ダイスの期待値と確率の計算、ダイスロール、ココフォリアのログ解析をまとめた Web サービス。2022年につくった v1 をデザインから作り直した。",
     "role": "1人で企画・デザイン・実装",
     "outcome": "月2,000〜3,000人ほどが利用",
@@ -886,7 +893,7 @@
   {
     "id": "trap-mission",
     "title": "traP Mission",
-    "description": "ミッション形式でtraPに慣れよう！",
+    "description": "部員がつくったミッションをクリアしながら traP に親しめるサイト。2023年の春ハッカソンでつくった。",
     "role": "フロントエンドのリーダー",
     "url": "https://mission.trap.games",
     "repositories": ["https://github.com/traP-jp/h23s_26", "https://github.com/traP-jp/h23s_26-UI"],
@@ -1008,7 +1015,7 @@
   {
     "id": "titech-lecture-list",
     "title": "東工大講義リスト",
-    "description": "東工大の講義を検索できるサービス",
+    "description": "公式の OCW をスクレイピングして、東工大の講義を検索できるようにしたサービス。",
     "role": "1人で企画・デザイン・実装",
     "url": "https://titech-lecture-list.vercel.app",
     "repositories": ["https://github.com/cp-20/titech-lecture-list"],
@@ -1080,7 +1087,7 @@
   {
     "id": "no-log-chat",
     "title": "のーろぐちゃっと",
-    "description": "ログが残らないチャットでみんなと会話しよう！",
+    "description": "ログが直近の3件までしか残らない、誰でも入れるリアルタイムのチャット。",
     "role": "1人で企画・デザイン・実装",
     "url": "https://no-log-chat.vercel.app",
     "repositories": ["https://github.com/cp-20/no-log-chat", "https://github.com/cp-20/no-log-chat-server"],

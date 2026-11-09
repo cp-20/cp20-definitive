@@ -6,6 +6,7 @@ import { articles, editionWorks, formatDate, sections, type Work } from '../cont
 import { splitLinks } from '../content/inline-links.ts';
 import {
   kindLabel,
+  membersSite,
   neighbours,
   openLink,
   period,
@@ -25,8 +26,11 @@ export default function WorkDetail(props: { work: Work }) {
   // Only articles still in the list: the scheduled refresh keeps building when a source drops one.
   const related = w.relatedArticles.flatMap((url) => articles.filter((a) => a.url === url));
   const open = openLink(w);
-  const more = (w.links ?? []).filter((l) => l.url !== open?.href);
-  const repositories = publicRepositories(w);
+  const site = membersSite(w);
+  const more = [...(site ? [site] : []), ...(w.links ?? []).filter((l) => l.url !== open?.href)].map((l) =>
+    'href' in l ? l : { href: l.url, label: l.label },
+  );
+  const repositories = publicRepositories(w, open?.href);
   const edition = editionWorks.find((e) => e.id === w.id);
   const facts = [
     w.outcome && { label: '成果', value: w.outcome, outcome: true },
@@ -73,7 +77,7 @@ export default function WorkDetail(props: { work: Work }) {
                 </a>
               ))}
               {more.map((l) => (
-                <a class="text-button" href={l.url}>
+                <a class="text-button" href={l.href}>
                   {l.label}
                   <Icon name="ArrowUpRight" size={15} />
                 </a>

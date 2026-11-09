@@ -2,7 +2,7 @@ import { For } from 'solid-js';
 import Icon from '../components/Icon.tsx';
 import { responsive, sizes } from '../components/Preview.tsx';
 import Bookshelf from '../components/Bookshelf.tsx';
-import Brand from '../components/Brand.tsx';
+import Brand, { accountId } from '../components/Brand.tsx';
 import Modal, { openModal } from '../components/Modal.tsx';
 import { milestones, speedups } from '../data/editorial.ts';
 import { localImage } from '../content/images.ts';
@@ -42,10 +42,25 @@ export default function About() {
             しーぴー<span>cp20</span>
           </h1>
 
+          {/* Breaks between phrases in every browser (Safari has no word-break: auto-phrase). */}
           <p>
-            フロントエンドを中心に、バックエンドやインフラも触っています。
+            フロントエンドを
+            <wbr />
+            中心に、
+            <wbr />
+            バックエンドや
+            <wbr />
+            インフラも
+            <wbr />
+            触っています。
             <br class="desktop-break" />
-            個人開発ではWebアプリやCコンパイラなどをつくっています。
+            個人開発では
+            <wbr />
+            Webアプリや
+            <wbr />
+            Cコンパイラなどを
+            <wbr />
+            つくっています。
           </p>
           <div class="profile-links">
             <For each={profile.links}>
@@ -53,6 +68,7 @@ export default function About() {
                 <a href={l.url}>
                   <Brand url={l.url} />
                   {l.name}
+                  {accountId(l.url) && <span class="account-id">{accountId(l.url)}</span>}
                 </a>
               )}
             </For>

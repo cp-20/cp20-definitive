@@ -1,7 +1,7 @@
 import { For } from 'solid-js';
 import type { JSX } from '@solidjs/web';
 import Icon, { type IconName } from '../components/Icon.tsx';
-import Brand from '../components/Brand.tsx';
+import Brand, { accountId } from '../components/Brand.tsx';
 import Credits from '../components/Credits.tsx';
 import QrCode from '../components/QrCode.tsx';
 import { openModal } from '../components/Modal.tsx';
@@ -44,6 +44,17 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
             <img src="/stamps/clover.svg" alt="" width="22" height="22" />
             cp20.dev
           </a>
+          {/* On a phone, shown to someone across the table: the code that opens this site on theirs. */}
+          <button
+            type="button"
+            class="header-qr"
+            aria-label="QR コード"
+            aria-haspopup="dialog"
+            data-opens="qr"
+            onClick={() => openModal('qr')}
+          >
+            <Icon name="QrCode" size={22} />
+          </button>
         </header>
         <main id="main">{props.children}</main>
         <footer class="site-footer wrap" data-stamp-anchor="footer">
@@ -53,6 +64,7 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
                 <a href={l.url}>
                   <Brand url={l.url} />
                   {l.name}
+                  {accountId(l.url) && <span class="account-id">{accountId(l.url)}</span>}
                 </a>
               )}
             </For>

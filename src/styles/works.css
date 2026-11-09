@@ -191,10 +191,6 @@
   .work-card-large h3 {
     font-size: 1.25rem;
   }
-  /* Wide enough to break between phrases without ragged lines (not so in the narrower lists). */
-  .work-card-large .work-card-description {
-    word-break: auto-phrase;
-  }
   .work-card-large .work-card-text {
     display: flex;
     flex: 1;
@@ -265,39 +261,44 @@
   .work-cards-small > :nth-child(even) .work-card-picture {
     rotate: 1.2deg;
   }
+  /* Two to a row only where each line of a description still holds about 20 characters; a year
+     beside its postmark is one column, each card no wider than a line of about 30. */
   .work-cards-small {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
     gap: 36px 32px;
+  }
+  .works-year .work-card-small {
+    max-width: 640px;
   }
 
   /* A line for a work: the site's icon (or a small stamp), its name and, under it, what it is. */
   .work-row {
     display: grid;
-    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-columns: 44px minmax(0, 1fr);
     align-items: center;
     column-gap: 12px;
     min-height: 56px;
     padding: 6px 0;
   }
+  /* Both rows' pictures are one square stamp: the site's icon, or the middle of its picture. */
   .work-row-picture {
-    --perf: 6px;
-    --perf-hole: 1.8px;
+    --perf: 5px;
+    --perf-hole: 1.5px;
     grid-row: 1 / 3;
-    display: grid;
-    place-items: center;
-  }
-  .work-row-picture > img {
-    width: 36px;
-    height: 36px;
-    border-radius: 9px;
-    object-fit: contain;
+    width: 44px;
+    rotate: -2deg;
   }
   .work-row-picture .og-image {
-    aspect-ratio: 1200 / 630;
+    aspect-ratio: 1;
   }
   .work-row-picture .og-image img {
     object-fit: cover;
+    object-position: 50% 50%;
+  }
+  .work-row-picture .work-row-icon img {
+    object-fit: contain;
+    padding: 2px;
   }
   .work-row-name {
     align-self: end;
@@ -795,8 +796,26 @@
       display: block;
       rotate: -2deg;
     }
+    /* A work with no phone screen shows the left of its desktop picture in the same tall frame,
+       so the three featured stamps line up at one size. */
+    .work-card-large:not(.has-phone) .work-card-picture .og-image {
+      aspect-ratio: 780 / 1328;
+    }
+    .work-card-large:not(.has-phone) .work-card-picture .og-image img {
+      object-fit: cover;
+      object-position: 0 50%;
+    }
     .work-card-large h3 {
       font-size: 1.125rem;
+    }
+    /* The result straight under the name: on the home page's first screen it is what shows of the
+       first work above the sticker tab and the tabs. */
+    .work-card-large .work-card-text > h3 {
+      order: -2;
+    }
+    .work-card-large .work-outcome {
+      order: -1;
+      margin-top: 2px;
     }
     .work-cards-large {
       gap: 28px;

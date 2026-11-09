@@ -31,3 +31,12 @@ export default function Brand(props: { url: string; size?: number }) {
     src && <img class="brand-icon" src={src} alt="" width={props.size ?? 16} height={props.size ?? 16} />
   );
 }
+/**
+ * The account's ID where it is not plain from the site's name: on Twitter he is @__cp20__, not the
+ * cp20 or cp-20 of the other services, and someone met in person looks him up by it later.
+ */
+export function accountId(url: string) {
+  if (!URL.canParse(url)) return undefined;
+  const { hostname, pathname } = new URL(url);
+  return /^(www\.)?(twitter|x)\.com$/.test(hostname) ? `@${pathname.split('/')[1]}` : undefined;
+}

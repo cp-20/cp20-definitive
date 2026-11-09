@@ -2,7 +2,7 @@
 // (`npx wrangler dev`, port 8787 by default) and run `node scripts/qa/browser-check.ts`; results and
 // screenshots go to .qa/. Stickers run against firebase-mock.ts (a seeded Google sign-in and an
 // in-memory database with the same ownership and throttle rules), never the real database.
-import { chromium, expect, type BrowserContext, type Page, type Route } from '@playwright/test';
+import { chromium, devices, expect, type BrowserContext, type Page, type Route } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { mockFirebase, signInAs } from './firebase-mock.ts';
@@ -135,7 +135,9 @@ try {
           if (!el.checkVisibility() || !/Zen Maru/.test(getComputedStyle(el).fontFamily.split(',')[0]))
             continue;
           const weight = parseInt(getComputedStyle(el).fontWeight) >= 600 ? '700' : '500';
-          for (const c of n.textContent!) if (c.trim() && !covered(weight, c)) out.add(`${weight}:${c}`);
+          // (The zero-width spaces between phrases, scripts/build/phrases.ts, are drawn by no font.)
+          for (const c of n.textContent!)
+            if (c.trim() && c !== '\u200b' && !covered(weight, c)) out.add(`${weight}:${c}`);
         }
       };
       look();
@@ -180,17 +182,41 @@ try {
   );
 
   // ── A phone's first screen (iPhone 13, above the tabs at its foot): the name, the facts, the
-  // accounts, the three results and the featured works' heading, and no link under the sticker tab ──
-  await page.setViewportSize({ width: 390, height: 664 });
-  await page.goto(origin + '/');
-  await settle();
-  {
+  // accounts, the three results and the featured works' heading, and no link under the sticker tab.
+  // The first work's name and result are clear of the sticker tab; each result is one line down to
+  // a 375px phone, whose shorter first screen (Safari's bars shown) has no link under the tab either.
+  // In a phone's browser, whose scroll bar takes no width ──
+  const phone = await browser.newContext({ ...devices['iPhone 13'] });
+  await mockFirebase(phone);
+  const handset = await phone.newPage();
+  for (const [width, height] of [
+    [390, 664],
+    [375, 667],
+    [375, 548],
+  ]) {
+    const page = handset;
+    await page.setViewportSize({ width, height });
+    await page.goto(origin + '/');
+    await settle(page);
     const fold = (await page.locator('.rail nav').boundingBox())!.y;
-    for (const part of ['.home-hello h1', '.home-facts', '.home-accounts', '.highlights', '.home-works h2']) {
+    const parts = ['.home-hello h1', '.home-facts', '.home-accounts', '.highlights', '.header-qr'];
+    for (const part of height > 600 ? [...parts, '.home-works h2'] : parts) {
       const box = (await page.locator(part).boundingBox())!;
-      if (box.y + box.height > fold) throw Error(`${part} is below a phone's first screen`);
+      if (box.y + box.height > fold) throw Error(`${part} is below a ${width}×${height} first screen`);
     }
+    const lines = await page
+      .locator('.highlight-title')
+      .evaluateAll((titles) =>
+        titles.filter((t) => t.getClientRects().length > 1 || t.getBoundingClientRect().height > 30),
+      );
+    if (lines.length) throw Error(`A result takes two lines at ${width}px`);
     const sticker = (await page.locator('.sticker-tab').boundingBox())!;
+    if (height > 600)
+      for (const part of ['h3', '.work-outcome']) {
+        const box = (await page.locator(`.work-cards-large > :first-child ${part}`).boundingBox())!;
+        if (box.y + box.height > sticker.y)
+          throw Error(`The first work's ${part} reaches the sticker tab at ${width}×${height}`);
+      }
     const covered = await page.locator('main a').evaluateAll(
       (links, s) =>
         links
@@ -205,9 +231,34 @@ try {
     );
     if (covered.length) throw Error(`Links under the sticker tab on a phone's first screen: ${covered}`);
   }
+  await phone.close();
+  // Between a phone and a wide desk the sticker tab is the clover alone, in the margin beside the
+  // paper: no link or button of the page passes under it, wherever the page is scrolled.
+  for (const width of [800, 1024, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const path of ['/', '/works', '/works/dice-spec-v2']) {
+      await page.goto(origin + path);
+      await settle();
+      const under = await page.evaluate(async () => {
+        const s = document.querySelector('.sticker-tab')!.getBoundingClientRect();
+        const found = new Set<string>();
+        for (let y = 0; y < document.documentElement.scrollHeight; y += 400) {
+          scrollTo(0, y);
+          await new Promise(requestAnimationFrame);
+          for (const el of document.querySelectorAll('main :is(a, button)')) {
+            const r = el.getBoundingClientRect();
+            if (r.width && r.left < s.right && r.right > s.left && r.top < s.bottom && r.bottom > s.top)
+              found.add(el.textContent!.trim().slice(0, 20));
+          }
+        }
+        return [...found];
+      });
+      if (under.length) throw Error(`Under the sticker tab at ${width}px on ${path}: ${under}`);
+    }
+  }
   await page.setViewportSize({ width: 1440, height: 1000 });
   passed(
-    "a phone's first screen holds who, the facts, the accounts, the results and the featured heading, clear of the sticker tab",
+    "a phone's first screen holds who, the facts, the accounts, the results, the featured heading and the QR code's button, with the first work's result clear of the sticker tab; no link under the sticker tab at 800-1280px",
   );
 
   // ── In-app navigation ──
@@ -364,9 +415,17 @@ try {
   await page.keyboard.press('Escape');
   await expect(page).toHaveURL(origin + '/');
   if ((await page.evaluate(() => scrollY)) !== 0) throw Error('Closing the QR code moved the page');
-  await page.locator('[data-opens="qr"]').click();
+  await page.locator('.footer-button[data-opens="qr"]').click();
   await expect(page.locator('#qr')).toBeVisible();
   await page.keyboard.press('Escape');
+  await expect(page.locator('.footer-button[data-opens="qr"]')).toBeFocused();
+  // On a phone the header's button opens it, and focus comes back to that one.
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.locator('.header-qr').click();
+  await expect(page.locator('#qr')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.header-qr')).toBeFocused();
+  await page.setViewportSize({ width: 1440, height: 1000 });
   // The footer lists the profile's accounts (profile.json) and the feed.
   const footerLinks = await page
     .locator('.footer-links a')

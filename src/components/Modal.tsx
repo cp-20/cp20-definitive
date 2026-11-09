@@ -3,9 +3,14 @@ import Icon from './Icon.tsx';
 /** Opens the <Modal> with this id. */
 export const openModal = (id: string) =>
   (document.getElementById(id) as HTMLDialogElement | null)?.showModal();
-/** The button that opens a <Modal> (marked `data-opens="<id>"`), if the page has one. */
-export const openerOf = (id: string) =>
-  document.querySelector<HTMLElement>(`[data-opens="${CSS.escape(id)}"]`);
+/**
+ * The button that opens a <Modal> (marked `data-opens="<id>"`), if the page has one: the one shown,
+ * where the layout has two (the QR code's in the phone's header and in the footer).
+ */
+export const openerOf = (id: string) => {
+  const all = [...document.querySelectorAll<HTMLElement>(`[data-opens="${CSS.escape(id)}"]`)];
+  return all.find((el) => el.checkVisibility()) ?? all[0];
+};
 /**
  * Opens a dialog that a URL's #fragment names (/about#isucon2026, /#qr). When it closes, focus
  * goes to the button that opens it, and the fragment is dropped so the URL no longer opens it.
