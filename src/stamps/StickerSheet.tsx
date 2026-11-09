@@ -151,6 +151,7 @@ export function StickerSheet(props: {
             <button
               class="sheet-sticker"
               data-sticker-kind={i()}
+              data-word={item.word ? 'true' : undefined}
               aria-label={
                 props.account
                   ? `${item.name}のシールを貼る${props.remaining > 0 ? '' : '（一番古いシールと入れ替わります）'}`

@@ -28,7 +28,7 @@
                 ".validate": "newData.getPriority() == null && (newData.isNumber() && newData.val() >= 0 && newData.val() <= 1)"
               },
               "kind": {
-                ".validate": "newData.getPriority() == null && (newData.isNumber() && newData.val() >= 0 && newData.val() <= 5 && newData.val() % 1 == 0)"
+                ".validate": "newData.getPriority() == null && (newData.isNumber() && newData.val() >= 0 && newData.val() <= 8 && newData.val() % 1 == 0)"
               },
               "angle": {
                 ".validate": "newData.getPriority() == null && (newData.isNumber() && newData.val() >= -20 && newData.val() <= 20)"

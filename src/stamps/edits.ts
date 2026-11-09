@@ -8,9 +8,11 @@ import { visualKey } from './layout.ts';
 import { locate } from './placement.ts';
 import { stickerName } from './kinds.tsx';
 import { reducedMotion } from './prefs.ts';
-// How long the peel-off and settle animations in app.css take, a little rounded up.
+// How long the peel-off and settle animations in app.css take, a little rounded up, and how long
+// the sticker's one answer after it rests (--cheer) adds to the settling.
 const PEEL_MS = 220,
-  SETTLE_MS = 300;
+  SETTLE_MS = 300,
+  CHEER_MS = 480;
 // Creates signals: call it synchronously inside the component that owns them.
 export function createEdits(options: {
   path: () => string;
@@ -70,7 +72,7 @@ export function createEdits(options: {
           next.delete(key);
           return next;
         }),
-      Math.max(SETTLE_MS, (from?.t ?? 0) + 20),
+      Math.max(SETTLE_MS, (from?.t ?? 0) + 20) + CHEER_MS,
     );
     // Moving one of your stickers rewrites it in place, so it never pushes out another one.
     if (target) options.apply({ type: 'move', id, path: options.path(), target, stamp });
