@@ -93,17 +93,24 @@ describe('request', () => {
     assert.equal(asked.length, 1);
   });
 
-  test('混んでいたサーバーには1回だけ聞き直し、404 には聞き直さない', async () => {
-    const busy = fetchOf(
-      () => new Response('busy', { status: 503 }),
-      () => Response.json({ ok: true }),
-    );
-    assert.deepEqual(await request('https://example.com', { fetch: busy.fetch, retryDelay: 0 }), { ok: true });
-    const stillBusy = fetchOf(...Array.from({ length: 3 }, () => () => new Response('busy', { status: 503 })));
-    await assert.rejects(request('https://example.com', { fetch: stillBusy.fetch, retryDelay: 0 }), /503/);
-    const gone = fetchOf(() => new Response('', { status: 404 }));
-    await assert.rejects(request('https://example.com', { fetch: gone.fetch, retryDelay: 0 }), /404/);
-    assert.deepEqual([busy.asked.length, stillBusy.asked.length, gone.asked.length], [2, 2, 1]);
+  const busy = () => new Response('busy', { status: 503 });
+
+  test('混んでいたサーバーには聞き直し、その答えを返す', async () => {
+    const { fetch, asked } = fetchOf(busy, () => Response.json({ ok: true }));
+    assert.deepEqual(await request('https://example.com', { fetch, retryDelay: 0 }), { ok: true });
+    assert.equal(asked.length, 2);
+  });
+
+  test('聞き直しても混んでいれば、3回目は聞かずに失敗にする', async () => {
+    const { fetch, asked } = fetchOf(busy, busy, busy);
+    await assert.rejects(request('https://example.com', { fetch, retryDelay: 0 }), /503/);
+    assert.equal(asked.length, 2);
+  });
+
+  test('404 は聞き直さずに失敗にする', async () => {
+    const { fetch, asked } = fetchOf(() => new Response('', { status: 404 }));
+    await assert.rejects(request('https://example.com', { fetch, retryDelay: 0 }), /404/);
+    assert.equal(asked.length, 1);
   });
 
   test('GITHUB_TOKEN は api.github.com にだけ送る', async () => {

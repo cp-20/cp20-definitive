@@ -1,10 +1,6 @@
 // How the works are listed and labelled. works.json itself is checked in src/data/snapshot.test.ts.
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import baseWorks from '../data/works.json' with { type: 'json' };
-import manual from '../data/manual.json' with { type: 'json' };
-import { editions, featuredIds } from '../data/editorial.ts';
-import { mergeWorks } from '../site/pages.ts';
 import {
   kindLabel,
   longPeriod,
@@ -19,8 +15,6 @@ import {
   type Work,
 } from './works.ts';
 
-const works = mergeWorks(baseWorks as Work[], manual as { projects?: Work[] });
-const editionIds = editions.map((e) => `${e.year}-portfolio`);
 const work = (fields: Partial<Work>): Work => ({
   id: 'x',
   title: 'x',
@@ -118,32 +112,45 @@ describe('ボタンの行き先と文言', () => {
 });
 
 describe('/works の並び', () => {
-  const sections = workSections(works, featuredIds, editionIds);
+  // One featured work, works started in two years, an event and an edition of this portfolio.
+  const list = [
+    work({ id: 'old', productionTime: '2022/04' }),
+    work({ id: 'star', productionTime: '2021/01' }),
+    work({ id: 'meetup', kind: 'event', productionTime: '2025/05' }),
+    work({ id: 'spring', productionTime: '2024/03/01 ～ 2024/03/20' }),
+    work({ id: '2024-portfolio', productionTime: '2024/09' }),
+    work({ id: 'autumn', productionTime: '2024/10 ～ now' }),
+  ];
+  const sections = workSections(list, ['star'], ['2024-portfolio']);
 
-  test('代表作、年ごと（新しい順）、イベント、歴代の cp20.dev の順に、どの作品も1回だけ', () => {
+  test('代表作、始めた年の新しい順、イベント、歴代の cp20.dev の順に、どの作品も1回だけ並べる', () => {
     assert.deepEqual(
-      sections.featured.map((w) => w.id),
-      featuredIds,
+      sections.order.map((w) => w.id),
+      ['star', 'autumn', 'spring', 'old', 'meetup', '2024-portfolio'],
     );
-    const years = sections.years.map((y) => y.year);
+  });
+
+  test('代表作・イベント・歴代の cp20.dev のほかは、始めた年の見出しの下に分ける', () => {
     assert.deepEqual(
-      years,
-      [...years].sort((a, b) => b - a),
+      sections.years.map((y) => [y.year, y.works.map((w) => w.id)]),
+      [
+        [2024, ['autumn', 'spring']],
+        [2022, ['old']],
+      ],
     );
-    assert.ok(sections.events.every((w) => w.kind === 'event'));
-    assert.deepEqual(
-      sections.editions.map((w) => w.id),
-      editionIds,
-    );
-    assert.deepEqual([...sections.order.map((w) => w.id)].sort(), works.map((w) => w.id).sort());
+  });
+
+  test('ない作品を代表作に挙げたら失敗にする', () => {
+    assert.throws(() => workSections(list, ['gone'], []), /No work "gone"/);
   });
 
   test('前後の作品は一覧の並びで、端では反対の端につながる', () => {
-    const ids = sections.order.map((w) => w.id);
-    assert.deepEqual(
-      neighbours(sections.order, ids[0]).map((w) => w.id),
-      [ids.at(-1), ids[1]],
-    );
+    const around = (id: string) => neighbours(sections.order, id).map((w) => w.id);
+    assert.deepEqual(around('star'), ['2024-portfolio', 'autumn']);
+    assert.deepEqual(around('2024-portfolio'), ['meetup', 'star']);
+  });
+
+  test('2作品しかなければ、前後は同じ1作品', () => {
     assert.deepEqual(neighbours([{ id: 'a' }, { id: 'b' }], 'a'), [{ id: 'b' }]);
   });
 });

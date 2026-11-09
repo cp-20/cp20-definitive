@@ -54,21 +54,25 @@ describe('spot', () => {
   test('その日に1つだけのスタンプは真ん中に置く', () => {
     assert.deepEqual(spot({ nth: 0, of: 1 }), { x: 0, y: 0 });
   });
-  test('同じ日に2つなら左上と右下に置く', () => {
+  test('同じ日に2つなら、真ん中をはさんで左上と右下に置く', () => {
     const [a, b] = [0, 1].map((nth) => spot({ nth, of: 2 }));
-    assert.equal(a.x < 0 && a.y < 0 && b.x > 0 && b.y > 0, true);
-    assert.deepEqual([a.x + b.x, a.y + b.y], [0, 0]);
+    assert.deepEqual([Math.sign(a.x), Math.sign(a.y)], [-1, -1]);
+    assert.deepEqual([b.x, b.y], [-a.x, -a.y]);
   });
-  test('混んだ日のスタンプにもそれぞれの場所を、その日と隣の行の内側に与える', () => {
-    for (const of of [2, 3, 5, 8]) {
+  for (const of of [2, 3, 5, 8])
+    test(`同じ日に${of}つあっても、それぞれに離れた場所を、その日と隣の行の内側に与える`, () => {
       const at = Array.from({ length: of }, (_, nth) => spot({ nth, of }));
-      assert.equal(new Set(at.map((p) => `${p.x},${p.y}`)).size, of);
-      for (const p of at) assert.equal(Math.abs(p.x) <= 0.3 && Math.abs(p.y) <= 0.4, true);
+      // Inside the day's column, reaching at most into the rows above and below.
+      assert.ok(
+        at.every((p) => Math.abs(p.x) <= 0.3 && Math.abs(p.y) <= 0.4),
+        JSON.stringify(at),
+      );
       // No two closer than a fifth of a row, so each keeps a patch of its own.
-      for (const p of at)
-        for (const q of at) if (p !== q) assert.ok(Math.hypot(p.x - q.x, p.y - q.y) > 0.2);
-    }
-  });
+      const closest = Math.min(
+        ...at.flatMap((p, i) => at.slice(i + 1).map((q) => Math.hypot(p.x - q.x, p.y - q.y))),
+      );
+      assert.ok(closest > 0.2, `一番近い2つの間: ${closest}`);
+    });
 });
 
 describe('step', () => {
