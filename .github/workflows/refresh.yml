@@ -43,9 +43,10 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           ALLOW_TRAP_SHRINK: ${{ inputs.allow_trap_shrink && '1' || '' }}
       # Validate the new snapshot with Cloudflare's build command (type check, build, then the
-      # tests, which read the snapshot and dist) so a broken one never reaches main.
+      # tests, which read the snapshot and dist) so a broken one never reaches main. An unchanged
+      # snapshot is the pushed commit itself, which the CI workflow already verifies.
       - name: Verify the new snapshot
-        if: steps.sync.outputs.changed == 'true' || github.event_name != 'schedule'
+        if: steps.sync.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         run: npm run verify
         env:
           # A source dropping an article a work links only warns here (CI stays strict), so it
