@@ -1177,100 +1177,6 @@
     margin-top: 110px;
     align-items: start;
   }
-  /* A stamp album: the OG images are stamps tucked into the clear pockets of a stock leaf that run along each row. */
-  .article-list {
-    --gap: 28px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 40px var(--gap);
-    padding-top: 6px;
-  }
-  .home-writing .article-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .article-row {
-    --perf: 10px;
-    --perf-hole: 3px;
-    display: grid;
-    align-content: start;
-    gap: 14px;
-  }
-  .article-row[hidden] {
-    display: none;
-  }
-  /* Filtered out: kept where it was, out of the flow, while it fades (reflow.ts). */
-  .article-list {
-    position: relative;
-  }
-  .article-row.leaving {
-    display: grid;
-    position: absolute;
-    pointer-events: none;
-  }
-  /* Every stamp has the OG card's shape (the image is fitted inside), so the strips line up. */
-  .article-row > .og-image {
-    grid-area: 1 / 1;
-    aspect-ratio: 1200 / 630;
-    rotate: -1.2deg;
-    transition:
-      translate var(--t-hover) var(--ease),
-      rotate var(--t-hover) var(--ease);
-  }
-  /* Tilts vary among the stamps shown, so a filtered page keeps them uneven. */
-  .article-row:nth-child(3n + 2 of :not([hidden])) > .og-image {
-    rotate: 0.9deg;
-  }
-  .article-row:nth-child(3n of :not([hidden])) > .og-image {
-    rotate: -0.4deg;
-  }
-  /* The pocket holds the lower third of each stamp and reaches halfway into the gaps, so the
-     pockets of a row join into one strip. It reads as film on paper from its edges: a bright cut
-     lip with one faint line outside it, hairline sides that close it into a pocket, a cool tint that darkens a little (never clouds
-     white) and so shows as a step over the bare paper, and a paper hem folded under at the
-     bottom that the stamp's foot disappears into, with the strip's shadow below. */
-  .article-row {
-    isolation: isolate;
-  }
-  .article-row > .og-image {
-    z-index: 1;
-  }
-  .article-row::after {
-    content: '';
-    grid-area: 1 / 1;
-    align-self: end;
-    z-index: 2;
-    height: 36%;
-    margin: 0 calc(var(--gap) / -2) -6px;
-    background:
-      linear-gradient(#fff, #fff) top / 100% 1px no-repeat,
-      linear-gradient(rgb(45 42 51 / 0.14), rgb(45 42 51 / 0.14)) left / 1px 100% no-repeat,
-      linear-gradient(rgb(45 42 51 / 0.14), rgb(45 42 51 / 0.14)) right / 1px 100% no-repeat,
-      linear-gradient(rgb(45 42 51 / 0.12), rgb(45 42 51 / 0.12)) 0 calc(100% - 7px) / 100% 1px no-repeat,
-      linear-gradient(var(--paper), var(--paper-2)) bottom / 100% 7px no-repeat,
-      linear-gradient(rgb(255 255 255 / 0.35), rgb(255 255 255 / 0) 9px),
-      rgb(110 135 160 / var(--pocket, 0.1));
-    box-shadow:
-      0 -1px 0 rgb(45 42 51 / 0.1),
-      0 1px 0 rgb(45 42 51 / 0.12),
-      0 4px 5px -2px rgb(45 42 51 / 0.14);
-    pointer-events: none;
-  }
-  .article-text {
-    min-width: 0;
-    padding: 0 2px;
-    line-height: 1.6;
-  }
-  .article-meta {
-    display: flex;
-    gap: 7px;
-    align-items: center;
-    margin-top: 6px;
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    color: var(--muted);
-    line-height: 1.5;
-    font-variant-numeric: tabular-nums;
-  }
   /* Titles get the highlighter swipe on hover. */
   .article-row h3,
   .timeline-item h3 {
@@ -1281,26 +1187,6 @@
       no-repeat 0 0 / 0% 100%;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
-  }
-  .article-row h3 {
-    font-size: 0.9375rem;
-    line-height: 1.65;
-  }
-  /* Only the way in is animated: leaving a row clears it at once, so scanning down the list
-     leaves no trail of markers winding back. The stamp is drawn a little way out of its strip. */
-  @media (hover: hover) {
-    .article-row:hover h3 {
-      background-size: 100% 100%;
-      transition: background-size var(--t-state) var(--ease);
-    }
-    .article-row:hover > .og-image {
-      translate: 0 -6px;
-    }
-  }
-  .article-row:active > .og-image {
-    translate: 0 -2px;
-    rotate: 0deg;
-    transition-duration: var(--t-press);
   }
   /* A sticky note stuck on the page. */
   .home-profile {
@@ -2274,8 +2160,7 @@
     border-radius: 3px;
     background:
       linear-gradient(#e2b57a 0 2px, transparent 2px),
-      linear-gradient(90deg, rgb(0 0 0 / 0.06), transparent 30% 70%, rgb(0 0 0 / 0.06)),
-      #c3925a;
+      linear-gradient(90deg, rgb(0 0 0 / 0.06), transparent 30% 70%, rgb(0 0 0 / 0.06)), #c3925a;
     box-shadow: 3px 3px 0 var(--drop);
     pointer-events: none;
   }
@@ -2396,9 +2281,10 @@
         rgb(0 0 0 / 0.26)
       ),
       /* The jacket folding over the head of the book. */
-      linear-gradient(rgb(255 255 255 / 0.5), rgb(255 255 255 / 0) 3px),
+        linear-gradient(rgb(255 255 255 / 0.5), rgb(255 255 255 / 0) 3px),
       /* The band at the foot, a shade deeper than the spine. */
-      linear-gradient(color-mix(in oklab, var(--spine), var(--edge) 14%) 0 0) bottom / 100% var(--band) no-repeat,
+        linear-gradient(color-mix(in oklab, var(--spine), var(--edge) 14%) 0 0) bottom / 100% var(--band)
+        no-repeat,
       color-mix(in oklab, var(--spine), white var(--fade, 0%));
     transition: opacity var(--t-hover) var(--ease) 120ms;
   }
@@ -2421,7 +2307,10 @@
       var(--spine-width) + var(--band) + 40px + var(--author-length, 0) * var(--author-size) * 1.08
     );
     margin-inline: auto;
-    font-size: min(var(--title-max), calc((var(--shelf-height) * var(--h, 0.94) - var(--title-room)) / var(--length)));
+    font-size: min(
+      var(--title-max),
+      calc((var(--shelf-height) * var(--h, 0.94) - var(--title-room)) / var(--length))
+    );
     font-weight: 700;
     letter-spacing: 0.04em;
   }
@@ -3676,10 +3565,6 @@
     .home-middle {
       margin-top: 90px;
     }
-    .article-list {
-      --gap: 20px;
-      row-gap: 32px;
-    }
     .home-profile {
       margin: 20px 6px 0;
     }
@@ -3856,39 +3741,6 @@
       display: none;
     }
   }
-  /* On phones each article is one line of the album: a small stamp, its title beside it. */
-  @media (max-width: 600px) {
-    .article-list,
-    .home-writing .article-list {
-      --gap: 14px;
-      grid-template-columns: minmax(0, 1fr);
-      row-gap: 22px;
-    }
-    .article-row {
-      --perf: 6px;
-      --perf-hole: 1.8px;
-      grid-template-columns: 110px minmax(0, 1fr);
-      align-items: center;
-      gap: 14px;
-    }
-    .article-row::after {
-      --pocket: 0.16;
-      margin: 0 -4px -5px;
-    }
-    .article-text {
-      grid-area: 1 / 2;
-    }
-    .article-text,
-    .article-row h3 {
-      font-size: 0.875rem;
-      line-height: 1.6;
-      letter-spacing: 0.01em;
-    }
-    .article-meta {
-      margin-top: 4px;
-      font-size: 0.6875rem;
-    }
-  }
   @media (max-width: 380px) {
     .wrap {
       padding-inline: 14px;
@@ -3956,6 +3808,564 @@
     }
     .featured-copy > * {
       translate: none;
+    }
+  }
+}
+
+/* ── Article list: attendance cards ──
+   Like the cards stamped at morning radio exercises: one card per year, twelve months by
+   thirty-one days, with a stamp on each day an article came out (AttendanceCard.tsx). The
+   other years' cards lie stacked behind, their index tabs showing; the open year's articles
+   are listed beside the card (below it on phones). */
+@layer components {
+  .attendance-desk,
+  .home-writing {
+    --ink-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0 0 0 -1.7'/%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .attendance-desk {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 350px);
+    gap: 32px 40px;
+    align-items: start;
+  }
+  .attendance {
+    --print: #3b64a8;
+    --line: color-mix(in srgb, var(--print) 32%, transparent);
+    --card: #fff4c9;
+    position: sticky;
+    top: 24px;
+    padding: 0 10px 10px 0;
+  }
+  .attendance[data-year='1'],
+  .attendance-tab[data-year='1'] {
+    --card: #dcecff;
+  }
+  .attendance[data-year='2'],
+  .attendance-tab[data-year='2'] {
+    --card: #ffe3ea;
+  }
+  .attendance[data-year='3'],
+  .attendance-tab[data-year='3'] {
+    --card: #d9f2dc;
+  }
+  .attendance[data-year='0'],
+  .attendance-tab[data-year='0'] {
+    --card: #fff1bd;
+  }
+  /* Index tabs along the top of the stack, one per year; the open one joins its card. */
+  .attendance-tabs {
+    display: flex;
+    gap: 4px;
+    padding-left: 14px;
+    margin-bottom: -2px;
+  }
+  .attendance-tab {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    height: 40px;
+    margin-top: 6px;
+    padding: 0 12px;
+    border: 2px solid var(--edge);
+    border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+    background: color-mix(in srgb, var(--card) 70%, #e9e4d8);
+    font-family: var(--mono);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 38px;
+    color: var(--muted);
+    transition:
+      margin var(--t-hover) var(--ease),
+      height var(--t-hover) var(--ease);
+  }
+  .attendance-tab small {
+    font-size: 0.6875rem;
+    font-weight: 500;
+  }
+  .attendance-tab[aria-pressed='true'] {
+    z-index: 2;
+    height: 46px;
+    margin-top: 0;
+    background: var(--card);
+    color: var(--ink);
+  }
+  @media (hover: hover) {
+    .attendance-tab[aria-pressed='false']:hover {
+      height: 44px;
+      margin-top: 2px;
+      color: var(--ink);
+    }
+  }
+  .attendance-tab:focus-visible {
+    outline: 3px dashed var(--seal);
+    outline-offset: 2px;
+  }
+  .attendance-card {
+    position: relative;
+    z-index: 1;
+    container-type: inline-size;
+    padding: 18px 20px 20px;
+    border: 2px solid var(--edge);
+    border-radius: 4px 12px 12px 12px;
+    background:
+      radial-gradient(rgb(45 42 51 / 0.035) 1px, transparent 1.3px) 0 0 / 5px 5px,
+      var(--card);
+    box-shadow: 4px 4px 0 var(--drop);
+  }
+  /* The cards of the other years, stacked under this one. */
+  .attendance {
+    --tabs: 0px;
+  }
+  .attendance:has(.attendance-tabs) {
+    --tabs: 44px;
+  }
+  .attendance::before,
+  .attendance::after {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    inset: var(--tabs) 10px 10px 0;
+    border: 2px solid var(--edge);
+    border-radius: 12px;
+    background: #fbf3dc;
+    rotate: 1.8deg;
+    translate: 9px 8px;
+  }
+  .attendance::after {
+    z-index: -1;
+    background: #e9f2fb;
+    rotate: -1.1deg;
+    translate: 3px 13px;
+  }
+  .attendance-head {
+    display: flex;
+    align-items: end;
+    gap: 10px 18px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--print);
+    color: var(--print);
+  }
+  .attendance-head h3 {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-right: auto;
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .attendance-head h3 small {
+    font-family: var(--round);
+    font-size: 0.9375rem;
+    letter-spacing: 0.08em;
+  }
+  .attendance-name {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+  }
+  .attendance-name span {
+    min-width: 96px;
+    padding: 0 6px 1px;
+    border-bottom: 1.5px solid var(--print);
+    color: var(--ink);
+    font-size: 0.9375rem;
+    text-align: center;
+  }
+  .attendance-count {
+    display: grid;
+    place-items: center;
+    grid-auto-flow: column;
+    gap: 1px;
+    width: 52px;
+    height: 52px;
+    border: 2px solid var(--print);
+    border-radius: 50%;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    rotate: -6deg;
+  }
+  .attendance-count strong {
+    font-family: var(--mono);
+    font-size: 1.125rem;
+  }
+  /* The ruled grid: month labels down the side, days across the top. The lines are drawn
+     under the grid's cells, so only the days with stamps are elements. */
+  .attendance-grid {
+    --label: 34px;
+    --cell: calc((100cqw - var(--label)) / 31);
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--label) repeat(31, var(--cell));
+    --row: calc(var(--cell) * 1.7);
+    grid-template-rows: 20px repeat(12, var(--row));
+  }
+  .attendance-grid::before {
+    content: '';
+    grid-area: 2 / 2 / 14 / 33;
+    background:
+      linear-gradient(to right, var(--line) 1px, transparent 1px) 0 0 / var(--cell) 100%,
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 100% var(--row),
+      linear-gradient(to right, transparent calc(var(--cell) * 5), rgb(255 255 255 / 0.32) 0) 0 0 /
+        calc(var(--cell) * 10) 100%,
+      #fffdf6;
+    box-shadow:
+      inset -1px -1px 0 var(--line),
+      0 0 0 1.5px var(--print);
+  }
+  .attendance-corner {
+    grid-area: 1 / 1;
+    align-self: center;
+    font-size: 0.5625rem;
+    font-weight: 700;
+    color: var(--print);
+    white-space: nowrap;
+  }
+  .attendance-day {
+    grid-row: 1;
+    align-self: end;
+    padding-bottom: 3px;
+    font-family: var(--mono);
+    font-size: 0.5625rem;
+    line-height: 1;
+    text-align: center;
+    color: var(--print);
+    font-variant-numeric: tabular-nums;
+  }
+  .attendance-month {
+    grid-column: 1;
+    align-self: center;
+    padding-right: 7px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: right;
+    color: var(--print);
+    white-space: nowrap;
+  }
+  /* Days the month does not have. */
+  .attendance-void {
+    margin: 1px 0 0 1px;
+    background: repeating-linear-gradient(-45deg, var(--line) 0 1px, transparent 1px 4px);
+  }
+  /* A stamp: the source's face in its ink, a little larger than the day so it spills over the
+     lines as a hand-pressed stamp does, with speckles where the rubber missed. */
+  .attendance-stamp {
+    position: relative;
+    display: grid;
+    place-items: center;
+    outline-offset: 1px;
+  }
+  .day-stamp {
+    width: 18px;
+    height: 18px;
+    mix-blend-mode: multiply;
+    mask: var(--ink-grain, none) 0 0 / 60px 60px;
+    filter: drop-shadow(0.5px 0.4px 0 color-mix(in srgb, currentColor 35%, transparent));
+    opacity: 0.92;
+  }
+  .attendance-stamp .day-stamp {
+    width: calc(var(--row) * 0.92);
+    max-width: none;
+    height: calc(var(--row) * 0.92);
+    transition:
+      scale var(--t-hover) var(--ease),
+      opacity var(--t-state) var(--ease);
+  }
+  .attendance-stamp[data-nth] .day-stamp {
+    translate: 35% -30%;
+  }
+  .attendance-stamp[data-off] .day-stamp {
+    opacity: 0.16;
+    filter: grayscale(1);
+  }
+  .attendance-stamp:hover,
+  .attendance-stamp:focus-visible,
+  .attendance-stamp[data-hot] {
+    z-index: 3;
+  }
+  .attendance-stamp:hover .day-stamp,
+  .attendance-stamp:focus-visible .day-stamp,
+  .attendance-stamp[data-hot] .day-stamp {
+    scale: 1.45;
+  }
+  .attendance-stamp:focus-visible {
+    outline: 2px dashed var(--seal);
+  }
+  /* What the stamp is for, written on a slip above it. */
+  .attendance-tip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    display: grid;
+    gap: 3px;
+    width: max-content;
+    max-width: 250px;
+    padding: 8px 11px 9px;
+    border: 2px solid var(--edge);
+    border-radius: 8px;
+    background: var(--paper);
+    box-shadow: 3px 3px 0 var(--drop);
+    translate: -50% 4px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity var(--t-hover) var(--ease),
+      translate var(--t-hover) var(--ease),
+      visibility 0s var(--t-hover);
+  }
+  .attendance-stamp[data-edge='start'] .attendance-tip {
+    left: -6px;
+    translate: 0 4px;
+  }
+  .attendance-stamp[data-edge='end'] .attendance-tip {
+    left: auto;
+    right: -6px;
+    translate: 0 4px;
+  }
+  .attendance-stamp:hover .attendance-tip,
+  .attendance-stamp:focus-visible .attendance-tip {
+    opacity: 1;
+    visibility: visible;
+    translate: -50% 0;
+    transition-delay: 0s;
+  }
+  .attendance-stamp:is(:hover, :focus-visible):is([data-edge]) .attendance-tip {
+    translate: 0 0;
+  }
+  .attendance-tip-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .attendance-tip-meta {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--muted);
+  }
+  /* The year's articles, each with its picture and the stamp of its day. */
+  .attendance-desk .article-list,
+  .home-writing .article-list {
+    position: relative;
+    display: grid;
+    gap: 0;
+  }
+  .article-row {
+    display: grid;
+    grid-template-columns: 124px minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+    padding: 14px 10px 14px 6px;
+    border-bottom: 1.5px dashed color-mix(in srgb, var(--edge) 22%, transparent);
+    border-radius: 6px;
+    transition: background-color var(--t-hover) var(--ease);
+  }
+  .article-row[hidden] {
+    display: none;
+  }
+  .article-row.leaving {
+    display: grid;
+    position: absolute;
+    pointer-events: none;
+  }
+  .article-row[data-hot] {
+    background-color: color-mix(in srgb, var(--hi-soft) 75%, transparent);
+  }
+  .article-row > .og-image {
+    --perf: 4.4px;
+    aspect-ratio: 1200 / 630;
+    margin-top: 3px;
+    background: #fff;
+    filter: drop-shadow(1px 2px 0 rgb(45 42 51 / 0.16));
+    rotate: -1.5deg;
+    transition: rotate var(--t-hover) var(--ease);
+  }
+  .article-row:nth-child(even) > .og-image {
+    rotate: 1.2deg;
+  }
+  .article-row > .og-image::before {
+    display: none;
+  }
+  .article-row > .og-image img {
+    object-fit: cover;
+  }
+  .article-text {
+    min-width: 0;
+  }
+  .article-row h3 {
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  .article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .article-meta .day-stamp {
+    width: 17px;
+    height: 17px;
+    margin-right: 2px;
+  }
+  .article-source {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+  @media (hover: hover) {
+    .article-row:hover h3 {
+      background-size: 100% 100%;
+      transition: background-size var(--t-state) var(--ease);
+    }
+    .article-row:hover > .og-image {
+      rotate: 0deg;
+    }
+  }
+  /* Home: this year's card, then the latest four under it in two columns. */
+  .home-writing .attendance {
+    position: relative;
+    top: 0;
+    margin-bottom: 18px;
+  }
+  .home-writing .article-row {
+    grid-template-columns: 104px minmax(0, 1fr);
+    padding-block: 10px;
+  }
+}
+@layer responsive {
+  @media (max-width: 1100px) {
+    .attendance-desk {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .attendance {
+      position: relative;
+      top: 0;
+    }
+    .attendance-desk .article-list {
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      column-gap: 18px;
+    }
+  }
+  @media (max-width: 600px) {
+    .attendance-desk {
+      gap: 14px;
+    }
+    .attendance {
+      padding: 0 6px 10px 0;
+    }
+    .attendance::before,
+    .attendance::after {
+      inset: var(--tabs) 6px 10px 0;
+    }
+    .attendance::before {
+      rotate: 0.8deg;
+      translate: 5px 5px;
+    }
+    .attendance::after {
+      rotate: -0.6deg;
+      translate: 2px 9px;
+    }
+    .attendance-tabs {
+      gap: 3px;
+      padding: 0 4px;
+    }
+    .attendance:has(.attendance-tabs) {
+      --tabs: 42px;
+    }
+    .attendance-tab {
+      flex: 1 1 0;
+      justify-content: center;
+      min-width: 0;
+      height: 38px;
+      margin-top: 6px;
+      padding: 0;
+      font-size: 0.75rem;
+      line-height: 36px;
+    }
+    .attendance-tab small {
+      display: none;
+    }
+    .attendance-tab[aria-pressed='true'] {
+      height: 44px;
+    }
+    .attendance-card {
+      padding: 12px 10px 12px;
+    }
+    .attendance-head {
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+    }
+    .attendance-head h3 {
+      font-size: 1.5rem;
+    }
+    .attendance-head h3 small {
+      font-size: 0.75rem;
+    }
+    .attendance-name span {
+      min-width: 70px;
+      font-size: 0.8125rem;
+    }
+    .attendance-count {
+      width: 42px;
+      height: 42px;
+      font-size: 0.625rem;
+    }
+    .attendance-count strong {
+      font-size: 0.9375rem;
+    }
+    .attendance-grid {
+      --label: 28px;
+      grid-template-rows: 16px repeat(12, var(--row));
+    }
+    .attendance-name {
+      display: none;
+    }
+    .attendance-head {
+      flex-wrap: nowrap;
+      align-items: center;
+    }
+    .attendance-day:not([data-tick]) {
+      visibility: hidden;
+    }
+    .attendance-month {
+      padding-right: 4px;
+      font-size: 0.5625rem;
+    }
+    /* Too small to aim at with a finger: the list below holds the same articles. */
+    .attendance-stamp {
+      pointer-events: none;
+    }
+    .attendance-tip {
+      display: none;
+    }
+    .attendance-desk .article-list,
+    .home-writing .article-list {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .article-row {
+      grid-template-columns: 104px minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px 4px 12px 2px;
+    }
+    .article-row h3 {
+      font-size: 0.8125rem;
     }
   }
 }

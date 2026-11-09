@@ -4,7 +4,7 @@ import { pages } from 'virtual:cp20-media';
 // Upper bounds of the laid-out image widths (measured at 320-1920px wide viewports, and checked
 // by scripts/qa/browser-check.ts; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
 export const sizes = {
-  articleRow: '(max-width: 600px) 110px, (max-width: 760px) calc(50vw - 50px), (max-width: 1100px) calc(50vw - 160px), 284px',
+  articleRow: '(max-width: 600px) 104px, 124px',
   workGrid: '(max-width: 760px) calc(100vw - 100px), (max-width: 1100px) calc(50vw - 170px), 290px',
   featured:
     '(max-width: 760px) calc(100vw - 104px), (max-width: 900px) calc(100vw - 300px), (max-width: 1100px) calc(55vw - 200px), 470px',

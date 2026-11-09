@@ -1,14 +1,16 @@
-import { For } from 'solid-js';
+import { createSignal, For } from 'solid-js';
 import Icon from '../components/Icon.tsx';
 import { responsive, sizes } from '../components/Preview.tsx';
 import Projects from '../components/Projects.tsx';
 import { ArticleRows } from '../components/ArticleRows.tsx';
+import { AttendanceCard, yearOf } from '../components/AttendanceCard.tsx';
 import { articles } from '../content/content.ts';
 import { editions } from '../data/editorial.ts';
 import { localImage, seriesCover } from '../content/images.ts';
 import tracks from '../data/tracks.json';
 import series from '../data/series.json';
 export default function Home() {
+  const [hot, setHot] = createSignal<string>();
   return (
     <div class="wrap">
       <section data-stamp-anchor="intro" class="home-intro" aria-labelledby="hero-title">
@@ -46,7 +48,8 @@ export default function Home() {
               すべて見る
             </a>
           </div>
-          <ArticleRows items={articles.slice(0, 4)} />
+          <AttendanceCard items={articles} year={yearOf(articles[0])} hot={hot()} onHot={setHot} />
+          <ArticleRows items={articles.slice(0, 4)} hot={hot()} onHot={setHot} />
         </section>
         <aside class="home-profile">
           <h2>プロフィール</h2>

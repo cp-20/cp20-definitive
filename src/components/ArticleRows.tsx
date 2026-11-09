@@ -1,38 +1,54 @@
 import { createMemo, For } from 'solid-js';
 import Brand from './Brand.tsx';
 import { OGImage, articleAnchor, sizes } from './Preview.tsx';
+import { DayStamp } from './AttendanceCard.tsx';
 import { formatDate, type Article } from '../content/content.ts';
 /**
- * A page of a stamp album: each article's OG image is a stamp tucked into the clear pocket of a stock leaf,
- * with its title, source and date written underneath.
+ * The articles beside an attendance card: each with its picture, title, and the day's stamp
+ * by its date. The row whose stamp is pointed at on the card is marked, and pointing at a row
+ * marks its stamp (`hot`, `onHot`).
  * With `shown`, every row stays in the DOM and rows it rejects are only hidden, so filtering
  * neither rebuilds the list nor detaches images (see /articles).
  */
-export function ArticleRows(props: { items: Article[]; shown?: (a: Article) => boolean }) {
+export function ArticleRows(props: {
+  items: Article[];
+  shown?: (a: Article) => boolean;
+  hot?: string;
+  onHot?: (id: string | undefined) => void;
+}) {
   const visible = createMemo(() => new Set(props.shown ? props.items.filter(props.shown) : props.items));
   return (
     <div class="article-list">
       <For each={props.items}>
-        {(a) => (
-          <a
-            href={a.url}
-            class="article-row"
-            hidden={!visible().has(a)}
-            data-stamp-anchor={articleAnchor(a.url)}
-            data-article
-            data-date={a.date}
-          >
-            <OGImage url={a.url} alt="" sizes={sizes.articleRow} />
-            <div class="article-text">
-              <h3>{a.title}</h3>
-              <p class="article-meta">
-                <Brand url={a.source} size={14} />
-                <span class="visually-hidden">{a.source}</span>
-                <time datetime={a.date}>{formatDate(a.date)}</time>
-              </p>
-            </div>
-          </a>
-        )}
+        {(a) => {
+          const id = articleAnchor(a.url);
+          return (
+            <a
+              href={a.url}
+              class="article-row"
+              hidden={!visible().has(a)}
+              data-stamp-anchor={id}
+              data-article
+              data-date={a.date}
+              data-hot={props.hot === id ? '' : undefined}
+              onPointerEnter={() => props.onHot?.(id)}
+              onPointerLeave={() => props.onHot?.(undefined)}
+            >
+              <OGImage url={a.url} alt="" sizes={sizes.articleRow} />
+              <div class="article-text">
+                <h3>{a.title}</h3>
+                <p class="article-meta">
+                  <DayStamp source={a.source} url={a.url} />
+                  <time datetime={a.date}>{formatDate(a.date)}</time>
+                  <span class="article-source">
+                    <Brand url={a.source} size={14} />
+                    {a.source}
+                  </span>
+                </p>
+              </div>
+            </a>
+          );
+        }}
       </For>
     </div>
   );
