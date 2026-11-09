@@ -3,6 +3,7 @@
     "id": "neon-overdrive",
     "title": "NEON OVERDRIVE",
     "description": "照準を動かして11体のボスを倒す、ブラウザで遊ぶシューティングのタイムアタック。",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://neon-overdrive.lolipop-now.app/",
     "repositories": ["private"],
     "productionTime": "2026/09/28 ～ 2026/10/05",
@@ -39,6 +40,7 @@
     "id": "is-general-kanji",
     "title": "それ、常用漢字？",
     "description": "次々に出てくる漢字が常用漢字かどうかを一瞬で判定するブラウザゲーム。",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://is-general-kanji.lolipop-now.app/",
     "repositories": ["private"],
     "productionTime": "2026/09/28 ～ 2026/10/02",
@@ -75,9 +77,22 @@
     "id": "minna-no-monosashi",
     "title": "みんなのものさし",
     "description": "お題に数字で答えて、友達やみんなとの感覚の違いを比べるWebアプリ。",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://minna-no-monosashi.lolipop-now.app/",
     "repositories": ["private"],
     "productionTime": "2026/09",
+    "screenshots": [
+      {
+        "src": "/images/screenshots/minna-no-monosashi-pc.png",
+        "device": "pc",
+        "alt": "みんなのものさしのトップ。回答数の付いたお題が並ぶ"
+      },
+      {
+        "src": "/images/screenshots/minna-no-monosashi-mobile.png",
+        "device": "mobile",
+        "alt": "スマートフォンでお題に答える画面。数字パッドで入力する"
+      }
+    ],
     "techStack": [
       {
         "label": "TypeScript",
@@ -104,9 +119,51 @@
     "relatedArticles": []
   },
   {
+    "id": "1brc-for-trap",
+    "title": "1BRC for traP",
+    "description": "10億行のデータを集計する速さを競う、traP 部内の低レイヤ最適化コンテスト。",
+    "summary": "traQ のメッセージ一覧を模した10億行（約25GB）の CSV を、チャンネルと月ごとに集計する速さを競った。問題のデータ、ベンチマーカーでの計測環境とダッシュボードを用意して、34時間で開催した。",
+    "role": "企画・運営",
+    "outcome": "31人が参加、提出は1,116件",
+    "kind": "event",
+    "url": "https://1brc.trap.games",
+    "repositories": ["https://github.com/cp-20/1brc-trap"],
+    "productionTime": "2026/07/18 ～ 2026/07/19",
+    "techStack": [],
+    "tags": ["traP"],
+    "comments": [
+      "1 Billion Rows Challenge という、10億行のデータを処理する速度を競うコンテストを知って、せっかくなら部内でも開催したいなぁと思って企画しました。もともとのコンテストは観測所ごとの気温データの集計ですが、traP 向けに traQ のメッセージを集計するお題に改造しています。",
+      "データも作って、テストプレイもして、ベンチマーカー上で計測できるような環境を整えて、かっこいいダッシュボードも作って、、、と準備することが思ったより多くて大変でした。でも Codex が全部やってくれたので OK です。",
+      "多くの参加者が1桁秒に辿り着いていて、さらに3秒台、2秒台と詰めている参加者も少なくない数いたのはかなり良かったと思います。"
+    ],
+    "relatedArticles": ["https://trap.jp/post/2984/"]
+  },
+  {
+    "id": "anke-to-v3",
+    "title": "anke-to v3",
+    "description": "traP の部内アンケートサービスを、UI から作り直した v3。",
+    "summary": "traP の部内アンケートサービス anke-to の新しい版。v1 のアンケートを引き継いで、UI を刷新し、未回答の人への自動リマインド、匿名回答、アンケートの複製などを加えた。2026年4月にリリース。",
+    "role": "フロントエンドと設計",
+    "status": "members-only",
+    "url": "https://anke-to.trap.jp",
+    "image": "https://trap.jp/content/images/2026/04/anke-to-v3.png",
+    "icon": null,
+    "repositories": [],
+    "productionTime": "2023/12 ～ 2026/04",
+    "techStack": [],
+    "tags": ["チーム開発", "traP"],
+    "comments": [
+      "anke-to v3 の話が持ち上がったのは2023年の11月あたりで、12月あたりから仕様決めなどを進めていました。クライアントは v2 のコードを置いておいて、完全に新しく作り直しています。",
+      "リリース直後は大量のフィードバックが届きました。クライアント側は負債をすべて捨てて作り直したおかげで、素早くフィードバックを取り込む下地をつくることができました。",
+      "一時期は v3 も v2 と同じ感じで流れてしまうのかと思っていたので、無事リリースまで漕ぎつけることができて良かったです。最後の方の進捗会は、バグを見つけたときにクライアントが悪いのかサーバーが悪いのかでバトルしていたので、それはそれで面白かったです。"
+    ],
+    "relatedArticles": ["https://trap.jp/post/2930/"]
+  },
+  {
     "id": "2026-portfolio",
     "title": "cp20.dev (2026)",
-    "description": "Try: curl https://2026.cp20.dev",
+    "description": "ターミナルのような見た目の、2026年版のポートフォリオ。curl でも見られる。",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://2026.cp20.dev",
     "repositories": ["https://github.com/cp-20/2026.cp20.dev"],
     "productionTime": "2026/03/20 ～ 2026/03/31",
@@ -142,9 +199,31 @@
     "relatedArticles": []
   },
   {
+    "id": "traquji",
+    "title": "traQuji",
+    "description": "立体のルーレットがぐるぐる回る、イベントの出席登録と抽選のサービス。",
+    "summary": "traP の春ハッカソン2025で、7人のチームで2日間でつくった。イベントを登録して参加を受け付け、参加者から立体的なルーレットで当選者を選ぶ。",
+    "role": "リーダー（フロントエンドの見守り）",
+    "outcome": "132人が利用",
+    "status": "members-only",
+    "url": "https://traquji.trap.show",
+    "image": "https://trap.jp/content/images/2025/07/upload_0c80b1ce92dd8d334175831dfab16d6a.png",
+    "icon": null,
+    "repositories": ["https://github.com/traP-jp/traQuji"],
+    "productionTime": "2025/06/21 ～ 2025/06/22",
+    "techStack": [],
+    "tags": ["チーム開発", "traP"],
+    "comments": [
+      "今年はフロントエンドもバックエンドも経験者がいたので、後方腕組み役として参加しました。実際機能実装はほぼしてなく、ちょっとリファクタリングとちょっとバグ修正をやりました。",
+      "でもルーレットの演出のところはかなりカッコよく作れたと思っていて、満足です。CSS アニメーションだけで動いていて、[CodePen](https://codepen.io/cp-20/pen/bNdmOKr) でも触れます。"
+    ],
+    "relatedArticles": ["https://trap.jp/post/2528/"]
+  },
+  {
     "id": "2025-portfolio",
     "title": "cp20.dev (2025)",
-    "description": "世の中にはね、無駄なことなんかひとつだってないのよ、きっと",
+    "description": "SolidJS でつくった、2025年版のポートフォリオ。",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://2025.cp20.dev",
     "image": "https://2025.cp20.dev/works/og/2025-portfolio.avif",
     "repositories": ["https://github.com/cp-20/2025.cp20.dev"],
@@ -188,7 +267,10 @@
   {
     "id": "isuc",
     "title": "isuc",
-    "description": "Auto-caching database driver for ISUCON",
+    "description": "ISUCON 向けに、SQL の結果をドライバの層でキャッシュする道具。",
+    "summary": "Go のアプリで、データベースのドライバ名を「mysql」から「mysql+cache」に変えるだけでクエリの結果をキャッシュする。アプリのクエリを集めて、何をキャッシュするかの計画とドライバのコードを生成する。",
+    "role": "pirosiki と2人で開発",
+    "outcome": "ISUCON13 の初期実装でスコアが 3,912 → 9,245",
     "url": "https://github.com/traP-jp/isuc",
     "image": "https://2025.cp20.dev/works/og/isuc.avif",
     "icon": null,
@@ -203,15 +285,36 @@
     ],
     "tags": ["チーム開発", "traP"],
     "comments": [
-      "ISUCON関連で何か面白いツール作ろうから始まり、良い感じにキャッシュしてくれるツールをつくったら面白いかなと思って、[@pirosiki](https://twitter.com/pirosiki197) と作りました。",
-      "誰にも注目されてないですが、ISUCON15でこれを使って高得点を取ることで知名度を上げることを狙っています。"
+      "ISUCON関連で何か面白いツール作ろうから始まり、良い感じにキャッシュしてくれるツールをつくったら面白いかなと思って、[@pirosiki](https://twitter.com/pirosiki197) と作りました。"
     ],
     "relatedArticles": ["https://trap.jp/post/2491/", "https://trap.jp/post/2486/"]
   },
   {
+    "id": "trap-wsh-2024",
+    "title": "部内 Web Speed Hackathon",
+    "description": "重い Web アプリを速くする Web Speed Hackathon を、traP の部内で開いた。",
+    "summary": "公式と同じ形の大会を、採点の計測ツールとリーダーボードを自作して開いた。終わったあとに解説会も開いた。",
+    "role": "1人で準備・運営",
+    "outcome": "9人が参加",
+    "kind": "event",
+    "url": "https://trap.jp/post/2388/",
+    "icon": null,
+    "repositories": [],
+    "productionTime": "2024/09/21 ～ 2024/09/22",
+    "techStack": [],
+    "tags": ["traP"],
+    "comments": [
+      "大会に出てるときから感じていたんですが、あんまりゴリゴリにできる人が多くないんですよね。特に若い世代に。これをもっと盛り上げていきたいなーと思ったのが最初のキッカケです。",
+      "公式が計測ツールのソースコードを公開していないので、[計測ツールとリーダーボード](/works/wsh-scoring-tool)は自分で実装しました。準備から開催まで全部1人でやったのでめちゃめちゃ大変でした。"
+    ],
+    "relatedArticles": []
+  },
+  {
     "id": "foodmoji",
     "title": "Foodmoji",
-    "description": "あなたのコミットメッセージを絵文字で彩る",
+    "description": "コミットメッセージに食べ物の絵文字を入れる VS Code 拡張。",
+    "role": "1人で企画・デザイン・実装",
+    "outcome": "45インストール（2026年11月）",
     "url": "https://marketplace.visualstudio.com/items?itemName=cp20.foodmoji-vscode",
     "image": "https://2025.cp20.dev/works/og/foodmoji.avif",
     "icon": "https://raw.githubusercontent.com/cp-20/foodmoji-vscode/main/assets/icon.png",
@@ -240,6 +343,7 @@
     "id": "trap-conference",
     "title": "traP Conference イベントページ",
     "description": "2024年10月に行われたイベントの公式ページ",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://trap-conference.trap.show/",
     "repositories": ["private"],
     "productionTime": "2024/09/29 ～ 2024/09/30",
@@ -277,7 +381,9 @@
   {
     "id": "wsh-scoring-tool",
     "title": "Web Speed Hackathon スコアリングツール",
-    "description": "Web Speed Hackathon の非公式スコアリングツール",
+    "description": "Web Speed Hackathon の非公式の採点ツール。計測ツール一式とリーダーボード。",
+    "role": "1人で企画・デザイン・実装",
+    "outcome": "部内 Web Speed Hackathon の採点に使用",
     "url": "https://wsh.trap.show",
     "image": "https://2025.cp20.dev/works/og/wsh-scoring-tool.avif",
     "icon": null,
@@ -335,7 +441,10 @@
   {
     "id": "c-compiler",
     "title": "自作Cコンパイラ",
-    "description": "セルフホストできるCコンパイラ",
+    "description": "C で書いた、自分自身をコンパイルできる C コンパイラ。",
+    "summary": "C 言語で書いた C コンパイラで、C のソースを LLVM IR に変換する。約4,800行の自分自身のソースもコンパイルでき、2世代目と3世代目のコンパイラの出力が一致する（セルフホスト）。テストは165件。",
+    "role": "1人で企画・デザイン・実装",
+    "outcome": "セルフホストを達成",
     "url": "https://github.com/cp-20/c-compiler",
     "image": "https://2025.cp20.dev/works/og/c-compiler.avif",
     "icon": null,
@@ -364,7 +473,10 @@
   {
     "id": "traq-ing",
     "title": "traQing",
-    "description": "traQの各種統計を可視化するサービス",
+    "description": "traP の部内チャット traQ の統計を可視化するサービス。",
+    "role": "1人で企画・デザイン・実装",
+    "outcome": "traP の部員100人ほどが利用",
+    "status": "members-only",
     "url": "https://traqing.cp20.dev",
     "repositories": ["https://github.com/cp-20/traQing"],
     "productionTime": "2024/05 ～ now",
@@ -431,7 +543,8 @@
   {
     "id": "2024-portfolio",
     "title": "cp20.dev (2024)",
-    "description": "しーぴーくんのお手製サイト",
+    "description": "Qwik でつくった、2024年版のポートフォリオ。",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://2024.cp20.dev",
     "image": "https://2025.cp20.dev/works/og/2024-portfolio.avif",
     "repositories": ["https://github.com/cp-20/2024.cp20.dev"],
@@ -477,9 +590,30 @@
     "relatedArticles": []
   },
   {
+    "id": "piscon-2023",
+    "title": "PISCON 2023",
+    "description": "traP 部内の ISUCON。過去問を使って、2023年は2回開いた。",
+    "summary": "ISUCON9 予選と ISUCON11 予選の問題で、部内向けの ISUCON を2回開いた。ポータル兼ベンチマーカーと、ボタン1つで建つ選手の環境を AWS に用意した。",
+    "role": "1人で運営",
+    "outcome": "第1回は19チーム、第2回は9チームが参加",
+    "kind": "event",
+    "url": "https://trap.jp/post/2058/",
+    "icon": null,
+    "repositories": [],
+    "productionTime": "2023/10/20 ～ 2023/11/05",
+    "techStack": [],
+    "tags": ["traP"],
+    "comments": [
+      "PISCON では独自のポータルを用意して、ベンチマーカーをうまく走らせるようにしています。また選手が使う環境 (AWS のインスタンス) もボタン1つで構築できるようになっています。ポータルを問題用に書き換えるのに1日、2日ぐらい溶かしました。",
+      "こういう大会を運営するのはたぶん初めてなのに、1人で運営するのはもっと初めてでした。でもいい経験になったと思います。初めて AWS をまともに使った気がします。"
+    ],
+    "relatedArticles": []
+  },
+  {
     "id": "tokyo-tech-syllabus",
     "title": "東工大シラバス",
     "description": "東工大の講義を爆速で検索できるサイト",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://tokyo-tech-syllabus.cp20.dev",
     "repositories": ["https://github.com/cp-20/tokyo-tech-syllabus"],
     "productionTime": "2024/03/18 ～ 2024/03/31",
@@ -546,9 +680,18 @@
   {
     "id": "read-stack",
     "title": "ReadStack",
-    "description": "技術記事の未読消化サポートアプリ（サービス終了）",
+    "description": "技術記事の未読消化を手伝うアプリ。Web・ブラウザ拡張・スマホアプリでつくった。",
+    "role": "1人で企画・デザイン・実装",
+    "outcome": "SecHack365（2023年度）の成果物",
+    "status": "ended",
     "url": "https://read-stack.cp20.dev",
     "icon": "https://raw.githubusercontent.com/cp-20/read-stack/main/apps/web/public/apple-touch-icon.png",
+    "links": [
+      {
+        "label": "SecHack365 の成果ページ",
+        "url": "https://sechack365.nict.go.jp/achievement/2023/#area_24dn"
+      }
+    ],
     "repositories": [
       "https://github.com/cp-20/read-stack",
       "https://github.com/cp-20/read-stack-extension",
@@ -656,9 +799,24 @@
     "id": "dice-spec-v2",
     "title": "ダイススペック v2",
     "description": "TRPGのちょっとしたツールを集めたサービス",
+    "summary": "TRPG で使う、ダイスの期待値と確率の計算、ダイスロール、ココフォリアのログ解析をまとめた Web サービス。2022年につくった v1 をデザインから作り直した。",
+    "role": "1人で企画・デザイン・実装",
+    "outcome": "月2,000〜3,000人ほどが利用",
     "url": "https://dicespec.app",
     "repositories": ["https://github.com/cp-20/dice-spec-v2"],
     "productionTime": "2023/09/25 ～ 2023/10/13",
+    "screenshots": [
+      {
+        "src": "/images/screenshots/dice-spec-v2-pc.png",
+        "device": "pc",
+        "alt": "ダイススペックのダイス予測。3D6 の平均値や信頼区間と、確率分布のグラフ"
+      },
+      {
+        "src": "/images/screenshots/dice-spec-v2-mobile.png",
+        "device": "mobile",
+        "alt": "スマートフォンで見たダイス予測の結果と確率分布のグラフ"
+      }
+    ],
     "techStack": [
       {
         "label": "Figma",
@@ -721,7 +879,7 @@
       "1年越しぐらいにダイススペックをリニューアルしました。",
       "最初はFigmaの練習をしようと思ってダイススペックのUIをトレースしようというところから始まったんですが、デザインを作ったらアプリも改修したくなってきてしまって、結局全部をリニューアルしてしまいました。",
       "Next.js App Routerとか、shadcn/uiとか、Valibotとか、結構新しい技術を触れて満足です。前と比べて機能面で良くなっているかと言われると微妙ですが、、",
-      "ちなみにボクの作ったアプリの中では一番多くの人に使っていただいていて、月6000人ぐらいのユーザーがいます。ありがたいです。今後もゆるりとメンテしていくのでよろしくお願いします。"
+      "ちなみにボクの作ったアプリの中では一番多くの人に使っていただいていて、月2,000〜3,000人ほどのユーザーがいます (2026年11月時点)。ありがたいです。今後もゆるりとメンテしていくのでよろしくお願いします。"
     ],
     "relatedArticles": []
   },
@@ -729,6 +887,7 @@
     "id": "trap-mission",
     "title": "traP Mission",
     "description": "ミッション形式でtraPに慣れよう！",
+    "role": "フロントエンドのリーダー",
     "url": "https://mission.trap.games",
     "repositories": ["https://github.com/traP-jp/h23s_26", "https://github.com/traP-jp/h23s_26-UI"],
     "productionTime": "2023/06/17 ～ 2023/06/18 (+ 1週間の準備期間)",
@@ -790,7 +949,8 @@
   {
     "id": "2023-portfolio",
     "title": "cp20.dev (2023)",
-    "description": "しーぴーくんの生態がわかるサイト",
+    "description": "Next.js でつくった、2023年版のポートフォリオ。",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://2023.cp20.dev",
     "image": "https://2025.cp20.dev/works/og/2023-portfolio.avif",
     "repositories": ["https://github.com/cp-20/2023.cp20.dev"],
@@ -849,6 +1009,7 @@
     "id": "titech-lecture-list",
     "title": "東工大講義リスト",
     "description": "東工大の講義を検索できるサービス",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://titech-lecture-list.vercel.app",
     "repositories": ["https://github.com/cp-20/titech-lecture-list"],
     "productionTime": "2023/04/06 ～ 2023/04/15",
@@ -920,6 +1081,7 @@
     "id": "no-log-chat",
     "title": "のーろぐちゃっと",
     "description": "ログが残らないチャットでみんなと会話しよう！",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://no-log-chat.vercel.app",
     "repositories": ["https://github.com/cp-20/no-log-chat", "https://github.com/cp-20/no-log-chat-server"],
     "productionTime": "2023/01/05～2023/01/11",
@@ -981,7 +1143,8 @@
   {
     "id": "dice-spec-v1",
     "title": "ダイススペック (v1)",
-    "description": "TRPGのちょっとしたツールを集めたサービス",
+    "description": "ダイスの期待値を計算できる、はじめての個人開発アプリ。",
+    "role": "1人で企画・デザイン・実装",
     "url": "https://v1-dicespec.vercel.app/",
     "repositories": ["https://github.com/cp-20/Dice-Spec"],
     "productionTime": "2022/05/26 ～ 2022/06/04 + メンテ",

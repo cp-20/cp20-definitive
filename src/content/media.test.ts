@@ -40,6 +40,21 @@ describe('漫画の表紙', () => {
   });
 });
 
+describe('作品のスクリーンショット', () => {
+  const directory = join(root, 'public/images/screenshots');
+  test('どれも WebP の縮小版と原寸の WebP を持ち、srcset の幅は実際の幅', async () => {
+    const srcsets = coverSrcsets(await readdir(directory), '/images/screenshots/');
+    assert.ok(Object.keys(srcsets).length > 0);
+    for (const [file, srcset] of Object.entries(srcsets)) {
+      const { width } = await sharp(join(root, 'public', file)).metadata();
+      const candidates = srcset.split(', ').map((c) => c.split(' '));
+      assert.equal(candidates.at(-1)?.[1], `${width}w`, file);
+      for (const [copy, descriptor] of candidates)
+        assert.equal(`${(await sharp(join(root, 'public', copy)).metadata()).width}w`, descriptor, copy);
+    }
+  });
+});
+
 describe('clientMedia', () => {
   const page = 'https://example.com/post';
   const { pages, images } = clientMedia(

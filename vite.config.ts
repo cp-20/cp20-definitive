@@ -2,6 +2,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import solid from '@solidjs/vite-plugin';
 import { readFileSync, readdirSync } from 'node:fs';
+import { imageSize } from 'image-size';
 import { dropWoffFallback, isFontFile } from './scripts/build/fonts.ts';
 import { clientMedia, coverSrcsets } from './src/content/media.ts';
 import { shownSeriesThumbnail } from './src/data/manga-covers.ts';
@@ -41,10 +42,22 @@ const media = (): Plugin => {
       const coverDirectory = new URL('./public/images/covers/', import.meta.url);
       this.addWatchFile(coverDirectory.pathname);
       const covers = coverSrcsets(readdirSync(coverDirectory));
+      // The works' screenshots (scripts/sync/screenshots.ts): their WebP copies and their size,
+      // which the page states so nothing moves when they load.
+      const shotDirectory = new URL('./public/images/screenshots/', import.meta.url);
+      this.addWatchFile(shotDirectory.pathname);
+      const shotSrcsets = coverSrcsets(readdirSync(shotDirectory), '/images/screenshots/');
+      const shots = Object.fromEntries(
+        Object.entries(shotSrcsets).map(([file, srcset]) => {
+          const { width, height } = imageSize(readFileSync(new URL(`./public${file}`, import.meta.url)));
+          return [file, { srcset, width, height }];
+        }),
+      );
       return [
         `export const pages = ${JSON.stringify(pages)};`,
         `export const images = ${JSON.stringify(images)};`,
         `export const covers = ${JSON.stringify(covers)};`,
+        `export const shots = ${JSON.stringify(shots)};`,
         '',
       ].join('\n');
     },

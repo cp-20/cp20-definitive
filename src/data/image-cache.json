@@ -1,4 +1,38 @@
 {
+  "https://1brc.trap.games/apple-touch-icon.png": {
+    "file": "/media/1046f78bd041df9cb7d43b32.png",
+    "checkedAt": "2026-11-09T07:16:27.449Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/1046f78bd041df9cb7d43b32-96w.webp",
+        "width": 96
+      }
+    ]
+  },
+  "https://1brc.trap.games/og.png": {
+    "file": "/media/455dfd83c09e6baf7dbafb23.png",
+    "checkedAt": "2026-11-09T07:14:51.472Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/455dfd83c09e6baf7dbafb23-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/455dfd83c09e6baf7dbafb23-480w.webp",
+        "width": 480
+      },
+      {
+        "file": "/media/455dfd83c09e6baf7dbafb23-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/455dfd83c09e6baf7dbafb23-960w.webp",
+        "width": 960
+      }
+    ]
+  },
   "https://2023.cp20.dev/apple-touch-icon.png": {
     "file": "/media/77e35c5775a657273824c53b.png",
     "checkedAt": "2026-11-09T06:42:07.258Z",

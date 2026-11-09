@@ -88,18 +88,21 @@ scripts はNodeの型除去でTypeScriptをそのまま実行します（tsx等�
 ## 内容の構成
 
 - トップの3作品：ダイススペック、自作Cコンパイラ、みんなのものさし。
-- 残りは作品一覧から閲覧。歴代サイトはトップ末尾に年代別リンク。
-- 作品：`src/data/works.json`。新作の説明はユーザー指定の公開サイトとREADMEを確認。
+- 残りは作品一覧から閲覧。作品一覧は代表作3つ、始めた年ごと（新しい順、年の見出しは消印）、主催したイベント、歴代の cp20.dev（毎年変えたフレームワークを添える）、GitHub の最近の動き（説明のあるリポジトリ6件まで）の順。
+- 作品のページは名前・要約・事実（成果・役割・期間・公開の状態）・行き先で名前を変えるボタン（サイトを開く／GitHub で見る／VS Code Marketplace で見る／開催記を読む。公開を終えたものはボタンなし）・画像を最初に並べ、そのあと本人の制作メモ・関連記事・一覧で前後の作品。
+- 作品：`src/data/works.json`。新作の説明はユーザー指定の公開サイトとREADMEを確認。任意の項目は値があるときだけ表示します：`summary`（作品ページの要約）、`role`（役割。1人でつくったものは「1人で企画・デザイン・実装」）、`outcome`（数字や賞のある成果。分かっている数字だけ）、`status`（`ended` 公開終了／`members-only` traP 部員向け）、`kind: "event"`（主催したイベント）、`links`（公開を終えた作品のボタンの代わりのページなど）、`screenshots`（公開サイトの画面）。使用技術（`techStack`）は表示しません（歴代の cp20.dev のフレームワークだけ `editorial.ts` の `editions` から添える）。
 - 経歴：`src/data/editorial.ts`。月と学年を併記。各項目の詳しい説明（`detail`）は参加記や主催の発表にあることだけを書き、項目を押すとダイアログで開く。資格は非掲載。
 - 手動追加・除外・上書き：`src/data/manual.json`。
 - スナップショット：`src/data/generated.json`。
-- OG画像・アイコン・寸法：`src/data/previews.json`。全54記事と18作品中13作品のOGを収録。OGがない作品にはテキストの代替を表示し、別の画像を捏造しません。
+- OG画像・アイコン・寸法：`src/data/previews.json`。OGがない作品にはテキストの代替を表示し、別の画像を捏造しません。ログインが必要で読めないページ（traP 部員向けのサービス）は、`works.json` に書いた画像（`image`）を使います。HEAD を断るサーバーのアイコンは GET で確かめます。
 - 音楽・漫画：`tracks.json` / `series.json`（定期処理が更新）。選定は2026版の元データで変更できます。
 - 画像：`public/images/`、自動取得分は `public/media/`。92個の元URLを89ファイルに集約。`src/data/image-cache.json` が元URLとローカルファイルを対応付けます。漫画・YouTubeも事前保存し、ページに出典と著者・制作者を掲載。
 
 画像は収集時に形式と15MB上限を検査し、内容ハッシュをファイル名に使用。新規取得に失敗した場合（新しいOG画像がSVG・15MB超・一時的な取得失敗など）は、前回の画像URL・寸法・ファイルを維持します。画像を含めてActionsからコミットし、ブラウザは同一サイトのStatic Assetsを参照。`/media/*` は長期キャッシュし、画像が変わるとURLも変わります。OG画像と音楽・漫画のサムネイルには幅320/640/960pxのWebP（元より2割以上狭いもののみ。縮小と再エンコードだけ）を、作品アイコンには幅96pxのWebPを `<元ファイル名>-<幅>w.webp` で作ります（元ファイルより小さくならないものは捨てる）。`public/images/covers` の表紙には幅240pxと原寸のWebPを作ります。いずれも `srcset`/`sizes`（アイコンは小さいWebPを直接）で配信します（`node scripts/sync/images.ts --variants-only` で取得なしに再生成。表紙を追加したら実行）。クライアントには `virtual:cp20-media`（`vite.config.ts`）としてローカルパスと寸法だけを渡します。SVGやHTMLを外部画像として保存しません。
 
 `manual.json` の `articles` はURLで自動取得と合成、`overrides` はタイトル等を上書き、`exclude` は対象URLを非掲載、`projects` は作品を追加します。作品には `works.json` と同じフィールドを指定してください。
+
+**作品のスクリーンショット**：`works.json` の `screenshots` に書いた画面（PC は1280×720、スマートフォンは iPhone 13 の2倍）を `npm run screenshots` が Playwright で撮り、`public/images/screenshots/<id>-<pc|mobile>.png` と WebP の縮小版（320〜960px と原寸）を書きます。どの画面を撮るかは `scripts/sync/screenshots.ts` にあります（フォームに入力して計算させるだけで、送信はしません）。定期処理では撮りません。公開サイトのない作品は OG 画像のままです。
 
 **作品の追加方法**
 

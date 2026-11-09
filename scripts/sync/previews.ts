@@ -72,6 +72,22 @@ export const withStated = (preview: Preview, work?: { image?: string; icon?: str
   ...(work?.image && { image: work.image }),
   ...(work && 'icon' in work && { icon: work.icon ?? null }),
 });
+/**
+ * Whether an icon URL serves an image. Some hosts answer HEAD with an error while serving the file
+ * to GET, so a failed HEAD is retried as a GET (whose body is not read).
+ */
+export async function reachable(url: string, fetcher: typeof fetch = fetch) {
+  const ask = async (method: 'HEAD' | 'GET') => {
+    try {
+      const r = await fetcher(url, { method, signal: AbortSignal.timeout(8000) });
+      await r.body?.cancel();
+      return r.ok;
+    } catch {
+      return false;
+    }
+  };
+  return (await ask('HEAD')) || ask('GET');
+}
 // Only pages the site still links to keep metadata, so a replaced URL's image is not cached forever.
 export const keepReferenced = <T>(previews: Record<string, T>, urls: string[]) => {
   const linked = new Set(urls);
@@ -140,17 +156,24 @@ export async function syncPreviews(request: Request, force = false) {
               keepOldImage();
             }
           }
-          if (preview.icon) {
-            try {
-              const r = await fetch(preview.icon, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
-              if (!r.ok) preview.icon = previous[url]?.icon || null;
-            } catch {
-              preview.icon = previous[url]?.icon || null;
-            }
-          }
+          if (preview.icon && !(await reachable(preview.icon))) preview.icon = previous[url]?.icon || null;
           next[url] = { ...preview, checkedAt: new Date().toISOString() };
           fetched++;
         } catch {
+          // A page behind a login (a club's members-only service) cannot be read, but the image
+          // works.json states for it can still be shown.
+          const image = stated.get(url)?.image;
+          if (image && previous[url]?.image !== image) {
+            try {
+              next[url] = {
+                ...withStated({ image: null, icon: null, width: 1200, height: 630 }, stated.get(url)),
+                ...(await dimensions(image)),
+                checkedAt: new Date().toISOString(),
+              };
+              fetched++;
+              continue;
+            } catch {}
+          }
           console.warn(`Preview unavailable: ${new URL(url).hostname}; retaining previous metadata`);
         }
       }

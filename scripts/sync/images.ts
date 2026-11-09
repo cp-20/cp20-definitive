@@ -10,7 +10,8 @@
 //
 // npm run cache:images [-- --force]: refreshes the cache without the rest of the sync.
 // node scripts/sync/images.ts --variants-only: rewrites the WebP copies (and those of the covers
-// in public/images/covers) without fetching anything.
+// in public/images/covers and the works' screenshots in public/images/screenshots) without
+// fetching anything.
 import { readFile, writeFile, mkdir, rename, readdir, unlink, access, rm, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -413,16 +414,31 @@ export const coverWidths = (naturalWidth: number) =>
   naturalWidth >= 300 ? [240, naturalWidth] : [naturalWidth];
 
 /**
- * Writes the WebP copies of every JPEG/PNG cover in public/images/covers. The covers are committed
- * files (not part of the image cache); vite.config.ts finds the copies by name (coverSrcsets).
+ * Widths of the WebP copies of a screenshot `naturalWidth` px wide: the usual thumbnail widths and
+ * one at full size (the originals are PNGs, several times larger than WebP at the same size).
  */
-async function addCoverVariants() {
+export const screenshotWidths = (naturalWidth: number) => [
+  ...plannedWidths(naturalWidth),
+  ...(naturalWidth > 0 ? [naturalWidth] : []),
+];
+/** The committed images (not part of the image cache) and the widths of their copies. */
+export const committedImages: Record<string, (naturalWidth: number) => number[]> = {
+  '/images/covers/': coverWidths,
+  '/images/screenshots/': screenshotWidths,
+};
+
+/**
+ * Writes the WebP copies of every JPEG/PNG in `directory`, one of `committedImages`: the manga
+ * covers and the works' screenshots, committed with the site. vite.config.ts finds the copies by
+ * name (coverSrcsets).
+ */
+export async function addCommittedVariants(directory: string) {
   let written = 0;
-  for (const name of await readdir(publicUrl('/images/covers/'))) {
+  for (const name of await readdir(publicUrl(directory))) {
     if (!/\.(jpe?g|png)$/i.test(name)) continue;
-    const original = `/images/covers/${name}`;
+    const original = directory + name;
     const { width } = await sharp(publicUrl(original).pathname).metadata();
-    for (const w of coverWidths(width ?? 0))
+    for (const w of committedImages[directory](width ?? 0))
       if (await writeVariant(original, variantFile(original, w), w)) written++;
   }
   return written;
@@ -432,13 +448,13 @@ async function variantsOnly() {
   const [cache, previews, tracks, series, works] = await Promise.all(
     ['image-cache', 'previews', 'tracks', 'series', 'works'].map(load),
   );
-  const written =
-    (await addVariants(
-      cache,
-      thumbnailSources(previews, shownItems(tracks, series)),
-      iconSources(previews, iconPages(works)),
-      framedSources(tracks),
-    )) + (await addCoverVariants());
+  let written = await addVariants(
+    cache,
+    thumbnailSources(previews, shownItems(tracks, series)),
+    iconSources(previews, iconPages(works)),
+    framedSources(tracks),
+  );
+  for (const directory of Object.keys(committedImages)) written += await addCommittedVariants(directory);
   await writeJson(data('image-cache'), cache);
   console.log(`Image variants: ${written} written`);
 }

@@ -5,18 +5,22 @@ import { pages } from 'virtual:cp20-media';
 // by scripts/qa/browser-check.ts; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
 export const sizes = {
   articleRow: '(max-width: 600px) 104px, 124px',
-  workGrid: '(max-width: 760px) calc(100vw - 100px), (max-width: 1100px) calc(50vw - 170px), 290px',
   featured:
     '(max-width: 760px) calc(100vw - 104px), (max-width: 900px) calc(100vw - 300px), (max-width: 1100px) calc(55vw - 200px), 470px',
-  workHero: '(max-width: 760px) calc(100vw - 120px), (max-width: 1100px) calc(100vw - 300px), 930px',
+  // WorkCard.tsx and a work's page (src/styles/works.css): a featured card (three across, then a
+  // row), a list card's stamp, a one-line row, the page's picture and the phone screen on it.
+  workCard: '(max-width: 760px) 96px, (max-width: 1000px) 224px, 300px',
+  workCardPhone: '96px',
+  workThumb: '(max-width: 760px) 92px, 140px',
+  workRow: '56px',
+  workHero: '(max-width: 760px) calc(100vw - 74px), (max-width: 1000px) 560px, 440px',
+  workPhone: '136px',
   // The open book on the /about shelf (spines show a corner of the same image).
   bookCover: '(max-width: 760px) 176px, 222px',
   homeCover: '92px',
   homeTrack: '134px',
   track: '(max-width: 760px) calc(100vw - 88px), (max-width: 1100px) calc(50vw - 160px), 292px',
 };
-// Works in the first row of the works grid (three columns on wide screens) skip lazy loading.
-export const firstRowWorks = 3;
 export function previewFor(url: string) {
   return pages[url];
 }

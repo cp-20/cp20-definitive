@@ -9,10 +9,12 @@ import {
   keepReferenced,
   ogImage,
   parsePreview,
+  reachable,
   withStated,
   type syncMedia,
   type syncPreviews,
 } from './previews.ts';
+import sharp from 'sharp';
 import { sandbox } from './sandbox.ts';
 
 afterEach(() => {
@@ -230,6 +232,50 @@ test('新しい画像を受け入れられなければ、前の画像をその�
     assert.deepEqual(
       { image, width, height },
       { image: 'https://example.com/og.png', width: 1200, height: 600 },
+    );
+  } finally {
+    await box.cleanup();
+  }
+});
+
+describe('アイコンの確認', () => {
+  test('HEAD を断るサーバーでも、GET で取れればアイコンを使う', async () => {
+    const asked: string[] = [];
+    const fetcher = (async (_: string, init?: RequestInit) => {
+      asked.push(init?.method ?? 'GET');
+      return new Response('png', { status: init?.method === 'HEAD' ? 500 : 200 });
+    }) as typeof fetch;
+    assert.equal(await reachable('https://example.com/icon.png', fetcher), true);
+    assert.deepEqual(asked, ['HEAD', 'GET']);
+  });
+
+  test('どちらでも取れなければ使わない', async () => {
+    const fetcher = (async () => new Response('', { status: 404 })) as typeof fetch;
+    assert.equal(await reachable('https://example.com/icon.png', fetcher), false);
+  });
+});
+
+test('ログインが必要で読めないページでも、works.json に書いた画像は使う', async () => {
+  const page = 'https://members.example.com/';
+  const box = await sandbox({
+    previews: {},
+    works: [{ url: page, image: 'https://example.com/og.png', icon: null }],
+    manual: { projects: [], articles: [], exclude: [], overrides: {} },
+    generated: { articles: [] },
+  });
+  try {
+    const sync = await box.importModule<{ syncPreviews: typeof syncPreviews }>('previews.ts');
+    const png = await sharp({ create: { width: 40, height: 21, channels: 3, background: '#fff' } })
+      .png()
+      .toBuffer();
+    vi.stubGlobal('fetch', async () => new Response(png));
+    await sync.syncPreviews(async () => {
+      throw Error('Redirected to the login page');
+    });
+    const { image, icon, width, height } = (await box.load('previews'))[page];
+    assert.deepEqual(
+      { image, icon, width, height },
+      { image: 'https://example.com/og.png', icon: null, width: 40, height: 21 },
     );
   } finally {
     await box.cleanup();

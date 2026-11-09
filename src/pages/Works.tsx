@@ -1,108 +1,92 @@
-import { For, Show } from 'solid-js';
-import {
-  OGImage,
-  OriginalIcon,
-  Postmark,
-  firstRowWorks,
-  postmarkDate,
-  sizes,
-} from '../components/Preview.tsx';
+import { For } from 'solid-js';
 import Brand from '../components/Brand.tsx';
-import { works, repos, formatDate, keyStack } from '../content/content.ts';
-import { featuredIds } from '../data/editorial.ts';
+import Icon from '../components/Icon.tsx';
+import WorkCard from '../components/WorkCard.tsx';
+import { editionWorks, formatDate, repos, sections } from '../content/content.ts';
 import { nameParts } from '../content/name-breaks.ts';
-// GitHub's language colours, for the dot beside each repository.
-const languageColors: Record<string, string> = {
-  TypeScript: '#3178c6',
-  JavaScript: '#f1e05a',
-  Kotlin: '#a97bff',
-  Shell: '#89e051',
-  Makefile: '#427819',
-  Dart: '#00b4ab',
-  Go: '#00add8',
-  Ruby: '#701516',
-  Rust: '#dea584',
-  C: '#555555',
-  Vue: '#41b883',
-  CSS: '#663399',
-  Jinja: '#a52a22',
-};
-const languageColor = (language: string) => languageColors[language] || 'transparent';
+
+/** Recently updated repositories that say what they are (a bare name tells a visitor nothing). */
+export const describedRepos = repos.filter((r) => r.description.trim()).slice(0, 6);
+
 export default function Works() {
-  const projects = [...works].sort((a, b) => {
-    const ai = featuredIds.indexOf(a.id),
-      bi = featuredIds.indexOf(b.id);
-    return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
-  });
+  const { featured, years, events } = sections;
   return (
-    <div class="wrap">
+    <div class="wrap works-page">
       <header data-stamp-anchor="heading" class="page-heading">
         <h1>作品一覧</h1>
+        <p class="intro works-lead">2022年から、個人開発を中心につくってきたもの。</p>
       </header>
-      <section class="work-grid" aria-label="制作した作品">
-        <For each={projects}>
-          {(w, i) => (
-            <article class="work-index-item" data-stamp-anchor={`work-${w.id}`}>
-              <div>
-                <Show when={featuredIds.includes(w.id)}>
-                  <span class="work-featured-label">おすすめ</span>
-                </Show>
-                <h2>
-                  <a href={`/works/${w.id}`}>
-                    <OriginalIcon url={w.url} name={w.title} placeholder />
-                    {w.title}
-                  </a>
-                </h2>
-                <p>{w.description}</p>
-                <div class="tag-line">
-                  {keyStack(w).map((label) => (
-                    <span>{label}</span>
-                  ))}
-                </div>
-              </div>
-              <Show when={true}>
-                <a class="work-thumbnail" href={`/works/${w.id}`} tabindex="-1" aria-hidden="true">
-                  <OGImage
-                    url={w.url}
-                    alt=""
-                    sizes={sizes.workGrid}
-                    priority={i() === 0}
-                    eager={i() < firstRowWorks}
-                  />
-                  <Postmark date={postmarkDate(w.productionTime)} />
-                </a>
-              </Show>
-            </article>
-          )}
-        </For>
+      <section class="works-section" aria-labelledby="works-featured">
+        <h2 id="works-featured" class="works-heading">
+          代表作
+        </h2>
+        <div class="work-cards-large">
+          <For each={featured}>
+            {(w, i) => <WorkCard work={w} variant="large" priority={i() === 0} eager />}
+          </For>
+        </div>
       </section>
-      <section class="repo-section">
-        <div class="section-heading">
-          <h2>最近更新したリポジトリ</h2>
-          <a class="under-link" href="https://github.com/cp-20?tab=repositories">
+      {/* One postmark per year instead of one on every work. */}
+      <For each={years}>
+        {(group) => (
+          <section class="works-year" aria-labelledby={`works-${group.year}`}>
+            <h2 id={`works-${group.year}`} class="year-mark">
+              <span>{group.year}</span>
+            </h2>
+            <div class="work-cards-small">
+              <For each={group.works}>{(w) => <WorkCard work={w} />}</For>
+            </div>
+          </section>
+        )}
+      </For>
+      <section class="works-section" aria-labelledby="works-events">
+        <h2 id="works-events" class="works-heading">
+          主催したイベント
+        </h2>
+        <div class="work-cards-small">
+          <For each={events}>{(w) => <WorkCard work={w} />}</For>
+        </div>
+      </section>
+      {/* The only place where the framework is the point: each year's edition was built anew. */}
+      <section class="works-section" aria-labelledby="works-editions">
+        <h2 id="works-editions" class="works-heading">
+          歴代の cp20.dev
+        </h2>
+        <p class="works-note">毎年、違うフレームワークで作り直してきたポートフォリオ。</p>
+        <ol class="edition-stamps">
+          <For each={editionWorks}>
+            {(e) => (
+              <li>
+                <a href={`/works/${e.id}`} data-stamp-anchor={`work-${e.id}`}>
+                  <strong>{e.year}</strong>
+                  <span>{e.tech}</span>
+                </a>
+              </li>
+            )}
+          </For>
+        </ol>
+      </section>
+      <section class="works-section" aria-labelledby="works-github">
+        <div class="works-heading-row">
+          <h2 id="works-github" class="works-heading">
+            GitHub の最近の動き
+          </h2>
+          <a class="text-button" href="https://github.com/cp-20?tab=repositories">
             <Brand url="https://github.com" />
-            GitHub
+            すべてのリポジトリ
+            <Icon name="ArrowUpRight" size={15} />
           </a>
         </div>
-        {/* A ledger: one line per repository, columns aligned for scanning. */}
-        <ol class="repo-list">
-          <For each={repos.slice(0, 12)}>
+        <ol class="repo-activity">
+          <For each={describedRepos}>
             {(r) => (
               <li>
                 <a href={r.url}>
                   <span class="repo-name">
                     {nameParts(r.name).map((part, i) => (i ? [<wbr />, part] : part))}
-                    <Show when={r.stars > 0}>
-                      <small aria-label={`スター ${r.stars}`}>☆{r.stars}</small>
-                    </Show>
                   </span>
                   <span class="repo-description">{r.description}</span>
-                  <span class="repo-language" style={{ '--lang': languageColor(r.language) }}>
-                    {r.language}
-                  </span>
-                  <time class="repo-date" datetime={r.updatedAt}>
-                    {formatDate(r.updatedAt)}
-                  </time>
+                  <time datetime={r.updatedAt}>{formatDate(r.updatedAt)}</time>
                 </a>
               </li>
             )}

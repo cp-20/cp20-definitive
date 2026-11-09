@@ -132,7 +132,12 @@ try {
   });
   await page.locator('.rail nav a[href="/works"]').click();
   await expect(page.locator('main h1')).toContainText('作品一覧');
-  await page.locator('h2 a[href="/works/minna-no-monosashi"]').click();
+  // Anywhere on a work's card opens its page, not only its name.
+  // (The card's link covers it, so the description is clicked where it is drawn.)
+  const description = (await page
+    .locator('[data-stamp-anchor="work-minna-no-monosashi"] .work-card-description')
+    .boundingBox())!;
+  await page.mouse.click(description.x + 20, description.y + description.height / 2);
   await expect(page.locator('main h1')).toHaveText('みんなのものさし');
   await page.goBack();
   await expect(page.locator('main h1')).toContainText('作品一覧');
@@ -875,6 +880,41 @@ try {
   }
   passed('no image is laid out wider than its sizes promise, at 360-1920px');
 
+  // ── Works: a featured card's open button is its own link; a phone loads only the phone screen ──
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(origin + '/works');
+  await settle();
+  const open = page.locator('[data-stamp-anchor="work-dice-spec-v2"] .work-card-open');
+  const openBox = (await open.boundingBox())!;
+  const underOpen = await page.evaluate(
+    ([x, y]) => document.elementFromPoint(x, y)?.closest('a')?.getAttribute('href'),
+    [openBox.x + openBox.width / 2, openBox.y + openBox.height / 2],
+  );
+  if (underOpen !== (await open.getAttribute('href')))
+    throw Error(`The open button is covered: ${underOpen}`);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(origin + '/works');
+  await page
+    .locator('[data-stamp-anchor="work-dice-spec-v2"] .work-card-phone img')
+    .evaluate((img: HTMLImageElement) => img.decode());
+  const fetched = await page.evaluate(() =>
+    performance.getEntriesByType('resource').map((e) => e.name.replace(location.origin, '')),
+  );
+  if (fetched.some((url) => url.startsWith('/images/screenshots/dice-spec-v2-pc')))
+    throw Error('A phone downloaded the desktop screenshot it does not show');
+  for (const path of ['/works', '/works/dice-spec-v2']) {
+    await page.goto(origin + path);
+    const small = await page
+      .locator('main :is(.work-card-open, .text-button, .repo-link, .back-link, .primary-button)')
+      .evaluateAll((links) =>
+        links.filter((a) => a.getBoundingClientRect().height < 44).map((a) => a.textContent),
+      );
+    if (small.length) throw Error(`Links under 44px on ${path}: ${small}`);
+  }
+  passed(
+    'a work card opens its page from anywhere but its open button; phones load the phone screen only; 44px links',
+  );
+
   // ── Pages swapped out and rows filtered away are released ──
   // After a warm-up lap the DOM node count (after GC) stays flat. Chromium kept every
   // client-rendered srcset image, and with it its whole page (see responsive() in Preview.tsx).
@@ -924,11 +964,11 @@ try {
     [1440, 1000, 'desktop'],
   ] as const) {
     await page.setViewportSize({ width, height });
-    for (const route of ['/', '/articles', '/about']) {
+    for (const route of ['/', '/articles', '/works', '/works/dice-spec-v2', '/about']) {
       await page.goto(origin + route);
       await settle();
       if (width === 390) await axe(`${route}?mobile`);
-      const name = route === '/' ? 'home' : route.slice(1);
+      const name = route === '/' ? 'home' : route.slice(1).replaceAll('/', '-');
       await page.screenshot({ path: `${outputDir}/${name}-${suffix}.png`, fullPage: route !== '/articles' });
     }
   }

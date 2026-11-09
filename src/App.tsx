@@ -1,4 +1,5 @@
 import './styles/app.css';
+import './styles/works.css';
 import { For, createMemo } from 'solid-js';
 import Shell from './site/Shell.tsx';
 import { StampProvider } from './stamps/StampProvider.tsx';

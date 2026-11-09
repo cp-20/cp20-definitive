@@ -1,0 +1,856 @@
+/*
+  Works: the work cards (WorkCard.tsx), the works page and a work's own page.
+  Loaded after app.css, into the layers it declares.
+*/
+
+/* ───────────────────────── components ───────────────────────── */
+@layer components {
+  /* An outlined pill for a secondary link (a repository, all repositories, the works list). */
+  .text-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 6px 18px;
+    border: 2px solid var(--edge);
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.4;
+    box-shadow: 2px 2px 0 var(--drop);
+    transition:
+      transform var(--t-hover) var(--ease),
+      box-shadow var(--t-hover) var(--ease),
+      background-color var(--t-hover) var(--ease);
+  }
+  .text-button .brand-icon {
+    flex: none;
+  }
+  @media (hover: hover) {
+    .text-button:hover {
+      background: var(--hi-soft);
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--drop);
+    }
+  }
+  .text-button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--drop);
+    transition-duration: var(--t-press);
+  }
+
+  /* A section title on the works pages: the page's highlighter under it. */
+  .works-heading {
+    width: fit-content;
+    padding-right: 4px;
+    font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 94%, transparent 94%);
+  }
+
+  /* ── Work cards ── */
+  .work-card {
+    position: relative;
+    min-width: 0;
+  }
+  /* The name is the card's link and covers the whole card; the small open button sits above it. */
+  .work-card-link::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: -8px;
+    border-radius: 14px;
+  }
+  .work-card-link:focus-visible {
+    outline: none;
+  }
+  .work-card-link:focus-visible::after {
+    outline: 3px dashed var(--seal);
+    outline-offset: 2px;
+  }
+  .work-card h3 {
+    font-size: 1.125rem;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+  }
+  .work-card-link {
+    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
+      no-repeat 0 0 / 0% 100%;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  /* As in the article list, only the way in is animated. */
+  @media (hover: hover) {
+    .work-card:hover .work-card-link {
+      background-size: 100% 100%;
+      transition: background-size var(--t-state) var(--ease);
+    }
+    .work-card:hover .og-image {
+      filter: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(5px 8px 4px rgb(45 42 51 / 0.18));
+    }
+  }
+  .work-icon {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    margin-right: 8px;
+    border-radius: 6px;
+    object-fit: contain;
+    vertical-align: -4px;
+  }
+  .status-tag {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 0 9px;
+    border: 1.5px solid var(--muted);
+    border-radius: 999px;
+    color: var(--ink);
+    background: var(--paper);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.6;
+    white-space: nowrap;
+    vertical-align: 2px;
+  }
+  /* Each description is one sentence written for this place, so it is never cut short. */
+  .work-card-description {
+    margin-top: 4px;
+    color: var(--ink);
+    font-size: 0.9375rem;
+    line-height: 1.75;
+  }
+  /* A result, with a small vermilion seal like the one a teacher presses on good work. */
+  .work-outcome {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 8px;
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.6;
+  }
+  .work-outcome::before {
+    content: '';
+    flex: none;
+    width: 15px;
+    height: 15px;
+    border: 2px solid var(--seal);
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--seal) 0 2.6px, transparent 3.1px);
+    rotate: -12deg;
+    translate: 0 2px;
+  }
+  .work-card-meta {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+  }
+  .work-card-meta > span + span::before {
+    content: '/';
+    margin: 0 0.5em;
+    color: var(--faint);
+  }
+  /* Pictures in cards are cut to one shape, so a row of them lines up. */
+  .work-card-picture .og-image {
+    aspect-ratio: 1200 / 630;
+  }
+  .work-card-picture .og-image img {
+    object-fit: cover;
+    object-position: 50% 0;
+  }
+
+  /* A featured work: the picture over its text, the year and the open button at the foot. */
+  .work-card-large {
+    display: flex;
+    flex-direction: column;
+  }
+  .work-card-large .work-card-picture {
+    --perf: 12px;
+    --perf-hole: 3.6px;
+    margin-bottom: 18px;
+  }
+  .work-card-large .work-card-picture .og-image {
+    aspect-ratio: 16 / 9;
+  }
+  .work-cards-large > :nth-child(3n + 1) .work-card-picture {
+    rotate: -1.2deg;
+  }
+  .work-cards-large > :nth-child(3n + 2) .work-card-picture {
+    rotate: 0.9deg;
+  }
+  .work-cards-large > :nth-child(3n) .work-card-picture {
+    rotate: -0.5deg;
+  }
+  .work-card-phone {
+    display: none;
+  }
+  .work-card-large h3 {
+    font-size: 1.25rem;
+  }
+  .work-card-large .work-card-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+  .work-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 12px;
+  }
+  .work-card-year {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+  }
+  .work-card-open {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 4px 16px;
+    border: 2px solid var(--edge);
+    border-radius: 999px;
+    background: var(--paper);
+    font-size: 0.875rem;
+    font-weight: 700;
+    box-shadow: 2px 2px 0 var(--drop);
+    transition:
+      transform var(--t-hover) var(--ease),
+      box-shadow var(--t-hover) var(--ease),
+      background-color var(--t-hover) var(--ease);
+  }
+  @media (hover: hover) {
+    .work-card-open:hover {
+      background: var(--yellow);
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--drop);
+    }
+  }
+  .work-card-open:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--drop);
+    transition-duration: var(--t-press);
+  }
+  .work-cards-large {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 40px 32px;
+  }
+
+  /* A work in a list: a small stamp beside the text. */
+  .work-card-small {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    align-items: start;
+    gap: 18px;
+  }
+  .work-card-small .work-card-picture {
+    --perf: 9px;
+    --perf-hole: 2.7px;
+    rotate: -1.5deg;
+  }
+  .work-cards-small > :nth-child(even) .work-card-picture {
+    rotate: 1.2deg;
+  }
+  .work-cards-small {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 36px 32px;
+  }
+
+  /* A line for a work: the site's icon (or a small stamp), its name and, under it, what it is. */
+  .work-row {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 12px;
+    min-height: 56px;
+    padding: 6px 0;
+  }
+  .work-row-picture {
+    --perf: 6px;
+    --perf-hole: 1.8px;
+    grid-row: 1 / 3;
+    display: grid;
+    place-items: center;
+  }
+  .work-row-picture > img {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    object-fit: contain;
+  }
+  .work-row-picture .og-image {
+    aspect-ratio: 1200 / 630;
+  }
+  .work-row-picture .og-image img {
+    object-fit: cover;
+  }
+  .work-row-name {
+    align-self: end;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+  .work-row-description {
+    align-self: start;
+    overflow: hidden;
+    color: var(--ink);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  @media (hover: hover) {
+    .work-row:hover .work-row-name {
+      text-decoration: underline 3px var(--hi);
+      text-underline-offset: 5px;
+    }
+  }
+
+  /* ── Works page ── */
+  /* Lines wide enough to break between phrases (see the :lang(ja) rule in app.css). */
+  :lang(ja) :is(.works-lead, .works-note) {
+    word-break: auto-phrase;
+  }
+  .works-lead {
+    color: var(--ink);
+  }
+  .works-section {
+    margin-top: 96px;
+  }
+  .works-section > .works-heading,
+  .works-heading-row {
+    margin-bottom: 28px;
+  }
+  .page-heading + .works-section {
+    margin-top: 8px;
+  }
+  .works-heading-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 20px;
+  }
+  .works-note {
+    margin: -14px 0 26px;
+    color: var(--ink);
+  }
+
+  /* A year's works under one postmark, which stays beside them while they scroll past. */
+  .works-year {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    align-items: start;
+    gap: 32px;
+    margin-top: 72px;
+  }
+  .works-section + .works-year {
+    margin-top: 96px;
+  }
+  .year-mark {
+    --postmark: rgb(45 42 51 / 0.62);
+    position: sticky;
+    top: 24px;
+    display: grid;
+    place-items: center;
+    width: 100px;
+    height: 100px;
+    border: 2px solid var(--postmark);
+    border-radius: 50%;
+    rotate: -10deg;
+  }
+  .year-mark > span {
+    width: 100%;
+    padding: 4px 0;
+    border-block: 1.5px solid var(--postmark);
+    background: color-mix(in srgb, var(--page, var(--paper)) 85%, transparent);
+    color: var(--ink);
+    font-size: 1.375rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  /* The yearly editions of this portfolio, as a sheet of tinted stamps. */
+  .edition-stamps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 26px;
+    padding: 0;
+    list-style: none;
+  }
+  .edition-stamps a {
+    position: relative;
+    isolation: isolate;
+    display: block;
+    height: 100%;
+    padding: 12px;
+    filter: var(--stamp-shadow);
+    rotate: -2deg;
+  }
+  .edition-stamps li:nth-child(even) a {
+    rotate: 2.5deg;
+  }
+  .edition-stamps a::after {
+    content: '';
+    position: absolute;
+    z-index: -2;
+    inset: 0;
+    background: #fff;
+    -webkit-mask:
+      radial-gradient(circle, transparent 4.5px, #000 5px) -7px -7px / 14px 14px,
+      linear-gradient(#000, #000) 7px 7px / calc(100% - 14px) calc(100% - 14px) no-repeat;
+    mask:
+      radial-gradient(circle, transparent 4.5px, #000 5px) -7px -7px / 14px 14px,
+      linear-gradient(#000, #000) 7px 7px / calc(100% - 14px) calc(100% - 14px) no-repeat;
+  }
+  .edition-stamps a::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 16px;
+    border-radius: 2px;
+    background: var(--tint);
+  }
+  .edition-stamps li:nth-child(4n + 1) a {
+    --tint: var(--green-soft);
+  }
+  .edition-stamps li:nth-child(4n + 2) a {
+    --tint: var(--pink-soft);
+  }
+  .edition-stamps li:nth-child(4n + 3) a {
+    --tint: var(--blue-soft);
+  }
+  .edition-stamps li:nth-child(4n) a {
+    --tint: var(--yellow-soft);
+  }
+  /* A stamp on the paper answers hover only with a deeper shadow, swapped without easing. */
+  @media (hover: hover) {
+    .edition-stamps a:hover {
+      filter: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(5px 8px 4px rgb(45 42 51 / 0.18));
+    }
+  }
+  .edition-stamps strong {
+    display: block;
+    padding: 16px 16px 0;
+    font-size: 2.125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+  .edition-stamps span {
+    display: block;
+    padding: 4px 16px 18px;
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+  }
+
+  /* Recent repositories: the name, what it is, the day. */
+  .repo-activity {
+    padding: 0;
+    list-style: none;
+    border-top: 2px solid var(--edge);
+  }
+  .repo-activity a {
+    display: grid;
+    grid-template-columns: minmax(0, 16em) minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 24px;
+    min-height: 52px;
+    padding: 12px 6px;
+    border-bottom: 2px dashed var(--rule);
+  }
+  .repo-activity .repo-name {
+    min-width: 0;
+    font-family: var(--mono);
+    font-size: 0.875rem;
+    font-weight: 700;
+    overflow-wrap: break-word;
+  }
+  .repo-activity .repo-description {
+    min-width: 0;
+    color: var(--ink);
+    font-size: 0.875rem;
+    line-height: 1.7;
+  }
+  .repo-activity time {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+  @media (hover: hover) {
+    .repo-activity a:hover {
+      background: color-mix(in srgb, var(--hi-soft) 55%, transparent);
+    }
+  }
+
+  /* ── A work's page ── */
+  .work-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    align-items: center;
+    gap: 56px;
+    padding: 20px 0 8px;
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    margin-left: -4px;
+    padding: 0 4px;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  @media (hover: hover) {
+    .back-link:hover svg {
+      transform: translateX(-3px);
+    }
+  }
+  .back-link svg {
+    transition: transform var(--t-hover) var(--ease);
+  }
+  .work-kind {
+    margin-top: 14px;
+    color: var(--ink);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .work-intro h1 {
+    margin-top: 6px;
+    font-size: clamp(2rem, 3.4vw, 3rem);
+    line-height: 1.3;
+  }
+  .back-link + h1 {
+    margin-top: 14px;
+  }
+  /* The highlighter is drawn per line under the text, so a wrapped title is not followed by
+     a band across the empty end of its last line. */
+  .work-title {
+    background: linear-gradient(transparent 62%, var(--hi-soft) 62%, var(--hi-soft) 92%, transparent 92%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .work-summary {
+    margin-top: 18px;
+    color: var(--ink);
+    font-size: 1rem;
+    line-height: 1.9;
+  }
+  /* The facts, the result first: a label column and the values, ruled like a form. */
+  .work-facts {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    margin-top: 22px;
+    border-top: 2px dotted var(--rule);
+  }
+  .work-facts > div {
+    display: contents;
+  }
+  .work-facts dt,
+  .work-facts dd {
+    padding: 7px 0;
+    border-bottom: 2px dotted var(--rule);
+  }
+  .work-facts dt {
+    padding-right: 18px;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.85rem;
+  }
+  .work-facts dd {
+    margin: 0;
+    color: var(--ink);
+    font-size: 0.9375rem;
+    line-height: 1.85rem;
+  }
+  .work-fact-outcome dd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+  }
+  .work-fact-outcome dd::before {
+    content: '';
+    flex: none;
+    width: 17px;
+    height: 17px;
+    border: 2px solid var(--seal);
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--seal) 0 3px, transparent 3.5px);
+    rotate: -12deg;
+  }
+  .work-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 16px;
+    margin-top: 26px;
+  }
+  /* A repository beside the button: its GitHub path, lighter than a button. */
+  .repo-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 44px;
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+    text-decoration: underline 2px var(--hi);
+    text-underline-offset: 5px;
+  }
+  @media (hover: hover) {
+    .repo-link:hover {
+      text-decoration-thickness: 4px;
+    }
+  }
+  /* The picture: a large stamp, and the phone screen as a smaller one stuck over its corner. */
+  .work-hero {
+    --perf: 16px;
+    --perf-hole: 4.8px;
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    justify-self: end;
+    rotate: 1.2deg;
+  }
+  .with-phone .work-hero {
+    margin-bottom: 40px;
+  }
+  .work-hero-phone {
+    --perf: 9px;
+    --perf-hole: 2.7px;
+    position: absolute;
+    left: -26px;
+    bottom: -44px;
+    width: min(30%, 136px);
+    rotate: -5deg;
+  }
+  .work-body {
+    max-width: 680px;
+    margin-top: 72px;
+  }
+  .work-body h2 {
+    width: fit-content;
+    margin-bottom: 14px;
+    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 94%, transparent 94%);
+  }
+  .work-body section + section {
+    margin-top: 56px;
+  }
+  .work-body p {
+    font-size: 1rem;
+    line-height: 1.9;
+  }
+  .work-body p + p {
+    margin-top: 14px;
+  }
+  .work-body .inline-link {
+    font-weight: 700;
+    text-decoration: underline 3px var(--hi);
+    text-underline-offset: 4px;
+  }
+  .related-articles {
+    border-top: 2px dashed var(--rule);
+  }
+  .related-articles a {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 12px;
+    min-height: 52px;
+    padding: 12px 4px;
+    border-bottom: 2px dashed var(--rule);
+    font-weight: 700;
+  }
+  .related-articles .brand-icon {
+    translate: 0 2px;
+  }
+  .related-articles span > svg {
+    display: inline-block;
+    margin-left: 4px;
+    vertical-align: -0.125em;
+  }
+  .related-articles time {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+  @media (hover: hover) {
+    .related-articles a:hover > span {
+      text-decoration: underline 3px var(--hi);
+      text-underline-offset: 5px;
+    }
+  }
+  .work-neighbours {
+    margin-top: 104px;
+  }
+  .work-neighbours > .works-heading {
+    margin-bottom: 28px;
+  }
+  .works-back {
+    margin-top: 36px;
+  }
+}
+
+/* ───────────────────────── responsive ───────────────────────── */
+@layer responsive {
+  /* The featured works become rows (picture beside text), and a work's page one column. */
+  @media (max-width: 1000px) {
+    .work-cards-large {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 36px;
+    }
+    .work-card-large {
+      display: grid;
+      grid-template-columns: 224px minmax(0, 1fr);
+      align-items: start;
+      gap: 24px;
+    }
+    .work-card-large .work-card-picture {
+      margin-bottom: 0;
+    }
+    .works-year {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+    }
+    .year-mark {
+      position: static;
+      width: 84px;
+      height: 84px;
+    }
+    .year-mark > span {
+      font-size: 1.1875rem;
+    }
+    .work-top {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 36px;
+    }
+    .work-hero {
+      max-width: 560px;
+      justify-self: start;
+      margin-left: 22px;
+      rotate: -0.8deg;
+    }
+  }
+  @media (max-width: 900px) {
+    .edition-stamps {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 760px) {
+    .works-section,
+    .works-section + .works-year {
+      margin-top: 72px;
+    }
+    .page-heading + .works-section {
+      margin-top: 4px;
+    }
+    .works-year {
+      margin-top: 56px;
+      gap: 20px;
+    }
+    .year-mark {
+      width: 72px;
+      height: 72px;
+      margin-left: 4px;
+    }
+    .year-mark > span {
+      font-size: 1.0625rem;
+    }
+    .work-card-large {
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 16px;
+    }
+    .work-card-large :is(.work-card-picture, .work-card-phone) {
+      --perf: 8px;
+      --perf-hole: 2.4px;
+      margin-top: 4px;
+    }
+    .work-card-large.has-phone .work-card-picture {
+      display: none;
+    }
+    .work-card-large.has-phone .work-card-phone {
+      display: block;
+      rotate: -2deg;
+    }
+    .work-card-large h3 {
+      font-size: 1.125rem;
+    }
+    .work-cards-large {
+      gap: 28px;
+    }
+    .work-card-small {
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 14px;
+    }
+    .work-card-small .work-card-picture {
+      --perf: 7px;
+      --perf-hole: 2.1px;
+      margin-top: 4px;
+    }
+    .work-cards-small {
+      gap: 28px;
+    }
+    /* The open button at the start of the line, clear of the sticker button in the corner. */
+    .work-card-foot {
+      flex-direction: row-reverse;
+      padding-top: 6px;
+    }
+    .edition-stamps {
+      gap: 16px;
+    }
+    .edition-stamps strong {
+      padding: 12px 12px 0;
+      font-size: 1.625rem;
+    }
+    .edition-stamps span {
+      padding: 2px 12px 14px;
+    }
+    .repo-activity a {
+      grid-template-columns: minmax(0, 1fr) auto;
+      row-gap: 2px;
+    }
+    .repo-activity .repo-description {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+    .work-top {
+      padding-top: 4px;
+    }
+    .work-intro h1 {
+      font-size: clamp(1.75rem, (100vw - 70px) / 9.2, 2.375rem);
+    }
+    .work-hero {
+      width: calc(100% - 22px);
+      margin-left: 22px;
+    }
+    .work-hero-phone {
+      left: -22px;
+      bottom: -36px;
+    }
+    .work-body {
+      margin-top: 64px;
+    }
+    .work-neighbours {
+      margin-top: 80px;
+    }
+  }
+}

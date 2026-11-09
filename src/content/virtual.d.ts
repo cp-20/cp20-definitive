@@ -9,6 +9,8 @@ declare module 'virtual:cp20-media' {
   export const images: Record<string, { src: string; srcset?: string }>;
   /** Cover path under /images/covers → srcset of its WebP copies. */
   export const covers: Record<string, string>;
+  /** Screenshot path under /images/screenshots → srcset of its WebP copies, and its size. */
+  export const shots: Record<string, { srcset: string; width: number; height: number }>;
 }
 
 // Generated at build time from generated.json and manual.json by vite.config.ts (mergeArticles).

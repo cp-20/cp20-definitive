@@ -222,14 +222,13 @@
     font-size: 0.75rem;
     color: var(--muted);
   }
-  /* A strip of washi tape carrying the English label. */
+  /* A strip of washi tape carrying a label. Its words keep their case (traP is not TRAP). */
   .eyebrow {
     display: inline-block;
     padding: 1px 12px;
     font-size: 0.6875rem;
     font-weight: 700;
     letter-spacing: 0.12em;
-    text-transform: uppercase;
     line-height: 1.9;
     white-space: nowrap;
     color: var(--on-color);
@@ -1472,92 +1471,7 @@
     color: var(--muted);
     text-align: center;
   }
-  /* ── Works index: a sheet of stickers ── */
-  .work-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 52px 32px;
-  }
-  .work-index-item {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-  }
-  .work-thumbnail {
-    --perf: 12px;
-    --perf-hole: 3.6px;
-    position: relative;
-    order: -1;
-    display: block;
-    margin-bottom: 18px;
-  }
-  .work-thumbnail .og-image {
-    aspect-ratio: 1200 / 630;
-  }
-  .work-thumbnail .postmark {
-    --size: 72px;
-    right: -18px;
-    top: auto;
-    bottom: -20px;
-  }
-  .work-index-item:nth-child(3n + 1) {
-    rotate: -1deg;
-  }
-  .work-index-item:nth-child(3n + 2) {
-    rotate: 0.8deg;
-  }
-  .work-index-item:nth-child(3n) {
-    rotate: -0.4deg;
-  }
-  @media (hover: hover) {
-    .work-index-item:hover h2 a {
-      background-size: 100% 100%;
-    }
-  }
-  .work-featured-label {
-    position: absolute;
-    z-index: 1;
-    top: 14px;
-    right: -8px;
-    padding: 2px 10px;
-    border: 2.5px solid var(--seal);
-    border-radius: 8px;
-    outline: 1.5px solid var(--seal);
-    outline-offset: 2px;
-    background: color-mix(in srgb, var(--paper) 85%, transparent);
-    color: var(--seal);
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    rotate: 12deg;
-    pointer-events: none;
-  }
-  .work-index-item h2 {
-    font-size: 1.1875rem;
-    line-height: 1.5;
-  }
-  .work-index-item h2 a {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
-      no-repeat 0 0 / 0% 100%;
-  }
-  .work-index-item h2 a::after {
-    content: '';
-    position: absolute;
-    inset: -8px;
-  }
-  /* As in the article list, only the way in is animated. */
-  @media (hover: hover) {
-    .work-index-item:hover h2 a {
-      transition: background-size var(--t-state) var(--ease);
-    }
-  }
-  .work-index-item h2 .original-icon {
-    width: 26px;
-    height: 26px;
-  }
+  /* A stand-in letter where a work has no icon (OriginalIcon with placeholder). */
   .icon-placeholder {
     display: inline-grid;
     place-items: center;
@@ -1568,219 +1482,6 @@
     font-size: 0.8125rem;
     font-weight: 700;
     line-height: 1;
-  }
-  .work-index-item p {
-    margin-top: 6px;
-    font-size: 0.875rem;
-    color: var(--muted);
-  }
-  .tag-line {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 12px;
-  }
-  .tag-line span,
-  .work-facts dd span {
-    padding: 0 9px;
-    border: 1.5px solid var(--edge);
-    border-radius: 6px;
-    font-family: var(--mono);
-    font-size: 0.6875rem;
-    line-height: 1.9;
-  }
-  .repo-section {
-    margin-top: 120px;
-  }
-  .repo-list {
-    padding: 0;
-    list-style: none;
-    border-top: 2px solid var(--edge);
-  }
-  .repo-list > li > a {
-    display: grid;
-    grid-template-columns: minmax(0, 15em) minmax(0, 1fr) 8.5em 6.5em;
-    align-items: baseline;
-    column-gap: 20px;
-    padding: 12px 6px;
-    border-bottom: 2px dashed var(--rule);
-    font-size: 0.8125rem;
-  }
-  /* Inline so the star stays next to the end of a wrapped name, not out at the right edge. */
-  .repo-name {
-    min-width: 0;
-    font-family: var(--mono);
-    font-size: 0.875rem;
-    font-weight: 700;
-    /* Names wrap at the <wbr> after a hyphen or before a capital; break-word is the last resort. */
-    overflow-wrap: break-word;
-  }
-  .repo-name small {
-    margin-left: 8px;
-    white-space: nowrap;
-    font-family: var(--round);
-    font-size: 0.6875rem;
-    font-weight: 700;
-    color: var(--muted);
-  }
-  .repo-description {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--muted);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .repo-language {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    white-space: nowrap;
-  }
-  .repo-language:not(:empty)::before {
-    content: '';
-    flex: none;
-    width: 9px;
-    height: 9px;
-    border: 1.5px solid var(--edge);
-    border-radius: 50%;
-    background: var(--lang);
-  }
-  .repo-date {
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    color: var(--muted);
-    text-align: right;
-  }
-  @media (hover: hover) {
-    .repo-list > li > a:hover {
-      background: color-mix(in srgb, var(--hi-soft) 55%, transparent);
-    }
-  }
-
-  /* ── Work detail ── */
-  .work-heading {
-    padding-bottom: 40px;
-  }
-  .work-heading > .under-link {
-    margin-bottom: 30px;
-  }
-  .work-heading > .eyebrow {
-    display: table;
-    margin-bottom: 6px;
-  }
-  /* The highlighter is drawn per line under the text, so a wrapped title is not followed by
-     a band across the empty end of its last line. */
-  .work-heading h1 {
-    display: block;
-  }
-  .work-heading h1 > .work-title {
-    background: linear-gradient(transparent 62%, var(--hi-soft) 62%, var(--hi-soft) 92%, transparent 92%);
-    -webkit-box-decoration-break: clone;
-    box-decoration-break: clone;
-  }
-  .work-heading-actions {
-    margin-top: 26px;
-  }
-  .work-detail-hero {
-    --perf: 20px;
-    --perf-hole: 6px;
-    position: relative;
-    rotate: -0.6deg;
-  }
-  .work-detail-hero .postmark {
-    --size: 128px;
-    right: -24px;
-    top: auto;
-    bottom: -40px;
-  }
-  .work-detail-layout {
-    display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
-    gap: 56px;
-    margin-top: 64px;
-    align-items: start;
-  }
-  /* A spec label, like the one on the back of a notebook. */
-  .work-facts {
-    padding: 6px 20px;
-    border: 2px solid var(--edge);
-    border-radius: 14px;
-    background: var(--paper);
-    box-shadow: 4px 4px 0 var(--drop);
-  }
-  .work-facts dt {
-    padding-top: 14px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--muted);
-  }
-  .work-facts dd {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 4px 0 0;
-    padding-bottom: 14px;
-    border-bottom: 2px dotted var(--rule);
-    font-size: 0.875rem;
-  }
-  .work-facts dd:last-child {
-    border-bottom: 0;
-  }
-  /* The link text flows as inline text with the arrow glued to its last character, so a wrapped
-     repository name or article title keeps the arrow at the end of its last line. */
-  .work-facts dd a {
-    font-family: var(--mono);
-    font-size: 0.8125rem;
-    overflow-wrap: anywhere;
-    text-decoration: underline wavy var(--hi);
-    text-underline-offset: 5px;
-  }
-  .work-detail-copy {
-    max-width: 680px;
-  }
-  .work-detail-copy h2 {
-    width: fit-content;
-    margin-bottom: 14px;
-    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 94%, transparent 94%);
-  }
-  .work-detail-copy h2:not(:first-child) {
-    margin-top: 48px;
-  }
-  .work-detail-copy > p {
-    font-size: 1rem;
-    line-height: 2.1;
-  }
-  .work-detail-copy > p + p {
-    margin-top: 14px;
-  }
-  .work-detail-copy > p > a {
-    font-weight: 700;
-    text-decoration: underline;
-    text-decoration-color: var(--hi);
-    text-decoration-thickness: 3px;
-    text-underline-offset: 6px;
-    transition:
-      text-decoration-thickness var(--t-hover) var(--ease),
-      text-underline-offset var(--t-hover) var(--ease);
-  }
-  @media (hover: hover) {
-    .work-detail-copy > p > a:hover {
-      text-decoration-thickness: 6px;
-      text-underline-offset: 2px;
-    }
-  }
-  .work-facts dd a > svg,
-  .work-detail-copy > p > a > svg {
-    display: inline-block;
-    margin-left: 4px;
-    vertical-align: -0.125em;
-  }
-  .work-detail-copy > p > a > svg {
-    margin-left: 6px;
-  }
-  /* Links inside a sentence keep wrapping with the text. */
-  .work-detail-copy > p > a.inline-link {
-    text-underline-offset: 4px;
   }
 
   /* ── About ── */
@@ -2403,10 +2104,6 @@
     display: inline-block;
     vertical-align: -0.15em;
     object-fit: contain;
-  }
-  .work-facts dd a > .brand-icon,
-  .work-detail-copy > p > a > .brand-icon {
-    margin-right: 6px;
   }
   .profile-affiliations a > .brand-icon {
     margin: 0 8px 0 -26px;
@@ -3177,9 +2874,6 @@
   :root:not([data-turned]) :is(.identity, .profile-intro) h1 > span {
     animation: seal var(--t-enter) var(--spring) 200ms both;
   }
-  :root:not([data-turned]) .work-detail-hero .postmark {
-    animation: postmark-in var(--t-enter) var(--spring) 200ms both;
-  }
 
   @keyframes rise {
     from {
@@ -3401,7 +3095,6 @@
       grid-template-columns: minmax(0, 1fr) 260px;
       gap: 40px;
     }
-    .work-grid,
     .music-list {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -3431,8 +3124,7 @@
       margin-right: 8px;
     }
     .home-middle,
-    .profile-history-layout,
-    .work-detail-layout {
+    .profile-history-layout {
       grid-template-columns: minmax(0, 1fr);
     }
     .home-profile,
@@ -3448,22 +3140,6 @@
     }
     .profile-avatar .avatar-stamp {
       width: 160px;
-    }
-  }
-  /* Below this the description column would be squeezed to a few characters next to the name,
-     so the description takes a line of its own under the name. */
-  @media (max-width: 1000px) {
-    .repo-list > li > a {
-      grid-template-columns: minmax(0, 1fr) 8.5em 6.5em;
-      row-gap: 2px;
-    }
-    .repo-description {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      white-space: normal;
-    }
-    .repo-description:empty {
-      display: none;
     }
   }
   @media (max-width: 760px) {
@@ -3489,11 +3165,6 @@
     }
     .site-body::before {
       display: none;
-    }
-    /* Work titles shrink with the screen so the longest word (スコアリングツール, nine characters)
-       still fits on one line of the paper, about 70px narrower than the screen. */
-    .work-heading h1 {
-      font-size: clamp(1.625rem, (100vw - 70px) / 9.2, 2.375rem);
     }
     /* Off-stage deck panels and postmarks must not widen the layout viewport on phones.
        The tabs and the sticker sheet are fixed, so they are not clipped. */
@@ -3649,8 +3320,7 @@
     .home-profile {
       margin: 20px 6px 0;
     }
-    .editions-section,
-    .repo-section {
+    .editions-section {
       margin-top: 90px;
     }
     .edition-list {
@@ -3681,7 +3351,6 @@
       min-width: 24px;
       height: 24px;
     }
-    .work-grid,
     .music-list {
       grid-template-columns: minmax(0, 1fr);
       gap: 44px;
@@ -3715,24 +3384,8 @@
     .modal-sheet {
       padding: 16px 18px 22px;
     }
-    .work-index-item,
     .music-item {
       margin-inline: 6px;
-    }
-    .repo-list > li > a {
-      grid-template-columns: minmax(0, 1fr) auto;
-    }
-    .repo-name {
-      grid-column: 1 / -1;
-    }
-    .repo-language {
-      grid-column: 1;
-      grid-row: 3;
-      font-size: 0.75rem;
-    }
-    .repo-date {
-      grid-column: 2;
-      grid-row: 3;
     }
     .profile-header {
       grid-template-columns: minmax(0, 1fr);
@@ -3781,19 +3434,6 @@
     }
     .favorites-heading {
       margin-top: 90px;
-    }
-    .work-detail-hero {
-      padding: 6px;
-      border-radius: 16px;
-      box-shadow: 5px 5px 0 var(--hi);
-      margin-right: 6px;
-    }
-    .work-detail-hero .og-image {
-      border-radius: 10px;
-    }
-    .work-detail-layout {
-      gap: 40px;
-      margin-top: 44px;
     }
     .site-footer {
       margin-top: 80px;
