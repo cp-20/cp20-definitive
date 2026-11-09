@@ -13,7 +13,7 @@ export const sizes = {
   bookCover: '(max-width: 760px) 176px, 222px',
   homeCover: '92px',
   homeTrack: '134px',
-  track: '(max-width: 760px) calc(100vw - 88px), (max-width: 1100px) calc(50vw - 160px), 292px',
+  track: '(max-width: 760px) calc(50vw - 60px), (max-width: 1100px) calc(50vw - 160px), 292px',
 };
 // Works in the first row of the works grid (three columns on wide screens) skip lazy loading.
 export const firstRowWorks = 3;

@@ -130,6 +130,8 @@
     --paper-2: #f6f0e1;
     --grid: rgb(86 150 100 / 0.12);
     --margin-line: rgb(255 120 150 / 0.35);
+    /* Text is --ink (12.8:1 on the paper); --muted (5.3:1) only for dates, sources and the like.
+       --faint (2.6:1) is for dotted lines and outlines, never for text. */
     --ink: #2d2a33;
     --muted: #6c6873;
     --faint: #9b97a0;
@@ -226,7 +228,7 @@
   .eyebrow {
     display: inline-block;
     padding: 1px 12px;
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -237,15 +239,18 @@
     clip-path: polygon(3% 0, 97% 4%, 100% 50%, 97% 96%, 2% 100%, 0 50%);
     rotate: -2deg;
   }
+  /* A text link on its own line: the text stays small, the row a fingertip (44px) tall. */
   .under-link {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    min-height: 44px;
     font-size: 0.875rem;
     font-weight: 700;
     line-height: 1.6;
     white-space: nowrap;
-    background: linear-gradient(var(--hi), var(--hi)) no-repeat 0 100% / 0% 2px;
+    /* The hover underline runs under the text, not along the bottom of the taller row. */
+    background: linear-gradient(var(--hi), var(--hi)) no-repeat 0 calc(50% + 0.8em) / 0% 2px;
     transition: background-size var(--t-hover) var(--ease);
   }
   @media (hover: hover) {
@@ -547,14 +552,16 @@
   .footer-links {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 24px;
-    padding-top: 26px;
+    gap: 0 24px;
+    padding-top: 16px;
     border-top: 2px dashed var(--rule);
   }
+  /* Each link is a fingertip tall (44px) though its text is one line. */
   .footer-links a {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+    min-height: 44px;
     font-weight: 700;
     text-decoration: underline wavy transparent;
     text-underline-offset: 6px;
@@ -572,13 +579,23 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px 22px;
-    margin-top: 16px;
+    gap: 0 22px;
+    margin-top: 4px;
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
+  }
+  .footer-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 44px;
+    text-decoration: underline;
+    text-decoration-color: var(--hi);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
   }
   @media (hover: hover) {
-    .footer-bottom a:hover {
+    .footer-button:hover {
       color: var(--ink);
     }
   }
@@ -641,14 +658,128 @@
     font-size: 0.8125rem;
   }
   .not-found {
-    padding-block: 90px;
-    min-height: 55vh;
+    padding-block: 56px 8px;
   }
+  /* One line at any width: the size follows the screen, and the only place it may still break
+     is the <wbr> after ページが. */
   .not-found h1 {
     margin-top: 16px;
+    font-size: clamp(1.25rem, (100vw - 80px) / 12.6, 3.5rem);
+    word-break: keep-all;
   }
-  .not-found .under-link {
-    margin-top: 36px;
+}
+
+/* ── 404: where to go instead. Among the components, as it resizes their stamps and icons. ── */
+@layer components {
+  .not-found-lead {
+    margin-top: 14px;
+    font-size: 1rem;
+  }
+  .not-found-section {
+    margin-top: 56px;
+  }
+  .not-found-section h2 {
+    width: fit-content;
+    margin-bottom: 20px;
+    font-size: 1.25rem;
+    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 94%, transparent 94%);
+  }
+  .not-found-featured {
+    display: grid;
+    gap: 8px;
+    max-width: 680px;
+  }
+  .not-found-featured a {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    gap: 22px;
+    align-items: center;
+    padding: 8px 0;
+  }
+  .not-found-featured .og-image {
+    --perf: 8px;
+    --perf-hole: 2.4px;
+    rotate: -1.5deg;
+  }
+  .not-found-featured li:nth-child(even) .og-image {
+    rotate: 1.5deg;
+  }
+  .not-found-featured strong {
+    display: block;
+    width: fit-content;
+    font-size: 1.0625rem;
+    line-height: 1.5;
+    background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 92%, transparent 92%)
+      no-repeat 0 0 / 0% 100%;
+  }
+  .not-found-featured strong + span {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    word-break: auto-phrase;
+  }
+  .not-found-all {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .not-found-all a,
+  .not-found-pages a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 2px solid var(--edge);
+    border-radius: 999px;
+    background: var(--paper);
+    font-weight: 700;
+    box-shadow: 2px 2px 0 var(--drop);
+    transition:
+      transform var(--t-hover) var(--ease),
+      box-shadow var(--t-hover) var(--ease),
+      background var(--t-hover) var(--ease);
+  }
+  /* Twenty names: lighter chips than the three ways out below. */
+  .not-found-all a {
+    font-size: 0.875rem;
+    box-shadow: none;
+  }
+  .not-found-all .original-icon {
+    width: 22px;
+    height: 22px;
+    margin-left: -6px;
+    border-radius: 5px;
+  }
+  .not-found-pages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 48px;
+  }
+  .not-found-pages a {
+    min-height: 48px;
+    padding: 0 20px 0 16px;
+  }
+  @media (hover: hover) {
+    .not-found-featured a:hover strong {
+      background-size: 100% 100%;
+      transition: background-size var(--t-state) var(--ease);
+    }
+    .not-found-all a:hover,
+    .not-found-pages a:hover {
+      background: var(--hi-soft);
+    }
+    .not-found-pages a:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--drop);
+    }
+  }
+  .not-found-pages a:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--drop);
+    transition-duration: var(--t-press);
   }
 }
 
@@ -1820,12 +1951,13 @@
   .profile-links a {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 14px;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 16px 0 13px;
     border: 2px solid var(--edge);
     border-radius: 999px;
     background: var(--paper);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 700;
     box-shadow: 2px 2px 0 var(--drop);
     transition:
@@ -1853,11 +1985,131 @@
     box-shadow: 0 0 0 var(--drop);
     transition-duration: var(--t-press);
   }
+  /* What got faster, as a sheet of stamps: where (the country name), what, and the figure as the
+     denomination. Each opens the history entry it came from. */
+  .speed-section {
+    margin-bottom: 96px;
+  }
+  .speed-stamps {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 22px;
+  }
+  .speed-stamps > li:nth-child(odd) {
+    rotate: -1.5deg;
+  }
+  .speed-stamps > li:nth-child(even) {
+    rotate: 1.5deg;
+  }
+  .speed-stamps > li:nth-child(5n + 1) {
+    --tint: var(--yellow-soft);
+  }
+  .speed-stamps > li:nth-child(5n + 2) {
+    --tint: var(--blue-soft);
+  }
+  .speed-stamps > li:nth-child(5n + 3) {
+    --tint: var(--pink-soft);
+  }
+  .speed-stamps > li:nth-child(5n + 4) {
+    --tint: var(--green-soft);
+  }
+  .speed-stamps > li:nth-child(5n) {
+    --tint: color-mix(in srgb, var(--yellow-soft) 50%, var(--pink-soft));
+  }
+  .speed-stamps button {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 150px;
+    padding: 24px 20px 20px;
+    text-align: start;
+    line-height: 1.45;
+    letter-spacing: 0.02em;
+    word-break: auto-phrase;
+    filter: var(--stamp-shadow);
+  }
+  /* The perforated paper, and the printed area inside it. */
+  .speed-stamps button::before,
+  .speed-stamps button::after {
+    content: '';
+    position: absolute;
+    z-index: -2;
+    inset: 0;
+    background: #fff;
+    -webkit-mask:
+      radial-gradient(circle, transparent 4px, #000 4.5px) -6px -6px / 12px 12px,
+      linear-gradient(#000, #000) 6px 6px / calc(100% - 12px) calc(100% - 12px) no-repeat;
+    mask:
+      radial-gradient(circle, transparent 4px, #000 4.5px) -6px -6px / 12px 12px,
+      linear-gradient(#000, #000) 6px 6px / calc(100% - 12px) calc(100% - 12px) no-repeat;
+  }
+  .speed-stamps button::after {
+    z-index: -1;
+    inset: 12px;
+    border-radius: 2px;
+    background: var(--tint);
+    -webkit-mask: none;
+    mask: none;
+  }
+  @media (hover: hover) {
+    .speed-stamps button:hover {
+      filter: drop-shadow(0 0 0.6px rgb(45 42 51 / 0.4)) drop-shadow(5px 8px 4px rgb(45 42 51 / 0.18));
+    }
+    .speed-stamps button:hover .speed-what {
+      background-size: 100% 100%;
+      transition: background-size var(--t-state) var(--ease);
+    }
+  }
+  .speed-place {
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+  .speed-what {
+    width: fit-content;
+    margin-top: 2px;
+    font-size: 0.9375rem;
+    background: linear-gradient(transparent 60%, var(--hi) 60%, var(--hi) 92%, transparent 92%) no-repeat 0
+      0 / 0% 100%;
+  }
+  /* The figures sit on the bottom edge, so they line up across the sheet. */
+  .speed-figure {
+    display: grid;
+    margin-top: auto;
+    padding-top: 12px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .speed-from {
+    font-size: 0.875rem;
+  }
+  .speed-figure strong {
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .speed-figure strong > span {
+    margin-inline: 1px;
+    font-size: 1.875rem;
+    letter-spacing: 0;
+  }
   .profile-history-layout {
     display: grid;
     grid-template-columns: 320px minmax(0, 1fr);
     gap: 60px;
     align-items: start;
+  }
+  /* The history comes first in the page (and to a screen reader); the name tag sits beside it. */
+  .profile-history-layout > .history {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .profile-history-layout > .profile-details {
+    grid-column: 1;
+    grid-row: 1;
   }
   /* Affiliations: a name tag clipped to the page. */
   .profile-details {
@@ -1972,6 +2224,36 @@
     border-radius: 50%;
     background: var(--paper);
   }
+  /* The checkpoint shows what kind of entry it is: an award is stamped with a vermilion seal, an
+     internship is taped down, school is the plain point. */
+  .timeline-item[data-kind='award']::before {
+    content: '賞' / '';
+    display: grid;
+    place-items: center;
+    left: 98px;
+    top: 19px;
+    width: 27px;
+    height: 27px;
+    border: 2px solid var(--seal);
+    outline: 1px solid var(--seal);
+    outline-offset: -5px;
+    color: var(--seal);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1;
+    rotate: -12deg;
+  }
+  .timeline-item[data-kind='intern']::before {
+    left: 99px;
+    top: 26px;
+    width: 26px;
+    height: 14px;
+    border: 0;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--blue) 72%, transparent);
+    clip-path: polygon(0 8%, 6% 0, 12% 10%, 100% 0, 94% 50%, 100% 92%, 90% 100%, 6% 92%, 0 100%, 5% 50%);
+    rotate: -14deg;
+  }
   /* As in the article list, only the way in is animated. */
   @media (hover: hover) {
     .timeline-item:has(button:hover)::before {
@@ -1994,7 +2276,7 @@
     font-variant-numeric: tabular-nums;
   }
   .timeline-date span {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: var(--muted);
   }
   @media (hover: hover) {
@@ -2005,8 +2287,22 @@
   }
   .timeline-item p {
     margin-top: 4px;
-    font-size: 0.875rem;
-    color: var(--muted);
+    font-size: 0.9375rem;
+    line-height: 1.8;
+  }
+  /* What came of it is the one thing set bold. */
+  .timeline-item p strong,
+  .modal-sheet > p strong {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  /* A name that is literally code: the ISUCON team 「[object Object]」, kept on one line. */
+  .timeline-item p code,
+  .modal-sheet > p code {
+    font-family: var(--mono);
+    font-size: 0.92em;
+    letter-spacing: 0;
+    white-space: nowrap;
   }
   /* The title is the button; its ::after stretches the hit area over the whole entry. */
   .timeline-item h3 button {
@@ -2026,10 +2322,23 @@
     outline: 3px dashed var(--seal);
     outline-offset: 2px;
   }
-  .timeline-item h3 svg {
-    display: inline-block;
-    margin-left: 6px;
-    vertical-align: -1px;
+  /* A round "+" after the title: the entry opens. */
+  .timeline-more {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    margin-left: 8px;
+    border: 2px solid var(--edge);
+    border-radius: 50%;
+    background: var(--paper);
+    vertical-align: -4px;
+    transition: background var(--t-hover) var(--ease);
+  }
+  @media (hover: hover) {
+    .timeline-item:has(button:hover) .timeline-more {
+      background: var(--hi);
+    }
   }
   @media (hover: hover) {
     .timeline-item:has(button:hover) {
@@ -2445,9 +2754,11 @@
     margin-top: 6px;
     font-size: 1.25rem;
   }
-  .modal .modal-close {
-    width: 38px;
-    height: 38px;
+  /* Focused only to start reading there (a dialog opened from the URL, which Chrome may also focus
+     as the URL's target), not to be pressed. */
+  .modal-head h2:focus,
+  .modal:focus {
+    outline: none;
   }
   .modal-meta {
     display: flex;
@@ -2475,18 +2786,25 @@
     padding-top: 16px;
     border-top: 2px dashed var(--rule);
     font-size: 0.875rem;
+    /* A long article title wraps between phrases (…学生2位でした), not inside a word. */
+    word-break: auto-phrase;
   }
   .modal-links a,
-  .credits a,
-  .credits-open {
+  .credits a {
     font-weight: 700;
     text-decoration: underline;
     text-decoration-color: var(--hi);
     text-decoration-thickness: 2px;
     text-underline-offset: 4px;
   }
-  .modal-links a .brand-icon {
+  .modal-links a .brand-icon,
+  .modal-links a svg {
     margin-right: 8px;
+  }
+  /* The work made there, with the works tab's folder in the line like a logo. */
+  .modal-links a svg {
+    display: inline-block;
+    vertical-align: -3px;
   }
   .credits {
     display: grid;
@@ -2511,9 +2829,38 @@
   .modal-sheet > .meta {
     margin-top: 16px;
   }
-  .credits-open {
-    font-size: inherit;
-    font-weight: 400;
+  /* The QR code: the code to scan, then the address in letters large enough to read across a table. */
+  .qr-modal {
+    width: min(400px, calc(100% - 32px));
+  }
+  .qr-modal .modal-sheet {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    padding: 36px 24px 28px;
+  }
+  .qr-modal .modal-head {
+    order: 2;
+    margin: 18px 0 0;
+  }
+  .qr-modal .modal-head h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: clamp(2.25rem, 11vw, 2.75rem);
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+  .qr-modal .modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+  }
+  .qr-code {
+    width: min(264px, 100%);
+    border-radius: 10px;
+    image-rendering: pixelated;
   }
   @media (prefers-reduced-motion: no-preference) {
     .modal[open] {
@@ -2830,6 +3177,17 @@
   .sheet-tool[aria-pressed='true'] {
     background: #fff;
   }
+  /* The sign-in button stays slim on the sheet; a fingertip gets 44px around it. */
+  @media (pointer: coarse) {
+    .sticker-login {
+      position: relative;
+    }
+    .sticker-login::after {
+      content: '';
+      position: absolute;
+      inset: -9px -4px;
+    }
+  }
   .stamp-choices {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -2870,12 +3228,19 @@
     width: 34px;
     height: 34px;
   }
+  .sticker-hint {
+    margin: 8px 2px 2px;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+    word-break: auto-phrase;
+  }
   .stamp-status {
     display: flex;
     gap: 8px;
     align-items: center;
     margin-top: 6px;
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     line-height: 1.6;
     color: var(--seal);
@@ -2965,7 +3330,7 @@
     border: 2px solid var(--edge);
     border-radius: 999px;
     background: var(--paper);
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     white-space: nowrap;
     font-weight: 700;
     box-shadow: 2px 2px 0 var(--drop);
@@ -3814,6 +4179,166 @@
     .stamp-choices {
       grid-template-columns: repeat(6, minmax(0, 1fr));
       margin-top: 2px;
+    }
+  }
+  /* ── About on narrower pages ── */
+  /* Five stamps in a row need about 170px each; below that they go three to a row, the last two
+     centred like a part-used sheet. */
+  @media (max-width: 1239px) {
+    .speed-stamps {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .speed-stamps > li {
+      flex: 0 0 calc((100% - 44px) / 3);
+    }
+  }
+  /* Beside the name tag the history would be a column of a few words a line: below this it takes
+     the width, and the name tag follows it. */
+  @media (max-width: 1100px) {
+    .profile-history-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .profile-history-layout > :is(.history, .profile-details) {
+      grid-column: 1;
+      grid-row: auto;
+    }
+    .profile-details {
+      position: relative;
+      top: 0;
+      max-width: 420px;
+      margin-top: 24px;
+    }
+  }
+  @media (max-width: 760px) {
+    /* A strip of stamps, each as wide as its figure, that the finger slides along; the next one
+       peeks in at the edge. */
+    .speed-section {
+      margin-bottom: 64px;
+    }
+    .speed-section .section-heading {
+      margin-bottom: 10px;
+    }
+    .speed-stamps {
+      flex-wrap: nowrap;
+      justify-content: start;
+      gap: 12px;
+      margin-inline: -18px;
+      padding: 8px 18px 14px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: 18px;
+      scrollbar-width: none;
+    }
+    .speed-stamps::-webkit-scrollbar {
+      display: none;
+    }
+    .speed-stamps > li {
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+    }
+    .speed-stamps button {
+      width: max-content;
+      min-width: 136px;
+      max-width: 200px;
+      min-height: 0;
+      padding: 20px 18px 18px;
+    }
+    .speed-figure strong > span {
+      font-size: 1.625rem;
+    }
+    /* The marks sit on the route, now at the left edge. */
+    .timeline-item[data-kind='award']::before {
+      left: -5px;
+      top: 13px;
+    }
+    .timeline-item[data-kind='intern']::before {
+      left: -4px;
+      top: 20px;
+    }
+    /* The avatar beside the name, so the speed-ups start within the first screen. */
+    .profile-header {
+      grid-template-columns: 92px minmax(0, 1fr);
+      grid-template-areas: 'avatar name' 'text text' 'links links';
+      align-items: center;
+      gap: 0 18px;
+      padding: 4px 0 40px;
+    }
+    .profile-intro {
+      display: contents;
+    }
+    .profile-avatar {
+      grid-area: avatar;
+      margin-left: 2px;
+    }
+    .profile-avatar .avatar-stamp {
+      width: 92px;
+    }
+    .profile-intro h1 {
+      grid-area: name;
+      margin-top: 0;
+      font-size: clamp(2.125rem, 10vw, 2.625rem);
+    }
+    .profile-intro > p:not(.eyebrow) {
+      grid-area: text;
+      margin-top: 18px;
+      font-size: 1rem;
+      line-height: 1.9;
+    }
+    .profile-links {
+      grid-area: links;
+      margin-top: 18px;
+    }
+    /* Two tracks to a row: nine take about a third of the height they did one to a row. */
+    .music-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 28px 16px;
+    }
+    .music-item {
+      margin-inline: 4px;
+    }
+    .music-item > div:last-child {
+      padding: 10px 2px 0;
+    }
+    .music-item p {
+      font-size: 0.8125rem;
+    }
+    .sticker-tab {
+      height: 44px;
+    }
+    /* Nothing smaller than 13px on a phone. */
+    .profile-affiliations small,
+    .modal-sheet > .meta,
+    .credits,
+    .rail nav a {
+      font-size: 0.8125rem;
+    }
+    .not-found-featured a {
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 16px;
+    }
+    .not-found-featured strong + span {
+      font-size: 0.9375rem;
+    }
+  }
+  /* プロフィール still fits a tab at 13px down to a 361px screen. */
+  @media (max-width: 430px) {
+    .rail nav a {
+      letter-spacing: 0;
+    }
+  }
+  @media (max-width: 360px) {
+    .rail nav a {
+      font-size: 0.75rem;
+    }
+  }
+  @media (max-width: 380px) {
+    .speed-stamps {
+      margin-inline: -14px;
+      padding-inline: 14px;
+      scroll-padding-inline: 14px;
     }
   }
   /* Below this, a tab is too narrow for the icon and the longest label (プロフィール) on one line. */

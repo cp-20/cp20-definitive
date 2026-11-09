@@ -145,6 +145,10 @@ export function StickerSheet(props: {
           <Icon name="ChevronDown" size={16} />
         </button>
       </header>
+      {/* Before signing in, one line says what signing in is for and who sees what you place. */}
+      <Show when={!props.account}>
+        <p class="sticker-hint">ログインすると、シールを貼れます。貼ったシールはみんなに見えます。</p>
+      </Show>
       <div class="stamp-choices" role="group" aria-label="シールの種類">
         <For each={STICKER_KINDS}>
           {(item, i) => (

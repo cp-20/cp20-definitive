@@ -73,7 +73,7 @@ async function prerender() {
   const fonts = await subsetSiteFonts('dist/client');
   console.log(`Prerendered ${paths.length} pages, RSS and sitemap → dist/client`);
   console.log(
-    `Fonts: ${fonts.characters} characters, ${fonts.files.map((f) => `${f.weight} ${(f.size / 1024).toFixed(0)} kB`).join(', ')}`,
+    `Fonts: ${fonts.files.map((f) => `${f.weight} ${f.characters} chars ${(f.size / 1024).toFixed(0)} kB`).join(', ')}`,
   );
 }
 
