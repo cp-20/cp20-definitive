@@ -1,8 +1,6 @@
 // The page list and what is derived from it: paths, page keys, tabs and the works' checks.
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import baseWorks from '../data/works.json' with { type: 'json' };
-import manual from '../data/manual.json' with { type: 'json' };
 import {
   assertRelatedArticles,
   missingRelatedArticles,
@@ -17,8 +15,6 @@ import {
   workPath,
 } from './pages.ts';
 
-const works = mergeWorks(baseWorks, manual);
-
 describe('validateWorks', () => {
   for (const id of ['Foo', 'a--b', '', 'a.b', '-a', 'a-', 'a/b', undefined])
     test(`作品 id ${JSON.stringify(id)} は使えない`, () => {
@@ -32,10 +28,7 @@ describe('validateWorks', () => {
 
 describe('mergeWorks', () => {
   test('手で足した作品が既存の id と重なれば失敗にする', () => {
-    assert.throws(
-      () => mergeWorks<{ id: string }>(baseWorks, { projects: [{ id: baseWorks[0].id }] }),
-      /Duplicate/,
-    );
+    assert.throws(() => mergeWorks([{ id: 'a' }], { projects: [{ id: 'a' }] }), /Duplicate work id "a"/);
   });
 
   test('手で足した作品がなければ、そのまま', () => {

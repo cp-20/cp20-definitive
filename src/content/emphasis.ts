@@ -17,9 +17,3 @@ export function splitEmphasis(text: string) {
   if (last < text.length) parts.push({ text: text.slice(last) });
   return parts;
 }
-
-/** The line as read aloud or shown without styling. */
-export const plainText = (text: string) =>
-  splitEmphasis(text)
-    .map((p) => ('text' in p ? p.text : 'strong' in p ? p.strong : p.code))
-    .join('');
