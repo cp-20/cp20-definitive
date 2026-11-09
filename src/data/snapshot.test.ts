@@ -34,6 +34,17 @@ const previews = previewsJson as Record<string, Preview>;
 const publicDir = fileURLToPath(new URL('../../public', import.meta.url));
 const works = mergeWorks(baseWorks as Work[], manual as { projects?: Work[] });
 const width = async (file: string) => `${(await sharp(publicDir + file).metadata()).width}w`;
+/** `<name>: <rule>` for every rule (named by what it requires) that an item breaks. */
+const brokenRules = <T>(
+  items: readonly T[],
+  name: (item: T) => string,
+  rules: Record<string, (item: T) => unknown>,
+) =>
+  items.flatMap((item) =>
+    Object.entries(rules)
+      .filter(([, holds]) => !holds(item))
+      .map(([rule]) => `${name(item)}: ${rule}`),
+  );
 
 describe('画像キャッシュ', () => {
   const entries = (sources: (string | null | undefined)[]) =>
@@ -57,13 +68,16 @@ describe('画像キャッシュ', () => {
     );
   });
 
-  test('幅 400px 以上のサムネイルとアイコンは幅が記録され、縮小版がある', () => {
+  test('表示するサムネイルとアイコン（GIF・ICO を除く）には幅が記録され、幅 400px 以上なら縮小版がある', () => {
     const shown = entries([
       ...Object.values(previews).flatMap((p) => [p.image, p.icon]),
       ...[...tracks, ...series].map((i) => i.thumbnail),
     ]).filter((e) => !/\.(gif|ico|svg)$/.test(e.file));
     assert.deepEqual(
-      shown.filter((e) => !(e.width! > 0) || (e.width! >= 400 && !e.variants?.length)).map((e) => e.file),
+      brokenRules(shown, (e) => e.file, {
+        幅が記録されている: (e) => (e.width ?? 0) > 0,
+        '幅 400px 以上なら縮小版がある': (e) => (e.width ?? 0) < 400 || e.variants?.length,
+      }),
       [],
     );
   });
@@ -73,19 +87,25 @@ describe('画像キャッシュ', () => {
   const { images } = clientMedia({}, cache, [...framed]);
 
   test('曲のサムネイルはどれも 16:9 の切り出しを記録し、切り出したコピーだけを候補にする', () => {
-    const wrong = tracks.flatMap(({ thumbnail }) => {
-      const { file, crop, variants } = cache[thumbnail] ?? {};
-      const largest = variants?.at(-1);
-      const ok =
-        framed.has(thumbnail) &&
-        crop &&
-        Math.abs(crop.width / crop.height - 16 / 9) < 0.01 &&
-        !images[thumbnail].srcset?.includes(file!) &&
-        images[thumbnail].src === largest?.file &&
-        largest?.width === crop.width;
-      return ok ? [] : [thumbnail];
-    });
-    assert.deepEqual(wrong, []);
+    assert.deepEqual(
+      brokenRules(
+        tracks.map((t) => t.thumbnail),
+        (source) => source,
+        {
+          'YouTube のサムネイル': (source) => framed.has(source),
+          '16:9 の切り出しが記録されている': (source) => {
+            const crop = cache[source]?.crop;
+            return crop && Math.abs(crop.width / crop.height - 16 / 9) < 0.01;
+          },
+          '元の画像は候補にしない': (source) => !images[source]?.srcset?.includes(cache[source]?.file),
+          '原寸の切り出しを src にする': (source) => {
+            const largest = cache[source]?.variants?.at(-1);
+            return images[source]?.src === largest?.file && largest?.width === cache[source]?.crop?.width;
+          },
+        },
+      ),
+      [],
+    );
   });
 
   test('曲のサムネイルの切り出したコピーの端には、黒や平らな帯が残っていない', async () => {
@@ -113,15 +133,13 @@ describe('リンク先のプレビュー', () => {
   test('Marketplace の作品は cp20 が公開した拡張だけで、画像は works.json に書いたものか cp20 の配信元から取る', () => {
     const listed = works.filter((w) => new URL(w.url).hostname === 'marketplace.visualstudio.com');
     assert.deepEqual(
-      listed
-        .filter((w) => {
+      brokenRules(listed, (w) => w.id, {
+        'cp20 が公開した拡張': (w) => new URL(w.url).searchParams.get('itemName')?.startsWith('cp20.'),
+        '画像は works.json に書いたものか cp20 の配信元のもの': (w) => {
           const image = previews[w.url]?.image;
-          return (
-            new URL(w.url).searchParams.get('itemName')?.split('.')[0] !== 'cp20' ||
-            (image && image !== w.image && new URL(image).hostname !== 'cp20.gallerycdn.vsassets.io')
-          );
-        })
-        .map((w) => w.id),
+          return !image || image === w.image || new URL(image).hostname === 'cp20.gallerycdn.vsassets.io';
+        },
+      }),
       [],
     );
   });
@@ -137,28 +155,24 @@ describe('リンク先のプレビュー', () => {
 describe('作品（works.json）', () => {
   test('説明は何なのかを1文で言い切り、役割を書き、1人でつくったものは同じ言い方をする', () => {
     assert.deepEqual(
-      works
-        .filter(
-          (w) =>
-            !w.description.endsWith('。') ||
-            !w.role?.trim() ||
-            (w.tags.includes('個人開発') && w.role !== SOLO_ROLE),
-        )
-        .map((w) => w.id),
+      brokenRules(works, (w) => w.id, {
+        '説明は「。」で終わる': (w) => w.description.endsWith('。'),
+        役割がある: (w) => w.role?.trim(),
+        [`個人開発の役割は「${SOLO_ROLE}」`]: (w) => !w.tags.includes('個人開発') || w.role === SOLO_ROLE,
+      }),
       [],
     );
   });
 
   test('状態と種類は決まった値だけで、公開を終えたものの代わりのページは https', () => {
     assert.deepEqual(
-      works
-        .filter(
-          (w) =>
-            (w.status && !['active', 'ended', 'members-only'].includes(w.status)) ||
-            (w.kind && w.kind !== 'event') ||
-            (w.status === 'ended' && w.links?.some((l) => !l.url.startsWith('https://'))),
-        )
-        .map((w) => w.id),
+      brokenRules(works, (w) => w.id, {
+        'status は active・ended・members-only のどれか': (w) =>
+          !w.status || ['active', 'ended', 'members-only'].includes(w.status),
+        'kind は event だけ': (w) => !w.kind || w.kind === 'event',
+        '公開を終えたものの代わりのページは https': (w) =>
+          w.status !== 'ended' || (w.links ?? []).every((l) => l.url.startsWith('https://')),
+      }),
       [],
     );
   });
@@ -190,15 +204,13 @@ describe('作品（works.json）', () => {
     const stem = (src: string) => src.split('/').at(-1)!.replace('.png', '');
     assert.deepEqual(
       {
-        wrong: shots
-          .filter(
-            (s) =>
-              s.src !== `/images/screenshots/${s.id}-${s.device}.png` ||
-              !s.alt.trim() ||
-              !names.includes(`${stem(s.src)}.png`) ||
-              !names.some((n) => new RegExp(`^${stem(s.src)}-\\d+w\\.webp$`).test(n)),
-          )
-          .map((s) => s.src),
+        wrong: brokenRules(shots, (s) => s.src, {
+          'パスは /images/screenshots/<作品の id>-<device>.png': (s) =>
+            s.src === `/images/screenshots/${s.id}-${s.device}.png`,
+          説明がある: (s) => s.alt.trim(),
+          画像がある: (s) => names.includes(`${stem(s.src)}.png`),
+          'WebP の縮小版がある': (s) => names.some((n) => new RegExp(`^${stem(s.src)}-\\d+w\\.webp$`).test(n)),
+        }),
         stray: names.filter(
           (n) => !shots.some((s) => n === `${stem(s.src)}.png` || n.startsWith(`${stem(s.src)}-`)),
         ),
@@ -271,9 +283,12 @@ describe('経歴（editorial.ts）', () => {
     const workIds = new Set(works.map((w) => w.id));
     assert.deepEqual(
       [
-        ...ids.filter((id, i) => ids.indexOf(id) !== i || !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(id)),
-        ...milestones.filter((m) => m.work && !workIds.has(m.work)).map((m) => `${m.id} → ${m.work}`),
-        ...highlightIds.filter((id) => !ids.includes(id)),
+        ...brokenRules(milestones, (m) => m.id, {
+          'id は1つだけ': (m) => ids.indexOf(m.id) === ids.lastIndexOf(m.id),
+          'id は小文字の単語をハイフンでつないだもの': (m) => /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(m.id),
+          'work は works.json の id': (m) => !m.work || workIds.has(m.work),
+        }),
+        ...highlightIds.filter((id) => !ids.includes(id)).map((id) => `${id}: トップの実績にあるが経歴にない`),
       ],
       [],
     );
