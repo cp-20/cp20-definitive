@@ -11,9 +11,9 @@ import { tempDirs } from './temp-dirs.ts';
 
 const png = await readFile(new URL('../../public/images/avatar.png', import.meta.url)); // 512×512
 // A large noise PNG cut in half: image-size still reads a valid header, but decoding fails.
-const noise = Buffer.alloc(2000 * 1000 * 3);
+const noise = Buffer.alloc(800 * 400 * 3);
 for (let i = 0; i < noise.length; i++) noise[i] = (i * 2654435761) >>> 24;
-const fullPng = await sharp(noise, { raw: { width: 2000, height: 1000, channels: 3 } })
+const fullPng = await sharp(noise, { raw: { width: 800, height: 400, channels: 3 } })
   .png()
   .toBuffer();
 const truncatedPng = fullPng.subarray(0, fullPng.length >> 1);
