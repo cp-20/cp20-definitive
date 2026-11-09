@@ -5,8 +5,11 @@ import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import type { Source } from '../../src/content/normalize.ts';
 
-export const MAX_STALE_HOURS = 48;
-/** The sources that have been failing for longer than `maxHours`. */
+const MAX_STALE_HOURS = 48;
+/**
+ * The sources that have been failing for longer than `maxHours`, with the hours since they were
+ * last fetched: Infinity for one never fetched, NaN for an unreadable time (stale as well).
+ */
 export function staleSources(
   snapshot: { sources: Record<string, Source> },
   now = Date.now(),
@@ -14,7 +17,10 @@ export function staleSources(
 ) {
   return Object.entries(snapshot.sources)
     .filter(([, s]) => s.status !== 'ok')
-    .map(([name, s]) => ({ name, hours: (now - Date.parse((s.lastSuccess ?? 0) as string)) / 3_600_000 }))
+    .map(([name, s]) => ({
+      name,
+      hours: s.lastSuccess === undefined ? Infinity : (now - Date.parse(s.lastSuccess)) / 3_600_000,
+    }))
     .filter((s) => !(s.hours <= maxHours));
 }
 
