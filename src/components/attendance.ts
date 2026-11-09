@@ -1,10 +1,10 @@
 // The arithmetic of the yearly attendance cards (AttendanceCard.tsx): which day of which year an
-// article was stamped on, where a second stamp on the same day goes, and how the keyboard and a
+// article was stamped on, where the stamps of a day with several go, and how the keyboard and a
 // fingertip find a stamp on a card whose days are only a few pixels wide.
 import { formatDate, type Article } from '../content/content.ts';
 
 export type Day = { y: number; m: number; d: number };
-export type Stamp = Day & { a: Article; nth: number };
+export type Stamp = Day & { a: Article; nth: number; of: number };
 
 const days = new Map<string, Day>();
 /** The day an article came out, in Japan time (the dates the site shows). */
@@ -22,19 +22,38 @@ export const yearsOf = (items: Article[]) => [...new Set(items.map(yearOf))].sor
 export const daysIn = (year: number, month: number) => new Date(Date.UTC(year, month, 0)).getUTCDate();
 
 /**
- * A year's stamps in date order (the order they are read and stepped through). A second article
- * on a day is pressed beside the first (`nth`).
+ * A year's stamps in date order (the order they are read and stepped through), each with its
+ * place among the `of` stamps on its day (`nth`).
  */
 export function stampsOf(items: Article[], year: number): Stamp[] {
   const stamps = items
     .filter((a) => yearOf(a) === year)
-    .map((a) => ({ a, ...dayOf(a), nth: 0 }))
+    .map((a) => ({ a, ...dayOf(a), nth: 0, of: 1 }))
     .sort((p, q) => p.a.date.localeCompare(q.a.date));
   stamps.forEach((s, i) => {
     const before = stamps[i - 1];
     if (before && before.m === s.m && before.d === s.d) s.nth = before.nth + 1;
   });
+  // The last of a day knows how many the day has; the ones before it take that from it.
+  for (let i = stamps.length - 1; i >= 0; i--) {
+    const after = stamps[i + 1];
+    stamps[i].of = after?.nth ? after.of : stamps[i].nth + 1;
+  }
   return stamps;
+}
+
+/**
+ * Where a stamp sits on its day, in rows from the middle of the day (x across, y down). Alone it
+ * is in the middle; two or more on a day go round a small ring from the top left, clockwise, so
+ * each shows and has its own patch to point at or tap. The ring is narrower than it is tall, as
+ * the days are.
+ */
+export function spot({ nth, of }: Pick<Stamp, 'nth' | 'of'>) {
+  if (of < 2) return { x: 0, y: 0 };
+  const turn = 2 * Math.PI * (nth / of - 0.375),
+    r = of === 2 ? 0.3 : 0.4;
+  const round = (n: number) => Math.round(n * 1000) / 1000 || 0;
+  return { x: round(r * 0.7 * Math.cos(turn)), y: round(r * Math.sin(turn)) };
 }
 
 /**

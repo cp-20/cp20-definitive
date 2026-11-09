@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayOf, daysIn, nearest, stampsOf, step, tipPlace, yearsOf } from './attendance.ts';
+import { dayOf, daysIn, nearest, spot, stampsOf, step, tipPlace, yearsOf } from './attendance.ts';
 
 const article = (date: string, n = 0) => ({
   title: `t${n}`,
@@ -38,13 +38,34 @@ describe('stampsOf', () => {
   it("keeps only the year's articles, in date order", () => {
     expect(stampsOf(items, 2025).map((s) => s.a.title)).toEqual(['t4', 't2', 't1', 't5']);
   });
-  it('presses a second and third stamp on the same day beside the first', () => {
-    expect(stampsOf(items, 2025).map((s) => [s.m, s.d, s.nth])).toEqual([
-      [1, 10, 0],
-      [4, 2, 0],
-      [4, 2, 1],
-      [4, 2, 2],
+  it('numbers the stamps on a day and knows how many the day has', () => {
+    expect(stampsOf(items, 2025).map((s) => [s.m, s.d, s.nth, s.of])).toEqual([
+      [1, 10, 0, 1],
+      [4, 2, 0, 3],
+      [4, 2, 1, 3],
+      [4, 2, 2, 3],
     ]);
+  });
+});
+
+describe('spot', () => {
+  it('leaves a stamp alone on its day in the middle', () => {
+    expect(spot({ nth: 0, of: 1 })).toEqual({ x: 0, y: 0 });
+  });
+  it('puts two on a day top left and bottom right', () => {
+    const [a, b] = [0, 1].map((nth) => spot({ nth, of: 2 }));
+    expect(a.x < 0 && a.y < 0 && b.x > 0 && b.y > 0).toBe(true);
+    expect([a.x + b.x, a.y + b.y]).toEqual([0, 0]);
+  });
+  it('gives each of a crowded day its own place, inside its day and the rows next to it', () => {
+    for (const of of [2, 3, 5, 8]) {
+      const at = Array.from({ length: of }, (_, nth) => spot({ nth, of }));
+      expect(new Set(at.map((p) => `${p.x},${p.y}`)).size).toBe(of);
+      for (const p of at) expect(Math.abs(p.x) <= 0.3 && Math.abs(p.y) <= 0.4).toBe(true);
+      // No two closer than a fifth of a row, so each keeps a patch of its own.
+      for (const p of at)
+        for (const q of at) if (p !== q) expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeGreaterThan(0.2);
+    }
   });
 });
 

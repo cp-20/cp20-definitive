@@ -3898,8 +3898,9 @@
    thirty-one days, with a stamp on each day an article came out (AttendanceCard.tsx). On
    /articles the other years' cards lie stacked behind with their index tabs showing, and the
    open year's articles are listed beside the card (under it on narrower screens). Home shows the
-   latest card and the newest few titles under it. The ruled lines are one background, so only
-   the labels and the stamped days are elements. */
+   latest card alone and the newest few titles under it. The ruled lines are one background, so
+   only the labels and the stamped days are elements. A narrow card (not a narrow screen) is
+   drawn tighter: see the @container rules at the end. */
 @layer components {
   .attendance-desk {
     display: grid;
@@ -3911,16 +3912,13 @@
     --print: #3b64a8;
     --line: color-mix(in srgb, var(--print) 32%, transparent);
     --card: #fff1bd;
-    --tabs: 0px;
+    container: attendance / inline-size;
     position: relative;
     padding: 0 8px 10px 0;
   }
   .attendance-desk > .attendance {
     position: sticky;
     top: 24px;
-  }
-  .attendance:has(.attendance-tabs) {
-    --tabs: 44px;
   }
   :is(.attendance, .attendance-tab)[data-year='1'] {
     --card: #dcecff;
@@ -3936,19 +3934,19 @@
     --card: #fff1bd;
   }
   /* The cards of the other years, stacked under this one. */
-  .attendance::before,
-  .attendance::after {
+  .attendance:has(.attendance-tabs)::before,
+  .attendance:has(.attendance-tabs)::after {
     content: '';
     position: absolute;
     z-index: 0;
-    inset: var(--tabs) 8px 10px 0;
+    inset: 44px 8px 10px 0;
     border: 2px solid var(--edge);
     border-radius: 12px;
     background: #fbf3dc;
     rotate: 1.2deg;
     translate: 7px 6px;
   }
-  .attendance::after {
+  .attendance:has(.attendance-tabs)::after {
     z-index: -1;
     background: #e9f2fb;
     rotate: -0.8deg;
@@ -3964,9 +3962,6 @@
     margin-bottom: -2px;
   }
   .attendance-tab {
-    display: flex;
-    align-items: baseline;
-    gap: 5px;
     height: 46px;
     padding: 0 12px;
     border: 2px solid var(--edge);
@@ -3981,12 +3976,10 @@
     translate: 0 6px;
     transition: translate var(--t-hover) var(--ease);
   }
-  .attendance-tab small {
-    font-size: 0.6875rem;
-    font-weight: 500;
-  }
-  .attendance-tab[data-empty] small {
-    opacity: 0.5;
+  /* A year with none of the chosen source's articles: an empty outline of a tab. */
+  .attendance-tab[data-empty] {
+    border-style: dashed;
+    background: color-mix(in srgb, var(--card) 35%, #f6f3ec);
   }
   .attendance-tab[aria-pressed='true'] {
     position: relative;
@@ -4042,21 +4035,6 @@
     font-family: var(--round);
     font-size: 0.9375rem;
     letter-spacing: 0.08em;
-  }
-  .attendance-name {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    font-size: 0.6875rem;
-    font-weight: 700;
-  }
-  .attendance-name span {
-    min-width: 96px;
-    padding: 0 6px 1px;
-    border-bottom: 1.5px solid var(--print);
-    color: var(--ink);
-    font-size: 0.9375rem;
-    text-align: center;
   }
   .attendance-count {
     display: grid;
@@ -4180,21 +4158,35 @@
     --face: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 1.5 22.5 12 12 22.5 1.5 12zm0 5L6.5 12l5.5 5.5 5.5-5.5z'/%3E%3C/svg%3E");
   }
   /* On the card a stamp is a little larger than its day, so it spills over the lines as a
-     hand-pressed stamp does; a second one that day is pressed beside the first. */
+     hand-pressed stamp does; only its day takes the pointer. Several on one day are smaller and go
+     round a ring (spot() in attendance.ts), each taking the pointer on its own patch. */
   .attendance-stamp {
     position: relative;
     display: grid;
     place-items: center;
   }
+  .attendance-stamp[data-crowd] {
+    z-index: 1;
+    place-self: center;
+    width: calc(var(--row) * 0.45);
+    height: calc(var(--row) * 0.45);
+    translate: calc(var(--dx) * var(--row)) calc(var(--dy) * var(--row));
+  }
   .attendance-stamp .day-stamp {
     width: calc(var(--row) * 0.92);
     height: calc(var(--row) * 0.92);
+    pointer-events: none;
     transition:
       scale var(--t-hover) var(--ease),
       opacity var(--t-state) var(--ease);
   }
-  .attendance-stamp[data-nth] .day-stamp {
-    translate: 35% -30%;
+  .attendance-stamp[data-crowd] .day-stamp {
+    width: calc(var(--row) * 0.6);
+    height: calc(var(--row) * 0.6);
+  }
+  .attendance-stamp[data-crowd='2'] .day-stamp {
+    width: calc(var(--row) * 0.74);
+    height: calc(var(--row) * 0.74);
   }
   .attendance-stamp[data-off] {
     pointer-events: none;
@@ -4213,13 +4205,17 @@
     outline-width: 2px;
     outline-offset: 1px;
   }
+  .attendance-stamp[data-crowd]:focus-visible {
+    outline-offset: 4px;
+  }
   /* What a stamp is for, written on a slip that opens toward the middle of the card. It is only
-     faded out, so it stays the link's text for screen readers. */
+     faded out, so it stays the link's text for screen readers. The pointer can move onto it
+     without it going, and Escape puts it away (WCAG 1.4.13). */
   .attendance-tip {
     --x: -50%;
     --y: 4px;
     position: absolute;
-    bottom: calc(100% + 8px);
+    bottom: calc(100% + 6px);
     left: 50%;
     display: grid;
     gap: 3px;
@@ -4248,7 +4244,7 @@
   }
   .attendance-stamp[data-below] .attendance-tip {
     --y: -4px;
-    top: calc(100% + 8px);
+    top: calc(100% + 6px);
     bottom: auto;
   }
   .attendance-stamp:is(:focus-visible, [data-picked]) .attendance-tip {
@@ -4266,7 +4262,22 @@
     .attendance-stamp:hover .attendance-tip {
       --y: 0px;
       opacity: 1;
+      pointer-events: auto;
     }
+    /* A bridge over the gap between the stamp and its slip, only toward the slip (so it does
+       not cover the stamps round a ring the other way). */
+    .attendance-stamp:hover::before {
+      content: '';
+      position: absolute;
+      inset: -6px 0 0;
+    }
+    .attendance-stamp[data-below]:hover::before {
+      inset: 0 0 -6px;
+    }
+  }
+  .attendance-grid[data-quiet] .attendance-tip {
+    opacity: 0;
+    pointer-events: none;
   }
   .attendance-tip strong {
     font-size: 0.8125rem;
@@ -4363,40 +4374,20 @@
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
-}
-@layer responsive {
-  @media (max-width: 1100px) {
-    .attendance-desk {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .attendance-desk > .attendance {
-      position: relative;
-      top: 0;
-    }
-    .attendance-desk .article-list {
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      column-gap: 24px;
-    }
-  }
-  /* Phones: the card fills the width and its rows are taller than the days are wide; the
-     stamps, pressed larger than their days, are found by the nearest tap (AttendanceCard.tsx). */
-  @media (max-width: 600px) {
-    .attendance-desk {
-      gap: 14px;
-    }
+  /* A narrow card (beside the profile on a tablet, or on a phone): the tabs share the width, the
+     heading is smaller, only every fifth day is numbered and the rows are taller than the days
+     are wide; the stamps, pressed larger than their days, are found by the nearest tap
+     (AttendanceCard.tsx). */
+  @container attendance (width < 500px) {
     .attendance-tabs {
       gap: 3px;
       padding: 0 4px;
     }
     .attendance-tab {
       flex: 1 1 0;
-      justify-content: center;
       min-width: 0;
       padding: 0;
       font-size: 0.75rem;
-    }
-    .attendance-tab small {
-      display: none;
     }
     .attendance-card {
       padding: 12px 10px;
@@ -4412,9 +4403,6 @@
     .attendance-head h3 small {
       font-size: 0.75rem;
     }
-    .attendance-name {
-      display: none;
-    }
     .attendance-count {
       width: 42px;
       height: 42px;
@@ -4425,7 +4413,7 @@
     }
     .attendance-grid {
       --label: 26px;
-      --row: calc(var(--cell) * 2.2);
+      --row: min(var(--cell) * 1.8, 26px);
       grid-template-rows: 16px repeat(12, var(--row));
     }
     .attendance-day:not([data-tick]) {
@@ -4434,6 +4422,47 @@
     .attendance-month {
       padding-right: 4px;
       font-size: 0.5625rem;
+    }
+    .attendance-corner {
+      font-size: 0.5rem;
+    }
+  }
+}
+@layer responsive {
+  /* The card beside the list only while it has the width for every day's number; over the list
+     it keeps the size it has beside it. */
+  @media (max-width: 1199px) {
+    .attendance-desk {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .attendance-desk > .attendance {
+      position: relative;
+      top: 0;
+      max-width: 568px;
+    }
+    .attendance-desk .article-list {
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      column-gap: 24px;
+    }
+  }
+  /* The open year's count is the ring on its card, so over the list it is only announced; on a
+     phone, where the card has no heading (its year is on its tab), it is shown. */
+  @media (width > 600px) {
+    .article-sort-row .meta {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+  @media (max-width: 600px) {
+    .attendance-desk {
+      gap: 14px;
+    }
+    .attendance:has(.attendance-tabs) .attendance-head {
+      display: none;
     }
     .attendance-desk .article-list {
       grid-template-columns: minmax(0, 1fr);
@@ -4447,7 +4476,8 @@
       font-size: 0.8125rem;
     }
   }
-  /* Without JavaScript the open year cannot change, so every article is listed. */
+  /* Without JavaScript the open year cannot change, so every article is listed, and the card
+     keeps its heading (it has no tabs). */
   @media (scripting: none) {
     .article-row[hidden] {
       display: grid;
@@ -4455,6 +4485,9 @@
     .attendance-tabs,
     .article-sort-row {
       display: none;
+    }
+    .attendance:has(.attendance-tabs) .attendance-head {
+      display: flex;
     }
   }
   @media (forced-colors: active) {
