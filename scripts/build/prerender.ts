@@ -5,6 +5,8 @@ import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { mergeArticles, stripInvalidText, type Article } from '../../src/content/normalize.ts';
 import {
+  FEED,
+  OG_IMAGE,
   assertRelatedArticles,
   canonicalUrl,
   mergeWorks,
@@ -14,9 +16,6 @@ import {
 import { subsetSiteFonts } from './fonts.ts';
 import { writeOgImage } from './og.ts';
 
-// Shared with the <link rel="alternate"> in src/Document.tsx (checked by prerender.test.ts).
-export const feedTitle = 'cp20.dev — Articles';
-export const feedUrl = 'https://cp20.dev/feed.xml';
 const escapeXml = (s: string) =>
   stripInvalidText(String(s)).replace(
     /[<>&"']/g,
@@ -26,7 +25,7 @@ const escapeXml = (s: string) =>
 export function buildFeed(articles: Article[]) {
   const newest = articles.reduce((max, a) => (a.date > max ? a.date : max), '');
   const lastBuild = newest ? `<lastBuildDate>${new Date(newest).toUTCString()}</lastBuildDate>` : '';
-  return `<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>${escapeXml(feedTitle)}</title><link>https://cp20.dev/articles</link><atom:link href="${feedUrl}" rel="self" type="application/rss+xml"/><description>しーぴーの記事</description><language>ja</language>${lastBuild}${articles
+  return `<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>${escapeXml(FEED.title)}</title><link>https://cp20.dev/articles</link><atom:link href="${canonicalUrl(FEED.path)}" rel="self" type="application/rss+xml"/><description>しーぴーの記事</description><language>ja</language>${lastBuild}${articles
     .map(
       (a) =>
         `<item><title>${escapeXml(a.title)}</title><link>${escapeXml(a.url)}</link><guid isPermaLink="true">${escapeXml(a.url)}</guid><pubDate>${new Date(a.date).toUTCString()}</pubDate><description>${escapeXml(`${a.source} に掲載`)}</description></item>`,
@@ -69,9 +68,9 @@ async function prerender() {
       .map((p) => `<url><loc>${canonicalUrl(p === '/' ? '' : p)}</loc></url>`)
       .join('')}</urlset>`,
   );
-  await writeFile('dist/client/feed.xml', buildFeed(articles));
+  await writeFile(`dist/client${FEED.path}`, buildFeed(articles));
   // The picture of a shared link (og:image in src/Document.tsx).
-  await writeOgImage('dist/client/images/og.png');
+  await writeOgImage(`dist/client${OG_IMAGE.path}`);
   // The Vite manifest is only for the build; dist/client is published as-is.
   await rm('dist/client/.vite', { recursive: true, force: true });
   const fonts = await subsetSiteFonts('dist/client');

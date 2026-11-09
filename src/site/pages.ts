@@ -28,6 +28,11 @@ export const normalizePath = (pathname: string) => pathname.replace(/\/$/, '') |
 export const workPath = (id: string) => `/works/${id}`;
 export const canonicalUrl = (path: string) => `${SITE_ORIGIN}${path}`;
 
+/** The RSS feed of the articles: prerender.ts writes it and every page's head links it. */
+export const FEED = { path: '/feed.xml', title: 'cp20.dev — Articles' };
+/** The picture of a shared link: scripts/build/og.ts draws it and every page's head names it. */
+export const OG_IMAGE = { path: '/images/og.png', width: 1200, height: 630 };
+
 /** Where a page's stamps are stored: pages/<key>. Existing records depend on this mapping. */
 export const pageKey = (path: string) =>
   path === '/' ? 'home' : path.replace(/^\/|\/$/g, '').replaceAll('/', '--');

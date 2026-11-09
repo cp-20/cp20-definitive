@@ -17,8 +17,6 @@ const descriptions: Record<string, string> = {
   '/works': 'しーぴー（cp20）が2022年から、個人開発を中心につくってきたもの。',
   '/articles': 'しーぴー（cp20）がブログや traP、Zenn、Qiita などに書いた記事。',
 };
-/** The picture of a shared link (scripts/build/og.ts draws it at build time). */
-export const OG_IMAGE = { path: '/images/og.png', width: 1200, height: 630 };
 export function pageInfo(path = normalizePath(currentUrl().pathname)) {
   const work = works.find((w) => path === workPath(w.id));
   const known = STATIC_PAGES.find((p) => p.path === path)?.title;

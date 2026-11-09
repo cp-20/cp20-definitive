@@ -10,8 +10,8 @@ import subsetFont from 'subset-font';
 import { Blob, Buffer as GlyphBuffer, Face, Font, shape } from 'harfbuzzjs';
 import { highlightIds, milestones } from '../../src/data/editorial.ts';
 import profile from '../../src/data/profile.json' with { type: 'json' };
+import { OG_IMAGE } from '../../src/site/pages.ts';
 
-export const OG_SIZE = { width: 1200, height: 630 };
 const INK = '#2d2a33';
 
 type Run = { text: string; size: number; weight: 500 | 700 };
@@ -65,7 +65,7 @@ export async function ogImage() {
   const award: Run = { text: '賞', size: 22, weight: 700 };
   const set = await typesetter([name, seal, school, site, award, ...results.map((r) => r.run)]);
 
-  const { width, height } = OG_SIZE;
+  const { width, height } = OG_IMAGE;
   // The sheet, ruled like the site's paper, with its hard shadow on the desk.
   const sheet = { x: 56, y: 44, w: width - 112, h: height - 92 };
   const grid = Array.from({ length: Math.ceil(sheet.w / 28) }, (_, i) => sheet.x + 28 * (i + 1))
