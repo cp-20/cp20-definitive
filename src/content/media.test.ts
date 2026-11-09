@@ -1,63 +1,19 @@
-// What the client receives about images: local paths, srcset candidates and sizes only.
+// What the client receives about images: local paths, srcset candidates and sizes only. The
+// committed covers and screenshots are checked in src/data/snapshot.test.ts.
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { readdir } from 'node:fs/promises';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import sharp from 'sharp';
-import { mangaCovers } from '../data/manga-covers.ts';
 import { clientMedia, coverSrcsets } from './media.ts';
 
-const root = fileURLToPath(new URL('../..', import.meta.url));
-
-describe('漫画の表紙', () => {
-  const srcsets = readdir(join(root, 'public/images/covers')).then(coverSrcsets);
-  const candidates = async (image: string) =>
-    (await srcsets)[image]?.split(', ').map((c) => c.split(' ')) ?? [];
-  for (const { image } of Object.values(mangaCovers)) {
-    test(`${image} の最大の候補は、元の表紙と同じ幅`, async () => {
-      const { width } = await sharp(join(root, 'public', image)).metadata();
-      assert.equal((await candidates(image)).at(-1)?.[1], `${width}w`);
-    });
-
-    test(`${image} の WebP の候補は、srcset に書いた幅のとおり`, async () => {
-      const copies = (await candidates(image)).filter(([file]) => file.endsWith('.webp'));
-      const actual = await Promise.all(
-        copies.map(async ([file]) => `${(await sharp(join(root, 'public', file)).metadata()).width}w`),
-      );
-      assert.deepEqual(
-        actual,
-        copies.map(([, descriptor]) => descriptor),
-      );
-    });
-  }
-
-  test('srcset は元の画像と同じ名前の WebP だけから作る', () => {
-    assert.deepEqual(
-      coverSrcsets(['a.jpg', 'a-240w.webp', 'a-480w.webp', 'a-b.jpg', 'b.png', 'notes.txt'], '/c/'),
-      { '/c/a.jpg': '/c/a-240w.webp 240w, /c/a-480w.webp 480w' },
-    );
-  });
-});
-
-describe('作品のスクリーンショット', () => {
-  const directory = join(root, 'public/images/screenshots');
-  test('どれも WebP の縮小版と原寸の WebP を持ち、srcset の幅は実際の幅', async () => {
-    const srcsets = coverSrcsets(await readdir(directory), '/images/screenshots/');
-    assert.ok(Object.keys(srcsets).length > 0);
-    for (const [file, srcset] of Object.entries(srcsets)) {
-      const { width } = await sharp(join(root, 'public', file)).metadata();
-      const candidates = srcset.split(', ').map((c) => c.split(' '));
-      assert.equal(candidates.at(-1)?.[1], `${width}w`, file);
-      for (const [copy, descriptor] of candidates)
-        assert.equal(`${(await sharp(join(root, 'public', copy)).metadata()).width}w`, descriptor, copy);
-    }
-  });
+test('srcset は元の画像と同じ名前の WebP だけから、幅の順に作る', () => {
+  assert.deepEqual(
+    coverSrcsets(['a.jpg', 'a-480w.webp', 'a-240w.webp', 'a-b.jpg', 'b.png', 'notes.txt'], '/c/'),
+    { '/c/a.jpg': '/c/a-240w.webp 240w, /c/a-480w.webp 480w' },
+  );
 });
 
 describe('clientMedia', () => {
   const page = 'https://example.com/post';
-  const { pages, images } = clientMedia(
+  const media = () => clientMedia(
     {
       [page]: {
         image: 'https://cdn.example.com/og.png?x=1',
@@ -91,13 +47,23 @@ describe('clientMedia', () => {
         variants: [{ file: '/media/yt-320w.webp', width: 320 }],
       },
       'https://i.ytimg.com/vi/b/hq.jpg': { file: '/media/yt-b.jpg', checkedAt: 'x' },
+      'https://i.ytimg.com/vi/c/hq.jpg': {
+        file: '/media/yt-c.jpg',
+        checkedAt: 'x',
+        width: 480,
+        crop: { left: 0, top: 45, width: 480, height: 270 },
+        variants: [
+          { file: '/media/yt-c-320w.webp', width: 320 },
+          { file: '/media/yt-c-480w.webp', width: 480 },
+        ],
+      },
       'https://unused.example.com/a.png': { file: '/media/unused.png', checkedAt: 'x' },
     },
-    ['https://i.ytimg.com/vi/a/hq.jpg', 'https://i.ytimg.com/vi/b/hq.jpg', null],
+    ['https://i.ytimg.com/vi/a/hq.jpg', 'https://i.ytimg.com/vi/b/hq.jpg', 'https://i.ytimg.com/vi/c/hq.jpg', null],
   );
 
   test('ページの画像は、ローカルのパスと srcset とサイズにする', () => {
-    assert.deepEqual(pages[page], {
+    assert.deepEqual(media().pages[page], {
       width: 1200,
       height: 630,
       image: '/media/og.png',
@@ -107,21 +73,25 @@ describe('clientMedia', () => {
   });
 
   test('画像のないページは、サイズだけを持つ', () => {
-    assert.deepEqual(pages['https://example.com/none'], { width: 1200, height: 630 });
+    assert.deepEqual(media().pages['https://example.com/none'], { width: 1200, height: 630 });
   });
 
-  test('ページ以外の画像は、使われているものだけを src と srcset にする', () => {
-    assert.deepEqual(images, {
+  test('ページ以外の画像は、使われているものだけを src と srcset にし、切り出した画像は切り出しだけを候補にする', () => {
+    assert.deepEqual(media().images, {
       'https://i.ytimg.com/vi/a/hq.jpg': {
         src: '/media/yt.jpg',
         srcset: '/media/yt-320w.webp 320w, /media/yt.jpg 480w',
       },
       'https://i.ytimg.com/vi/b/hq.jpg': { src: '/media/yt-b.jpg' },
+      'https://i.ytimg.com/vi/c/hq.jpg': {
+        src: '/media/yt-c-480w.webp',
+        srcset: '/media/yt-c-320w.webp 320w, /media/yt-c-480w.webp 480w',
+      },
     });
   });
 
   test('確認日時や元の URL は、クライアントに送らない', () => {
-    const serialized = JSON.stringify({ pages, images });
+    const serialized = JSON.stringify(media());
     assert.deepEqual(
       [serialized.includes('checkedAt'), serialized.includes('cdn.example.com')],
       [false, false],

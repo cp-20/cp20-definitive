@@ -1,14 +1,11 @@
-// How the works are listed and labelled, and that works.json states only what the pages can show.
+// How the works are listed and labelled. works.json itself is checked in src/data/snapshot.test.ts.
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { access, readdir } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import baseWorks from '../data/works.json' with { type: 'json' };
 import manual from '../data/manual.json' with { type: 'json' };
 import { editions, featuredIds } from '../data/editorial.ts';
 import { mergeWorks } from '../site/pages.ts';
 import {
-  SOLO_ROLE,
   kindLabel,
   longPeriod,
   neighbours,
@@ -24,7 +21,6 @@ import {
 
 const works = mergeWorks(baseWorks as Work[], manual as { projects?: Work[] });
 const editionIds = editions.map((e) => `${e.year}-portfolio`);
-const publicDir = fileURLToPath(new URL('../../public', import.meta.url));
 const work = (fields: Partial<Work>): Work => ({
   id: 'x',
   title: 'x',
@@ -94,20 +90,12 @@ describe('ボタンの行き先と文言', () => {
     assert.equal(openLink(members({})), undefined);
     assert.deepEqual(membersSite(members({})), { href: 'https://example.com/', label: 'サイト（部員向け）' });
     assert.equal(membersSite(work({})), undefined);
-    for (const w of works.filter((w) => w.status === 'members-only')) {
-      assert.notEqual(openLink(w)?.label, 'サイトを開く', w.id);
-      assert.notEqual(openLink(w)?.href, w.url, w.id);
-    }
   });
 
   test('主ボタンが開くリポジトリは、2つ目のボタンにしない', () => {
     const repo = 'https://github.com/traP-jp/a';
     const w = work({ status: 'members-only', repositories: [repo] });
     assert.deepEqual(publicRepositories(w, openLink(w)?.href), []);
-  });
-
-  test('作品の説明は、何なのかを1文で言い切る', () => {
-    for (const w of works) assert.ok(w.description.endsWith('。'), `${w.id}: ${w.description}`);
   });
 
   test('ボタンと同じリポジトリは2つ目のボタンにしない', () => {
@@ -157,64 +145,5 @@ describe('/works の並び', () => {
       [ids.at(-1), ids[1]],
     );
     assert.deepEqual(neighbours([{ id: 'a' }, { id: 'b' }], 'a'), [{ id: 'b' }]);
-  });
-});
-
-describe('works.json', () => {
-  test('状態と種類は決まった値だけ', () => {
-    const bad = works.filter(
-      (w) =>
-        (w.status && !['active', 'ended', 'members-only'].includes(w.status)) ||
-        (w.kind && w.kind !== 'event'),
-    );
-    assert.deepEqual(
-      bad.map((w) => w.id),
-      [],
-    );
-  });
-
-  test('どの作品にも役割があり、1人でつくったものは同じ言い方', () => {
-    assert.deepEqual(
-      works.filter((w) => !w.role?.trim()).map((w) => w.id),
-      [],
-    );
-    const solo = works.filter((w) => w.tags.includes('個人開発'));
-    assert.deepEqual(
-      solo.filter((w) => w.role !== SOLO_ROLE).map((w) => w.id),
-      [],
-    );
-  });
-
-  test('公開を終えた作品は、サイトの代わりに出すページを持つか、ボタンなし', () => {
-    for (const w of works.filter((w) => w.status === 'ended'))
-      assert.ok(!w.links || w.links.every((l) => l.url.startsWith('https://')), w.id);
-  });
-
-  test('スクリーンショットは撮った画像と WebP の縮小版がある', async () => {
-    const shots = works.flatMap((w) => (w.screenshots ?? []).map((s) => ({ id: w.id, ...s })));
-    const names = await readdir(`${publicDir}/images/screenshots`);
-    for (const s of shots) {
-      assert.equal(s.src, `/images/screenshots/${s.id}-${s.device}.png`);
-      assert.ok(s.alt.trim(), `${s.src} has no alt text`);
-      await access(publicDir + s.src);
-      const stem = s.src.split('/').at(-1)!.replace('.png', '');
-      assert.ok(
-        names.some((n) => new RegExp(`^${stem}-\\d+w\\.webp$`).test(n)),
-        `${s.src} has no WebP copies`,
-      );
-    }
-    // Every file in the directory belongs to a screenshot that is shown.
-    const stems = shots.map((s) => s.src.split('/').at(-1)!.replace('.png', ''));
-    assert.deepEqual(
-      names.filter((n) => !stems.some((stem) => n === `${stem}.png` || n.startsWith(`${stem}-`))),
-      [],
-    );
-  });
-
-  // The figures the owner gave (2026-11-09): the old monthly 6,000 users is over a year old.
-  test('ダイススペックの利用者数は今の数字だけ', () => {
-    const dice = works.find((w) => w.id === 'dice-spec-v2')!;
-    assert.equal(dice.outcome, '月2,000〜3,000人ほどが利用');
-    assert.ok(![dice.description, dice.summary, ...dice.comments].join().includes('6000'));
   });
 });

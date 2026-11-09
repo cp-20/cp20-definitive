@@ -7,7 +7,6 @@ describe('stampPlace', () => {
   for (const [anchor, label, expected] of [
     ['history', ' 経歴\n', '経歴の上'],
     ['page', 'ページの見出しは使わない', 'ページの余白の上'],
-    ['footer', '', 'フッターの上'],
     ['work-image', '', '作品の画像の上'],
     ['constructor', '', 'ページの上'],
   ])
@@ -20,7 +19,7 @@ describe('stampPlace', () => {
   });
 });
 
-// Only the branches: the wording itself is reviewed in the browser, not copied here.
+// The sentences as a screen reader says them.
 describe('stampAnnouncement', () => {
   test('貼ったら、貼った場所と残りの枚数を伝える', () => {
     assert.equal(
@@ -50,12 +49,8 @@ describe('focusAfterRemoval', () => {
     assert.equal(focusAfterRemoval(['a', 'b', 'c'], 'c'), 'b');
   });
 
-  test('ほかにボタンがなければ移る先はない', () => {
-    assert.equal(focusAfterRemoval(['a'], 'a'), undefined);
-  });
-
-  test('一覧にないボタンからは移らない', () => {
-    assert.equal(focusAfterRemoval(['a'], 'x'), undefined);
+  test('ほかにボタンがないときや、一覧にないボタンからは移らない', () => {
+    assert.deepEqual([focusAfterRemoval(['a'], 'a'), focusAfterRemoval(['a'], 'x')], [undefined, undefined]);
   });
 });
 

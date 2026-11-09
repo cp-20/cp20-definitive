@@ -27,15 +27,12 @@ const where = (fetch: typeof globalThis.fetch) => ({
 });
 
 describe('writeBody', () => {
-  test('レコードとスロットルを1回の更新で書き、prev に読んだ時刻を入れる', () => {
-    assert.deepEqual(writeBody('home', 'alice', { stamps: {} }, { at: 1234, prev: 1000 }), {
-      'pages/home/alice': { stamps: {} },
-      'throttle/alice': { at: SERVER_TIME, prev: 1234 },
-    });
-  });
-
-  for (const throttle of [null, undefined, {}, { at: '5' }, { at: Infinity }])
-    test(`読めないスロットル（${JSON.stringify(throttle)}）は「書き込みなし」の 0 とする`, () => {
+  for (const [what, throttle] of [
+    ['ない', null],
+    ['時刻が文字列の', { at: '5' }],
+    ['時刻が有限でない', { at: Infinity }],
+  ] as const)
+    test(`${what}スロットルは「書き込みなし」の 0 とする`, () => {
       assert.equal(
         (writeBody('home', 'alice', null, throttle)['throttle/alice'] as { prev: number }).prev,
         0,

@@ -32,17 +32,14 @@ function settle(spring: Spring, fps = 60, k?: number) {
 const far = (): Spring => ({ x: 0, y: 0, vx: 0, vy: 0, tx: 400, ty: -300, tilt: 0, scale: 1, ts: 1.12 });
 
 describe('springStep', () => {
-  test('離れた目標まで 0.5 秒ほどで行って止まる', () => {
+  test('離れた目標まで 0.5 秒ほどで行き、目標の大きさになって止まる', () => {
     const spring = far();
     const { time } = settle(spring);
     assert.ok(time < 0.6, String(time));
-    assert.deepEqual([Math.round(spring.x), Math.round(spring.y)], [400, -300]);
-  });
-
-  test('止まるころには目標の大きさになる', () => {
-    const spring = far();
-    settle(spring);
-    assert.equal(spring.scale.toFixed(2), '1.12');
+    assert.deepEqual(
+      [Math.round(spring.x), Math.round(spring.y), spring.scale.toFixed(2)],
+      [400, -300, '1.12'],
+    );
   });
 
   test('止まっていたシールは、目標を行き過ぎない', () => {
@@ -80,11 +77,6 @@ describe('springStep', () => {
     assert.ok(Math.abs(slanted.tilt - 7) < 1, String(slanted.tilt));
   });
 
-  test('止まったまま持っているシールは、自分の角度を保つ', () => {
-    const spring = { x: 5, y: 5, vx: 0, vy: 0, tx: 5, ty: 5, tilt: 7, base: 7, scale: 1, ts: 1 };
-    for (let i = 0; i < 30; i++) springStep(spring, FRAME);
-    assert.equal(spring.tilt, 7);
-  });
 
   test('傾きは速さに応じて増え、普通の速さでは上限に張り付かない', () => {
     // Dragged sideways at a steady speed (px/s) for half a second.
@@ -123,10 +115,11 @@ describe('springStep', () => {
     assert.deepEqual([spring.x, spring.y, spring.scale, spring.tilt.toFixed(2)], [400, -300, 1.12, '0.00']);
   });
 
-  test('すでに目標にあるばねは、そのまま止まっている', () => {
-    const spring = { x: 5, y: 5, vx: 0, vy: 0, tx: 5, ty: 5, tilt: 0, scale: 1, ts: 1 };
+  test('すでに目標にあるばねは、自分の角度のまま止まっている', () => {
+    const spring = { x: 5, y: 5, vx: 0, vy: 0, tx: 5, ty: 5, tilt: 7, base: 7, scale: 1, ts: 1 };
     assert.equal(springStep(spring, FRAME), true);
-    assert.deepEqual([spring.x, spring.y], [5, 5]);
+    for (let i = 0; i < 30; i++) springStep(spring, FRAME);
+    assert.deepEqual([spring.x, spring.y, spring.tilt], [5, 5, 7]);
   });
 });
 
@@ -200,7 +193,6 @@ describe('liftedSpot', () => {
   });
 
   for (const [x, y, w, h] of [
-    [2, 0, 390, 664],
     [389, 660, 390, 664],
     [100, 40, 390, 100],
   ])

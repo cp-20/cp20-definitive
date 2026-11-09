@@ -108,6 +108,8 @@ export default defineConfig({
     // refused by the font-src 'self' content security policy.
     assetsInlineLimit: (file) => (isFontFile(file) ? false : undefined),
   },
-  // The tests check logic and build output in Node; none of them needs a DOM.
-  test: { environment: 'node' },
+  // The tests check logic and build output in Node; none of them needs a DOM. None of them leaves
+  // a global for good (they are handed their fetch, clock and directories), so the test files share
+  // their workers instead of starting one each.
+  test: { environment: 'node', isolate: false },
 });

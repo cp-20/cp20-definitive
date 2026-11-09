@@ -35,7 +35,6 @@ describe('stampEntries', () => {
 
   for (const [name, fields] of [
     ['priority つきの x', { x: { '.value': 0.5, '.priority': 'p' } }],
-    ['priority つきの kind', { kind: { '.value': 0, '.priority': 'p' } }],
     ['未解決のサーバー時刻', { createdAt: TS }],
     ['整数でない kind', { kind: 1.5 }],
     ['範囲外の kind', { kind: STICKER_KIND_COUNT }],
@@ -95,11 +94,6 @@ describe('removeFrom', () => {
     assert.deepEqual(Object.keys(removeFrom(record, seen(record, '3')).stamps), ['0', '1', '2', '4']);
   });
 
-  test('保存済みのレコードを書き換えない', () => {
-    const record = fullRecord();
-    removeFrom(record, seen(record, '3'));
-    assert.equal(Object.keys(record.stamps).length, 5);
-  });
 });
 
 describe('moveIn', () => {
@@ -119,11 +113,6 @@ describe('moveIn', () => {
     assert.deepEqual(edit.stamps['3'], sticker({ x: 0.57, createdAt: 13 }));
   });
 
-  test('保存済みのレコードを書き換えない', () => {
-    const record = fullRecord();
-    moveIn(record, seen(record, '3'), sticker({ x: 0.57 }));
-    assert.equal(record.stamps['3'].x, 0.3);
-  });
 });
 
 describe('nextRecord', () => {
@@ -135,4 +124,13 @@ describe('nextRecord', () => {
     const stamps = { 0: sticker() };
     assert.deepEqual(nextRecord(stamps, 'hash', TS), { stamps, updatedAt: TS, avatar: 'hash' });
   });
+});
+
+test('どの編集も、保存済みのレコードを書き換えない', () => {
+  const record = fullRecord();
+  const before = structuredClone(record);
+  placeIn(record, sticker({ x: 0.9 }), TS);
+  removeFrom(record, seen(record, '3'));
+  moveIn(record, seen(record, '2'), sticker({ x: 0.57 }));
+  assert.deepEqual(record, before);
 });

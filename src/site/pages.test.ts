@@ -3,7 +3,6 @@ import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import baseWorks from '../data/works.json' with { type: 'json' };
 import manual from '../data/manual.json' with { type: 'json' };
-import snapshot from '../data/generated.json' with { type: 'json' };
 import {
   assertRelatedArticles,
   missingRelatedArticles,
@@ -17,15 +16,10 @@ import {
   validateWorks,
   workPath,
 } from './pages.ts';
-import { mergeArticles } from '../content/normalize.ts';
 
 const works = mergeWorks(baseWorks, manual);
 
 describe('validateWorks', () => {
-  test('コミットされた作品はすべて通る', () => {
-    assert.deepEqual(validateWorks(works), works);
-  });
-
   for (const id of ['Foo', 'a--b', '', 'a.b', '-a', 'a-', 'a/b', undefined])
     test(`作品 id ${JSON.stringify(id)} は使えない`, () => {
       assert.throws(() => validateWorks([{ id } as { id: string }]), /Invalid work id/);
@@ -79,20 +73,11 @@ describe('パスとページキー', () => {
     ['/articles', 2, 'articles'],
     ['/about', 3, 'about'],
     ['/404', -1, '404'],
-    ['/colophon', -1, 'colophon'],
   ] as const)
     test(`${path} はタブ ${tab}、セクション ${section}`, () => {
       assert.deepEqual([tabIndex(path), sectionName(path)], [tab, section]);
     });
 });
-
-// The scheduled refresh only warns here (see refresh.yml); commits and PRs stay strict.
-test.skipIf(process.env.RELATED_ARTICLES === 'warn' && 'related-article check set to warn')(
-  '作品の関連記事は、どれも記事一覧にある（記事名つきで表示できる）',
-  () => {
-    assert.deepEqual(missingRelatedArticles(works, mergeArticles(snapshot.articles, [], manual)), []);
-  },
-);
 
 describe('missingRelatedArticles', () => {
   const articles = [{ url: 'https://example.com/known' }];

@@ -18,7 +18,7 @@ npm run dev:worker
 npm run sync   # 記事・GitHub・おすすめ曲/漫画・サムネイルを取得
 npm test       # 振る舞いのテスト（収集・OG解析・画像・シールの楽観的更新と保存・配置計算など）とビルド結果の検査
 npm run cache:images # 画像キャッシュだけ更新（通常はsyncが実行）
-npm run check  # Solidの型検査
+npm run check  # 型検査（TypeScript 7 のネイティブ版 tsc）
 npm run rules  # database.rules.json をページ一覧から再生成（--check で差分の検査のみ）
 npm run build
 ```
@@ -164,8 +164,8 @@ Lucide公式のSVGノードをSolidで描画。CSS Grid、transitions / keyframe
 
 ## 検証と素材
 
-`npm test`（`vitest run`）は外から観測できる振る舞いだけを検査します。純粋なロジックは使う機能のフォルダ（`src/stamps` など）に置き、テストはその隣（`foo.ts` の隣に `foo.test.ts`）に置きます。、fetch・時計・EventSource は小さなテストダブルに差し替えるので、テストは速く決定的です。ソースコードの文字列を照合するテストは置かず、見た目や操作は下記のブラウザ検証で、生成物はビルド結果（`dist/client`）で確かめます。テスト名は仕様として読める文で、1テストにつき1つの関心だけを検査します。CSSの約束事（px指定のfont-sizeを使わない、印刷用スタイル、シールの層の解放）はソース照合のテストをやめた際に自動検査から外し、レビューで見ます。ビルド結果を読むテストは `dist/client` がなければスキップするため、`npm run verify` の中で走らせてください。シールの保存失敗の取り消し（`store.ts` の配線）はブラウザ検証でだけ確かめており、`npm run verify` には含まれません。
+`npm test`（`vitest run`）は外から観測できる振る舞いだけを検査します。純粋なロジックは使う機能のフォルダ（`src/stamps` など）に置き、テストはその隣（`foo.ts` の隣に `foo.test.ts`）に置きます。fetch・時計・EventSource・ファイルの置き場所（`scripts/sync` の収集は `dirs` で一時ディレクトリを受け取る）は引数で渡す小さなテストダブルに差し替えるので、テストは速く決定的で、グローバルを書き換えません（そのためテストファイルはワーカーを共有します。`isolate: false`）。コミットされたデータ（収集したスナップショット、works.json、経歴、表紙など）の約束は `src/data/snapshot.test.ts` に、ビルド結果（`dist/client`）の約束は `scripts/build/dist.test.ts` にまとめ、どちらも1つの約束を1テストにして違反をすべて並べます。ソースコードの文字列を照合するテストや、ライブラリ自体を確かめるテストは置かず、見た目や操作は下記のブラウザ検証で確かめます。テスト名は仕様として読める日本語の文で、アサーションは `node:assert/strict` です。CSSの約束事（px指定のfont-sizeを使わない、印刷用スタイル、シールの層の解放）はレビューで見ます。`dist.test.ts` は `dist/client` がなければスキップするため、`npm run verify` の中で走らせてください。シールの保存失敗の取り消し（`store.ts` の配線）はブラウザ検証でだけ確かめており、`npm run verify` には含まれません。
 
 `node scripts/qa/browser-check.ts` は8787（`CHECK_ORIGIN` で変更可）のサイトを検証し、`.qa/` に結果と画面を保存します。初回は `npx playwright install chromium`。Googleログインはヘッドレスブラウザでは行えないため、シールの操作は `scripts/qa/firebase-mock.ts`（ログイン済みユーザーを注入し、DBをメモリ上で同じ所有者ルールで再現）に対して検証し、実際のDBには書き込みません。`STAMPS_RULES_EMULATOR=127.0.0.1:9000 node scripts/firebase/rules-check.ts` はローカルのRealtime Databaseエミュレーターにルールを読み込み、署名なしのGoogleトークンで書込の検証（連続更新・子パス書込・削除→再作成・同時編集の拒否を含む）を行います。`STAMPS_LIVE_TEST=1 node scripts/firebase/rules-check.ts` は実際のDBで公開読込の制限と、未ログイン・匿名アカウントの書き込み拒否を検証します。`STAMPS_GOOGLE_ID_TOKEN`（Googleログインしたブラウザで取得したIDトークン）を渡すと、項目の検証と自分の領域への書き込み・削除も確認します。
 
-`RESEARCH.md` にリファレンス、`VALIDATION.md` に検証内容を記載。アイコンのキャラクターは空どうふさん、UIアイコンはLucide（ISC）、サービスのロゴは Simple Icons（CC0）と各サービス・所属先のファビコン（`public/images/brands/`）、フォントはZen Maru Gothic / IBM Plex Mono（SIL OFL）。スタンプの絵柄はTwemoji（© Twitter, Inc and other contributors、CC BY 4.0、`public/stamps/LICENSE-GRAPHICS.txt` に対象ファイルと出典）および本人のアイコン。ビルド時に `scripts/build/licenses.ts` が、クライアントJSとHTMLに入る npm パッケージ（Firebase・Solid・Lucide など）とフォント・シール素材のライセンス全文を `/third-party-licenses.txt` に書き出し、フッターから開くクレジットのダイアログからリンクします（LICENSE を同梱しないパッケージには `licenses/` の本文と各ソースの著作権表示を使用）。Zen Maru Gothic のサブセットはフォント内の著作権・ライセンス表示（name ID 0〜6, 8, 9, 11〜14）を残します。作品アイコンとOG画像は元の画像を保存して配信し、図柄や配色は変更しません。第三者画像の権利は各権利者に帰属し、クレジット表記によって新たな利用許諾を付与するものではありません。
+`RESEARCH.md` にリファレンスを記載。アイコンのキャラクターは空どうふさん、UIアイコンはLucide（ISC）、サービスのロゴは Simple Icons（CC0）と各サービス・所属先のファビコン（`public/images/brands/`）、フォントはZen Maru Gothic / IBM Plex Mono（SIL OFL）。スタンプの絵柄はTwemoji（© Twitter, Inc and other contributors、CC BY 4.0、`public/stamps/LICENSE-GRAPHICS.txt` に対象ファイルと出典）および本人のアイコン。ビルド時に `scripts/build/licenses.ts` が、クライアントJSとHTMLに入る npm パッケージ（Firebase・Solid・Lucide など）とフォント・シール素材のライセンス全文を `/third-party-licenses.txt` に書き出し、フッターから開くクレジットのダイアログからリンクします（LICENSE を同梱しないパッケージには `licenses/` の本文と各ソースの著作権表示を使用）。Zen Maru Gothic のサブセットはフォント内の著作権・ライセンス表示（name ID 0〜6, 8, 9, 11〜14）を残します。作品アイコンとOG画像は元の画像を保存して配信し、図柄や配色は変更しません。第三者画像の権利は各権利者に帰属し、クレジット表記によって新たな利用許諾を付与するものではありません。

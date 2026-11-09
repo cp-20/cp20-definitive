@@ -1,5 +1,5 @@
 // The public sticker stream: applying Firebase's events, rendering bursts, and keeping it open.
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { applyStreamEvent, coalesce, keepStream, RETRY_MS } from './stream.ts';
 
@@ -40,83 +40,99 @@ describe('applyStreamEvent', () => {
   });
 });
 
-// Timers and the monotonic clock only move when a test moves them.
-beforeEach(() => {
-  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
-});
-afterEach(() => {
-  vi.useRealTimers();
-  vi.unstubAllGlobals();
-  vi.restoreAllMocks();
-});
-const advance = (ms: number) => vi.advanceTimersByTime(ms);
+// A clock and timers that only move when a test moves them.
+function fakeClock() {
+  let now = 0,
+    next = 1;
+  const timers = new Map<number, { at: number; fn: () => void }>();
+  return {
+    now: () => now,
+    setTimeout: (fn: () => void, ms: number) => {
+      timers.set(next, { at: now + ms, fn });
+      return next++;
+    },
+    clearTimeout: (id: unknown) => void timers.delete(id as number),
+    /** Sets the clock without running anything (a system clock set back). */
+    set: (t: number) => void (now = t),
+    advance(ms: number) {
+      const end = now + ms;
+      for (;;) {
+        const [id, due] = [...timers].sort(([, a], [, b]) => a.at - b.at)[0] ?? [];
+        if (!due || due.at > end) break;
+        timers.delete(id!);
+        now = due.at;
+        due.fn();
+      }
+      now = end;
+    },
+  };
+}
 
 describe('coalesce', () => {
+  // `render` with a counter of how often it ran.
+  const counted = () => {
+    const clock = fakeClock();
+    const ran = { count: 0 };
+    return { clock, ran, render: coalesce(() => ran.count++, 250, clock) };
+  };
+
   test('静かなあとの最初のイベントは、次のティックで描く', () => {
-    const run = vi.fn();
-    coalesce(run, 250).schedule();
-    advance(0);
-    expect(run).toHaveBeenCalledTimes(1);
+    const { clock, ran, render } = counted();
+    render.schedule();
+    clock.advance(0);
+    assert.equal(ran.count, 1);
   });
 
   test('間隔内に何度呼ばれても、描くのは1回', () => {
-    const run = vi.fn();
-    const render = coalesce(run, 250);
-    advance(1000);
+    const { clock, ran, render } = counted();
+    clock.advance(1000);
     render.schedule();
     render.schedule();
     render.schedule();
-    advance(250);
-    expect(run).toHaveBeenCalledTimes(1);
+    clock.advance(250);
+    assert.equal(ran.count, 1);
   });
 
   test('続けて届くイベントは、間隔ごとに1回描く', () => {
-    const run = vi.fn();
-    const render = coalesce(run, 250);
+    const { clock, ran, render } = counted();
     render.schedule();
-    advance(0);
+    clock.advance(0);
     render.schedule();
-    advance(249);
-    expect(run).toHaveBeenCalledTimes(1);
-    advance(1);
-    expect(run).toHaveBeenCalledTimes(2);
+    clock.advance(249);
+    assert.equal(ran.count, 1);
+    clock.advance(1);
+    assert.equal(ran.count, 2);
   });
 
   test('取り消した描画は実行しない', () => {
-    const run = vi.fn();
-    const render = coalesce(run, 250);
+    const { clock, ran, render } = counted();
     render.schedule();
     render.cancel();
-    advance(1000);
-    expect(run).not.toHaveBeenCalled();
+    clock.advance(1000);
+    assert.equal(ran.count, 0);
   });
 
   test('時計が巻き戻っても、待つのは最大で1間隔', () => {
-    const run = vi.fn();
-    const render = coalesce(run, 250);
+    const { clock, ran, render } = counted();
     render.schedule();
-    advance(0);
-    vi.spyOn(performance, 'now').mockReturnValue(-3600000);
+    clock.advance(0);
+    clock.set(-3600000);
     render.schedule();
-    advance(250);
-    expect(run).toHaveBeenCalledTimes(2);
+    clock.advance(250);
+    assert.equal(ran.count, 2);
   });
 });
 
 // A fake EventSource that the test errors and closes by hand, and a document whose visibility
-// the test changes; keepStream finds both as globals, as in the browser.
+// the test changes, handed to keepStream in place of the browser's.
 function fakeBrowser() {
   const sources: FakeSource[] = [];
   class FakeSource {
-    static CONNECTING = 0;
-    static OPEN = 1;
     static CLOSED = 2;
     readyState = 0;
     listeners: Record<string, ((e: { data: string }) => void)[]> = {};
     onerror: () => void = () => {};
-    url: string;
-    constructor(url: string) {
-      this.url = url;
+    constructor() {
       sources.push(this);
     }
     addEventListener(type: string, fn: (e: { data: string }) => void) {
@@ -135,21 +151,29 @@ function fakeBrowser() {
     }
   }
   const doc = Object.assign(new EventTarget(), { hidden: false });
-  vi.stubGlobal('EventSource', FakeSource);
-  vi.stubGlobal('document', doc);
+  const clock = fakeClock();
   const seen = { restarts: 0, events: [] as unknown[], failures: 0 };
-  const stop = keepStream('https://db.example/pages/home.json', {
-    restart: () => seen.restarts++,
-    receive: (type, e) => seen.events.push([type, JSON.parse(e.data)]),
-    fail: () => seen.failures++,
-  });
+  const stop = keepStream(
+    'https://db.example/pages/home.json',
+    {
+      restart: () => seen.restarts++,
+      receive: (type, e) => seen.events.push([type, JSON.parse(e.data)]),
+      fail: () => seen.failures++,
+    },
+    {
+      EventSource: FakeSource as unknown as typeof EventSource,
+      document: doc,
+      setTimeout: clock.setTimeout,
+      clearTimeout: clock.clearTimeout,
+    },
+  );
   const open = () => sources.filter((s) => s.readyState !== 2);
   const latest = () => sources.at(-1)!;
   const setHidden = (hidden: boolean) => {
     doc.hidden = hidden;
     doc.dispatchEvent(new Event('visibilitychange'));
   };
-  return { sources, open, latest, advance, seen, stop, setHidden };
+  return { sources, open, latest, advance: clock.advance, seen, stop, setHidden };
 }
 
 describe('keepStream', () => {
@@ -164,15 +188,10 @@ describe('keepStream', () => {
     assert.deepEqual(browser.seen.events, [['put', { path: '/', data: {} }]]);
   });
 
-  test('ブラウザが諦めたストリームは、失敗を伝える', () => {
+  test(`ブラウザが諦めたストリームは、失敗を伝えて ${RETRY_MS}ms たってから開き直す`, () => {
     const browser = fakeBrowser();
     browser.latest().fail();
     assert.equal(browser.seen.failures, 1);
-  });
-
-  test(`ブラウザが諦めたストリームは、${RETRY_MS}ms たってから開き直す`, () => {
-    const browser = fakeBrowser();
-    browser.latest().fail();
     browser.advance(RETRY_MS - 1);
     assert.equal(browser.open().length, 0);
     browser.advance(1);

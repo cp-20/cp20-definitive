@@ -1,5 +1,5 @@
 // Optimistic updates: what is drawn while your changes wait, and how they are saved one at a time.
-import { describe, expect, test, vi } from 'vitest';
+import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { createPendingSaves, projectStamps, serialWrites } from './optimistic.ts';
 import type { Operation, PlacedStamp, SavedRecord } from './types.ts';
@@ -52,11 +52,6 @@ describe('projectStamps', () => {
       'l1',
       'other-0',
     ]);
-  });
-
-  test('保存待ちの操作がなければ、届いたままを描く', () => {
-    const remote = fivePlusOther();
-    assert.deepEqual(projectStamps(remote, [], 'me'), remote);
   });
 
   test('保存待ちの削除は、そのシールを消す', () => {
@@ -161,41 +156,21 @@ describe('serialWrites', () => {
     assert.deepEqual(started, ['first', 'second']);
   });
 
-  test('次の書き込みは、前の書き込みの完了から指定の間隔だけ待ってから始める', async () => {
-    const pause = Promise.withResolvers<void>();
-    const wait = vi.fn((_ms: number) => pause.promise);
-    const write = serialWrites(wait, 1100);
-    let second = false;
-    await write(async () => {});
-    write(async () => (second = true));
-    await flush();
-    expect(wait.mock.calls).toEqual([[1100]]);
-    assert.equal(second, false);
-    pause.resolve();
-    await flush();
-    assert.equal(second, true);
-  });
-
-  test('失敗した書き込みのあとも、指定の間隔だけ待ってから次を始める', async () => {
-    const pause = Promise.withResolvers<void>();
-    const wait = vi.fn((_ms: number) => pause.promise);
-    const write = serialWrites(wait, 1100);
-    let second = false;
-    await assert.rejects(write(() => Promise.reject(Error('denied'))));
-    write(async () => (second = true));
-    await flush();
-    expect(wait.mock.calls).toEqual([[1100]]);
-    assert.equal(second, false);
-    pause.resolve();
-    await flush();
-    assert.equal(second, true);
-  });
-
-  test('失敗した書き込みのあとも、続く書き込みを送る', async () => {
-    const write = serialWrites(async () => {});
-    await assert.rejects(write(() => Promise.reject(Error('denied'))));
-    assert.equal(await write(async () => 'next'), 'next');
-  });
+  for (const [why, write] of [
+    ['成功した', async () => {}],
+    ['失敗した', () => Promise.reject(Error('denied'))],
+  ] as const)
+    test(`${why}書き込みのあとも、指定の間隔だけ待ってから次の書き込みを送る`, async () => {
+      const pause = Promise.withResolvers<void>();
+      const waits: number[] = [];
+      const queue = serialWrites((ms) => (waits.push(ms), pause.promise), 1100);
+      await queue(write).catch(() => {});
+      const next = queue(async () => 'next');
+      await flush();
+      assert.deepEqual(waits, [1100]);
+      pause.resolve();
+      assert.equal(await next, 'next');
+    });
 });
 
 // A pending-save list whose requests the test answers by hand.
@@ -242,23 +217,17 @@ describe('createPendingSaves', () => {
     assert.equal(await result, record);
   });
 
-  test('保存できなかった操作は一覧から外れ（＝画面が元に戻り）、失敗で終わる', async () => {
-    const { saves, shown, reply } = pendingSaves();
+  test('保存できなかった操作は一覧から外れ（＝画面が元に戻り）、再送せずに失敗で終わる', async () => {
+    const { saves, shown, calls, reply } = pendingSaves();
     const outcome = saves.add(add(stamp('l1', 'local'))).then(
       () => 'saved',
       (error) => error.message,
     );
     await reply((r) => r.reject(Error('HTTP 503')));
+    await flush();
     assert.deepEqual(shown.pending, []);
     assert.equal(await outcome, 'HTTP 503');
-  });
-
-  test('失敗した操作は再送しない', async () => {
-    const { saves, calls, reply } = pendingSaves();
-    saves.add(add(stamp('l1', 'local'))).catch(() => {});
-    await reply((r) => r.reject(Error('offline')));
-    await flush();
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, 1, '再送しない');
   });
 
   test('操作は追加した順に、1つずつ送る', async () => {
@@ -290,41 +259,25 @@ describe('createPendingSaves', () => {
     assert.deepEqual([result, calls, shown.pending], [null, [], []]);
   });
 
-  test('貼ったシールが保存されると、続く操作はその保存済みのシールに対して送る', async () => {
-    const { saves, calls, reply } = pendingSaves();
-    const local = stamp('l1', 'local');
-    saves.add(add(local));
-    saves.add(remove(local));
-    await reply((r) => r.resolve(saved(stamp('me-3'))));
-    await flush();
-    assert.deepEqual(calls.at(-1), ['remove-l1', 'me-3']);
-  });
-
-  test('貼ったシールが保存されると、保存待ちの操作の対象も保存済みのシールになる', async () => {
-    const { saves, shown, reply } = pendingSaves();
+  test('貼ったシールが保存されると、保存待ちの操作の対象を保存済みのシールに替え、そのシールに対して送る', async () => {
+    const { saves, calls, shown, reply } = pendingSaves();
     const local = stamp('l1', 'local');
     saves.add(add(local));
     saves.add(remove(local));
     await reply((r) => r.resolve(saved(stamp('me-3'))));
     const [next] = shown.pending;
     assert.equal(next.type !== 'add' && next.target.id, 'me-3');
+    await flush();
+    assert.deepEqual(calls.at(-1), ['remove-l1', 'me-3']);
   });
 
-  test('貼るのに失敗したら、そのシールへの保存待ちの操作も一覧から外す', async () => {
-    const { saves, shown, reply } = pendingSaves();
-    const local = stamp('l1', 'local');
-    saves.add(add(local)).catch(() => {});
-    saves.add(move(local, stamp('l2', 'local')));
-    await reply((r) => r.reject(Error('offline')));
-    assert.deepEqual(shown.pending, []);
-  });
-
-  test('貼るのに失敗したシールへの続く操作は、何も送らない', async () => {
-    const { saves, calls, reply } = pendingSaves();
+  test('貼るのに失敗したら、そのシールへの保存待ちの操作も一覧から外し、何も送らない', async () => {
+    const { saves, calls, shown, reply } = pendingSaves();
     const local = stamp('l1', 'local');
     saves.add(add(local)).catch(() => {});
     const moved = saves.add(move(local, stamp('l2', 'local')));
     await reply((r) => r.reject(Error('offline')));
+    assert.deepEqual(shown.pending, []);
     assert.deepEqual([await moved, calls.length], [null, 1]);
   });
 

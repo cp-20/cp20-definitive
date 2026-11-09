@@ -399,8 +399,8 @@ export async function addVariants(
         if (fresh) written++;
       } catch {
         // A corrupt original (intact header, broken body) must not stop the whole run: the entry
-        // keeps only its original file and, like one whose size cannot be read, no width (the
-        // tests require a variant for every thumbnail with a recorded width over 400px).
+        // keeps only its original file and, like one whose size cannot be read, no width: a page
+        // given a width builds a srcset from the variants, which this entry does not have.
         console.warn(`Image variants: ${entry.file} could not be resized; kept without variants`);
         variants.length = 0;
         crop = undefined;

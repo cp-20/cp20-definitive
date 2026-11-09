@@ -1,12 +1,19 @@
 // The data the site is built from, as committed: the snapshot the scheduled refresh collects
-// (previews, image cache, music and manga) and the files edited by hand (works, the history, the
-// covers). Each check lists everything that breaks it, so one run shows all there is to fix.
+// (previews, image cache, music and manga) and the data edited by hand (works, the history, the
+// covers and screenshots). Each check lists everything that breaks it, so one run shows all there
+// is to fix.
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { clientMedia, type CacheEntry, type Preview } from '../content/media.ts';
+import { clientMedia, coverSrcsets, type CacheEntry, type Preview } from '../content/media.ts';
+import { splitLinks } from '../content/inline-links.ts';
+import { splitEmphasis } from '../content/emphasis.ts';
+import { SOLO_ROLE, openLink, type Work } from '../content/works.ts';
+import { mergeWorks, sitePaths } from '../site/pages.ts';
+import { highlightIds, milestones, speedups } from './editorial.ts';
+import { mangaCovers } from './manga-covers.ts';
 import {
   framedCrop,
   framedSources,
@@ -20,10 +27,13 @@ import previewsJson from './previews.json' with { type: 'json' };
 import tracks from './tracks.json' with { type: 'json' };
 import series from './series.json' with { type: 'json' };
 import baseWorks from './works.json' with { type: 'json' };
+import manual from './manual.json' with { type: 'json' };
 
 const cache: Record<string, CacheEntry> = cacheJson;
 const previews = previewsJson as Record<string, Preview>;
 const publicDir = fileURLToPath(new URL('../../public', import.meta.url));
+const works = mergeWorks(baseWorks as Work[], manual as { projects?: Work[] });
+const width = async (file: string) => `${(await sharp(publicDir + file).metadata()).width}w`;
 
 describe('画像キャッシュ', () => {
   const entries = (sources: (string | null | undefined)[]) =>
@@ -93,8 +103,6 @@ describe('画像キャッシュ', () => {
 });
 
 describe('リンク先のプレビュー', () => {
-  const works = baseWorks as { id: string; url: string; image?: string }[];
-
   test('リポジトリのページの作品は GitHub のアイコンを使わない', () => {
     assert.deepEqual(
       works.filter((w) => previews[w.url]?.icon?.startsWith('https://github.githubassets.com/')).map((w) => w.id),
@@ -123,5 +131,166 @@ describe('リンク先のプレビュー', () => {
       tracks.map((t) => t.link).filter((link) => !/^https:\/\/youtu\.be\/[-_A-Za-z0-9]{11}$/.test(link)),
       [],
     );
+  });
+});
+
+describe('作品（works.json）', () => {
+  test('説明は何なのかを1文で言い切り、役割を書き、1人でつくったものは同じ言い方をする', () => {
+    assert.deepEqual(
+      works
+        .filter(
+          (w) =>
+            !w.description.endsWith('。') ||
+            !w.role?.trim() ||
+            (w.tags.includes('個人開発') && w.role !== SOLO_ROLE),
+        )
+        .map((w) => w.id),
+      [],
+    );
+  });
+
+  test('状態と種類は決まった値だけで、公開を終えたものの代わりのページは https', () => {
+    assert.deepEqual(
+      works
+        .filter(
+          (w) =>
+            (w.status && !['active', 'ended', 'members-only'].includes(w.status)) ||
+            (w.kind && w.kind !== 'event') ||
+            (w.status === 'ended' && w.links?.some((l) => !l.url.startsWith('https://'))),
+        )
+        .map((w) => w.id),
+      [],
+    );
+  });
+
+  // Outside traP these sites end at a login page that says "Not authorized".
+  test('部員向けのサイトは主ボタンにしない', () => {
+    assert.deepEqual(
+      works.filter((w) => w.status === 'members-only' && openLink(w)?.href === w.url).map((w) => w.id),
+      [],
+    );
+  });
+
+  test('説明文のリンクは [label](url) で書き、サイト内へのリンクは実在するページを指す', () => {
+    const paths = new Set(sitePaths(works));
+    const wrong = works.flatMap((w) =>
+      w.comments.flatMap((comment) => {
+        const parts = splitLinks(comment);
+        const bare = /https?:\/\/|\(\/|\]\(/.test(parts.map((p) => ('text' in p ? p.text : '')).join(''));
+        const broken = parts.flatMap((p) => ('href' in p && p.href.startsWith('/') && !paths.has(p.href) ? [p.href] : []));
+        return [...(bare ? [`${w.id}: URL がむき出し`] : []), ...broken.map((href) => `${w.id}: ${href}`)];
+      }),
+    );
+    assert.deepEqual(wrong, []);
+  });
+
+  test('スクリーンショットは撮った画像と説明と WebP の縮小版がそろい、ほかのファイルはない', async () => {
+    const shots = works.flatMap((w) => (w.screenshots ?? []).map((s) => ({ id: w.id, ...s })));
+    const names = await readdir(`${publicDir}/images/screenshots`);
+    const stem = (src: string) => src.split('/').at(-1)!.replace('.png', '');
+    assert.deepEqual(
+      {
+        wrong: shots
+          .filter(
+            (s) =>
+              s.src !== `/images/screenshots/${s.id}-${s.device}.png` ||
+              !s.alt.trim() ||
+              !names.includes(`${stem(s.src)}.png`) ||
+              !names.some((n) => new RegExp(`^${stem(s.src)}-\\d+w\\.webp$`).test(n)),
+          )
+          .map((s) => s.src),
+        stray: names.filter(
+          (n) => !shots.some((s) => n === `${stem(s.src)}.png` || n.startsWith(`${stem(s.src)}-`)),
+        ),
+      },
+      { wrong: [], stray: [] },
+    );
+  });
+});
+
+test('表紙とスクリーンショットにはどれも WebP の候補があり、srcset の幅は実際の幅で、最大の候補は原寸', async () => {
+  const srcsets: Record<string, string> = {};
+  for (const directory of ['/images/covers/', '/images/screenshots/'])
+    Object.assign(srcsets, coverSrcsets(await readdir(publicDir + directory), directory));
+  const shown = [
+    ...Object.values(mangaCovers).map((c) => c.image),
+    ...works.flatMap((w) => (w.screenshots ?? []).map((s) => s.src)),
+  ];
+  const wrong = shown.filter((file) => !srcsets[file]);
+  for (const [file, srcset] of Object.entries(srcsets)) {
+    const candidates = srcset.split(', ').map((c) => c.split(' '));
+    if (candidates.at(-1)?.[1] !== (await width(file))) wrong.push(file);
+    for (const [copy, descriptor] of candidates) if ((await width(copy)) !== descriptor) wrong.push(copy);
+  }
+  assert.deepEqual(wrong, []);
+});
+
+describe('漫画の表紙（manga-covers.ts）', () => {
+  const luminance = (hex: string) => {
+    const [r, g, b] = [1, 3, 5]
+      .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contrast = (a: string, b: string) => {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+
+  test('背表紙の文字は 4.5:1 以上のコントラストで読める', () => {
+    assert.deepEqual(
+      Object.entries(mangaCovers)
+        .filter(([, { spine, ink }]) => contrast(spine, ink) < 4.5)
+        .map(([title]) => title),
+      [],
+    );
+  });
+
+  // The spine's picture shows 1/zoom of the cover's width around the face (and as much of its
+  // height); a face nearer the edge than that would leave the frame partly empty.
+  test('背表紙の絵は表紙の内側から切り出す', () => {
+    const outside = Object.entries(mangaCovers).filter(([, { face, zoom }]) => {
+      const half = 1 / zoom / 2;
+      const halfDown = (half * 480) / 682;
+      return zoom < 1 || face[0] < half || face[0] > 1 - half || face[1] < halfDown || face[1] > 1 - halfDown;
+    });
+    assert.deepEqual(
+      outside.map(([title]) => title),
+      [],
+    );
+  });
+});
+
+describe('経歴（editorial.ts）', () => {
+  // Units written two ways (17.5 秒 / 17.5秒, 35ms / 35ミリ秒) compare as the same.
+  const normalize = (s: string) => s.replace(/\s+/g, '').replace(/ミリ秒/g, 'ms');
+  const detailOf = (id: string) => normalize(milestones.find((m) => m.id === id)!.detail.join(''));
+
+  test('id は重複せず URL の # にそのまま書け、作品とトップの実績はある経歴と作品を指す', () => {
+    const ids = milestones.map((m) => m.id);
+    const workIds = new Set(works.map((w) => w.id));
+    assert.deepEqual(
+      [
+        ...ids.filter((id, i) => ids.indexOf(id) !== i || !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(id)),
+        ...milestones.filter((m) => m.work && !workIds.has(m.work)).map((m) => `${m.id} → ${m.work}`),
+        ...highlightIds.filter((id) => !ids.includes(id)),
+      ],
+      [],
+    );
+  });
+
+  test('1行で強調した数字と「速くしてきたもの」の数字は、その経歴の詳しい説明にも書いてある', () => {
+    const missing = [
+      ...milestones.flatMap((m) =>
+        splitEmphasis(m.text)
+          .flatMap((p) => ('strong' in p ? (p.strong.match(/[\d,.]+/g) ?? []) : []))
+          .filter((figure) => !detailOf(m.id).includes(figure))
+          .map((figure) => `${m.id}: ${figure}`),
+      ),
+      ...speedups.flatMap((s) =>
+        [s.from, s.to].filter((v) => v && !detailOf(s.id).includes(normalize(v))).map((v) => `${s.id}: ${v}`),
+      ),
+    ];
+    assert.deepEqual(missing, []);
   });
 });

@@ -146,6 +146,7 @@ export function createSheet(options: {
     );
     flush();
     for (const el of still) {
+      // Reading a style applies the first state now, so removing data-still starts no transition.
       getComputedStyle(el).opacity;
       delete el.dataset.still;
     }

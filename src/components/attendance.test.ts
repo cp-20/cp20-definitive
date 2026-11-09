@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+// The arithmetic of the yearly attendance cards: days, the stamps of a day, keys and taps.
+import { describe, test } from 'vitest';
+import assert from 'node:assert/strict';
 import { dayOf, daysIn, nearest, spot, stampsOf, step, tipPlace, yearsOf } from './attendance.ts';
 
 const article = (date: string, n = 0) => ({
@@ -9,21 +11,21 @@ const article = (date: string, n = 0) => ({
 });
 
 describe('dayOf', () => {
-  it('reads the day in Japan time, as the site shows it', () => {
-    expect(dayOf(article('2025-12-31T15:30:00.000Z'))).toEqual({ y: 2026, m: 1, d: 1 });
-    expect(dayOf(article('2025-12-31T14:30:00.000Z'))).toEqual({ y: 2025, m: 12, d: 31 });
+  test('日本時間の日付で読む（サイトの表示と同じ）', () => {
+    assert.deepEqual(dayOf(article('2025-12-31T15:30:00.000Z')), { y: 2026, m: 1, d: 1 });
+    assert.deepEqual(dayOf(article('2025-12-31T14:30:00.000Z')), { y: 2025, m: 12, d: 31 });
   });
 });
 
 describe('yearsOf / daysIn', () => {
-  it('lists each year once, oldest first', () => {
+  test('記事のある年を古い順に1回ずつ挙げる', () => {
     const items = ['2024-05-01', '2022-01-02', '2024-01-01', '2023-03-03'].map((d, i) =>
       article(`${d}T00:00:00.000Z`, i),
     );
-    expect(yearsOf(items)).toEqual([2022, 2023, 2024]);
+    assert.deepEqual(yearsOf(items), [2022, 2023, 2024]);
   });
-  it('knows short months and leap years', () => {
-    expect([daysIn(2024, 2), daysIn(2025, 2), daysIn(2025, 4), daysIn(2025, 12)]).toEqual([29, 28, 30, 31]);
+  test('月の日数は、短い月とうるう年を知っている', () => {
+    assert.deepEqual([daysIn(2024, 2), daysIn(2025, 2), daysIn(2025, 4), daysIn(2025, 12)], [29, 28, 30, 31]);
   });
 });
 
@@ -35,11 +37,11 @@ describe('stampsOf', () => {
     article('2025-01-10T00:00:00.000Z', 4),
     article('2025-04-02T05:00:00.000Z', 5),
   ];
-  it("keeps only the year's articles, in date order", () => {
-    expect(stampsOf(items, 2025).map((s) => s.a.title)).toEqual(['t4', 't2', 't1', 't5']);
+  test('その年の記事だけを日付順に並べる', () => {
+    assert.deepEqual(stampsOf(items, 2025).map((s) => s.a.title), ['t4', 't2', 't1', 't5']);
   });
-  it('numbers the stamps on a day and knows how many the day has', () => {
-    expect(stampsOf(items, 2025).map((s) => [s.m, s.d, s.nth, s.of])).toEqual([
+  test('同じ日のスタンプに番号を振り、その日の数を持たせる', () => {
+    assert.deepEqual(stampsOf(items, 2025).map((s) => [s.m, s.d, s.nth, s.of]), [
       [1, 10, 0, 1],
       [4, 2, 0, 3],
       [4, 2, 1, 3],
@@ -49,22 +51,22 @@ describe('stampsOf', () => {
 });
 
 describe('spot', () => {
-  it('leaves a stamp alone on its day in the middle', () => {
-    expect(spot({ nth: 0, of: 1 })).toEqual({ x: 0, y: 0 });
+  test('その日に1つだけのスタンプは真ん中に置く', () => {
+    assert.deepEqual(spot({ nth: 0, of: 1 }), { x: 0, y: 0 });
   });
-  it('puts two on a day top left and bottom right', () => {
+  test('同じ日に2つなら左上と右下に置く', () => {
     const [a, b] = [0, 1].map((nth) => spot({ nth, of: 2 }));
-    expect(a.x < 0 && a.y < 0 && b.x > 0 && b.y > 0).toBe(true);
-    expect([a.x + b.x, a.y + b.y]).toEqual([0, 0]);
+    assert.equal(a.x < 0 && a.y < 0 && b.x > 0 && b.y > 0, true);
+    assert.deepEqual([a.x + b.x, a.y + b.y], [0, 0]);
   });
-  it('gives each of a crowded day its own place, inside its day and the rows next to it', () => {
+  test('混んだ日のスタンプにもそれぞれの場所を、その日と隣の行の内側に与える', () => {
     for (const of of [2, 3, 5, 8]) {
       const at = Array.from({ length: of }, (_, nth) => spot({ nth, of }));
-      expect(new Set(at.map((p) => `${p.x},${p.y}`)).size).toBe(of);
-      for (const p of at) expect(Math.abs(p.x) <= 0.3 && Math.abs(p.y) <= 0.4).toBe(true);
+      assert.equal(new Set(at.map((p) => `${p.x},${p.y}`)).size, of);
+      for (const p of at) assert.equal(Math.abs(p.x) <= 0.3 && Math.abs(p.y) <= 0.4, true);
       // No two closer than a fifth of a row, so each keeps a patch of its own.
       for (const p of at)
-        for (const q of at) if (p !== q) expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeGreaterThan(0.2);
+        for (const q of at) if (p !== q) assert.ok(Math.hypot(p.x - q.x, p.y - q.y) > 0.2);
     }
   });
 });
@@ -78,20 +80,20 @@ describe('step', () => {
     { m: 3, d: 28 },
     { m: 6, d: 15 },
   ];
-  it('moves to the stamp before or after with ← and →, and to the ends with Home and End', () => {
-    expect([step(stamps, 2, 'ArrowLeft'), step(stamps, 2, 'ArrowRight')]).toEqual([1, 3]);
-    expect([step(stamps, 2, 'Home'), step(stamps, 2, 'End')]).toEqual([0, 4]);
+  test('← → で前後のスタンプへ、Home・End で端へ移る', () => {
+    assert.deepEqual([step(stamps, 2, 'ArrowLeft'), step(stamps, 2, 'ArrowRight')], [1, 3]);
+    assert.deepEqual([step(stamps, 2, 'Home'), step(stamps, 2, 'End')], [0, 4]);
   });
-  it('goes nowhere past the ends or for other keys', () => {
-    expect([step(stamps, 0, 'ArrowLeft'), step(stamps, 4, 'ArrowRight')]).toEqual([undefined, undefined]);
-    expect([step(stamps, 0, 'Home'), step(stamps, 1, 'Enter')]).toEqual([undefined, undefined]);
+  test('端より先やほかのキーでは移らない', () => {
+    assert.deepEqual([step(stamps, 0, 'ArrowLeft'), step(stamps, 4, 'ArrowRight')], [undefined, undefined]);
+    assert.deepEqual([step(stamps, 0, 'Home'), step(stamps, 1, 'Enter')], [undefined, undefined]);
   });
-  it('moves to the nearest day in the closest month with a stamp with ↑ and ↓', () => {
-    expect(step(stamps, 1, 'ArrowDown')).toBe(3); // Jan 20 → Mar 28 (skips the empty February)
-    expect(step(stamps, 0, 'ArrowDown')).toBe(2); // Jan 3 → Mar 1
-    expect(step(stamps, 4, 'ArrowUp')).toBe(3); // Jun 15 → Mar 28 (13 days off, against 14)
-    expect(step(stamps, 0, 'ArrowUp')).toBeUndefined();
-    expect(step(stamps, 4, 'ArrowDown')).toBeUndefined();
+  test('↑ ↓ でスタンプのある一番近い月の、一番近い日へ移る', () => {
+    assert.equal(step(stamps, 1, 'ArrowDown'), 3); // Jan 20 → Mar 28 (skips the empty February)
+    assert.equal(step(stamps, 0, 'ArrowDown'), 2); // Jan 3 → Mar 1
+    assert.equal(step(stamps, 4, 'ArrowUp'), 3); // Jun 15 → Mar 28 (13 days off, against 14)
+    assert.equal(step(stamps, 0, 'ArrowUp'), undefined);
+    assert.equal(step(stamps, 4, 'ArrowDown'), undefined);
   });
 });
 
@@ -101,21 +103,21 @@ describe('nearest', () => {
     { x: 30, y: 10 },
     { x: 100, y: 100 },
   ];
-  it('finds the closest stamp within reach of a tap', () => {
-    expect(nearest(centres, 18, 12, 24)).toBe(0);
-    expect(nearest(centres, 24, 14, 24)).toBe(1);
-    expect(nearest(centres, 90, 110, 24)).toBe(2);
+  test('タップの届く範囲で一番近いスタンプを選ぶ', () => {
+    assert.equal(nearest(centres, 18, 12, 24), 0);
+    assert.equal(nearest(centres, 24, 14, 24), 1);
+    assert.equal(nearest(centres, 90, 110, 24), 2);
   });
-  it('finds none when every stamp is out of reach', () => {
-    expect(nearest(centres, 60, 60, 24)).toBe(-1);
-    expect(nearest([], 0, 0, 24)).toBe(-1);
+  test('どれも届かなければ選ばない', () => {
+    assert.equal(nearest(centres, 60, 60, 24), -1);
+    assert.equal(nearest([], 0, 0, 24), -1);
   });
 });
 
 describe('tipPlace', () => {
-  it('opens the slip toward the middle of the card and below the first months', () => {
-    expect(tipPlace({ m: 1, d: 2 })).toEqual({ edge: 'start', below: true });
-    expect(tipPlace({ m: 6, d: 16 })).toEqual({ edge: undefined, below: undefined });
-    expect(tipPlace({ m: 12, d: 30 })).toEqual({ edge: 'end', below: undefined });
+  test('札はカードの内側へ、最初の数か月は下へ開く', () => {
+    assert.deepEqual(tipPlace({ m: 1, d: 2 }), { edge: 'start', below: true });
+    assert.deepEqual(tipPlace({ m: 6, d: 16 }), { edge: undefined, below: undefined });
+    assert.deepEqual(tipPlace({ m: 12, d: 30 }), { edge: 'end', below: undefined });
   });
 });

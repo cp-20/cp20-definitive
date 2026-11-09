@@ -16,6 +16,17 @@ test('javascript: の URL は受け付けない', () => {
   assert.throws(() => safeUrl('javascript:alert(1)'));
 });
 
+test('URL から追跡用のクエリとハッシュを落とし、ほかのクエリは残す', () => {
+  assert.equal(
+    safeUrl('https://zenn.dev/a?utm_source=x&utm_medium=y&utm_campaign=z&ref=r&page=2#top'),
+    'https://zenn.dev/a?page=2',
+  );
+});
+
+test('www. の有無は同じ掲載先として受け付ける', () => {
+  assert.equal(article('x', 'https://www.zenn.dev/a', '2026-01-01', 'zenn.dev').url, 'https://www.zenn.dev/a');
+});
+
 test('掲載先とホストの違う URL の記事は受け付けない', () => {
   assert.throws(() => article('x', 'https://evil.example/a', '2026-01-01', 'zenn.dev'), /host/);
 });
@@ -26,8 +37,15 @@ describe('mergeArticles', () => {
     assert.equal(mergeArticles([old], [{ ...old, title: 'new' }], manual)[0].title, 'editor');
   });
 
-  test('過去の記事と新しく取得した記事を合わせる', () => {
-    assert.equal(mergeArticles([old], [note]).length, 2);
+  test('過去の記事と新しく取得した記事を、同じ URL は新しいほうを1件にして、新しい順に並べる', () => {
+    const renamed = { ...old, title: 'Renamed', url: `${old.url}?utm_source=x#top` };
+    assert.deepEqual(
+      mergeArticles([old], [note, renamed]).map((a) => [a.title, a.url]),
+      [
+        ['A & B', note.url],
+        ['Renamed', old.url],
+      ],
+    );
   });
 
   test('除外した記事は載せない', () => {

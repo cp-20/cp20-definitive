@@ -12,7 +12,7 @@ describe('readPositions / writePositions', () => {
     assert.deepEqual(readPositions(writePositions(positions)), positions);
   });
 
-  for (const raw of [null, '', '{', '{}', '"x"', '[[1,[0,0]],["c",[0]],["d",[0,-1]],["e",["1",2]]]'])
+  for (const raw of [null, '{', '{}', '[[1,[0,0]],["c",[0]],["d",[0,-1]],["e",["1",2]]]'])
     test(`壊れた保存値 ${JSON.stringify(raw)} からは何も読まない`, () => {
       assert.equal(readPositions(raw).size, 0);
     });

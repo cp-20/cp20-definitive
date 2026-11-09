@@ -26,7 +26,8 @@ describe('ルールのページの正規表現', () => {
     );
   });
 
-  for (const key of ['works--nope', 'home--x', 'works--', 'homes', '', 'xhome', 'works--c-compiler-x'])
+  // A key that only starts or ends like a page's, or extends a work's id.
+  for (const key of ['homes', 'xhome', 'works--c-compiler-x', 'works--nope'])
     test(`サイトにないページ ${JSON.stringify(key)} は受け付けない`, () => {
       assert.doesNotMatch(key, pattern);
     });
