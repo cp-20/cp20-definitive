@@ -1,7 +1,8 @@
 import { For, Show, createSignal, onSettled } from 'solid-js';
 import { httpStatus } from '@solidjs/web';
 import Icon, { type IconName } from '../components/Icon.tsx';
-import { OGImage, OriginalIcon } from '../components/Preview.tsx';
+import { OriginalIcon } from '../components/Preview.tsx';
+import { WorkImage } from '../components/WorkCard.tsx';
 import { works } from '../content/content.ts';
 import { featuredIds } from '../data/editorial.ts';
 import { workPath } from '../site/pages.ts';
@@ -39,7 +40,7 @@ export default function NotFound() {
                 {(w) => (
                   <li>
                     <a href={workPath(w.id)}>
-                      <OGImage url={w.url} alt="" sizes="(max-width: 760px) 96px, 132px" eager />
+                      <WorkImage work={w} sizes="(max-width: 760px) 96px, 132px" eager />
                       <span>
                         <strong>{w.title}</strong>
                         <span>{w.description}</span>
