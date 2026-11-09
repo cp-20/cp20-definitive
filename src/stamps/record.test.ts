@@ -3,6 +3,7 @@ import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import { moveIn, nextRecord, placeIn, recordStamps, removeFrom, stampEntries } from './record.ts';
 import type { PlacedStamp, Stamp } from './types.ts';
+import { STICKER_KIND_COUNT } from './limits.ts';
 
 const TS = { '.sv': 'timestamp' };
 // Fields may hold what the database could send, not only what a Stamp allows.
@@ -37,7 +38,7 @@ describe('stampEntries', () => {
     ['priority つきの kind', { kind: { '.value': 0, '.priority': 'p' } }],
     ['未解決のサーバー時刻', { createdAt: TS }],
     ['整数でない kind', { kind: 1.5 }],
-    ['範囲外の kind', { kind: 6 }],
+    ['範囲外の kind', { kind: STICKER_KIND_COUNT }],
     ['大きすぎる傾き', { angle: 21 }],
     ['使えない anchor', { anchor: 'Not An Anchor' }],
     ['NaN の y', { y: NaN }],

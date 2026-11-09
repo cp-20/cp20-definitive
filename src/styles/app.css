@@ -2599,7 +2599,33 @@
   .placed-stamp[data-fresh] > .sticker {
     animation:
       stick-slide var(--slide-time, var(--t-state)) cubic-bezier(0.33, 1, 0.68, 1) both,
-      stick-press var(--t-state) linear both;
+      stick-press var(--t-state) linear both,
+      var(--cheer, none) var(--t-enter) var(--ease) calc(max(var(--slide-time, 0ms), var(--t-state)) + 40ms);
+  }
+  /* Once it rests, the sticker you just put down answers once, in its own way (transform only,
+     so nothing around it moves): the heart and 「すき」 beat, the eyes blink, the sparkles give off
+     sparks, いいね and 「なるほど」 nod, the rest hop. */
+  .sticker[data-kind] {
+    --cheer: cheer-hop;
+  }
+  .sticker:is([data-kind='2'], [data-kind='4'], [data-kind='6']) {
+    --cheer: cheer-beat;
+  }
+  .sticker:is([data-kind='1'], [data-kind='7']) {
+    --cheer: cheer-nod;
+  }
+  .sticker[data-kind='3'] {
+    --cheer: cheer-blink;
+  }
+  .placed-stamp[data-fresh]:has(> .sticker[data-kind='2'])::after {
+    content: '';
+    position: absolute;
+    inset: -9px;
+    background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M54 3Q54 10 61 10Q54 10 54 17Q54 10 47 10Q54 10 54 3ZM8 18Q8 22 12 22Q8 22 8 26Q8 22 4 22Q8 22 8 18ZM53 46Q53 50 57 50Q53 50 53 54Q53 50 49 50Q53 50 53 46Z' fill='%23ffd54f' stroke='%232d2a33' stroke-width='1.2' stroke-linejoin='round'/></svg>");
+    opacity: 0;
+    pointer-events: none;
+    animation: cheer-sparks var(--t-enter) var(--ease)
+      calc(max(var(--slide-time, 0ms), var(--t-state)) + 40ms);
   }
   .placed-stamp[data-lifted] {
     visibility: hidden;
@@ -2818,6 +2844,12 @@
     border-radius: 50%;
     cursor: grab;
     touch-action: none;
+  }
+  /* The word stickers: a row of their own, spread under the pictures, each slot one column wide. */
+  .sheet-sticker[data-word] {
+    grid-column: span 2;
+    justify-self: center;
+    width: calc((100% - 4px) / 2);
   }
   .sheet-sticker .sticker {
     transition: transform var(--t-hover) var(--ease);
@@ -3235,6 +3267,55 @@
     to {
       scale: 1;
       --lift: 0;
+    }
+  }
+  /* A sticker's one answer once it rests (--cheer). transform, so it adds to the sticker's own
+     rotate and scale; squashes keep the foot on the paper. */
+  @keyframes cheer-hop {
+    35% {
+      transform: translateY(-6px);
+    }
+    65% {
+      transform: translateY(1.6px) scale(1.06, 0.92);
+    }
+  }
+  @keyframes cheer-beat {
+    20%,
+    55% {
+      transform: scale(1.16);
+    }
+    38% {
+      transform: scale(0.98);
+    }
+  }
+  @keyframes cheer-nod {
+    20%,
+    60% {
+      transform: translateY(1.6px) scale(1.04, 0.92);
+    }
+    40% {
+      transform: none;
+    }
+  }
+  @keyframes cheer-blink {
+    15% {
+      transform: scaleY(0.12);
+    }
+    30% {
+      transform: none;
+    }
+  }
+  @keyframes cheer-sparks {
+    from {
+      opacity: 0;
+      transform: scale(0.6) rotate(-20deg);
+    }
+    35% {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+      transform: scale(1.1);
     }
   }
   @keyframes menu-pop {
