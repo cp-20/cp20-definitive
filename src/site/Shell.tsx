@@ -72,16 +72,6 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
             <span>© 2026 cp20</span>
             <button
               type="button"
-              class="footer-button"
-              aria-haspopup="dialog"
-              data-opens="qr"
-              onClick={() => openModal('qr')}
-            >
-              <Icon name="QrCode" size={16} />
-              QR コード
-            </button>
-            <button
-              type="button"
               class="footer-button credits-open"
               aria-haspopup="dialog"
               onClick={() => openModal('credits')}

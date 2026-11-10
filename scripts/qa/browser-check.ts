@@ -420,7 +420,7 @@ try {
   await expect(page.locator('main h1')).toContainText('しーぴー');
   await page.keyboard.press('Escape');
   await expect(page).toHaveURL(origin + '/about');
-  // The QR code: https://cp20.dev/#qr opens it straight away, and so does the footer's button.
+  // The QR code: https://cp20.dev/#qr opens it straight away.
   await page.goto(origin + '/#qr');
   await expect(page.locator('#qr')).toBeVisible();
   await expect
@@ -453,11 +453,10 @@ try {
   await page.keyboard.press('Escape');
   await expect(page).toHaveURL(origin + '/');
   if ((await page.evaluate(() => scrollY)) !== 0) throw Error('Closing the QR code moved the page');
-  await page.locator('.footer-button[data-opens="qr"]').click();
-  await expect(page.locator('#qr')).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(page.locator('.footer-button[data-opens="qr"]')).toBeFocused();
-  // On a phone the header's button opens it, and focus comes back to that one.
+  // The footer has no button for it (only a phone's header has one), and on a phone the header's
+  // button opens it, and focus comes back to that one.
+  if (await page.locator('.site-footer [data-opens="qr"]').count())
+    throw Error('The footer opens the QR code');
   await page.setViewportSize({ width: 390, height: 664 });
   await page.locator('.header-qr').click();
   await expect(page.locator('#qr')).toBeVisible();
