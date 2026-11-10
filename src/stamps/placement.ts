@@ -94,7 +94,7 @@ function createAnchorMeasure() {
 }
 export type { ShownStamp };
 // The stickers as drawn, measured again (at most once a frame) whenever the page's layout may
-// have changed. Creates signals: call it synchronously inside the component that owns them.
+// have changed.
 export function createPlacement(stamps: () => PlacedStamp[], hidden: () => boolean) {
   const [revision, setRevision] = createSignal(0);
   let frame = 0,

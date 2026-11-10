@@ -19,7 +19,6 @@ export type Held = {
   pointer: string;
 };
 type Point = { x: number; y: number };
-// Creates signals: call it synchronously inside the component that owns them.
 export function createHand(options: {
   isOwn: (s: PlacedStamp) => boolean;
   // Yours that are not peeling off.

@@ -8,7 +8,6 @@ import { STAMPS_PER_PAGE as LIMIT } from './limits.ts';
 import { SHEET_KEY, readPref, writePref } from './prefs.ts';
 // The phone layout in app.css: tabs along the bottom edge and the sheet pinned across the screen.
 const PHONE_LAYOUT = '(max-width: 760px)';
-// Creates signals: call it synchronously inside the component that owns them.
 export function createSheet(options: {
   enabled: () => boolean;
   signedIn: () => boolean;

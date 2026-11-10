@@ -1,5 +1,5 @@
 // What the sticker sheet says out loud, and where keyboard focus goes when the thing it was on
-// leaves the page. Kept free of the DOM so the wording and the order can be tested in Node.
+// leaves the page.
 
 // Anchors that wrap other content (or have no heading of their own) are named by where they are.
 const PLACES: Record<string, string> = {

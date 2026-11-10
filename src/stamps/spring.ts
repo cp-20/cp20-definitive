@@ -1,5 +1,5 @@
-// The sticker in hand, kept free of the DOM so it can be tested in Node: the spring it follows the
-// pointer with, and how a finger handles your own stickers on the page.
+// The sticker in hand: the spring it follows the pointer with, and how a finger handles your own
+// stickers on the page.
 //
 // A swipe that starts on one of your stickers scrolls the page like anywhere else, however long
 // the finger rested first; a finger never drags it. A tap opens its menu, which moves or peels it

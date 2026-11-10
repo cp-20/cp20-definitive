@@ -6,7 +6,6 @@ import type { Account } from './types.ts';
 import { signInMessage } from './a11y.ts';
 import { ACCOUNT_KEY, readPref, writePref } from './prefs.ts';
 type Client = typeof import('./client.ts');
-// Creates signals: call it synchronously inside the component that owns them.
 export function createStampAccount(options: {
   client: () => Promise<Client>;
   onMessage: (text: string) => void;

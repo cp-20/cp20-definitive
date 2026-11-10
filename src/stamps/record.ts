@@ -1,5 +1,5 @@
 // A visitor's record of stickers on one page, and the edits behind placing, moving and peeling
-// them. Kept free of the DOM and of Firebase so it can be tested in Node.
+// them.
 import { ANCHOR_PATTERN, MAX_ANGLE, STAMP_SLOTS as SLOTS, STICKER_KIND_COUNT } from './limits.ts';
 import type { PlacedStamp, Stamp } from './types.ts';
 

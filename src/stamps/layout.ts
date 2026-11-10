@@ -1,6 +1,5 @@
 // Where placed stickers are drawn. A sticker is stored as a fraction of its anchor's box (a
-// section, a heading, the page), so it stays on the same content at any screen width. Kept free
-// of the DOM so it can be tested in Node.
+// section, a heading, the page), so it stays on the same content at any screen width.
 
 import type { PlacedStamp, Stamp } from './types.ts';
 

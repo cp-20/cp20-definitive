@@ -13,7 +13,6 @@ import { reducedMotion } from './prefs.ts';
 const PEEL_MS = 220,
   SETTLE_MS = 300,
   CHEER_MS = 480;
-// Creates signals: call it synchronously inside the component that owns them.
 export function createEdits(options: {
   path: () => string;
   own: () => PlacedStamp[];

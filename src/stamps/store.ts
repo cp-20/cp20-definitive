@@ -5,7 +5,6 @@ import { createEffect, createMemo, createSignal } from 'solid-js';
 import type { Account, Change, Operation, PlacedStamp } from './types.ts';
 import { createPendingSaves, projectStamps } from './optimistic.ts';
 type Client = typeof import('./client.ts');
-// Creates signals: call it synchronously inside the component that owns them.
 export function createStampStore(options: {
   path: () => string;
   enabled: () => boolean;

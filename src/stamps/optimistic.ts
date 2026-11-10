@@ -1,7 +1,6 @@
 // Optimistic updates: your changes to your stickers show at once, laid over what the database
 // last sent, and are saved one at a time in the background. A change that fails to save is
-// simply dropped, which puts the page back as it was. Kept free of the DOM and of Firebase so
-// it can be tested in Node.
+// simply dropped, which puts the page back as it was.
 import { STAMPS_PER_PAGE, WRITE_SPACING_MS } from './limits.ts';
 import { visualKey } from './layout.ts';
 import type { Operation, PlacedStamp, SavedRecord } from './types.ts';

@@ -1,6 +1,5 @@
 // What a visitor is shown of the works in works.json: their order on /works, the short facts
-// beside each one and where its buttons go. Kept free of the DOM and of the data files so the
-// rules can be tested in Node.
+// beside each one and where its buttons go.
 
 /** A screenshot of a work's public site (scripts/sync/screenshots.ts takes them). */
 export type Shot = { src: string; device: 'pc' | 'mobile'; alt: string };
