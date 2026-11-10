@@ -549,17 +549,20 @@
     flex-direction: column;
     gap: 8px;
   }
+  /* Every tab starts on the sheet's 2px edge. Another page's tab draws that edge as its own left
+     border, so the sheet's line runs on over it and it reads as tucked behind; the current page's
+     tab has none there, so it runs on from the sheet. Under the pointer a tab is pulled a little
+     further out: it grows to the right from the edge, never parting from it (moved instead, it left
+     a gap between the sheet's edge and itself, and looked to float off the paper). */
   .rail nav a {
     position: relative;
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 8px;
-    width: var(--tab);
-    margin-left: 2px;
+    width: calc(var(--tab) + 2px);
     padding: 14px 0 16px;
     border: 2px solid var(--edge);
-    border-left: 0;
     border-radius: 0 16px 16px 0;
     background: color-mix(in srgb, var(--tab-soft) 78%, var(--paper));
     color: var(--ink);
@@ -571,10 +574,10 @@
     writing-mode: vertical-rl;
     translate: 0 0;
     box-shadow: 3px 3px 0 var(--drop);
-    /* The current tab's 2px reach into the sheet (width, margin) changes at once: only what does
-       not lay the tabs out again is eased. A tab peeks out under the pointer as quickly as anything
-       else answers it; the current one settles at the pace of a change of state. */
+    /* A tab is pulled out as quickly as anything else answers the pointer; becoming the current
+       one, it settles at the pace of a change of state. */
     transition:
+      width var(--t-hover) var(--ease),
       translate var(--t-hover) var(--ease),
       background-color var(--t-hover) var(--ease);
   }
@@ -583,12 +586,11 @@
   }
   @media (hover: hover) {
     .rail nav a:not([aria-current]):hover {
-      translate: 4px 0;
+      width: calc(var(--tab) + 6px);
     }
   }
   .rail nav a[aria-current='page'] {
-    width: calc(var(--tab) + 2px);
-    margin-left: 0;
+    border-left-width: 0;
     translate: 0 0;
     transition-duration: var(--t-state);
     background: color-mix(in srgb, var(--tab-soft) 42%, var(--paper));
