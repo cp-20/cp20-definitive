@@ -6,15 +6,17 @@ import { daysIn, nearest, spot, stampsOf, step, tipPlace, toward, yearOf, type S
 import { shortDate, type Article } from '../content/content.ts';
 /**
  * How much of its square each place's icon fills, so that all look one size on the paper (optical
- * sizing): an icon with a ground of its own (blog.cp20.dev's dark square, Qiita's green disc) or a
- * solid letter (note's n) reads larger than a drawing in lines or strokes (sizu.me, M3, Zenn, traP)
- * drawn as large, so the heavier the shape, the smaller it is drawn. Judged by eye on the card and
- * in the lists; a place not listed fills its square. (sizu.me's and M3's favicons are lines on
- * white: their white was made transparent, so only the lines are pressed.)
+ * sizing): an icon with a ground of its own (blog.cp20.dev's dark square, Qiita's green disc) reads
+ * larger than a drawing in lines or strokes (sizu.me, M3, Zenn, traP) drawn as large, so the
+ * heavier the shape, the smaller it is drawn. note's is its own favicon, a small black n in the
+ * middle of a white square, so it is mostly white: its square, edged with the pencil line of an
+ * icon's tile, is drawn a little larger than the dark one. Judged by eye on the card and in the
+ * lists; a place not listed fills its square. (sizu.me's and M3's favicons are lines on white:
+ * their white was made transparent, so only the lines are pressed.)
  */
 const optical: Record<string, number> = {
   'blog.cp20.dev': 0.76,
-  'note.com': 0.72,
+  'note.com': 0.86,
   'qiita.com': 0.84,
   'trap.jp': 0.86,
   'zenn.dev': 0.96,
