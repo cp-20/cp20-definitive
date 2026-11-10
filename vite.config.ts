@@ -21,7 +21,7 @@ const woff2Only = (): Plugin => ({
 });
 // `virtual:cp20-media`: only the local paths, srcset candidates and sizes the pages render, instead of
 // bundling previews.json and image-cache.json with their source URLs and timestamps, plus the
-// srcset of each manga cover from its WebP copies.
+// srcset of each manga cover, screenshot and committed work picture from its WebP copies.
 const media = (): Plugin => {
   const id = 'virtual:cp20-media';
   const data = ['previews', 'image-cache', 'tracks', 'series'].map(
@@ -34,11 +34,15 @@ const media = (): Plugin => {
       if (resolved !== '\0' + id) return;
       for (const file of data) this.addWatchFile(file.pathname);
       const [previews, cache, tracks, series] = data.map((file) => JSON.parse(readFileSync(file, 'utf8')));
+      // The pictures committed for works whose own OG image is only their name (works.json `image`).
+      const workDirectory = new URL('./public/images/works/', import.meta.url);
+      this.addWatchFile(workDirectory.pathname);
       const { pages, images } = clientMedia(
         previews,
         cache,
         // Series with their own cover never show the publisher's thumbnail, so it is not mapped.
         [...tracks.map((t: { thumbnail?: string }) => t.thumbnail), ...series.map(shownSeriesThumbnail)],
+        coverSrcsets(readdirSync(workDirectory), '/images/works/'),
       );
       const coverDirectory = new URL('./public/images/covers/', import.meta.url);
       this.addWatchFile(coverDirectory.pathname);

@@ -96,6 +96,22 @@ describe('clientMedia', () => {
     });
   });
 
+  test('works.json に書いたサイトの画像は、キャッシュを通さずそのパスと WebP の縮小版の srcset にする', () => {
+    const work = 'https://github.com/a/b';
+    const { pages } = clientMedia(
+      { [work]: { image: '/images/works/b.png', icon: null, width: 1200, height: 630, checkedAt: 'x' } },
+      {},
+      [],
+      { '/images/works/b.png': '/images/works/b-320w.webp 320w, /images/works/b-1200w.webp 1200w' },
+    );
+    assert.deepEqual(pages[work], {
+      width: 1200,
+      height: 630,
+      image: '/images/works/b.png',
+      srcset: '/images/works/b-320w.webp 320w, /images/works/b-1200w.webp 1200w',
+    });
+  });
+
   test('確認日時や元の URL は、クライアントに送らない', () => {
     const serialized = JSON.stringify(media());
     assert.deepEqual(

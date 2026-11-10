@@ -115,21 +115,6 @@
       }
     ]
   },
-  "https://2025.cp20.dev/works/og/c-compiler.avif": {
-    "file": "/media/ab39a7fdcd139df2b4bdb560.avif",
-    "checkedAt": "2026-11-09T06:42:04.956Z",
-    "width": 1200,
-    "variants": [
-      {
-        "file": "/media/ab39a7fdcd139df2b4bdb560-320w.webp",
-        "width": 320
-      },
-      {
-        "file": "/media/ab39a7fdcd139df2b4bdb560-480w.webp",
-        "width": 480
-      }
-    ]
-  },
   "https://2025.cp20.dev/works/og/foodmoji.avif": {
     "file": "/media/dd49454377ebae840cf3eef6.avif",
     "checkedAt": "2026-11-09T06:42:07.037Z",

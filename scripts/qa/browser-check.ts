@@ -1208,16 +1208,17 @@ try {
     (await page.locator('.work-card').count())
   )
     throw Error('A card link has no chevron');
-  // Every card shows the work's own OG image (from the cache in /media), the compiler's included.
+  // Every card shows the work's own OG image (from the cache in /media), but the compiler's, whose
+  // OG image is only its name, shows the picture committed for it (works.json `image`).
   await page
     .locator('[data-stamp-anchor="work-c-compiler"] .work-card-picture img')
     .evaluate((img: HTMLImageElement) => img.decode());
   if (
     !(await page
       .locator('[data-stamp-anchor="work-c-compiler"] .work-card-picture img')
-      .evaluate((img: HTMLImageElement) => img.currentSrc.includes('/media/')))
+      .evaluate((img: HTMLImageElement) => img.currentSrc.includes('/images/works/c-compiler')))
   )
-    throw Error("The compiler's card does not show its OG image");
+    throw Error("The compiler's card does not show its picture");
   const fetched = await page.evaluate(() =>
     performance.getEntriesByType('resource').map((e) => e.name.replace(location.origin, '')),
   );

@@ -448,7 +448,7 @@
     "role": "1人で企画・デザイン・実装",
     "outcome": "セルフホストを達成",
     "url": "https://github.com/cp-20/c-compiler",
-    "image": "https://2025.cp20.dev/works/og/c-compiler.avif",
+    "image": "/images/works/c-compiler.png",
     "screenshots": [
       {
         "src": "/images/screenshots/c-compiler-pc.png",

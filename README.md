@@ -98,11 +98,11 @@ scripts はNodeの型除去でTypeScriptをそのまま実行します（tsx等�
 - 404：1行の説明、代表作3つ、作品一覧・プロフィール・記事へのリンク。`/works/` で始まるアドレスなら全作品の名前を並べる（静的な1ページなので、ブラウザでアドレスを見て切り替える）。
 - 手動追加・除外・上書き：`src/data/manual.json`。
 - スナップショット：`src/data/generated.json`。
-- OG画像・アイコン・寸法：`src/data/previews.json`。OGがない作品にはテキストの代替を表示し、別の画像を捏造しません。ログインが必要で読めないページ（traP 部員向けのサービス）は、`works.json` に書いた画像（`image`）とアイコン（`icon`）を使います。`icon` はサイト内のパス（`/images/icons/…`、`public/` にコミット）でもよく、そのまま表示します（anke-to v3 は traPtitech/logo のロゴの「a」の部分、NEON OVERDRIVE はサイトの favicon）。HEAD を断るサーバーのアイコンは GET で確かめます。
+- OG画像・アイコン・寸法：`src/data/previews.json`。OGがない作品にはテキストの代替を表示し、別の画像を捏造しません。ログインが必要で読めないページ（traP 部員向けのサービス）は、`works.json` に書いた画像（`image`）とアイコン（`icon`）を使います。`icon` と `image` はサイト内のパス（`/images/icons/…`・`/images/works/…`、`public/` にコミット）でもよく、そのまま表示します（anke-to v3 は traPtitech/logo のロゴの「a」の部分、NEON OVERDRIVE はサイトの favicon）。自作Cコンパイラは OG 画像が白地に題名だけなので、カードの絵 `public/images/works/c-compiler.png`（1200×630。大きな C、名前、clang → 1cc → 2cc → 3cc の世代、`int main() { return 42; }` とその LLVM IR、C で 4,842行・テスト165件、セルフホストの印。数字はリポジトリの `src/` と `test.sh` から）を一度描いてコミットし、`works.json` の `image` で指しています。HEAD を断るサーバーのアイコンは GET で確かめます。
 - 音楽・漫画：`tracks.json` / `series.json`（定期処理が更新）。選定は2026版の元データで変更できます。
 - 画像：`public/images/`、自動取得分は `public/media/`。92個の元URLを89ファイルに集約。`src/data/image-cache.json` が元URLとローカルファイルを対応付けます。漫画・YouTubeも事前保存し、ページに出典と著者・制作者を掲載。
 
-画像は収集時に形式と15MB上限を検査し、内容ハッシュをファイル名に使用。新規取得に失敗した場合（新しいOG画像がSVG・15MB超・一時的な取得失敗など）は、前回の画像URL・寸法・ファイルを維持します。画像を含めてActionsからコミットし、ブラウザは同一サイトのStatic Assetsを参照。`/media/*` は長期キャッシュし、画像が変わるとURLも変わります。OG画像と音楽・漫画のサムネイルには幅320/640/960pxのWebP（元より2割以上狭いもののみ。縮小と再エンコードだけ）を、作品アイコンには幅96pxのWebPを `<元ファイル名>-<幅>w.webp` で作ります（元ファイルより小さくならないものは捨てる）。`public/images/covers` の表紙には幅240pxと原寸のWebPを作ります。いずれも `srcset`/`sizes`（アイコンは小さいWebPを直接）で配信します（`node scripts/sync/images.ts --variants-only` で取得なしに再生成。表紙を追加したら実行）。クライアントには `virtual:cp20-media`（`vite.config.ts`）としてローカルパスと寸法だけを渡します。SVGやHTMLを外部画像として保存しません。
+画像は収集時に形式と15MB上限を検査し、内容ハッシュをファイル名に使用。新規取得に失敗した場合（新しいOG画像がSVG・15MB超・一時的な取得失敗など）は、前回の画像URL・寸法・ファイルを維持します。画像を含めてActionsからコミットし、ブラウザは同一サイトのStatic Assetsを参照。`/media/*` は長期キャッシュし、画像が変わるとURLも変わります。OG画像と音楽・漫画のサムネイルには幅320/640/960pxのWebP（元より2割以上狭いもののみ。縮小と再エンコードだけ）を、作品アイコンには幅96pxのWebPを `<元ファイル名>-<幅>w.webp` で作ります（元ファイルより小さくならないものは捨てる）。`public/images/covers` の表紙には幅240pxと原寸のWebPを、`public/images/works` の作品の絵にはスクリーンショットと同じ幅のWebPを作ります。いずれも `srcset`/`sizes`（アイコンは小さいWebPを直接）で配信します（`node scripts/sync/images.ts --variants-only` で取得なしに再生成。表紙や作品の絵を追加したら実行）。クライアントには `virtual:cp20-media`（`vite.config.ts`）としてローカルパスと寸法だけを渡します。SVGやHTMLを外部画像として保存しません。
 
 `manual.json` の `articles` はURLで自動取得と合成、`overrides` はタイトル等を上書き、`exclude` は対象URLを非掲載、`projects` は作品を追加します。作品には `works.json` と同じフィールドを指定してください。
 

@@ -1,11 +1,12 @@
 // What the pages show of the pages they link: each work's and article's OG image and site icon
 // (previews.json). Only the head of each third-party page is read.
+import { readFile } from 'node:fs/promises';
 import { imageSize } from 'image-size';
 import { mergeArticles } from '../../src/content/normalize.ts';
 import { isLocal, type Preview } from '../../src/content/media.ts';
 import { downloadRaster } from './images.ts';
 import { headElements, headRequest } from './head.ts';
-import { REFRESH_MS, eachLimited, readData, repoDirs, writeData, type Dirs } from './files.ts';
+import { REFRESH_MS, eachLimited, publicFile, readData, repoDirs, writeData, type Dirs } from './files.ts';
 import type { Request } from './sync.ts';
 
 const https = (s: string, base: string) => {
@@ -24,10 +25,14 @@ const size = (value: unknown, fallback: number) => {
 };
 /**
  * The size of a new OG image, read from the image itself. It is accepted only when the cache would
- * also accept it (images.ts); otherwise the page keeps its previous image and its cached file.
+ * also accept it (images.ts); otherwise the page keeps its previous image and its cached file. An
+ * image committed with the site (works.json `image`: "/images/works/…") is read from public/.
  */
-export async function dimensions(url: string, fetcher: typeof fetch = fetch) {
-  const { width, height } = imageSize((await downloadRaster(url, fetcher)).bytes);
+export async function dimensions(url: string, fetcher: typeof fetch = fetch, dirs: Dirs = repoDirs) {
+  const bytes = isLocal(url)
+    ? await readFile(publicFile(dirs, url))
+    : (await downloadRaster(url, fetcher)).bytes;
+  const { width, height } = imageSize(bytes);
   return { width: size(width, 1200), height: size(height, 630) };
 }
 export function parsePreview(html: string, url: string): Preview {
@@ -52,7 +57,8 @@ type Stated = { image?: string; icon?: string | null };
 /**
  * A work's eyecatch and icon stated in works.json (`image`, `icon`) win over its page's: for a
  * page whose own are missing or not the work's (a repository page offers GitHub's). `"icon": null`
- * states that the work has none.
+ * states that the work has none. Either can be a file committed under public/ ("/images/…"),
+ * which is shown as it is instead of being cached.
  */
 export const withStated = (preview: Preview, work?: Stated): Preview => ({
   ...preview,
@@ -146,7 +152,7 @@ export async function syncPreviews(
       if (!preview.image) keepOldImage();
       else {
         try {
-          Object.assign(preview, await dimensions(preview.image, fetch));
+          Object.assign(preview, await dimensions(preview.image, fetch, dirs));
         } catch {
           keepOldImage();
         }
@@ -163,7 +169,7 @@ export async function syncPreviews(
         try {
           next[url] = {
             ...withStated({ image: null, icon: null, width: 1200, height: 630 }, stated.get(url)),
-            ...(await dimensions(image, fetch)),
+            ...(await dimensions(image, fetch, dirs)),
             checkedAt: new Date().toISOString(),
           };
           fetched++;

@@ -202,6 +202,42 @@ describe('作品（works.json）', () => {
     assert.deepEqual(wrong, []);
   });
 
+  test('作品の絵（public/images/works）は works.json の image が指すものだけで、プレビューはその絵を実際の大きさで示す', async () => {
+    const pictures = works.filter((w) => w.image?.startsWith('/'));
+    const names = await readdir(`${publicDir}/images/works`);
+    const stems = pictures.map((w) =>
+      w
+        .image!.split('/')
+        .at(-1)!
+        .replace(/\.png$/, ''),
+    );
+    const size = async (file: string) => {
+      const { width, height } = await sharp(publicDir + file).metadata();
+      return { width, height };
+    };
+    assert.deepEqual(
+      {
+        stray: names.filter((n) => !stems.some((stem) => n === `${stem}.png` || n.startsWith(`${stem}-`))),
+        wrong: await Promise.all(
+          pictures.map(async (w) => ({
+            id: w.id,
+            image: previews[w.url]?.image,
+            ...(await size(w.image!)),
+          })),
+        ),
+      },
+      {
+        stray: [],
+        wrong: pictures.map((w) => ({
+          id: w.id,
+          image: w.image,
+          width: previews[w.url]?.width,
+          height: previews[w.url]?.height,
+        })),
+      },
+    );
+  });
+
   test('スクリーンショットは撮った画像と説明と WebP の縮小版がそろい、ほかのファイルはない', async () => {
     const shots = works.flatMap((w) => (w.screenshots ?? []).map((s) => ({ id: w.id, ...s })));
     const names = await readdir(`${publicDir}/images/screenshots`);
@@ -225,13 +261,14 @@ describe('作品（works.json）', () => {
   });
 });
 
-test('表紙とスクリーンショットにはどれも WebP の候補があり、srcset の幅は実際の幅で、最大の候補は原寸', async () => {
+test('表紙・スクリーンショット・作品の絵にはどれも WebP の候補があり、srcset の幅は実際の幅で、最大の候補は原寸', async () => {
   const srcsets: Record<string, string> = {};
-  for (const directory of ['/images/covers/', '/images/screenshots/'])
+  for (const directory of ['/images/covers/', '/images/screenshots/', '/images/works/'])
     Object.assign(srcsets, coverSrcsets(await readdir(publicDir + directory), directory));
   const shown = [
     ...Object.values(mangaCovers).map((c) => c.image),
     ...works.flatMap((w) => (w.screenshots ?? []).map((s) => s.src)),
+    ...works.flatMap((w) => (w.image?.startsWith('/') ? [w.image] : [])),
   ];
   const wrong = shown.filter((file) => !srcsets[file]);
   for (const [file, srcset] of Object.entries(srcsets)) {

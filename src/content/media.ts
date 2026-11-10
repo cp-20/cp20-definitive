@@ -27,18 +27,21 @@ export const variantFile = (file: string, width: number) =>
 /** Width of the single WebP copy of a site icon (shown at 26-38px, so this covers 2x screens). */
 export const iconWidth = 96;
 
+/** A path on this site (an image or icon committed under public/), not an image to fetch and cache. */
+export const isLocal = (source: string) => source.startsWith('/');
+
 /**
  * @param previews page URL → preview metadata
  * @param cache source image URL → cached file
  * @param thumbnails other source image URLs the pages show by source (music, manga)
+ * @param committed srcset of each committed image (path → srcset, coverSrcsets), for a work's own
+ *   picture stated in works.json (`image`: "/images/works/…"), shown as it is
  */
-/** A path on this site (an icon committed under public/), not an image to fetch and cache. */
-export const isLocal = (source: string) => source.startsWith('/');
-
 export function clientMedia(
   previews: Record<string, Preview>,
   cache: Record<string, CacheEntry>,
   thumbnails: (string | null | undefined)[],
+  committed: Record<string, string> = {},
 ) {
   const srcset = (image: CacheEntry, fallbackWidth?: number) =>
     image.variants?.length
@@ -61,7 +64,11 @@ export function clientMedia(
         ? p.icon
         : iconEntry && (iconEntry.variants?.find((v) => v.width === iconWidth)?.file ?? iconEntry.file);
     const entry: (typeof pages)[string] = { width: p.width, height: p.height };
-    if (image) {
+    if (p.image && isLocal(p.image)) {
+      // Its WebP copies, the largest at full size, as for the covers and screenshots.
+      entry.image = p.image;
+      if (committed[p.image]) entry.srcset = committed[p.image];
+    } else if (image) {
       entry.image = image.file;
       const candidates = srcset(image, p.width);
       if (candidates) entry.srcset = candidates;

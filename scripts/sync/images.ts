@@ -10,8 +10,8 @@
 //
 // npm run cache:images [-- --force]: refreshes the cache without the rest of the sync.
 // node scripts/sync/images.ts --variants-only: rewrites the WebP copies (and those of the covers
-// in public/images/covers and the works' screenshots in public/images/screenshots) without
-// fetching anything.
+// in public/images/covers, the works' screenshots in public/images/screenshots and their pictures
+// in public/images/works) without fetching anything.
 import { writeFile, mkdir, rename, readdir, unlink, rm, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -112,11 +112,15 @@ export const shownItems = (tracks: Thumbnail[], series: { title: string; thumbna
   ...tracks,
   ...series.map((s) => ({ thumbnail: shownSeriesThumbnail(s) })),
 ];
-/** Every cached source shown as a thumbnail: OG images plus the music and manga thumbnails. */
+/**
+ * Every cached source shown as a thumbnail: OG images plus the music and manga thumbnails. An
+ * image committed with the site (works.json `image`: "/images/works/…") is not cached; its copies
+ * are written with the other committed images (committedImages).
+ */
 export const thumbnailSources = (previews: Record<string, Preview>, items: Thumbnail[]) =>
   new Set(
     [...Object.values(previews).map((p) => p.image), ...items.map((i) => i.thumbnail)].filter(
-      (source): source is string => !!source,
+      (source): source is string => !!source && !isLocal(source),
     ),
   );
 /** The YouTube thumbnails among tracks.json entries (4:3 files around a 16:9 video). */
@@ -446,12 +450,14 @@ export const screenshotWidths = (naturalWidth: number) => [
 export const committedImages: Record<string, (naturalWidth: number) => number[]> = {
   '/images/covers/': coverWidths,
   '/images/screenshots/': screenshotWidths,
+  // A work's own picture where its OG image is only its name (works.json `image`).
+  '/images/works/': screenshotWidths,
 };
 
 /**
  * Writes the WebP copies of every JPEG/PNG in `directory`, one of `committedImages`: the manga
- * covers and the works' screenshots, committed with the site. vite.config.ts finds the copies by
- * name (coverSrcsets).
+ * covers and the works' screenshots and pictures, committed with the site. vite.config.ts finds
+ * the copies by name (coverSrcsets).
  */
 export async function addCommittedVariants(directory: string, dirs = repoDirs) {
   let written = 0;

@@ -1,6 +1,7 @@
 // Reading the pages the site links for their preview image and icon, from HTML nobody here controls.
 import { describe, onTestFinished, test } from 'vitest';
 import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { dimensions, keepReferenced, parsePreview, reachable, syncPreviews, withStated } from './previews.ts';
 import { ogImage } from './picks.ts';
@@ -148,6 +149,20 @@ test('新しい OG 画像の大きさは、画像そのものから読む', asyn
     .toBuffer();
   const fetcher = (async () => new Response(png)) as unknown as typeof fetch;
   assert.deepEqual(await dimensions('https://example.com/og.png', fetcher), { width: 40, height: 21 });
+});
+
+test('サイトに置いた画像（"/images/…"）の大きさは、public のファイルから読み、取りに行かない', async () => {
+  const png = await sharp({ create: { width: 30, height: 16, channels: 3, background: '#fff' } })
+    .png()
+    .toBuffer();
+  const box = await tempDirs({});
+  onTestFinished(box.cleanup);
+  await mkdir(new URL('images/works/', box.dirs.public), { recursive: true });
+  await writeFile(new URL('images/works/a.png', box.dirs.public), png);
+  const fetcher = (async () => {
+    throw Error('fetched');
+  }) as unknown as typeof fetch;
+  assert.deepEqual(await dimensions('/images/works/a.png', fetcher, box.dirs), { width: 30, height: 16 });
 });
 
 describe('アイコンの確認', () => {
