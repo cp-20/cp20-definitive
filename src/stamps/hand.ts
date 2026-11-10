@@ -50,68 +50,9 @@ export function createHand(options: {
     [lifted, setLifted] = createSignal(''),
     // The sheet sticker that is in hand or flying back to its slot, faded until it lands.
     [taken, setTaken] = createSignal(-1);
-  let ghost: HTMLElement | undefined;
-  // ── The spring ──
-  // Its position follows the target and leans into the direction of travel (spring.ts).
-  const motion = {
-    x: 0,
-    y: 0,
-    vx: 0,
-    vy: 0,
-    tx: 0,
-    ty: 0,
-    tilt: 0,
-    // The angle it rests at in hand, and is set down at when held still.
-    base: 0,
-    scale: 1,
-    ts: 1,
-    lift: 0,
-    tl: 0,
-    // Where the pointer holds it, from its center: the same spot stays under the pointer.
-    ox: 0,
-    oy: 0,
-    // Called once the sticker has flown to where it was sent.
-    home: null as null | (() => void),
-  };
-  let raf = 0;
-  // Where the pointer has been lately, for the speed a sticker is let go with.
-  let trail: { x: number; y: number; t: number }[] = [];
-  function paint() {
-    if (!ghost) return;
-    ghost.style.transform = `translate(${motion.x}px, ${motion.y}px) rotate(${motion.tilt}deg) scale(${motion.scale})`;
-    ghost.style.setProperty('--lift', motion.lift.toFixed(3));
-  }
-  function animate() {
-    cancelAnimationFrame(raf);
-    let last = performance.now();
-    const step = (now: number) => {
-      // A frame late by more than 1/30s moves it no further than one on time would; with reduced
-      // motion one long step lands it where it is going at once.
-      const dt = reducedMotion() ? 10 : Math.min(Math.max(now - last, 0) / 1000, 1 / 30);
-      last = now;
-      const settled = springStep(motion, dt, motion.home ? FLYING : undefined);
-      paint();
-      if (motion.home && settled) {
-        const done = motion.home;
-        motion.home = null;
-        done();
-        return;
-      }
-      if (held() || motion.home) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-  }
-  const stop = () => cancelAnimationFrame(raf);
-  // Send the sticker to a point on screen at a scale, then call `done`. It keeps the speed it was
-  // let go with, so a throw carries on into the flight.
-  function flyTo(point: Point, scale: number, done: () => void) {
-    motion.tx = point.x;
-    motion.ty = point.y;
-    motion.ts = scale;
-    motion.tl = 0;
-    motion.home = done;
-    animate();
-  }
+  const ghost = createGhost(() => !!held());
+  const { motion } = ghost;
+  const places = createPlaceAnnouncer(held, motion, say);
   // ── Taking it and putting it down ──
   function homeOf(h: Held) {
     const box =
@@ -139,7 +80,6 @@ export function createHand(options: {
     motion.oy = next.pointer === 'keys' ? 0 : (pointer.y - start.y) * grow;
     motion.tx = pointer.x - motion.ox;
     motion.ty = pointer.y - motion.oy;
-    trail = [];
     // One of yours keeps its own slant; a new one from the sheet takes a slight random one as it
     // comes up, so it is set down at the angle it is seen at.
     motion.tilt = next.target?.angle ?? 0;
@@ -148,8 +88,7 @@ export function createHand(options: {
     motion.lift = 0;
     motion.tl = next.mode === 'press' ? 0.35 : 1;
     flush();
-    paint();
-    animate();
+    ghost.start();
   }
   // Picked up to drag or aim: one of yours from the page hides where it lay.
   function lift(h: Held, mode: 'drag' | 'aim') {
@@ -168,19 +107,6 @@ export function createHand(options: {
       motion.ty = py - DRAG_RISE;
     }
     if (h.from === 'page' && h.target) setLifted(visualKey(h.target));
-  }
-  // Follow the pointer, held where it was pressed.
-  function moveTo(x: number, y: number) {
-    motion.tx = x - motion.ox;
-    motion.ty = y - motion.oy;
-    const t = performance.now();
-    trail.push({ x, y, t });
-    if (trail.length > 12) trail.shift();
-  }
-  // Send its center to a point (the keys, or keeping it on screen).
-  function aimAt(x: number, y: number) {
-    motion.tx = x;
-    motion.ty = y;
   }
   // Put the sticker in hand down. The keyboard overlay goes with it, so focus returns to the
   // sheet sticker it was taken from (or the tab when the sheet has been closed).
@@ -225,7 +151,7 @@ export function createHand(options: {
     }
     letGo(h);
     if (reducedMotion()) return finish();
-    if (h.from === 'page' && h.target) return flyTo(homeOf(h), 1, finish);
+    if (h.from === 'page' && h.target) return ghost.flyTo(homeOf(h), 1, finish);
     flyHome(h);
   }
   // Back on the sheet it lies straight and as large as the ones there; its slot stays faded until
@@ -234,7 +160,7 @@ export function createHand(options: {
     const slot = options.slotCenter(h.kind);
     motion.base = 0;
     setTaken(h.kind);
-    flyTo(slot, slot.scale, finish);
+    ghost.flyTo(slot, slot.scale, finish);
   }
   function cancel(animated: boolean) {
     const h = held();
@@ -259,8 +185,7 @@ export function createHand(options: {
       return flyHome(h);
     }
     // It lands under the spot it is held by; let go while moving, it slides on a little.
-    const thrown =
-      h.mode === 'drag' && !reducedMotion() ? releaseVelocity(trail, performance.now()) : { vx: 0, vy: 0 };
+    const thrown = h.mode === 'drag' && !reducedMotion() ? ghost.releaseVelocity() : { vx: 0, vy: 0 };
     const carry = throwCarry(thrown.vx, thrown.vy);
     const x = clamp(px - motion.ox + carry.x, STICKER_RADIUS, innerWidth - STICKER_RADIUS),
       y = clamp(py - motion.oy + carry.y, STICKER_RADIUS, innerHeight - STICKER_RADIUS);
@@ -300,29 +225,7 @@ export function createHand(options: {
         place,
       ),
     );
-    stop();
-  }
-  // While aiming with the keyboard, say what the sticker is over once it stops moving.
-  let placeTimer = 0,
-    lastPlace = '';
-  function announcePlace() {
-    const h = held();
-    if (!h || h.mode !== 'aim') return;
-    // Same tests, in the same order, as drop(): the sheet first, then a spot the page accepts.
-    const place = overSheetAt(motion.tx, motion.ty)
-      ? OVER_SHEET
-      : placeAt(motion.tx, motion.ty) || 'ここには貼れません';
-    if (place === lastPlace) return;
-    lastPlace = place;
-    say(place);
-  }
-  // Scrolling (PageDown, a wheel) moves the page under a sticker held still with the keys too.
-  function placeSoon(wait = 350) {
-    clearTimeout(placeTimer);
-    placeTimer = window.setTimeout(announcePlace, wait);
-  }
-  function forgetPlace() {
-    lastPlace = '';
+    ghost.stop();
   }
   return {
     held,
@@ -330,11 +233,11 @@ export function createHand(options: {
     lifted,
     taken,
     motion,
-    setGhost: (el: HTMLElement) => void (ghost = el),
+    setGhost: ghost.setElement,
     begin,
     lift,
-    moveTo,
-    aimAt,
+    moveTo: ghost.follow,
+    aimAt: ghost.aimAt,
     drop,
     returnHeld,
     cancel,
@@ -343,13 +246,145 @@ export function createHand(options: {
       setHeld(null);
       setLifted('');
     },
-    placeSoon,
-    forgetPlace,
+    placeSoon: places.soon,
+    forgetPlace: places.forget,
     say,
     slotCenter: options.slotCenter,
     stop: () => {
-      stop();
-      clearTimeout(placeTimer);
+      ghost.stop();
+      places.stop();
     },
+  };
+}
+
+// ── The sticker drawn in hand ──
+/**
+ * The sticker drawn in hand: a spring (spring.ts) that follows its target and is painted outside
+ * Solid on every frame, so dragging stays smooth. It runs while `holding()` and while it flies to
+ * where it was sent.
+ */
+function createGhost(holding: () => boolean) {
+  let element: HTMLElement | undefined;
+  // Its position follows the target and leans into the direction of travel (spring.ts).
+  const motion = {
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    tx: 0,
+    ty: 0,
+    tilt: 0,
+    // The angle it rests at in hand, and is set down at when held still.
+    base: 0,
+    scale: 1,
+    ts: 1,
+    lift: 0,
+    tl: 0,
+    // Where the pointer holds it, from its center: the same spot stays under the pointer.
+    ox: 0,
+    oy: 0,
+    // Called once the sticker has flown to where it was sent.
+    home: null as null | (() => void),
+  };
+  let raf = 0;
+  // Where the pointer has been lately, for the speed a sticker is let go with.
+  let trail: { x: number; y: number; t: number }[] = [];
+  function paint() {
+    if (!element) return;
+    element.style.transform = `translate(${motion.x}px, ${motion.y}px) rotate(${motion.tilt}deg) scale(${motion.scale})`;
+    element.style.setProperty('--lift', motion.lift.toFixed(3));
+  }
+  function animate() {
+    cancelAnimationFrame(raf);
+    let last = performance.now();
+    const step = (now: number) => {
+      // A frame late by more than 1/30s moves it no further than one on time would; with reduced
+      // motion one long step lands it where it is going at once.
+      const dt = reducedMotion() ? 10 : Math.min(Math.max(now - last, 0) / 1000, 1 / 30);
+      last = now;
+      const settled = springStep(motion, dt, motion.home ? FLYING : undefined);
+      paint();
+      if (motion.home && settled) {
+        const done = motion.home;
+        motion.home = null;
+        done();
+        return;
+      }
+      if (holding() || motion.home) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+  }
+  return {
+    motion,
+    setElement: (el: HTMLElement) => void (element = el),
+    /** Draws it as `motion` now has it, picked up afresh, and sets the spring going. */
+    start() {
+      trail = [];
+      paint();
+      animate();
+    },
+    /** Follows the pointer, held where it was pressed. */
+    follow(x: number, y: number) {
+      motion.tx = x - motion.ox;
+      motion.ty = y - motion.oy;
+      trail.push({ x, y, t: performance.now() });
+      if (trail.length > 12) trail.shift();
+    },
+    /** Sends its center to a point (the keys, or keeping it on screen). */
+    aimAt(x: number, y: number) {
+      motion.tx = x;
+      motion.ty = y;
+    },
+    /**
+     * Sends it to a point on screen at a scale, then calls `done`. It keeps the speed it was let
+     * go with, so a throw carries on into the flight.
+     */
+    flyTo(point: Point, scale: number, done: () => void) {
+      motion.tx = point.x;
+      motion.ty = point.y;
+      motion.ts = scale;
+      motion.tl = 0;
+      motion.home = done;
+      animate();
+    },
+    /** How fast the pointer was moving as it let go (px/s). */
+    releaseVelocity: () => releaseVelocity(trail, performance.now()),
+    stop: () => cancelAnimationFrame(raf),
+  };
+}
+
+// ── Saying where it is ──
+/**
+ * While a sticker is aimed with the keyboard, says what it is over once it stops moving: the
+ * sheet, a place it can go, or neither.
+ */
+function createPlaceAnnouncer(
+  held: () => Held | null,
+  motion: { tx: number; ty: number },
+  say: (text: string) => void,
+) {
+  let timer = 0,
+    last = '';
+  function announce() {
+    const h = held();
+    if (!h || h.mode !== 'aim') return;
+    // Same tests, in the same order, as drop(): the sheet first, then a spot the page accepts.
+    const place = overSheetAt(motion.tx, motion.ty)
+      ? OVER_SHEET
+      : placeAt(motion.tx, motion.ty) || 'ここには貼れません';
+    if (place === last) return;
+    last = place;
+    say(place);
+  }
+  return {
+    // Scrolling (PageDown, a wheel) moves the page under a sticker held still with the keys too.
+    soon(wait = 350) {
+      clearTimeout(timer);
+      timer = window.setTimeout(announce, wait);
+    },
+    forget() {
+      last = '';
+    },
+    stop: () => clearTimeout(timer),
   };
 }

@@ -43,50 +43,16 @@ export function createInput(
   const byKeys = () => held()?.pointer === 'keys';
   let overlay: HTMLElement | undefined,
     press = { x: 0, y: 0 };
-  // ── The menu of one of your stickers ──
-  // Which sticker it belongs to, by its look (`key`: its id changes once it is saved), where it
-  // sits (fixed, above the sticker or below it near the top), and whether the keys opened it
-  // (focus goes into it).
-  type Menu = { key: string; x: number; y: number; below: boolean; keys: boolean };
-  const [menu, setMenu] = createSignal<Menu | null>(null);
-  // The sticker the menu belongs to, as it is now.
-  const menuTarget = () => {
-    const m = menu();
-    return m ? options.find(m.key) : undefined;
-  };
-  const stickerOf = (s: PlacedStamp) =>
-    document.querySelector<HTMLElement>(`.stamp-layer [data-stamp-id="${CSS.escape(s.id)}"]`);
-  function openMenu(target: PlacedStamp, keys = false) {
-    const el = stickerOf(target);
-    if (!el || !options.isOwn(target) || options.isLeaving(target)) return;
-    const box = el.getBoundingClientRect();
-    setMenu({ key: visualKey(target), keys, ...menuSpot(box, innerWidth) });
-    if (!keys) return;
-    flush();
-    document.querySelector<HTMLElement>('.stamp-menu button')?.focus({ preventScroll: true });
-  }
-  // `refocus`: focus was in the menu, and goes back to the sticker it belongs to.
-  function closeMenu(refocus = false) {
-    const target = menuTarget();
-    setMenu(null);
-    if (refocus && target)
-      stickerOf(target)?.querySelector<HTMLElement>('.stamp-open')?.focus({ preventScroll: true });
-  }
-  // A second press on the sticker whose menu is open closes it rather than opening it again.
-  let closedBy = '';
-  // The pointer that pressed a menu button; none means the keys (or a screen reader) did.
-  let menuPointer = '';
-  function moveFromMenu(e: MouseEvent) {
-    const target = menuTarget();
-    const pointer = menuPointer;
-    menuPointer = '';
-    closeMenu();
-    const el = target && stickerOf(target);
-    if (!el) return;
-    if (!pointer) return moveWithKeys(target, el);
+  const clicks = createClickCatcher();
+  const menu = createStickerMenu({ ...options, clicks, move: moveFromMenu });
+  const { closeMenu } = menu;
+  // Lifts the sticker the menu belongs to (`pointer`: the one that pressed Move; none means the
+  // keys or a screen reader did).
+  function moveFromMenu(target: PlacedStamp, sticker: HTMLElement, pointer: string, e: MouseEvent) {
+    if (!pointer) return moveWithKeys(target, sticker);
     // Lifted where it lies: it comes up to the mouse, or floats clear of the finger, and the
     // next click or tap puts it down.
-    const from = centerOf(el);
+    const from = centerOf(sticker);
     const next: Held = { kind: target.kind, from: 'page', target, mode: 'aim', pointer };
     hand.begin(next, from, from);
     hand.lift(next, 'aim');
@@ -97,34 +63,6 @@ export function createInput(
     hand.aimAt(spot.x, spot.y);
     hand.say(`${aimHint(next)}。やめるボタンで戻せます`);
   }
-  function peelFromMenu() {
-    const target = menuTarget();
-    menuPointer = '';
-    // Erasing moves focus on from the menu (sheet.ts) before it closes.
-    if (target) options.erase(target);
-    closeMenu();
-  }
-  const menuHandlers = {
-    onPointerDown(e: PointerEvent) {
-      menuPointer = e.pointerType || 'mouse';
-    },
-    // A pointer leaves focus where it was: only the keys move it into the menu.
-    onMouseDown(e: MouseEvent) {
-      e.preventDefault();
-    },
-    onKeyDown(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      e.stopPropagation();
-      closeMenu(true);
-    },
-    onFocusOut(e: FocusEvent) {
-      const to = e.relatedTarget as Node | null;
-      if (to && !(e.currentTarget as Element).contains(to)) closeMenu();
-    },
-    move: moveFromMenu,
-    peel: peelFromMenu,
-  };
   // ── Pointers and fingers ──
   // Pressing a sheet sticker or one of yours on the page.
   function grab(e: PointerEvent, next: Omit<Held, 'mode' | 'pointer'>) {
@@ -158,50 +96,20 @@ export function createInput(
   }
   const follow = (e: PointerEvent) => track(e.clientX, e.clientY);
   const cancel = (animated: boolean) => hand.cancel(animated);
-  // The click that follows a tap which put the sticker in hand down (or back) would land on
-  // whatever lies under the finger once the sticker or the overlay is gone, such as a link.
-  // Catch that one click; `then` runs in its place, or after a moment if no click comes.
-  let stopCatchingClick: (() => void) | undefined;
-  function catchNextClick(then?: () => void) {
-    stopCatchingClick?.();
-    let timer = 0;
-    const stop = () => {
-      clearTimeout(timer);
-      window.removeEventListener('click', caught, true);
-      window.removeEventListener('pointerdown', stop, true);
-      if (stopCatchingClick === stop) stopCatchingClick = undefined;
-    };
-    const caught = (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      stop();
-      then?.();
-    };
-    window.addEventListener('click', caught, true);
-    // A new press means the click never came; that press starts something else.
-    window.addEventListener('pointerdown', stop, true);
-    timer = window.setTimeout(() => {
-      stop();
-      then?.();
-    }, 600);
-    stopCatchingClick = stop;
-  }
   // A click (press without moving) keeps the sticker in hand; the next click sticks it.
   function release(e: PointerEvent) {
     const h = held();
     if (!h) return;
     if (h.mode === 'drag') {
       // A finger lets go where the sheet's sticker lands; that tap's click would follow a link.
-      if (h.pointer !== 'mouse') catchNextClick();
+      if (h.pointer !== 'mouse') clicks.catchNext();
       return hand.drop(e.clientX, e.clientY);
     }
     if (h.mode !== 'press') return;
     // A click or tap on one of yours opens its menu (or closes it, if it was already open).
     if (h.from === 'page' && h.target) {
       cancel(false);
-      const again = closedBy === h.target.id;
-      closedBy = '';
-      return again ? undefined : openMenu(h.target);
+      return menu.toggle(h.target);
     }
     hand.lift(h, 'aim');
     // The hint bar is the only guide for a pointer; read it once as it appears.
@@ -275,7 +183,7 @@ export function createInput(
         hand.moveTo(e.clientX, e.clientY);
         hand.drop(e.clientX, e.clientY);
         // The overlay is gone before the tap's click, which would reach the page under it.
-        catchNextClick();
+        clicks.catchNext();
       }
       aimDown.id = -1;
     },
@@ -289,18 +197,7 @@ export function createInput(
       if (held()) cancel(true);
       closeMenu();
     };
-    // The menu closes from a press anywhere else, or as the page scrolls or changes size.
-    const pressedOutside = (e: PointerEvent) => {
-      const target = menuTarget(),
-        on = e.target as Element;
-      closedBy = '';
-      if (!menu() || on.closest?.('.stamp-menu')) return;
-      const pressed = on.closest?.('[data-stamp-id]')?.getAttribute('data-stamp-id');
-      if (target && pressed === target.id) closedBy = target.id;
-      closeMenu();
-      // That press only closes the menu: it does not also follow a link on the page under it.
-      if (!on.closest?.('.stamp-ui, .placed-stamp')) catchNextClick();
-    };
+    // The menu also closes as the page scrolls or changes size.
     const scrolled = () => {
       closeMenu();
       const h = held();
@@ -325,14 +222,12 @@ export function createInput(
     window.addEventListener('scroll', scrolled, { passive: true });
     window.addEventListener('resize', keepInView);
     document.addEventListener('pointerdown', pinch, true);
-    document.addEventListener('pointerdown', pressedOutside, true);
     return () => {
-      document.removeEventListener('pointerdown', pressedOutside, true);
       document.removeEventListener('keydown', escape);
       window.removeEventListener('scroll', scrolled);
       window.removeEventListener('resize', keepInView);
       document.removeEventListener('pointerdown', pinch, true);
-      stopCatchingClick?.();
+      clicks.stop();
     };
   });
   return {
@@ -342,11 +237,155 @@ export function createInput(
     release,
     cancel,
     aimWithKeys,
+    menu: menu.menu,
+    menuTarget: menu.menuTarget,
+    openMenu: menu.openMenu,
+    closeMenu,
+    menuHandlers: menu.handlers,
+    overlay: overlayHandlers,
+  };
+}
+
+// ── The click after a tap ──
+/**
+ * The click that follows a tap which put the sticker in hand down (or back) would land on
+ * whatever lies under the finger once the sticker or the overlay is gone, such as a link.
+ * `catchNext` catches that one click; `then` runs in its place, or after a moment if no click comes.
+ */
+function createClickCatcher() {
+  let stopCatching: (() => void) | undefined;
+  function catchNext(then?: () => void) {
+    stopCatching?.();
+    let timer = 0;
+    const stop = () => {
+      clearTimeout(timer);
+      window.removeEventListener('click', caught, true);
+      window.removeEventListener('pointerdown', stop, true);
+      if (stopCatching === stop) stopCatching = undefined;
+    };
+    const caught = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      stop();
+      then?.();
+    };
+    window.addEventListener('click', caught, true);
+    // A new press means the click never came; that press starts something else.
+    window.addEventListener('pointerdown', stop, true);
+    timer = window.setTimeout(() => {
+      stop();
+      then?.();
+    }, 600);
+    stopCatching = stop;
+  }
+  return { catchNext, stop: () => stopCatching?.() };
+}
+
+// ── The menu of one of your stickers ──
+// Which sticker it belongs to, by its look (`key`: its id changes once it is saved), where it
+// sits (fixed, above the sticker or below it near the top), and whether the keys opened it
+// (focus goes into it).
+type Menu = { key: string; x: number; y: number; below: boolean; keys: boolean };
+/**
+ * The menu of one of your stickers: Move (`move`, given the pointer that pressed it, '' for the
+ * keys) and Peel. It closes from a press anywhere else.
+ */
+function createStickerMenu(options: {
+  isOwn: (s: PlacedStamp) => boolean;
+  isLeaving: (s: PlacedStamp) => boolean;
+  erase: (s: PlacedStamp) => void;
+  find: (key: string) => PlacedStamp | undefined;
+  clicks: ReturnType<typeof createClickCatcher>;
+  move: (target: PlacedStamp, sticker: HTMLElement, pointer: string, e: MouseEvent) => void;
+}) {
+  const [menu, setMenu] = createSignal<Menu | null>(null);
+  // The sticker the menu belongs to, as it is now.
+  const menuTarget = () => {
+    const m = menu();
+    return m ? options.find(m.key) : undefined;
+  };
+  const stickerOf = (s: PlacedStamp) =>
+    document.querySelector<HTMLElement>(`.stamp-layer [data-stamp-id="${CSS.escape(s.id)}"]`);
+  function openMenu(target: PlacedStamp, keys = false) {
+    const el = stickerOf(target);
+    if (!el || !options.isOwn(target) || options.isLeaving(target)) return;
+    const box = el.getBoundingClientRect();
+    setMenu({ key: visualKey(target), keys, ...menuSpot(box, innerWidth) });
+    if (!keys) return;
+    flush();
+    document.querySelector<HTMLElement>('.stamp-menu button')?.focus({ preventScroll: true });
+  }
+  // `refocus`: focus was in the menu, and goes back to the sticker it belongs to.
+  function closeMenu(refocus = false) {
+    const target = menuTarget();
+    setMenu(null);
+    if (refocus && target)
+      stickerOf(target)?.querySelector<HTMLElement>('.stamp-open')?.focus({ preventScroll: true });
+  }
+  // A second press on the sticker whose menu is open closes it rather than opening it again.
+  let closedBy = '';
+  // The pointer that pressed a menu button; none means the keys (or a screen reader) did.
+  let menuPointer = '';
+  const handlers = {
+    onPointerDown(e: PointerEvent) {
+      menuPointer = e.pointerType || 'mouse';
+    },
+    // A pointer leaves focus where it was: only the keys move it into the menu.
+    onMouseDown(e: MouseEvent) {
+      e.preventDefault();
+    },
+    onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      closeMenu(true);
+    },
+    onFocusOut(e: FocusEvent) {
+      const to = e.relatedTarget as Node | null;
+      if (to && !(e.currentTarget as Element).contains(to)) closeMenu();
+    },
+    move(e: MouseEvent) {
+      const target = menuTarget();
+      const pointer = menuPointer;
+      menuPointer = '';
+      closeMenu();
+      const el = target && stickerOf(target);
+      if (el) options.move(target, el, pointer, e);
+    },
+    peel() {
+      const target = menuTarget();
+      menuPointer = '';
+      // Erasing moves focus on from the menu (sheet.ts) before it closes.
+      if (target) options.erase(target);
+      closeMenu();
+    },
+  };
+  onSettled(() => {
+    const pressedOutside = (e: PointerEvent) => {
+      const target = menuTarget(),
+        on = e.target as Element;
+      closedBy = '';
+      if (!menu() || on.closest?.('.stamp-menu')) return;
+      const pressed = on.closest?.('[data-stamp-id]')?.getAttribute('data-stamp-id');
+      if (target && pressed === target.id) closedBy = target.id;
+      closeMenu();
+      // That press only closes the menu: it does not also follow a link on the page under it.
+      if (!on.closest?.('.stamp-ui, .placed-stamp')) options.clicks.catchNext();
+    };
+    document.addEventListener('pointerdown', pressedOutside, true);
+    return () => document.removeEventListener('pointerdown', pressedOutside, true);
+  });
+  return {
     menu,
     menuTarget,
     openMenu,
     closeMenu,
-    menuHandlers,
-    overlay: overlayHandlers,
+    /** Opens the menu of `target`, unless the press that just closed it was on `target`. */
+    toggle(target: PlacedStamp) {
+      const again = closedBy === target.id;
+      closedBy = '';
+      if (!again) openMenu(target);
+    },
+    handlers,
   };
 }
