@@ -43,7 +43,6 @@ export function createHand(options: {
   slotCenter: (kind: number) => Point & { scale: number };
 }) {
   const { say } = options;
-  const nameOf = stickerName;
   const [held, setHeld] = createSignal<Held | null>(null),
     // The sticker drawn in hand; it stays while flying back after `held` is cleared.
     [ghostKind, setGhostKind] = createSignal(-1),
@@ -222,7 +221,7 @@ export function createHand(options: {
       // One of yours from the page goes back where it was, not to the sheet.
       const page = h.from === 'page';
       const event = blocked ? (page ? 'blocked-kept' : 'blocked') : page ? 'kept' : 'returned';
-      say(stampAnnouncement(event, nameOf(h.kind), options.remaining()));
+      say(stampAnnouncement(event, stickerName(h.kind), options.remaining()));
     }
     letGo(h);
     if (reducedMotion()) return finish();
@@ -254,7 +253,8 @@ export function createHand(options: {
     if (overSheetAt(px - motion.ox, py - motion.oy)) {
       // Putting one of your stickers back on the sheet peels it off the page.
       if (h.from === 'page' && h.target) options.erase(h.target, false);
-      else if (h.pointer === 'keys') say(stampAnnouncement('returned', nameOf(h.kind), options.remaining()));
+      else if (h.pointer === 'keys')
+        say(stampAnnouncement('returned', stickerName(h.kind), options.remaining()));
       letGo(h);
       return flyHome(h);
     }
@@ -294,9 +294,9 @@ export function createHand(options: {
     say(
       stampAnnouncement(
         'placed',
-        nameOf(h.kind),
+        stickerName(h.kind),
         options.remaining(),
-        pushedOut ? nameOf(pushedOut.kind) : undefined,
+        pushedOut ? stickerName(pushedOut.kind) : undefined,
         place,
       ),
     );

@@ -65,8 +65,8 @@ export function clientMedia(
   }
   const images: Record<string, { src: string; srcset?: string }> = {};
   for (const source of thumbnails) {
-    const image = source ? cache[source] : undefined;
-    if (!image || !source) continue;
+    if (!source || !cache[source]) continue;
+    const image = cache[source];
     // A cropped thumbnail (YouTube's letterboxed 4:3 file) is shown only as its cut-out copies.
     if (image.crop && image.variants?.length) {
       images[source] = {

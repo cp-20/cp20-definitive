@@ -3,10 +3,8 @@
 // simply dropped, which puts the page back as it was. Kept free of the DOM and of Firebase so
 // it can be tested in Node.
 import { STAMPS_PER_PAGE, WRITE_SPACING_MS } from './limits.ts';
+import { visualKey } from './layout.ts';
 import type { Operation, PlacedStamp, SavedRecord } from './types.ts';
-
-export const sameStamp = (a: PlacedStamp, b: PlacedStamp) =>
-  a.anchor === b.anchor && a.x === b.x && a.y === b.y && a.kind === b.kind && a.angle === b.angle;
 
 /**
  * The stickers to draw: `remote` with the pending `operations` applied in order.
@@ -27,8 +25,9 @@ export function projectStamps(
     // A moved sticker takes its old place (and age), so it pushes nothing out.
     const moved = op.type === 'move' && result.find((s) => s.id === op.target.id);
     // A stream event can arrive before the save's own reply. Keep one visual copy.
+    const look = visualKey(op.stamp);
     result = result.filter(
-      (s) => !(s.owner === owner && sameStamp(s, op.stamp)) && !(moved && s.id === moved.id),
+      (s) => !(s.owner === owner && visualKey(s) === look) && !(moved && s.id === moved.id),
     );
     if (moved) {
       result.push({ ...op.stamp, createdAt: moved.createdAt });

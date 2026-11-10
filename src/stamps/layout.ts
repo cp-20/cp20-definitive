@@ -39,11 +39,11 @@ export function layoutStamps(
   previous: ReadonlyMap<string, ShownStamp> = new Map(),
 ): Map<string, ShownStamp> {
   const shown = new Map<string, ShownStamp>();
+  const page = boxOf('page');
+  const right = page ? page.x + page.w - STICKER_RADIUS - 8 : Infinity;
   for (const stamp of stamps) {
     const box = boxOf(stamp.anchor);
     if (!box) continue;
-    const page = boxOf('page');
-    const right = page ? page.x + page.w - STICKER_RADIUS - 8 : Infinity;
     const key = visualKey(stamp),
       left = Math.min(box.x + box.w * stamp.x, right),
       top = box.y + box.h * stamp.y,
