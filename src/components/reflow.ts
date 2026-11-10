@@ -1,47 +1,33 @@
-// Filtering or sorting a list of cards (FLIP): the cards that stay glide from where they were to
-// where the update puts them, the ones that go fade out where they were and the ones that come
-// fade in where they land. Only transform and opacity animate, so nothing is laid out again and
-// the list's real layout is in place from the first frame. Cards off screen before and after
-// are left alone, and a card that moves between the screen and off it fades instead of flying.
-// The stickers on a card (placed against its stamp anchor) follow it.
-type Rect = { top: number; bottom: number; left: number };
-type Motion = {
-  from: [number, number];
-  to: [number, number];
-  opacity: [number, number];
-  scale: [number, number];
-};
+// Switching a list of cards to another set (another year's articles): the cards that go fade out
+// where they were, taken out of the flow, so the ones that come are in their places from the
+// first frame and fade in there. Only opacity animates, so nothing is laid out again and the
+// stickers on a card (placed against its stamp anchor) fade with it without moving off it.
+// Cards off screen before and after are left alone. A quick second switch carries each card on
+// from how faded it is, so none flashes back.
+type Rect = { top: number; bottom: number };
 
-const MOVE = { duration: 280, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' };
 const FADE = { duration: 180, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' };
 // How far off screen still counts as on it, so a card just past the edge is not skipped.
 const MARGIN = 40;
-const SHRUNK = 0.96;
 
-/** What a card does, given where it was (if shown) and where it is now (if shown). */
-export function motionFor(from: Rect | undefined, to: Rect | undefined, viewport: number): Motion | null {
-  const seen = (r: Rect | undefined): r is Rect => !!r && r.bottom > -MARGIN && r.top < viewport + MARGIN;
-  const still: [number, number] = [0, 0];
-  if (!to) return seen(from) ? { from: still, to: still, opacity: [1, 0], scale: [1, SHRUNK] } : null;
-  if (!from) return seen(to) ? { from: still, to: still, opacity: [0, 1], scale: [SHRUNK, 1] } : null;
-  const d: [number, number] = [from.left - to.left, from.top - to.top];
-  if (Math.abs(d[0]) < 1 && Math.abs(d[1]) < 1) return null;
-  if (seen(from) && seen(to)) return { from: d, to: still, opacity: [1, 1], scale: [1, 1] };
-  // Comes onto the screen from far away: appears where it lands.
-  if (seen(to)) return { from: still, to: still, opacity: [0, 1], scale: [SHRUNK, 1] };
-  // Goes off the screen: fades where it was (held there by the transform), then is where it belongs.
-  if (seen(from)) return { from: d, to: d, opacity: [1, 0], scale: [1, SHRUNK] };
-  return null;
+/**
+ * A card's opacity from and to, given where it was and is (each when shown) and, if it was caught
+ * fading, how faded it was then; null when it does not animate.
+ */
+export function fadeFor(
+  was: Rect | undefined,
+  now: Rect | undefined,
+  viewport: number,
+  caught?: number,
+): [number, number] | null {
+  const seen = (r: Rect | undefined) => !!r && r.bottom > -MARGIN && r.top < viewport + MARGIN;
+  if (!seen(was) && !seen(now)) return null;
+  const from = caught ?? (was ? 1 : 0),
+    to = now ? 1 : 0;
+  return Math.abs(from - to) < 0.01 ? null : [from, to];
 }
 
-// A card that stays put but was caught fading in.
-const still = (): Motion => ({ from: [0, 0], to: [0, 0], opacity: [1, 1], scale: [1, 1] });
-
-const frames = (m: Motion, scaled: boolean): Keyframe[] =>
-  [0, 1].map((i) => ({
-    transform: `translate(${m[i ? 'to' : 'from'].join('px, ')}px)` + (scaled ? ` scale(${m.scale[i]})` : ''),
-    opacity: m.opacity[i],
-  }));
+const frames = (opacity: [number, number]): Keyframe[] => opacity.map((o) => ({ opacity: o }));
 
 const running = new WeakMap<HTMLElement, Animation[]>();
 
@@ -54,24 +40,22 @@ function settle(row: HTMLElement) {
 
 /**
  * Runs `update` (which must apply its changes to the DOM before it returns, e.g. with Solid's
- * flush()) and animates `list`'s children into place. Hidden children ([hidden]) are not shown.
+ * flush()) and fades `list`'s children that it hides ([hidden]) or shows.
  */
 export function reflow(list: HTMLElement, update: () => void) {
   if (!list.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return update();
   const rows = [...list.children] as HTMLElement[];
-  // Where each card is seen now and how faded it is, mid-animation included, so a quick second
-  // choice carries on from there: a card caught fading out fades on from where it is, or comes
-  // back from there.
-  const before = new Map<HTMLElement, DOMRect>();
-  const caught = new Map<HTMLElement, { opacity: number; scale: number }>();
+  // How faded each card on screen from the last switch is (a card that has gone is not on screen),
+  // and where each card shown now is.
+  const caught = new Map<HTMLElement, number>();
   const previous = running.get(list) ?? [];
   for (const a of previous) {
     const row = (a.effect as KeyframeEffect | null)?.target as HTMLElement | null;
-    if (row?.parentElement !== list || caught.has(row)) continue;
-    const style = getComputedStyle(row);
-    const scale = style.transform === 'none' ? 1 : new DOMMatrixReadOnly(style.transform).a;
-    caught.set(row, { opacity: Number(style.opacity), scale });
+    if (!row || row.parentElement !== list || caught.has(row)) continue;
+    if (!row.hidden || row.classList.contains('leaving'))
+      caught.set(row, Number(getComputedStyle(row).opacity));
   }
+  const before = new Map<HTMLElement, DOMRect>();
   const kept = new Map<HTMLElement, [string, string]>();
   for (const row of rows) {
     if (row.classList.contains('leaving')) kept.set(row, [row.style.inset, row.style.width]);
@@ -82,10 +66,12 @@ export function reflow(list: HTMLElement, update: () => void) {
   for (const row of rows) settle(row);
   update();
   // The cards that go are taken out of the flow where they were before anything is measured, so
-  // the page is laid out once here and only animated after.
+  // the page is laid out once here and only animated after. One that is already invisible just goes.
+  const going = new Map<HTMLElement, [number, number]>();
   for (const row of rows) {
     const from = before.get(row);
-    if (!row.hidden || !from || from.bottom < -MARGIN || from.top > innerHeight + MARGIN) continue;
+    const opacity = row.hidden && from && fadeFor(from, undefined, innerHeight, caught.get(row));
+    if (!opacity) continue;
     const [inset, width] = kept.get(row) ?? [
       `${from.top - box.top}px auto auto ${from.left - box.left}px`,
       `${from.width}px`,
@@ -93,50 +79,40 @@ export function reflow(list: HTMLElement, update: () => void) {
     row.classList.add('leaving');
     row.style.inset = inset;
     row.style.width = width;
+    going.set(row, opacity);
   }
-  const after = rows.map((row) => (row.hidden ? undefined : row.getBoundingClientRect()));
   const anims: Animation[] = [];
-  const moved: [anchor: string, motion: Motion, timing: KeyframeAnimationOptions, card: Animation][] = [];
-  rows.forEach((row, i) => {
-    const from = before.get(row);
-    const now = caught.get(row);
-    const motion = motionFor(from, after[i], innerHeight) ?? (now && from && after[i] ? still() : null);
-    if (!motion) return;
-    const timing = motion.opacity[0] === motion.opacity[1] ? MOVE : FADE;
-    // A card caught mid-animation on screen starts exactly where and as it is seen: no brighter,
-    // and at the size and spot it had shrunk or moved to.
-    if (now && from && from.bottom > 0 && from.top < innerHeight) {
-      const at = after[i] ?? row.getBoundingClientRect();
-      const grown = (1 - now.scale) / 2;
-      motion.opacity[0] = Math.min(motion.opacity[0], now.opacity);
-      motion.scale[0] = now.scale;
-      motion.from = [from.left - at.left - grown * at.width, from.top - at.top - grown * at.height];
-    }
-    const anim = row.animate(frames(motion, true), timing);
-    if (!after[i]) anim.onfinish = () => settle(row);
+  const faded: [anchor: string, opacity: [number, number], card: Animation][] = [];
+  for (const row of rows) {
+    const now = row.hidden ? undefined : row.getBoundingClientRect();
+    const opacity = now ? fadeFor(before.get(row), now, innerHeight, caught.get(row)) : going.get(row);
+    if (!opacity) continue;
+    // A card that goes stays faded until it is taken out, however late that runs, and then lets go.
+    const anim = row.animate(frames(opacity), { ...FADE, fill: now ? 'none' : 'forwards' });
+    if (!now)
+      anim.onfinish = () => {
+        settle(row);
+        anim.cancel();
+      };
     anims.push(anim);
-    // A sticker on a card that leaves stays faded until it is taken off with the card.
-    if (row.dataset.stampAnchor)
-      moved.push([
-        row.dataset.stampAnchor,
-        motion,
-        after[i] ? timing : { ...timing, fill: 'forwards' },
-        anim,
-      ]);
-  });
+    if (row.dataset.stampAnchor) faded.push([row.dataset.stampAnchor, opacity, anim]);
+  }
   running.set(list, anims);
-  if (!moved.length) return;
-  // The cards start moving on the first frame that shows the change, however long it takes.
+  if (!faded.length) return;
   // The stickers are placed again on the frame after a change to the page (placement.ts), so
-  // they are picked up after that and put on their cards' clock.
+  // they are picked up after that and put on their cards' clock. A sticker on a card that goes
+  // stays faded until it is taken off with the card.
   queueMicrotask(() =>
     requestAnimationFrame(() => {
       if (running.get(list) !== anims) return;
-      for (const [anchor, motion, timing, card] of moved)
+      for (const [anchor, opacity, card] of faded)
         for (const el of document.querySelectorAll<HTMLElement>(
           `.placed-stamp[data-anchor="${CSS.escape(anchor)}"]`,
         )) {
-          const anim = el.animate(frames(motion, false), timing);
+          const anim = el.animate(frames(opacity), {
+            ...FADE,
+            fill: opacity[1] ? 'none' : 'forwards',
+          });
           card.ready.then(
             () => anim.playState !== 'idle' && (anim.startTime = card.startTime),
             () => {},

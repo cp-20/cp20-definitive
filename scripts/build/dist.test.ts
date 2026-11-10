@@ -8,7 +8,14 @@ import sharp from 'sharp';
 import baseWorks from '../../src/data/works.json' with { type: 'json' };
 import manual from '../../src/data/manual.json' with { type: 'json' };
 import series from '../../src/data/series.json' with { type: 'json' };
-import { OG_IMAGE, mergeWorks, sitePaths } from '../../src/site/pages.ts';
+import {
+  OG_IMAGE,
+  WORK_ART,
+  WORK_ART_WIDTHS,
+  mergeWorks,
+  sitePaths,
+  workArtFile,
+} from '../../src/site/pages.ts';
 import { spineAuthor } from '../../src/content/series-credit.ts';
 import { weights } from './fonts.ts';
 import { licensesPath } from './licenses.ts';
@@ -67,6 +74,27 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
     assert.deepEqual(
       { format, width, height },
       { format: 'png', width: OG_IMAGE.width, height: OG_IMAGE.height },
+    );
+  });
+
+  test('作品のカードに描いた絵は、幅ごとの WebP で、OG 画像と同じ縦横比', async () => {
+    const files = Object.keys(WORK_ART).flatMap((id) =>
+      WORK_ART_WIDTHS.map((width) => ({ path: workArtFile(id, width), width })),
+    );
+    const found = await Promise.all(
+      files.map(async ({ path }) => {
+        const { format, width, height } = await sharp(built(path.slice(1)).pathname).metadata();
+        return { path, format, width, height };
+      }),
+    );
+    assert.deepEqual(
+      found,
+      files.map(({ path, width }) => ({
+        path,
+        format: 'webp',
+        width,
+        height: Math.round((width * 630) / 1200),
+      })),
     );
   });
 

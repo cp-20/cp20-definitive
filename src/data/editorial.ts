@@ -30,15 +30,29 @@ export const milestones: Milestone[] = [
     year: '2026.10',
     grade: '大学4年',
     title: 'ISUCON2026 学生2位',
-    text: 'pirosiki と2人のチーム「`[object Object]`」で、最終 **211,213 点**。',
+    text: 'pirosiki と2人のチーム「`[object Object]`」で、最終 **211,213点**。',
     detail: [
-      'チーム「`[object Object]`」として pirosiki と2人で出場し、BeReal 風の SNS「ISUReal」を8時間かけて高速化した。複数の AI Agent を並列に動かすため、ベンチのロックやタスクボードなどの道具を事前に用意して臨み、最終 211,213 点で学生2位になった。',
+      'チーム「`[object Object]`」として pirosiki と2人で出場し、BeReal 風の SNS「ISUReal」を8時間かけて高速化した。複数の AI Agent を並列に動かすため、ベンチのロックやタスクボードなどの道具を事前に用意して臨み、最終 211,213点で学生2位になった。',
       '投稿画像の JPEG 検証は判定結果を変えずに最適化し、標準ライブラリを複製した検証器で、412KB の画像の検証を 27.6ms から 1.15ms（約24倍）にした。',
     ],
     links: [
       { label: 'ISUCON2026 に AI Agent と出て学生2位でした', url: 'https://blog.cp20.dev/posts/isucon2026/' },
     ],
     speedup: { what: '投稿画像の検証', from: '27.6ms', to: '1.15ms', place: 'ISUCON2026' },
+  },
+  {
+    id: 'deploynow2026',
+    kind: 'award',
+    year: '2026.10',
+    grade: '大学4年',
+    title: 'デプロイナウコンテスト 月間賞',
+    text: 'みんなのものさしが**9月の月間賞**に。',
+    detail: [
+      'GMOペパボの「デプロイナウコンテスト byGMOペパボ」は、ロリポップ！デプロイナウで公開した Web アプリ・Web サイトのコンテスト。9月から11月までは毎月、運営が選んだ作品に月間賞を贈る。',
+      'みんなのものさしは、9月の月間賞の12作品の1つに選ばれた。運営のコメントは「『ちょっと』って何分？ 数字で答えると、みんなとのズレが見える。PCでもスマホでも、答える操作まで気持ちいい。」',
+    ],
+    links: [{ label: 'デプロイナウコンテスト byGMOペパボ', url: 'https://lolipop.jp/deploy-now/contest/' }],
+    work: 'minna-no-monosashi',
   },
   {
     id: 'layerx',

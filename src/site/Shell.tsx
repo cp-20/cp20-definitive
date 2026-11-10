@@ -1,7 +1,7 @@
 import { For } from 'solid-js';
 import type { JSX } from '@solidjs/web';
 import Icon, { type IconName } from '../components/Icon.tsx';
-import Brand, { accountId } from '../components/Brand.tsx';
+import Brand from '../components/Brand.tsx';
 import Credits from '../components/Credits.tsx';
 import QrCode from '../components/QrCode.tsx';
 import { openModal } from '../components/Modal.tsx';
@@ -64,7 +64,6 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
                 <a href={l.url}>
                   <Brand url={l.url} />
                   {l.name}
-                  {accountId(l.url) && <span class="account-id">{accountId(l.url)}</span>}
                 </a>
               )}
             </For>

@@ -7,6 +7,10 @@ Copyright 2019 Twitter, Inc and other contributors
 License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
 Changes: none; the files are the upstream SVGs, renamed.
 
+File: /images/qr-cp20.svg (the QR code of https://cp20.dev)
+Source: the clover of clover.svg above (Twemoji, same copyright and license).
+Changes: scaled and placed in the middle of the QR code (scripts/build/qr.ts).
+
 Files: suki.svg, naruhodo.svg, arigato.svg (the word stickers)
 Source: drawn for cp20.dev, not part of Twemoji. The letters are outlines of
         Zen Maru Gothic Bold (SIL Open Font License 1.1; see

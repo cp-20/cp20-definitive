@@ -572,13 +572,6 @@
     translate: 2px 2px;
     box-shadow: 0 0 0 var(--drop);
   }
-  /* An account's ID beside its name, where the site's name does not tell it (Twitter). */
-  .account-id {
-    font-family: var(--mono);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    letter-spacing: 0;
-  }
   @media (hover: hover) {
     .brand:hover img {
       transform: rotate(-20deg);
@@ -1218,130 +1211,8 @@
   }
 
   /* ── Articles page ── */
-  .article-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px 24px;
-    margin-bottom: 20px;
-  }
-  .source-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  .source-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 42px;
-    padding: 0 6px 0 16px;
-    border: 2px solid var(--edge);
-    border-radius: 999px;
-    background: var(--paper);
-    font-size: 0.875rem;
-    font-weight: 700;
-    box-shadow: 3px 3px 0 var(--drop);
-    transition:
-      transform var(--t-hover) var(--ease),
-      box-shadow var(--t-hover) var(--ease),
-      background var(--t-hover) var(--ease);
-  }
-  .source-chip small {
-    display: grid;
-    place-items: center;
-    min-width: 28px;
-    height: 28px;
-    padding: 0 6px;
-    border-radius: 999px;
-    background: var(--paper-2);
-    font-weight: 700;
-    color: var(--ink);
-  }
-  @media (hover: hover) {
-    .source-chip:hover {
-      transform: translate(-1px, -1px);
-      box-shadow: 4px 4px 0 var(--drop);
-    }
-  }
-  .source-chip:active,
-  .source-chip[aria-pressed='true'] {
-    transform: translate(3px, 3px);
-    box-shadow: 0 0 0 var(--drop);
-  }
-  .source-chip:active {
-    transition-duration: var(--t-press);
-  }
-  .source-chip[aria-pressed='true'] {
-    background: var(--hi);
-    color: var(--on-color);
-  }
-  .source-chip[aria-pressed='true'] small {
-    background: var(--paper);
-    color: var(--ink);
-  }
-  .article-sort-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  .article-sort-row .meta {
-    font-weight: 700;
-    font-size: 0.875rem;
-  }
-  .sort-control {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .sort-control label {
-    display: flex;
-    align-items: center;
-    height: 44px;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    color: var(--muted);
-    line-height: 1;
-  }
-  .native-select {
-    position: relative;
-    display: flex;
-  }
-  .native-select select {
-    appearance: none;
-    height: 44px;
-    padding: 0 40px 0 18px;
-    border: 2px solid var(--edge);
-    border-radius: 999px;
-    background: var(--paper);
-    font-size: 0.875rem;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .native-select select:focus-visible {
-    outline: 3px dashed var(--seal);
-    outline-offset: 2px;
-  }
-  .native-select svg {
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    translate: 0 -50%;
-    rotate: 90deg;
-    pointer-events: none;
-  }
-  .native-select option {
-    background: var(--paper);
-    color: var(--ink);
-  }
   .article-results {
     min-height: 60vh;
-  }
-  .empty-state {
-    padding: 60px 0;
-    color: var(--muted);
-    text-align: center;
   }
 
   /* ── About ── */
@@ -3468,24 +3339,6 @@
     .home-likes {
       margin-inline: 6px;
     }
-    .article-toolbar {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .article-sort-row {
-      justify-content: space-between;
-    }
-    .source-filters {
-      gap: 8px;
-    }
-    .source-chip {
-      height: 38px;
-      font-size: 0.8125rem;
-    }
-    .source-chip small {
-      min-width: 24px;
-      height: 24px;
-    }
     .music-list {
       grid-template-columns: minmax(0, 1fr);
       gap: 44px;
@@ -3777,27 +3630,14 @@
       font-size: 2.25rem;
     }
   }
-  /* Without JavaScript the filters cannot do anything; every article is still listed. */
-  @media (scripting: none) {
-    .source-filters,
-    .sort-control {
-      display: none;
-    }
-  }
   /* High-contrast modes replace backgrounds with Canvas, so states shown by a fill alone
-     (the chosen filter, the used sticker pips, the current tab) are redrawn in system colors. */
+     (the used sticker pips, the current tab) are redrawn in system colors. */
   @media (forced-colors: active) {
-    .source-chip[aria-pressed='true'],
     .rail nav a[aria-current='page'] {
       forced-color-adjust: none;
       border-color: Highlight;
       background: Highlight;
       color: HighlightText;
-    }
-    .source-chip[aria-pressed='true'] small {
-      forced-color-adjust: none;
-      background: HighlightText;
-      color: Highlight;
     }
     .sticker-pips > span {
       forced-color-adjust: none;
@@ -3904,11 +3744,6 @@
     color: var(--muted);
     translate: 0 6px;
     transition: translate var(--t-hover) var(--ease);
-  }
-  /* A year with none of the chosen source's articles: an empty outline of a tab. */
-  .attendance-tab[data-empty] {
-    border-style: dashed;
-    background: color-mix(in srgb, var(--card) 35%, #f6f3ec);
   }
   .attendance-tab[aria-pressed='true'] {
     position: relative;
@@ -4117,13 +3952,6 @@
     width: calc(var(--row) * 0.74);
     height: calc(var(--row) * 0.74);
   }
-  .attendance-stamp[data-off] {
-    pointer-events: none;
-  }
-  .attendance-stamp[data-off] .day-stamp {
-    --ink: var(--faint);
-    opacity: 0.3;
-  }
   .attendance-stamp:is(:focus-visible, [data-hot], [data-picked]) {
     z-index: 3;
   }
@@ -4236,7 +4064,7 @@
   .article-row[hidden] {
     display: none;
   }
-  /* Filtered out: kept where it was, out of the flow, while it fades (reflow.ts). */
+  /* Another year's: kept where it was, out of the flow, while it fades (reflow.ts). */
   .article-row.leaving {
     display: grid;
     position: absolute;
@@ -4377,24 +4205,9 @@
       column-gap: 24px;
     }
   }
-  /* The open year's count is the ring on its card, so over the list it is only announced; on a
-     phone, where the card has no heading (its year is on its tab), it is shown. */
-  @media (width > 600px) {
-    .article-sort-row .meta {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-    }
-  }
   @media (max-width: 600px) {
     .attendance-desk {
       gap: 14px;
-    }
-    .attendance:has(.attendance-tabs) .attendance-head {
-      display: none;
     }
     .attendance-desk .article-list {
       grid-template-columns: minmax(0, 1fr);
@@ -4408,18 +4221,14 @@
       font-size: 0.9375rem;
     }
   }
-  /* Without JavaScript the open year cannot change, so every article is listed, and the card
-     keeps its heading (it has no tabs). */
+  /* Without JavaScript the open year cannot change, so every article is listed under the latest
+     year's card, without its tabs. */
   @media (scripting: none) {
     .article-row[hidden] {
       display: grid;
     }
-    .attendance-tabs,
-    .article-sort-row {
+    .attendance-tabs {
       display: none;
-    }
-    .attendance:has(.attendance-tabs) .attendance-head {
-      display: flex;
     }
   }
   @media (forced-colors: active) {

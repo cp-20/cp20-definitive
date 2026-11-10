@@ -5,6 +5,8 @@
 import { chromium, devices, expect, type BrowserContext, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
+import jsQR from 'jsqr';
+import sharp from 'sharp';
 import { mockFirebase, signInAs } from './firebase-mock.ts';
 import profile from '../../src/data/profile.json' with { type: 'json' };
 import works from '../../src/data/works.json' with { type: 'json' };
@@ -295,7 +297,7 @@ try {
   await page.goForward();
   await expect(page.locator('main h1')).toHaveText('みんなのものさし');
   await page.locator('.rail nav a[href="/articles"]').click();
-  await page.getByRole('button', { name: /^zenn.dev/ }).click();
+  await expect(page.locator('.attendance-tab')).not.toHaveCount(0);
   // The other year with the most, from its tab on the stack of cards.
   const year = await page
     .locator('.attendance-tab[aria-pressed="false"]')
@@ -307,15 +309,14 @@ try {
     );
   await page.locator('.attendance-tab', { hasText: year }).click();
   await expect(page).toHaveURL(new RegExp(`year=${year}`));
-  // Filtering hides rows instead of rebuilding the list, so only the rows shown are counted.
-  const zenn = await page.locator('[data-article]:not([hidden])').count();
-  if (zenn !== (await page.locator('.attendance-stamp:not([data-off])').count()))
+  // Another year hides rows instead of rebuilding the list, so only the rows shown are counted.
+  const inYear = await page.locator('[data-article]:not([hidden])').count();
+  if (inYear !== (await page.locator('.attendance-stamp').count()))
     throw Error("The list and the card disagree on the year's articles");
-  await page.locator('#article-sort').selectOption('oldest');
   const dates = await page
     .locator('[data-article]:not([hidden])')
     .evaluateAll((rows: HTMLElement[]) => rows.map((r) => r.dataset.date));
-  if (dates.join() !== [...dates].sort().join()) throw Error('Sort order');
+  if (dates.join() !== [...dates].sort().reverse().join()) throw Error('The articles are not newest first');
   // Focusing the controls may have started a smooth scroll; let it finish before scrolling.
   await page.waitForFunction(
     () =>
@@ -330,8 +331,7 @@ try {
   await page.locator('.rail nav a[href="/about"]').click();
   await expect(page.locator('main h1')).toContainText('しーぴー');
   await page.goBack();
-  await expect(page.locator('[data-article]:not([hidden])')).toHaveCount(zenn);
-  await expect(page.locator('#article-sort')).toHaveValue('oldest');
+  await expect(page.locator('[data-article]:not([hidden])')).toHaveCount(inYear);
   await expect(page.locator('.attendance-tab[aria-pressed="true"]')).toContainText(year);
   if (Math.abs((await page.evaluate(() => scrollY)) - scroll) > 2) throw Error('Back scroll restoration');
   if (
@@ -423,6 +423,15 @@ try {
   await expect
     .poll(() => page.locator('#qr .qr-code').evaluate((img: HTMLImageElement) => img.naturalWidth))
     .toBeGreaterThan(0);
+  // The clover in its middle is read through by error correction, as drawn in the dialog.
+  {
+    const shot = await sharp(await page.locator('#qr .qr-code').screenshot())
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const read = jsQR(new Uint8ClampedArray(shot.data), shot.info.width, shot.info.height);
+    if (read?.data !== 'https://cp20.dev') throw Error(`The QR code in the dialog reads ${read?.data}`);
+  }
   await page.keyboard.press('Escape');
   await expect(page).toHaveURL(origin + '/');
   if ((await page.evaluate(() => scrollY)) !== 0) throw Error('Closing the QR code moved the page');
@@ -695,7 +704,7 @@ try {
   {
     await page.goto(origin + '/articles');
     await settle();
-    const stamps = page.locator('.attendance-stamp:not([data-off])');
+    const stamps = page.locator('.attendance-stamp');
     await page.locator('.attendance-tab[aria-pressed="true"]').focus();
     await page.keyboard.press('Tab');
     await expect(stamps.first()).toBeFocused();
@@ -808,7 +817,7 @@ try {
       };
     };
     return [
-      at(document.querySelector('#article-sort')),
+      at(document.querySelector('.attendance-tab[aria-pressed="false"]')),
       at(document.querySelector('.site-header a[href="/"]')),
       { ...at(document.querySelector('.rail nav a')), x: 1 },
     ];
@@ -839,9 +848,13 @@ try {
   if (!(await page.evaluate(() => (window as any).__ctrlHit)))
     throw Error('Ctrl+click under a sticker did not reach the link');
   if (new URL(page.url()).pathname !== '/articles') throw Error('Ctrl+click under a sticker left the page');
-  const sort = (await page.locator('.placed-stamp').nth(0).boundingBox())!;
-  await page.mouse.click(sort.x + 23, sort.y + 23);
-  await expect(page.locator('#article-sort')).toBeFocused();
+  // The year's tab under the first sticker, found by its year (it is pressed once clicked).
+  const under = (await page.locator('.attendance-tab[aria-pressed="false"]').first().textContent())!;
+  const onYear = (await page.locator('.placed-stamp').nth(0).boundingBox())!;
+  await page.mouse.click(onYear.x + 23, onYear.y + 23);
+  await expect(
+    page.locator('.attendance-tab').filter({ hasText: new RegExp(`^${under.slice(0, 4)}`) }),
+  ).toBeFocused();
   await page.keyboard.press('Escape');
   db.pages.delete('articles');
   await expect(page.locator('.placed-stamp')).toHaveCount(0);
@@ -849,39 +862,38 @@ try {
     "other visitors' stickers pass clicks and modifier clicks through, keep off the index tabs, and show their avatar",
   );
 
-  // ── Filtering moves the cards, and their stickers with them ──
+  // ── Another year cross-fades the rows, and their stickers with them ──
   await page.goto(origin + '/articles');
   await settle();
-  // The first card on screen with a card from another source above it, so filtering to its
-  // source moves it up and it stays on screen.
-  const [filtered, source] = await page.evaluate(() => {
-    const rows = [...document.querySelectorAll<HTMLElement>('[data-article]:not([hidden])')];
-    const sourceOf = (r: HTMLElement) => r.querySelector('.article-meta .visually-hidden')!.textContent!;
-    const row = rows.find(
-      (r, i) =>
-        r.getBoundingClientRect().bottom < innerHeight &&
-        rows.slice(0, i).some((above) => sourceOf(above) !== sourceOf(r)),
-    )!;
-    return [row.dataset.stampAnchor!, sourceOf(row)];
-  });
+  // A sticker on the first row, which fades out where it is with its row.
+  const first = (await page
+    .locator('[data-article]:not([hidden])')
+    .first()
+    .getAttribute('data-stamp-anchor'))!;
   db.pages.set('articles', {
     'other-visitor': {
       avatar: 'b'.repeat(64),
-      stamps: { 0: { anchor: filtered, x: 0.3, y: 0.3, kind: 1, angle: 0, createdAt: 1700000000000 } },
+      stamps: { 0: { anchor: first, x: 0.3, y: 0.3, kind: 1, angle: 0, createdAt: 1700000000000 } },
     },
   });
   await expect(page.locator('.placed-stamp')).toHaveCount(1);
-  const glide = page.evaluate(
+  const fade = page.evaluate(
     (anchor) =>
-      new Promise<{ animated: boolean; moved: number; drift: number; shifts: number }>((resolve) => {
+      new Promise<{ row: boolean; sticker: boolean; drift: number; shifts: number }>((resolve) => {
         const card = document.querySelector<HTMLElement>(`[data-stamp-anchor="${anchor}"]`)!;
+        const sticker = document.querySelector<HTMLElement>('.placed-stamp')!;
         const offset = () => {
-          const a = document.querySelector('.placed-stamp')!.getBoundingClientRect(),
+          const a = sticker.getBoundingClientRect(),
             b = card.getBoundingClientRect();
-          return [a.left - b.left, a.top - b.top, b.top];
+          return [a.left - b.left, a.top - b.top];
         };
-        const [x0, y0, top0] = offset();
-        let animated = false,
+        const [x0, y0] = offset();
+        const midway = (el: HTMLElement) => {
+          const o = Number(getComputedStyle(el).opacity);
+          return o > 0.05 && o < 0.95;
+        };
+        let row = false,
+          faded = false,
           drift = 0,
           shifts = 0;
         new PerformanceObserver((list) => {
@@ -890,33 +902,40 @@ try {
         }).observe({ type: 'layout-shift' });
         const t0 = performance.now();
         const step = () => {
-          animated ||= card.getAnimations().length > 0;
-          const [x, y] = offset();
-          drift = Math.max(drift, Math.abs(x - x0), Math.abs(y - y0));
-          if (performance.now() - t0 < 700) requestAnimationFrame(step);
-          else resolve({ animated, moved: Math.abs(offset()[2] - top0), drift, shifts });
+          row ||= midway(card);
+          faded ||= sticker.isConnected && midway(sticker);
+          if (card.classList.contains('leaving') && sticker.isConnected) {
+            const [x, y] = offset();
+            drift = Math.max(drift, Math.abs(x - x0), Math.abs(y - y0));
+          }
+          if (performance.now() - t0 < 500) requestAnimationFrame(step);
+          else resolve({ row, sticker: faded, drift, shifts });
         };
         requestAnimationFrame(step);
       }),
-    filtered,
+    first,
   );
-  await page.locator('.source-chip', { hasText: source }).click();
-  const result = await glide;
-  if (!result.animated || result.moved < 10)
-    throw Error(`Filtering did not glide the card: ${JSON.stringify(result)}`);
-  if (result.drift > 2) throw Error(`A sticker fell behind its moving card by ${result.drift}px`);
-  if (result.shifts) throw Error('Filtering shifted the layout');
-  // Choices made in quick succession carry each card on from where it is: at the moment of a
-  // choice no card on screen moves or grows brighter (one caught fading out never flashes back
+  await page.locator('.attendance-tab[aria-pressed="false"]').last().click();
+  const result = await fade;
+  if (!result.row || !result.sticker)
+    throw Error(`Another year did not fade the row and its sticker: ${JSON.stringify(result)}`);
+  if (result.drift > 2) throw Error(`A sticker came off its fading row by ${result.drift}px`);
+  if (result.shifts) throw Error('Another year shifted the layout');
+  if (await page.locator('.article-row.leaving').count()) throw Error('A row was left fading');
+  // Years chosen in quick succession carry each row on from where it is: at the moment of a
+  // choice no row on screen moves or grows brighter (one caught fading out never flashes back
   // over another), at full speed and on a slow phone's CPU alike.
   const glitches: string[] = [];
+  const recent = (await page.locator('.attendance-tab').allTextContents())
+    .map((t) => t.slice(0, 4))
+    .slice(-3);
   const cpu = await context.newCDPSession(page);
   for (const rate of [1, 4]) {
     await cpu.send('Emulation.setCPUThrottlingRate', { rate });
     for (let i = 0; i < 3; i++)
-      for (const chip of ['zenn.dev', 'sizu.me', 'すべて']) {
+      for (const year of recent) {
         glitches.push(
-          ...(await page.evaluate((chip) => {
+          ...(await page.evaluate((year) => {
             const look = () =>
               new Map(
                 [...document.querySelectorAll<HTMLElement>('.article-list > .article-row')].map((r) => {
@@ -927,8 +946,8 @@ try {
                 }),
               );
             const was = look();
-            [...document.querySelectorAll<HTMLElement>('.source-chip')]
-              .find((c) => c.textContent!.includes(chip))!
+            [...document.querySelectorAll<HTMLElement>('.attendance-tab')]
+              .find((t) => t.textContent!.startsWith(year))!
               .click();
             const out: string[] = [];
             for (const [row, now] of look()) {
@@ -936,13 +955,13 @@ try {
               if (!now.on && !then.on) continue;
               if (then.o > 0.05 && now.o > 0.05 && Math.hypot(now.x - then.x, now.y - then.y) > 2)
                 out.push(
-                  `${chip}: a card jumped by ${Math.round(Math.hypot(now.x - then.x, now.y - then.y))}px`,
+                  `${year}: a row jumped by ${Math.round(Math.hypot(now.x - then.x, now.y - then.y))}px`,
                 );
               if (now.o - then.o > 0.05)
-                out.push(`${chip}: a card brightened ${then.o.toFixed(2)}→${now.o.toFixed(2)}`);
+                out.push(`${year}: a row brightened ${then.o.toFixed(2)}→${now.o.toFixed(2)}`);
             }
             return out;
-          }, chip)),
+          }, year)),
         );
         await page.waitForTimeout(120);
       }
@@ -950,20 +969,20 @@ try {
   await cpu.send('Emulation.setCPUThrottlingRate', { rate: 1 });
   await page.waitForTimeout(600);
   if (glitches.length) throw Error(`Quick choices in a row: ${glitches.slice(0, 5).join('; ')}`);
-  if (await page.locator('.article-row.leaving').count()) throw Error('A card was left fading');
+  if (await page.locator('.article-row.leaving').count()) throw Error('A row was left fading');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.locator('.source-chip').first().click();
+  await page.locator('.attendance-tab').first().click();
   const scripted = () =>
     document
       .querySelector('.article-list')!
       .getAnimations({ subtree: true })
       .filter((a) => !(a instanceof CSSTransition || a instanceof CSSAnimation)).length;
-  if (await page.evaluate(scripted)) throw Error('Filtering animated with reduced motion');
+  if (await page.evaluate(scripted)) throw Error('Another year animated with reduced motion');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   db.pages.delete('articles');
   await expect(page.locator('.placed-stamp')).toHaveCount(0);
   passed(
-    'filtering glides the cards, keeps stickers on them and shifts nothing, also chosen quickly in a row; reduced motion switches at once',
+    'another year cross-fades the rows with their stickers and shifts nothing, also chosen quickly in a row; reduced motion switches at once',
   );
 
   // ── The keyboard, and saves that fail ──
@@ -1077,7 +1096,7 @@ try {
   }
   passed('no image is laid out wider than its sizes promise, at 360-1920px');
 
-  // ── Works: a featured card's open button is its own link; a phone loads only the phone screen ──
+  // ── Works: a featured card's open button is its own link; the cards show OG images ──
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(origin + '/works');
   await settle();
@@ -1089,16 +1108,17 @@ try {
   );
   if (underOpen !== (await open.getAttribute('href')))
     throw Error(`The open button is covered: ${underOpen}`);
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(origin + '/works');
+  // The compiler's own OG image is only its name, so its card shows the picture the build draws.
   await page
-    .locator('[data-stamp-anchor="work-dice-spec-v2"] .work-card-phone img')
+    .locator('[data-stamp-anchor="work-c-compiler"] .work-card-picture img')
     .evaluate((img: HTMLImageElement) => img.decode());
   const fetched = await page.evaluate(() =>
     performance.getEntriesByType('resource').map((e) => e.name.replace(location.origin, '')),
   );
-  if (fetched.some((url) => url.startsWith('/images/screenshots/dice-spec-v2-pc')))
-    throw Error('A phone downloaded the desktop screenshot it does not show');
+  if (fetched.some((url) => url.startsWith('/images/screenshots/')))
+    throw Error('The works list downloaded a screenshot; its cards show OG images');
+  if (!fetched.some((url) => url.startsWith('/images/works/c-compiler-')))
+    throw Error("The compiler's card did not show its drawn picture");
   for (const path of ['/works', '/works/dice-spec-v2']) {
     await page.goto(origin + path);
     await animationsDone();
@@ -1110,10 +1130,10 @@ try {
     if (small.length) throw Error(`Links under 44px on ${path}: ${small}`);
   }
   passed(
-    'a work card opens its page from anywhere but its open button; phones load the phone screen only; 44px links',
+    'a work card opens its page from anywhere but its open button; cards show OG images, not screenshots; 44px links',
   );
 
-  // ── Pages swapped out and rows filtered away are released ──
+  // ── Pages swapped out and the rows of other years are released ──
   // After a warm-up lap the DOM node count (after GC) stays flat. Chromium kept every
   // client-rendered srcset image, and with it its whole page (see responsive() in Preview.tsx).
   {
@@ -1139,11 +1159,9 @@ try {
       await follow('/articles');
       for (let i = 0; i < 6; i++)
         await leak
-          .locator('.source-chip')
-          .nth(i % 2 ? 0 : 1)
+          .locator('.attendance-tab')
+          .nth(i % 2 ? -1 : -2)
           .click();
-      await leak.locator('#article-sort').selectOption('oldest');
-      await leak.locator('#article-sort').selectOption('newest');
       await follow('/');
     };
     await leak.goto(origin + '/');
@@ -1155,7 +1173,7 @@ try {
     if (after > warm + 100) throw Error(`Detached pages kept in memory: ${warm} → ${after} DOM nodes`);
     await leak.close();
   }
-  passed('swapped-out pages and filtered rows are released from memory');
+  passed("swapped-out pages and other years' rows are released from memory");
 
   for (const [width, height, suffix] of [
     [390, 844, 'mobile'],

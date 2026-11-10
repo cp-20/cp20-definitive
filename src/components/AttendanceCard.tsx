@@ -21,26 +21,22 @@ const REACH = 26;
  * is one Tab stop; the arrow keys walk its stamps (attendance.ts). On a touch screen a tap picks
  * the stamp nearest to it, as the days are only a few pixels wide, and shows its slip; a tap on
  * the picked stamp or its slip opens the article.
- * With `shown`, the stamps it rejects are faded and skipped. With `years` and `onYear`, the
- * other years' cards are stacked behind with index tabs to open them. `hot` is the stamp (by
- * article anchor) to mark, and `onHot` hears which one is pointed at.
+ * With `years` and `onYear`, the other years' cards are stacked behind with index tabs to open
+ * them. `hot` is the stamp (by article anchor) to mark, and `onHot` hears which one is pointed at.
  */
 export function AttendanceCard(props: {
   items: Article[];
   year: number;
   years?: number[];
   onYear?: (year: number) => void;
-  shown?: (a: Article) => boolean;
   hot?: string;
   onHot?: (id: string | undefined) => void;
 }) {
-  const shown = (a: Article) => !props.shown || props.shown(a);
   const stamps = createMemo(() => stampsOf(props.items, props.year));
-  const live = createMemo(() => stamps().filter((s) => shown(s.a)));
   const id = (s: Stamp) => articleAnchor(s.a.url);
   // The card's one Tab stop: the stamp last stepped to, else the first.
   const [current, setCurrent] = createSignal<Stamp>();
-  const tabStop = () => (current() && live().includes(current()!) ? current() : live()[0]);
+  const tabStop = () => (current() && stamps().includes(current()!) ? current() : stamps()[0]);
   const [picked, setPicked] = createSignal<string>();
   const pick = (to?: string) => {
     setPicked(to);
@@ -51,14 +47,14 @@ export function AttendanceCard(props: {
   // The last press on the card: by what, and where the finger really was (the click after a tap
   // is moved by the browser to the middle of the link it chose).
   let grid!: HTMLDivElement, press: PointerEvent | undefined;
-  // The stamps that can be chosen, in the same (date) order as live().
-  const links = () => [...grid.querySelectorAll<HTMLElement>('.attendance-stamp:not([data-off])')];
+  // The stamps, in the same (date) order as stamps().
+  const links = () => [...grid.querySelectorAll<HTMLElement>('.attendance-stamp')];
   const keyboard = (e: KeyboardEvent) => {
     const from = links().indexOf(e.target as HTMLElement);
-    const to = from < 0 ? undefined : step(live(), from, e.key);
+    const to = from < 0 ? undefined : step(stamps(), from, e.key);
     if (to === undefined) return;
     e.preventDefault();
-    setCurrent(live()[to]);
+    setCurrent(stamps()[to]);
     links()[to].focus();
   };
   const tap = (e: MouseEvent) => {
@@ -71,7 +67,7 @@ export function AttendanceCard(props: {
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
     });
     const i = nearest(centres, at.clientX, at.clientY, REACH);
-    const to = i < 0 ? undefined : id(live()[i]);
+    const to = i < 0 ? undefined : id(stamps()[i]);
     // On the picked stamp's slip, or on the picked stamp and nearer it than its neighbours that
     // day, the tap follows the link.
     if (on && (to === picked() || (e.target as HTMLElement).closest('.attendance-tip'))) return;
@@ -100,18 +96,17 @@ export function AttendanceCard(props: {
         <div class="attendance-tabs" role="group" aria-label="年">
           <For each={props.years}>
             {(y) => {
-              const count = () => props.items.filter((a) => yearOf(a) === y && shown(a)).length;
+              const count = props.items.filter((a) => yearOf(a) === y).length;
               return (
                 <button
                   type="button"
                   class="attendance-tab"
                   data-year={y % 4}
-                  data-empty={!count() || undefined}
                   aria-pressed={y === props.year ? 'true' : 'false'}
                   onClick={() => props.onYear!(y)}
                 >
                   {y}
-                  <span class="visually-hidden">{count()}本</span>
+                  <span class="visually-hidden">{count}本</span>
                 </button>
               );
             }}
@@ -125,7 +120,7 @@ export function AttendanceCard(props: {
             <small>年 かいた日カード</small>
           </h3>
           <p class="attendance-count">
-            <strong>{live().length}</strong>本
+            <strong>{stamps().length}</strong>本
           </p>
         </header>
         <div
@@ -165,8 +160,6 @@ export function AttendanceCard(props: {
                   href={s.a.url}
                   class="attendance-stamp"
                   tabindex={s === tabStop() ? 0 : -1}
-                  aria-hidden={shown(s.a) ? undefined : 'true'}
-                  data-off={!shown(s.a) || undefined}
                   data-hot={props.hot === id(s) || undefined}
                   data-picked={picked() === id(s) || undefined}
                   data-crowd={s.of > 1 ? s.of : undefined}

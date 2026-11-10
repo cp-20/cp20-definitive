@@ -1,8 +1,9 @@
 // The picture of a shared link (og:image, src/Document.tsx): the avatar, the name, the school and
 // the three results of the home page's note, on a sheet of the site's paper on its clover desk.
 // Drawn at build time from the same data the pages show, so it never says anything they do not.
-// The text is set in the site's Zen Maru Gothic by HarfBuzz and drawn as outlines, so the picture
-// does not depend on the fonts of the machine that builds it.
+// Also the pictures on the cards of works whose own OG image is only their name (WORK_ART).
+// The text is set in the site's Zen Maru Gothic (and IBM Plex Mono for code) by HarfBuzz and
+// drawn as outlines, so the pictures do not depend on the fonts of the machine that builds them.
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import sharp from 'sharp';
@@ -10,31 +11,39 @@ import subsetFont from 'subset-font';
 import { Blob, Buffer as GlyphBuffer, Face, Font, shape } from 'harfbuzzjs';
 import { highlightIds, milestones } from '../../src/data/editorial.ts';
 import profile from '../../src/data/profile.json' with { type: 'json' };
-import { OG_IMAGE } from '../../src/site/pages.ts';
+import works from '../../src/data/works.json' with { type: 'json' };
+import { OG_IMAGE, WORK_ART, WORK_ART_WIDTHS, workArtFile } from '../../src/site/pages.ts';
 
 const INK = '#2d2a33';
+const MUTED = '#6c6873';
+const SEAL = '#d1402c';
 
-type Run = { text: string; size: number; weight: 500 | 700 };
+/** A line of text in Zen Maru Gothic at a weight, or (`mono`) in IBM Plex Mono 400. */
+type Run = { text: string; size: number; weight: 500 | 700; mono?: true };
+const FACES = {
+  500: '../../fonts/zen-maru-gothic/zen-maru-gothic-500.woff2',
+  700: '../../fonts/zen-maru-gothic/zen-maru-gothic-700.woff2',
+  mono: '../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2',
+};
+const faceOf = (run: Run) => (run.mono ? 'mono' : run.weight);
 
-/** Outlines of the lines of text, each with its width, in one face per weight. */
+/** Outlines of the lines of text, each with its width, in one face per font. */
 async function typesetter(runs: Run[]) {
-  const fonts = new Map<number, { font: Font; upem: number }>();
-  for (const weight of [500, 700] as const) {
+  const fonts = new Map<keyof typeof FACES, { font: Font; upem: number }>();
+  for (const key of [500, 700, 'mono'] as const) {
     const text = runs
-      .filter((r) => r.weight === weight)
+      .filter((r) => faceOf(r) === key)
       .map((r) => r.text)
       .join('');
     if (!text) continue;
-    const woff2 = await readFile(
-      new URL(`../../fonts/zen-maru-gothic/zen-maru-gothic-${weight}.woff2`, import.meta.url),
-    );
+    const woff2 = await readFile(new URL(FACES[key], import.meta.url));
     const ttf = await subsetFont(woff2, text, { targetFormat: 'truetype' });
     const face = new Face(new Blob(ttf));
-    fonts.set(weight, { font: new Font(face), upem: face.upem });
+    fonts.set(key, { font: new Font(face), upem: face.upem });
   }
   /** The text's outline with its baseline's left end at (x, y), and its advance width. */
   return (run: Run, x: number, y: number, fill = INK) => {
-    const { font, upem } = fonts.get(run.weight)!;
+    const { font, upem } = fonts.get(faceOf(run))!;
     const buffer = new GlyphBuffer();
     buffer.addText(run.text);
     buffer.guessSegmentProperties();
@@ -136,4 +145,99 @@ ${set(site, avatar.cx - siteWidth / 2, 424).svg}
 export async function writeOgImage(file: string) {
   await mkdir(dirname(file), { recursive: true });
   await writeFile(file, await ogImage());
+}
+
+/** The site's ruled paper, edge to edge, with the loose leaf's margin line. */
+const paper = (width: number, height: number) => {
+  const lines = [
+    ...Array.from({ length: Math.floor(width / 30) }, (_, i) => `M${30 * (i + 1)} 0V${height}`),
+    ...Array.from({ length: Math.floor(height / 30) }, (_, i) => `M0 ${30 * (i + 1)}H${width}`),
+  ];
+  return `<rect width="${width}" height="${height}" fill="#fffcf3"/>
+<path d="${lines.join('')}" stroke="rgb(86 150 100 / 0.12)" stroke-width="1.5"/>
+<path d="M90 0V${height}" stroke="rgb(255 120 150 / 0.35)" stroke-width="2.5"/>`;
+};
+
+/** A postage stamp: perforated white paper with a printed face, slanted and casting the site's shadow. */
+const stamp = (x: number, y: number, w: number, h: number, tilt: number, face: string, content: string) => {
+  const holes = [];
+  for (let i = 0; i <= w / 14; i++) holes.push([x + i * 14, y], [x + i * 14, y + h]);
+  for (let i = 1; i < h / 14; i++) holes.push([x, y + i * 14], [x + w, y + i * 14]);
+  const id = `perf-${x}-${y}`;
+  return `<mask id="${id}"><rect x="${x - 10}" y="${y - 10}" width="${w + 20}" height="${h + 20}" fill="#fff"/>${holes
+    .map(([cx, cy]) => `<circle cx="${cx}" cy="${cy}" r="4.2"/>`)
+    .join('')}</mask>
+<g transform="rotate(${tilt} ${x + w / 2} ${y + h / 2})" filter="url(#lift)">
+<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" mask="url(#${id})"/>
+<rect x="${x + 11}" y="${y + 11}" width="${w - 22}" height="${h - 22}" fill="${face}"/>
+${content}
+</g>`;
+};
+
+/**
+ * The self-hosting compiler (works.json: its second and third generations compile themselves to
+ * the same output) as three stamps: 1cc built by clang, 2cc by 1cc and 3cc by 2cc, the names of
+ * the generations in its Makefile, with the seal of a match under the last two.
+ */
+async function compilerArt() {
+  const work = works.find((w) => w.id === 'c-compiler')!;
+  const title: Run = { text: work.title, size: 84, weight: 700 };
+  const line: Run = { text: work.description, size: 30, weight: 500 };
+  const clang: Run = { text: 'clang', size: 34, weight: 500, mono: true };
+  const names = [1, 2, 3].map((n) => ({
+    name: { text: `${n}cc`, size: 58, weight: 500, mono: true } as Run,
+    caption: { text: `${n}世代目`, size: 19, weight: 700 } as Run,
+  }));
+  const match: Run = { text: '一致', size: 27, weight: 700 };
+  const set = await typesetter([title, line, clang, match, ...names.flatMap((n) => [n.name, n.caption])]);
+  const { width, height } = { width: 1200, height: 630 };
+  const arrow = (x: number, y: number) =>
+    `<path d="M${x} ${y}h50m-13-11l13 11l-13 11" fill="none" stroke="${INK}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const box = { w: 184, h: 132, y: 352 };
+  const faces = ['#fff1bd', '#dcecff', '#d9f2dc'];
+  const tilts = [-2, 1.6, -1.1];
+  const clangWidth = set(clang, 0, 0).width;
+  let x = 132 + clangWidth + 20;
+  let chain = set(clang, 132, box.y + box.h / 2 + 12, MUTED).svg + arrow(x, box.y + box.h / 2);
+  const centres: number[] = [];
+  names.forEach((n, i) => {
+    x += 50 + 20;
+    const nameWidth = set(n.name, 0, 0).width;
+    const inner =
+      set(n.caption, x + 24, box.y + 44, MUTED).svg +
+      set(n.name, x + (box.w - nameWidth) / 2, box.y + box.h - 30).svg;
+    chain += stamp(x, box.y, box.w, box.h, tilts[i], faces[i], inner);
+    centres.push(x + box.w / 2);
+    x += box.w + 20;
+    if (i < 2) chain += arrow(x, box.y + box.h / 2);
+  });
+  // The bracket under the last two generations, and the seal on it.
+  const [, a, b] = centres;
+  const under = box.y + box.h + 22;
+  const seal = { x: (a + b) / 2, y: under + 30 };
+  const matchWidth = set(match, 0, 0).width;
+  const bracket = `<path d="M${a} ${under}v14H${seal.x - 46}M${seal.x + 46} ${under + 14}H${b}v-14" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="rotate(-8 ${seal.x} ${seal.y})" opacity="0.92"><circle cx="${seal.x}" cy="${seal.y}" r="38" fill="none" stroke="${SEAL}" stroke-width="4"/>${set(match, seal.x - matchWidth / 2, seal.y + 10, SEAL).svg}</g>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+<filter id="lift" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="5" dy="8" stdDeviation="4" flood-color="${INK}" flood-opacity="0.18"/></filter>
+${paper(width, height)}
+${set(title, 132, 178).svg}
+${set(line, 134, 238, MUTED).svg}
+${chain}
+${bracket}
+</svg>`;
+}
+
+const workArts: Record<string, () => Promise<string>> = { 'c-compiler': compilerArt };
+
+/** Writes the works' card pictures (WORK_ART) into `dir` (dist/client), a WebP for each width. */
+export async function writeWorkArt(dir: string) {
+  for (const id of Object.keys(WORK_ART)) {
+    const svg = Buffer.from(await workArts[id]());
+    for (const width of WORK_ART_WIDTHS) {
+      const file = `${dir}${workArtFile(id, width)}`;
+      await mkdir(dirname(file), { recursive: true });
+      await sharp(svg).resize(width).webp({ quality: 88 }).toFile(file);
+    }
+  }
 }

@@ -1,6 +1,6 @@
 import { createSignal, For } from 'solid-js';
 import Icon from '../components/Icon.tsx';
-import Brand, { accountId } from '../components/Brand.tsx';
+import Brand from '../components/Brand.tsx';
 import WorkCard from '../components/WorkCard.tsx';
 import { articleAnchor, responsive, sizes } from '../components/Preview.tsx';
 import { AttendanceCard, DayStamp } from '../components/AttendanceCard.tsx';
@@ -52,7 +52,6 @@ export default function Home() {
                 <a class="text-button" href={l.url}>
                   <Brand url={l.url} size={18} />
                   {l.name}
-                  {accountId(l.url) && <span class="account-id">{accountId(l.url)}</span>}
                 </a>
               )}
             </For>

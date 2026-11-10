@@ -2,20 +2,13 @@ import { createSignal } from 'solid-js';
 import { shots } from 'virtual:cp20-media';
 import Icon from './Icon.tsx';
 import { OGImage, previewFor, responsive, sizes } from './Preview.tsx';
-import {
-  SOLO_ROLE,
-  kindLabel,
-  longPeriod,
-  openLink,
-  startYear,
-  statusTag,
-  type Work,
-} from '../content/works.ts';
+import { SOLO_ROLE, kindLabel, longPeriod, openLink, statusTag, type Work } from '../content/works.ts';
+import { WORK_ART, workArtSrcset } from '../site/pages.ts';
 
 /**
- * A work's picture as a postage stamp: the screenshot of its site for `device` when there is one,
- * else (for 'pc') its OG image. `describe` gives a screenshot its alt text; an OG image, which
- * mostly repeats the work's name beside it, stays decorative.
+ * A work's picture as a postage stamp on its page: the screenshot of its site for `device` when
+ * there is one, else (for 'pc') its OG image. `describe` gives a screenshot its alt text; an OG
+ * image, which mostly repeats the work's name beside it, stays decorative.
  */
 export function WorkImage(props: {
   work: Work;
@@ -55,6 +48,40 @@ export function WorkImage(props: {
   );
 }
 
+/**
+ * A work's picture on a card: its OG image, or the one the build draws for a work whose OG image
+ * is only its name (WORK_ART). Decorative, like the OG image.
+ */
+function CardImage(props: { work: Work; sizes: string; priority?: boolean; eager?: boolean }) {
+  const art = WORK_ART[props.work.id];
+  if (!art)
+    return (
+      <OGImage
+        url={props.work.url}
+        alt=""
+        sizes={props.sizes}
+        priority={props.priority}
+        eager={props.eager}
+      />
+    );
+  const image = responsive(workArtSrcset(art), props.sizes);
+  return (
+    <div class="og-image" style={{ '--image-ratio': `${art.width} / ${art.height}` }}>
+      <img
+        src={art.src}
+        ref={image.ref}
+        srcset={image.srcset}
+        sizes={image.sizes}
+        alt=""
+        width={art.width}
+        height={art.height}
+        loading={props.priority || props.eager ? 'eager' : 'lazy'}
+        fetchpriority={props.priority ? 'high' : 'auto'}
+      />
+    </div>
+  );
+}
+
 /** The site's own icon beside a work's name, only when it has one (no stand-in letter). */
 function SiteIcon(props: { work: Work }) {
   const [failed, setFailed] = createSignal(false);
@@ -78,7 +105,8 @@ function SiteIcon(props: { work: Work }) {
 /**
  * One work, linking to its page (the whole card is the link; a large card's small button opens the
  * work itself). Its sticker anchor is `work-<id>`.
- * - large: a featured work. Its picture, what it is, the result, the year (in a row on phones).
+ * - large: a featured work. Its picture, what it is, the result and the button that opens it (a
+ *   small picture beside the text on phones).
  * - small: a work in a list. A small picture beside its name, what it is, the result, and who
  *   made it with whom or how long it took when that is not plain from the list.
  * - row: one line with the icon (or a small picture), the name and what it is.
@@ -101,7 +129,7 @@ export default function WorkCard(props: {
               <img src={previewFor(w.url)?.icon} alt="" width="36" height="36" loading="lazy" />
             </span>
           ) : (
-            <WorkImage work={w} sizes={sizes.workRow} />
+            <CardImage work={w} sizes={sizes.workRow} />
           )}
         </span>
         <span class="work-row-name">{w.title}</span>
@@ -115,27 +143,16 @@ export default function WorkCard(props: {
     longPeriod(w.productionTime),
   ].filter(Boolean);
   const tag = statusTag(w);
-  // On a phone a featured work shows its phone screen instead. Only the one shown is downloaded:
-  // both are lazy (a hidden lazy image is never fetched), so the desktop one gives up `eager`.
-  const phone = variant === 'large' && !!w.screenshots?.some((s) => s.device === 'mobile');
   return (
-    <article
-      class={['work-card', `work-card-${variant}`, { 'has-phone': phone }]}
-      data-stamp-anchor={`work-${w.id}`}
-    >
+    <article class={['work-card', `work-card-${variant}`]} data-stamp-anchor={`work-${w.id}`}>
       <div class="work-card-picture">
-        <WorkImage
+        <CardImage
           work={w}
-          sizes={variant === 'large' ? (phone ? sizes.workCard : sizes.workCardCropped) : sizes.workThumb}
-          priority={props.priority && !phone}
-          eager={props.eager && !phone}
+          sizes={variant === 'large' ? sizes.workCard : sizes.workThumb}
+          priority={props.priority}
+          eager={props.eager}
         />
       </div>
-      {phone && (
-        <div class="work-card-phone">
-          <WorkImage work={w} device="mobile" sizes={sizes.workCardPhone} />
-        </div>
-      )}
       <div class="work-card-text">
         <h3>
           <a class="work-card-link" href={href}>
@@ -153,15 +170,12 @@ export default function WorkCard(props: {
             ))}
           </p>
         )}
-        {variant === 'large' && (
+        {open && (
           <div class="work-card-foot">
-            <span class="work-card-year">{startYear(w)}</span>
-            {open && (
-              <a class="work-card-open" href={open.href}>
-                {open.short}
-                <Icon name="ArrowUpRight" size={15} />
-              </a>
-            )}
+            <a class="work-card-open" href={open.href}>
+              {open.short}
+              <Icon name="ArrowUpRight" size={15} />
+            </a>
           </div>
         )}
       </div>

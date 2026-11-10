@@ -163,7 +163,7 @@
     object-position: 50% 0;
   }
 
-  /* A featured work: the picture over its text, the year and the open button at the foot. */
+  /* A featured work: its OG image over its text, and the open button at the foot. */
   .work-card-large {
     display: flex;
     flex-direction: column;
@@ -173,9 +173,6 @@
     --perf-hole: 3.6px;
     margin-bottom: 18px;
   }
-  .work-card-large .work-card-picture .og-image {
-    aspect-ratio: 16 / 9;
-  }
   .work-cards-large > :nth-child(3n + 1) .work-card-picture {
     rotate: -1.2deg;
   }
@@ -184,9 +181,6 @@
   }
   .work-cards-large > :nth-child(3n) .work-card-picture {
     rotate: -0.5deg;
-  }
-  .work-card-phone {
-    display: none;
   }
   .work-card-large h3 {
     font-size: 1.25rem;
@@ -199,15 +193,8 @@
   .work-card-foot {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
     margin-top: auto;
     padding-top: 12px;
-  }
-  .work-card-year {
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 0.8125rem;
   }
   .work-card-open {
     position: relative;
@@ -784,26 +771,10 @@
       grid-template-columns: 96px minmax(0, 1fr);
       gap: 16px;
     }
-    .work-card-large :is(.work-card-picture, .work-card-phone) {
+    .work-card-large .work-card-picture {
       --perf: 8px;
       --perf-hole: 2.4px;
       margin-top: 4px;
-    }
-    .work-card-large.has-phone .work-card-picture {
-      display: none;
-    }
-    .work-card-large.has-phone .work-card-phone {
-      display: block;
-      rotate: -2deg;
-    }
-    /* A work with no phone screen shows the left of its desktop picture in the same tall frame,
-       so the three featured stamps line up at one size. */
-    .work-card-large:not(.has-phone) .work-card-picture .og-image {
-      aspect-ratio: 780 / 1328;
-    }
-    .work-card-large:not(.has-phone) .work-card-picture .og-image img {
-      object-fit: cover;
-      object-position: 0 50%;
     }
     .work-card-large h3 {
       font-size: 1.125rem;
@@ -832,9 +803,7 @@
     .work-cards-small {
       gap: 28px;
     }
-    /* The open button at the start of the line, clear of the sticker button in the corner. */
     .work-card-foot {
-      flex-direction: row-reverse;
       padding-top: 6px;
     }
     .edition-stamps {

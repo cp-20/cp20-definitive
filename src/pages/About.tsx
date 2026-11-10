@@ -2,7 +2,7 @@ import { For } from 'solid-js';
 import Icon from '../components/Icon.tsx';
 import { responsive, sizes } from '../components/Preview.tsx';
 import Bookshelf from '../components/Bookshelf.tsx';
-import Brand, { accountId } from '../components/Brand.tsx';
+import Brand from '../components/Brand.tsx';
 import Modal, { openModal } from '../components/Modal.tsx';
 import { milestones, speedups } from '../data/editorial.ts';
 import { localImage } from '../content/images.ts';
@@ -68,7 +68,6 @@ export default function About() {
                 <a href={l.url}>
                   <Brand url={l.url} />
                   {l.name}
-                  {accountId(l.url) && <span class="account-id">{accountId(l.url)}</span>}
                 </a>
               )}
             </For>

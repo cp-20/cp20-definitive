@@ -7,8 +7,8 @@ import { formatDate, type Article } from '../content/content.ts';
  * The articles beside an attendance card: each with its OG image as a postage stamp, its title,
  * and the day's stamp from the card by its date. The row whose stamp is pointed at on the card is
  * marked (`hot`), and pointing at a row marks its stamp (`onHot`).
- * With `shown`, every row stays in the DOM and rows it rejects are only hidden, so filtering
- * neither rebuilds the list nor detaches images (see /articles).
+ * With `shown`, every row stays in the DOM and rows it rejects are only hidden, so another year
+ * on /articles neither rebuilds the list nor detaches images.
  */
 export function ArticleRows(props: {
   items: Article[];

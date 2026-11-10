@@ -81,7 +81,7 @@ export const extraNotices: Notice[] = [
     text: readFileSync(new URL('../../fonts/zen-maru-gothic/OFL.txt', import.meta.url), 'utf8').trim(),
   },
   {
-    name: 'Twemoji graphics (the picture stickers in /stamps)',
+    name: 'Twemoji graphics (the picture stickers in /stamps and the clover in the QR code)',
     license: 'CC-BY-4.0',
     homepage: 'https://github.com/jdecked/twemoji',
     copyright: [],

@@ -8,10 +8,6 @@ export const sizes = {
   // WorkCard.tsx and a work's page (src/styles/works.css): a featured card (three across, then a
   // row), a list card's stamp, a one-line row, the page's picture and the phone screen on it.
   workCard: '(max-width: 760px) 96px, (max-width: 1000px) 224px, 300px',
-  // A featured work with no phone screen: on a phone its desktop picture fills the same tall frame
-  // (cropped to its left side, 96px wide and about 290px across before the crop).
-  workCardCropped: '(max-width: 760px) 290px, (max-width: 1000px) 224px, 300px',
-  workCardPhone: '96px',
   workThumb: '(max-width: 760px) 92px, 140px',
   workRow: '84px',
   workHero: '(max-width: 760px) calc(100vw - 74px), (max-width: 1000px) 560px, 440px',
