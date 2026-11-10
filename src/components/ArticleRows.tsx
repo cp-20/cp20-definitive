@@ -2,7 +2,7 @@ import { createMemo, For } from 'solid-js';
 import Brand from './Brand.tsx';
 import { OGImage, articleAnchor, sizes } from './Preview.tsx';
 import { DayStamp } from './AttendanceCard.tsx';
-import { formatDate, type Article } from '../content/content.ts';
+import { shortDate, type Article } from '../content/content.ts';
 /**
  * The articles beside an attendance card: each with its OG image as a postage stamp, its title,
  * and the day's stamp from the card by its date. The row whose stamp is pointed at on the card is
@@ -39,7 +39,7 @@ export function ArticleRows(props: {
                 <h3>{a.title}</h3>
                 <p class="article-meta">
                   <DayStamp source={a.source} url={a.url} />
-                  <time datetime={a.date}>{formatDate(a.date)}</time>
+                  <time datetime={a.date}>{shortDate(a.date)}</time>
                   <Brand url={a.source} size={14} />
                   <span class="visually-hidden">{a.source}</span>
                 </p>

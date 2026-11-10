@@ -35,14 +35,14 @@ describe('制作時期', () => {
     assert.equal(startYear({ productionTime: '2023/01/05～2023/01/11' }), 2023);
   });
 
-  test('now は「現在」に、区切りの前後をそろえる', () => {
-    assert.equal(period('2024/05 ～ now'), '2024/05 〜 現在');
-    assert.equal(period('2023/01/05～2023/01/11'), '2023/01/05 〜 2023/01/11');
+  test('now は「現在」に、年月日は点で区切り、〜の前後をそろえる', () => {
+    assert.equal(period('2024/05 ～ now'), '2024.05 〜 現在');
+    assert.equal(period('2023/01/05～2023/01/11'), '2023.01.05 〜 2023.01.11');
   });
 
   test('一覧に添えるのは、何か月も続いたものだけ', () => {
-    assert.equal(longPeriod('2023/06 ～ 2024/03'), '2023/06〜2024/03');
-    assert.equal(longPeriod('2024/05 ～ now'), '2024/05〜現在');
+    assert.equal(longPeriod('2023/06 ～ 2024/03'), '2023.06〜2024.03');
+    assert.equal(longPeriod('2024/05 ～ now'), '2024.05〜現在');
     // Within a month, or into the next one: the year heading is enough.
     assert.equal(longPeriod('2026/09/28 ～ 2026/10/05'), undefined);
     assert.equal(longPeriod('2024/08/19 ～ 2024/09/22'), undefined);

@@ -2,7 +2,7 @@ import { For } from 'solid-js';
 import Brand from '../components/Brand.tsx';
 import Icon from '../components/Icon.tsx';
 import WorkCard from '../components/WorkCard.tsx';
-import { editionWorks, formatDate, repos, sections } from '../content/content.ts';
+import { editionWorks, repos, sections, shortDate } from '../content/content.ts';
 import { nameParts } from '../content/name-breaks.ts';
 
 /** Recently updated repositories that say what they are (a bare name tells a visitor nothing). */
@@ -86,7 +86,7 @@ export default function Works() {
                     {nameParts(r.name).map((part, i) => (i ? [<wbr />, part] : part))}
                   </span>
                   <span class="repo-description">{r.description}</span>
-                  <time datetime={r.updatedAt}>{formatDate(r.updatedAt)}</time>
+                  <time datetime={r.updatedAt}>{shortDate(r.updatedAt)}</time>
                 </a>
               </li>
             )}
