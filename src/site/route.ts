@@ -3,7 +3,7 @@ import { works } from '../content/content.ts';
 import { plain } from '../content/phrase-marks.ts';
 import { highlightIds, milestones } from '../data/editorial.ts';
 import profile from '../data/profile.json';
-import { SITE_ORIGIN, STATIC_PAGES, normalizePath, workPath } from './pages.ts';
+import { SITE_ORIGIN, STATIC_PAGES, canonicalUrl, normalizePath, workPath } from './pages.ts';
 export function currentUrl() {
   return new URL(isServer ? getRequestEvent()?.request.url || `${SITE_ORIGIN}/` : location.href);
 }
@@ -17,15 +17,31 @@ const descriptions: Record<string, string> = {
   '/works': 'しーぴー（cp20）が2022年から、個人開発を中心につくってきたもの。',
   '/articles': 'しーぴー（cp20）がブログや traP、Zenn、Qiita などに書いた記事。',
 };
+/** A tag in a page's head: its element and attributes. */
+export type HeadTag = { element: 'link' | 'meta'; attributes: Record<string, string> };
+/**
+ * What a page tells crawlers: a known page names its canonical URL (also as og:url); an unknown
+ * path renders the 404 page, which asks not to be indexed and names no URL. Document.tsx renders
+ * these tags and navigation.ts swaps them when the page changes.
+ */
+function indexingTags(path: string, found: boolean): HeadTag[] {
+  if (!found) return [{ element: 'meta', attributes: { name: 'robots', content: 'noindex' } }];
+  const url = canonicalUrl(path);
+  return [
+    { element: 'link', attributes: { rel: 'canonical', href: url } },
+    { element: 'meta', attributes: { property: 'og:url', content: url } },
+  ];
+}
 export function pageInfo(path = normalizePath(currentUrl().pathname)) {
   const work = works.find((w) => path === workPath(w.id));
   const known = STATIC_PAGES.find((p) => p.path === path)?.title;
   const title = work?.title ?? known ?? 'ページが見つかりません';
+  const found = !!(work || known);
   return {
     path,
     work,
-    // Unknown paths render the 404 page: noindex, and no canonical/og:url pointing at them.
-    found: !!(work || known),
+    found,
+    indexing: indexingTags(path, found),
     title: `${title} — cp20.dev`,
     description: work ? plain(work.description) : (descriptions[path] ?? descriptions['/']),
   };
