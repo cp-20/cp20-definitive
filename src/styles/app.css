@@ -3587,6 +3587,23 @@
       gap: 48px;
       margin-top: 72px;
     }
+    /* The song and the manga side by side across the note, 24px apart (the song's mark sticks
+       out 10px): the song's stamp takes the width the manga's column leaves (its 16:9 picture
+       whole), and the cover its size beside the desk's, so the two read as one pair about as tall
+       as each other instead of two small stamps at the note's two ends. */
+    .home-favorites {
+      column-gap: 24px;
+    }
+    .home-favorites .favorite-stamp {
+      width: 100%;
+    }
+    .home-favorites a:last-child .favorite-stamp {
+      width: 84px;
+    }
+    .home-favorites a:first-child .favorite-stamp img {
+      height: auto;
+      aspect-ratio: 16 / 9;
+    }
     .music-list {
       grid-template-columns: minmax(0, 1fr);
       gap: 44px;

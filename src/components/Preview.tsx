@@ -15,7 +15,9 @@ export const sizes = {
   // The open book on the /about shelf (spines show a corner of the same image).
   bookCover: '(max-width: 760px) 176px, 222px',
   homeCover: '92px',
-  homeTrack: '134px',
+  // On a phone the song's stamp takes the note's width beside the cover (the cover's column at
+  // least 84px, and the note no wider than 420px).
+  homeTrack: '(max-width: 480px) calc(100vw - 214px), (max-width: 760px) 266px, 134px',
   track: '(max-width: 760px) calc(50vw - 52px), (max-width: 1100px) calc(50vw - 160px), 292px',
 };
 export function previewFor(url: string) {
