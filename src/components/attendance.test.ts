@@ -1,7 +1,7 @@
 // The arithmetic of the yearly attendance cards: days, the stamps of a day, keys and taps.
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { dayOf, daysIn, nearest, spot, stampsOf, step, tipPlace, yearsOf } from './attendance.ts';
+import { dayOf, daysIn, nearest, spot, stampsOf, step, tipPlace, toward, yearsOf } from './attendance.ts';
 
 const article = (date: string, n = 0) => ({
   title: `t${n}`,
@@ -129,5 +129,28 @@ describe('tipPlace', () => {
     assert.deepEqual(tipPlace({ m: 1, d: 2 }), { edge: 'start', below: true });
     assert.deepEqual(tipPlace({ m: 6, d: 16 }), { edge: undefined, below: undefined });
     assert.deepEqual(tipPlace({ m: 12, d: 30 }), { edge: 'end', below: undefined });
+  });
+});
+
+describe('toward', () => {
+  // A slip 200px wide whose bottom edge is 20px above the pointer.
+  const slip = { left: 0, right: 200, top: 0, bottom: 80 };
+  const from = { x: 100, y: 100 };
+  test('紙片の近い辺へ斜めに向かう動きは、紙片へ向かっているとみなす', () => {
+    assert.equal(toward(from, { x: 96, y: 96 }, slip), true);
+    assert.equal(toward(from, { x: 104, y: 97 }, slip), true);
+    assert.equal(toward(from, { x: 100, y: 94 }, slip), true);
+  });
+  test('真横や離れる向きの動きは、紙片へ向かっていない（隣のスタンプへ移る）', () => {
+    assert.equal(toward(from, { x: 105, y: 100 }, slip), false);
+    assert.equal(toward(from, { x: 95, y: 101 }, slip), false);
+    assert.equal(toward(from, { x: 100, y: 104 }, slip), false);
+    // Steeper than the corner: past the slip's side.
+    assert.equal(toward(from, { x: 150, y: 96 }, slip), false);
+  });
+  test('下に開く紙片では、下へ向かう動きを見る', () => {
+    const below = { left: 0, right: 200, top: 120, bottom: 200 };
+    assert.equal(toward(from, { x: 103, y: 104 }, below, true), true);
+    assert.equal(toward(from, { x: 103, y: 96 }, below, true), false);
   });
 });

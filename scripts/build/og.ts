@@ -228,7 +228,74 @@ ${bracket}
 </svg>`;
 }
 
-const workArts: Record<string, () => Promise<string>> = { 'c-compiler': compilerArt };
+/** A die's face: a rounded square at (x, y), `size` wide, slanted, with `n` pips. */
+const die = (x: number, y: number, size: number, n: number, tilt: number) => {
+  const at = [0.25, 0.5, 0.75].map((f) => f * size);
+  const pips: Record<number, [number, number][]> = {
+    1: [[1, 1]],
+    2: [[0, 0], [2, 2]],
+    3: [[0, 0], [1, 1], [2, 2]],
+    4: [[0, 0], [2, 0], [0, 2], [2, 2]],
+    5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]],
+    6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]],
+  };
+  return `<g transform="rotate(${tilt} ${x + size / 2} ${y + size / 2})">
+<rect x="${x + 6}" y="${y + 8}" width="${size}" height="${size}" rx="${size * 0.2}" fill="#0c0f17" fill-opacity="0.55"/>
+<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${size * 0.2}" fill="#fffcf3"/>
+${pips[n].map(([c, r]) => `<circle cx="${x + at[c]}" cy="${y + at[r]}" r="${size * 0.085}" fill="${n === 1 ? SEAL : INK}"/>`).join('')}
+</g>`;
+};
+
+/**
+ * Dice Spec (works.json: the odds of a roll of TRPG dice) as what it answers: three dice rolled,
+ * and the chance of each sum of 3D6 as bars, the 95% range in its slate and the dice's sum in
+ * yellow, on the dark slate of its own pages.
+ */
+async function diceArt() {
+  const work = works.find((w) => w.id === 'dice-spec-v2')!;
+  const title: Run = { text: work.title, size: 76, weight: 700 };
+  const line: Run = { text: work.description, size: 28, weight: 500 };
+  const label: Run = { text: '3D6', size: 30, weight: 500, mono: true };
+  const sums = Array.from({ length: 16 }, (_, i) => i + 3);
+  const figures = sums.map((n) => ({ text: String(n), size: 22, weight: 500, mono: true }) as Run);
+  const set = await typesetter([title, line, label, ...figures]);
+  const { width, height } = { width: 1200, height: 630 };
+  // How many of the 216 rolls of three dice make each sum.
+  const ways = sums.map((n) => {
+    let count = 0;
+    for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) for (let c = 1; c <= 6; c++) count += +(a + b + c === n);
+    return count;
+  });
+  const rolled = [5, 2, 4];
+  const sum = rolled.reduce((a, b) => a + b);
+  const chart = { x: 96, w: 1008, base: 548, top: 330 };
+  const slot = chart.w / sums.length;
+  const bars = sums
+    .map((n, i) => {
+      const h = ((chart.base - chart.top) * ways[i]) / Math.max(...ways);
+      const fill = n === sum ? '#ffd54f' : n >= 5 && n <= 16 ? '#8193b8' : '#3d475d';
+      const x = chart.x + i * slot + 8;
+      const figure = set(figures[i], 0, 0).width;
+      return `<rect x="${x.toFixed(1)}" y="${(chart.base - h).toFixed(1)}" width="${(slot - 16).toFixed(1)}" height="${h.toFixed(1)}" rx="6" fill="${fill}"/>
+${set(figures[i], chart.x + i * slot + (slot - figure) / 2, chart.base + 38, n === sum ? '#ffd54f' : '#8a94a8').svg}`;
+    })
+    .join('');
+  const dice = rolled.map((n, i) => die(846 + i * 98, 64 + [10, -8, 6][i], 84, n, [-9, 7, -4][i])).join('');
+  const dots = [];
+  for (let x = 30; x < width; x += 30) for (let y = 30; y < height; y += 30) dots.push(`M${x} ${y}h.01`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+<rect width="${width}" height="${height}" fill="#1d2433"/>
+<path d="${dots.join('')}" stroke="#ffffff" stroke-opacity="0.07" stroke-width="3" stroke-linecap="round"/>
+${set(title, 96, 168, '#fffcf3').svg}
+${set(line, 98, 228, '#a3adc2').svg}
+${set(label, 96, chart.top - 10, '#a3adc2').svg}
+<path d="M${chart.x} ${chart.base + 0.5}H${chart.x + chart.w}" stroke="#56607a" stroke-width="2"/>
+${bars}
+${dice}
+</svg>`;
+}
+
+const workArts: Record<string, () => Promise<string>> = { 'c-compiler': compilerArt, 'dice-spec-v2': diceArt };
 
 /** Writes the works' card pictures (WORK_ART) into `dir` (dist/client), a WebP for each width. */
 export async function writeWorkArt(dir: string) {

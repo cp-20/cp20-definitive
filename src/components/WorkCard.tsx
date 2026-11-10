@@ -3,6 +3,7 @@ import { shots } from 'virtual:cp20-media';
 import Icon from './Icon.tsx';
 import { OGImage, previewFor, responsive, sizes } from './Preview.tsx';
 import { SOLO_ROLE, kindLabel, longPeriod, openLink, statusTag, type Work } from '../content/works.ts';
+import { plain } from '../content/phrase-marks.ts';
 import { WORK_ART, workArtSrcset } from '../site/pages.ts';
 
 /**
@@ -103,12 +104,28 @@ function SiteIcon(props: { work: Work }) {
 }
 
 /**
+ * A work's result, its last few words after a space (9月の月間賞, 3,912 → 9,245) kept on one line,
+ * so a narrow card breaks before them instead of splitting them.
+ */
+function Outcome(props: { text: string }) {
+  const tail = /\s(\S+)$/.exec(props.text);
+  if (!tail || plain(tail[1]).length > 6) return <span>{props.text}</span>;
+  return (
+    <span>
+      {props.text.slice(0, tail.index + 1)}
+      <span class="nowrap">{tail[1]}</span>
+    </span>
+  );
+}
+
+/**
  * One work, linking to its page (the whole card is the link; a large card's small button opens the
  * work itself). Its sticker anchor is `work-<id>`.
  * - large: a featured work. Its picture, what it is, the result and the button that opens it (a
  *   small picture beside the text on phones).
  * - small: a work in a list. A small picture beside its name, what it is, the result, and who
- *   made it with whom or how long it took when that is not plain from the list.
+ *   made it with whom or how long it took when that is not plain from the list (but not when, for
+ *   a `featured` work, as on the featured cards).
  * - row: one line with the icon (or a small picture), the name and what it is.
  */
 export default function WorkCard(props: {
@@ -116,6 +133,7 @@ export default function WorkCard(props: {
   variant?: 'large' | 'small' | 'row';
   priority?: boolean;
   eager?: boolean;
+  featured?: boolean;
 }) {
   const w = props.work;
   const variant = props.variant ?? 'small';
@@ -140,7 +158,7 @@ export default function WorkCard(props: {
   const meta = [
     w.kind === 'event' ? undefined : kindLabel(w),
     w.role && w.role !== SOLO_ROLE ? w.role : undefined,
-    longPeriod(w.productionTime),
+    props.featured ? undefined : longPeriod(w.productionTime),
   ].filter(Boolean);
   const tag = statusTag(w);
   return (
@@ -162,7 +180,12 @@ export default function WorkCard(props: {
           {tag && <span class="status-tag">{tag}</span>}
         </h3>
         <p class="work-card-description">{w.description}</p>
-        {w.outcome && <p class="work-outcome">{w.outcome}</p>}
+        {w.outcome && (
+          <p class="work-outcome">
+            {/* One flex item beside the mark, so the kept words wrap with the rest. */}
+            <Outcome text={w.outcome} />
+          </p>
+        )}
         {variant === 'small' && meta.length > 0 && (
           <p class="work-card-meta">
             {meta.map((part) => (

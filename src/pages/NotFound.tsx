@@ -36,7 +36,7 @@ export default function NotFound() {
           <section class="not-found-section" aria-labelledby="not-found-featured">
             <h2 id="not-found-featured">代表作</h2>
             <div class="work-cards-small not-found-featured">
-              <For each={featured}>{(w) => <WorkCard work={w} eager />}</For>
+              <For each={featured}>{(w) => <WorkCard work={w} eager featured />}</For>
             </div>
           </section>
         }

@@ -739,8 +739,42 @@ try {
       );
       await page.mouse.move(far.x, far.y, { steps: 10 });
       await expect(tip).toHaveCSS('opacity', '1');
-      if (!(await stamp.evaluate((s) => s.matches(':hover'))))
+      if (!(await stamp.evaluate((s) => s.hasAttribute('data-open'))))
         throw Error(`The slip went on the way to its corner (${crowd ? 'a crowded day' : 'a day'})`);
+    }
+    // But the safe triangle does not hold a slip against the mouse going across to a stamp near
+    // by (on the same month or the next, and not under the slip): that stamp's slip opens.
+    {
+      const near = await stamps.evaluateAll((all) => {
+        const at = all.map((s) => s.getBoundingClientRect());
+        const pairs: [number, number][] = [];
+        at.forEach((a, i) =>
+          at.forEach((b, j) => {
+            const d = Math.hypot(a.x - b.x, a.y - b.y);
+            if (i !== j && d >= 20 && d <= 45) pairs.push([i, j]);
+          }),
+        );
+        return pairs;
+      });
+      let tried = 0;
+      for (const [i, j] of near) {
+        if (tried === 8) break;
+        const [from, to] = [stamps.nth(i), stamps.nth(j)];
+        await from.evaluate((s) => s.scrollIntoView({ block: 'center', behavior: 'instant' }));
+        await page.mouse.move(10, 10);
+        const a = (await from.boundingBox())!,
+          b = (await to.boundingBox())!;
+        await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2, { steps: 2 });
+        await expect(from).toHaveAttribute('data-open', '');
+        const target = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+        if (await from.evaluate((s, t) => s.contains(document.elementFromPoint(t.x, t.y)), target)) continue;
+        await page.mouse.move(target.x, target.y, { steps: 8 });
+        await expect(to).toHaveAttribute('data-open', '', { timeout: 1000 });
+        await expect(to.locator('.attendance-tip')).toHaveCSS('opacity', '1');
+        await expect(from).not.toHaveAttribute('data-open');
+        tried++;
+      }
+      if (tried < 3) throw Error(`Only ${tried} pairs of stamps near each other to try`);
     }
     await page.mouse.move(10, 10);
     // A finger a few pixels off a stamp (days are narrower than a fingertip) picks it and shows
@@ -776,7 +810,7 @@ try {
     await expect(visitor.locator('[data-picked]')).toHaveCount(0);
   }
   passed(
-    'the attendance card is one Tab stop walked by arrows; the pointer reaches any corner of a slip; a tap near a stamp picks it, a second opens it',
+    'the attendance card is one Tab stop walked by arrows; the pointer reaches any corner of a slip, yet going to a stamp near by opens its slip; a tap near a stamp picks it, a second opens it',
   );
 
   // ── Five stickers, and two tabs at once ──

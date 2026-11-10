@@ -2,6 +2,7 @@ import { createMemo, For } from 'solid-js';
 import Brand from './Brand.tsx';
 import { OGImage, articleAnchor, sizes } from './Preview.tsx';
 import { DayStamp } from './AttendanceCard.tsx';
+import Title from './Title.tsx';
 import { shortDate, type Article } from '../content/content.ts';
 /**
  * The articles beside an attendance card: each with its OG image as a postage stamp, its title,
@@ -36,7 +37,9 @@ export function ArticleRows(props: {
             >
               <OGImage url={a.url} alt="" sizes={sizes.articleRow} />
               <div class="article-text">
-                <h3>{a.title}</h3>
+                <h3>
+                  <Title text={a.title} />
+                </h3>
                 <p class="article-meta">
                   <DayStamp source={a.source} url={a.url} />
                   <time datetime={a.date}>{shortDate(a.date)}</time>

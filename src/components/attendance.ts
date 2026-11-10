@@ -116,3 +116,23 @@ export const tipPlace = (s: Pick<Day, 'm' | 'd'>) => ({
   edge: s.d <= 11 ? 'start' : s.d >= 21 ? 'end' : undefined,
   below: s.m <= 3 || undefined,
 });
+
+type Point = { x: number; y: number };
+/**
+ * Whether the pointer, moving from `from` to `to`, is heading for a slip (its box in `slip`) that
+ * opens above the stamp (or `below` it): whether `to` is in the triangle from `from` to the two
+ * corners of the slip's near edge (a safe triangle). Straight across, or away, is not.
+ */
+export function toward(
+  from: Point,
+  to: Point,
+  slip: { left: number; right: number; top: number; bottom: number },
+  below?: boolean,
+) {
+  const y = below ? slip.top : slip.bottom,
+    a = { x: slip.left, y },
+    b = { x: slip.right, y };
+  const side = (p: Point, q: Point) => (q.x - p.x) * (to.y - p.y) - (q.y - p.y) * (to.x - p.x);
+  const turns = [side(from, a), side(a, b), side(b, from)];
+  return !(turns.some((t) => t < 0) && turns.some((t) => t > 0));
+}

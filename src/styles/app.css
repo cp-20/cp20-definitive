@@ -127,6 +127,11 @@
   .nowrap {
     white-space: nowrap;
   }
+  /* A title's opening bracket hangs into the margin by its blank half (Title.tsx), so the title's
+     first ink lines up with the others'. */
+  .hang {
+    margin-inline-start: -0.5em;
+  }
   input,
   select {
     min-width: 0;
@@ -612,11 +617,35 @@
     letter-spacing: 0;
     box-shadow: 2px 2px 0 var(--drop);
     rotate: -1.5deg;
+    transition:
+      transform var(--t-hover) var(--ease),
+      box-shadow var(--t-hover) var(--ease),
+      background-color var(--t-hover) var(--ease);
   }
   .brand img {
     width: 22px;
     height: 22px;
-    transition: transform var(--t-state) var(--ease);
+    transition: rotate var(--t-hover) var(--ease);
+  }
+  /* A paper part like the buttons: it lifts under the pointer and sinks when pressed, and its
+     clover (like the sticker tab's) turns a little. */
+  .brand:focus-visible {
+    background: var(--hi-soft);
+  }
+  @media (hover: hover) {
+    .brand:hover {
+      background: var(--hi-soft);
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--drop);
+    }
+    .brand:hover img {
+      rotate: -12deg;
+    }
+  }
+  .brand:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--drop);
+    transition-duration: var(--t-press);
   }
   /* The QR code's button beside the tag: only on a phone (see the responsive layer). */
   .header-qr {
@@ -648,11 +677,6 @@
     transform: translate(2px, 2px);
     box-shadow: 0 0 0 var(--drop);
     transition-duration: var(--t-press);
-  }
-  @media (hover: hover) {
-    .brand:hover img {
-      transform: rotate(-20deg);
-    }
   }
   .site-footer {
     margin-top: 96px;
@@ -1154,8 +1178,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 4px 32px;
   }
-  /* On the featured works' three columns: the label under the first, a work under each other. */
-  @media (min-width: 1001px) {
+  /* On the featured works' three columns: the label under the first, a work under each other.
+     Narrower, a column is too narrow for a work's sentence: the label goes over the two works,
+     which share the three columns' width. */
+  @media (min-width: 1201px) {
     .home-recent-works {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -1219,9 +1245,9 @@
       margin: 32px 0 0;
     }
   }
-  /* Wider: on the featured works' columns, the card over the first two, the titles and the note
-     on the third. */
-  @media (min-width: 1101px) {
+  /* As wide as the featured works' three columns: on them, the card over the first two, the titles
+     and the note on the third. */
+  @media (min-width: 1001px) {
     .home-middle {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       column-gap: 32px;
@@ -1267,10 +1293,12 @@
     letter-spacing: 0.02em;
     background: linear-gradient(transparent 60%, var(--marker) 60%, var(--marker) 94%, transparent 94%);
   }
-  /* A song and a manga, each a stamp over its name; the stamps sit on one line, the names on the next. */
+  /* A song and a manga, each a stamp over its name; the stamps sit on one line, the names on the next.
+     The manga's column is as wide as its name, which is one word; the song's name breaks at its
+     spaces. */
   .home-favorites {
     display: grid;
-    grid-template-columns: minmax(100px, 1fr) auto;
+    grid-template-columns: minmax(64px, 1fr) auto;
     grid-template-rows: auto auto;
     column-gap: 16px;
     margin-top: 16px;
@@ -1316,7 +1344,8 @@
     font-weight: 700;
     line-height: 1.6;
     letter-spacing: 0.04em;
-    overflow-wrap: anywhere;
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
   /* ── What answers the pointer ──
@@ -2880,7 +2909,9 @@
       translate var(--t-state) var(--ease) var(--t-press),
       scale var(--t-state) var(--ease) var(--t-press),
       opacity var(--t-hover) var(--ease) var(--t-press),
+      transform var(--t-hover) var(--ease),
       box-shadow var(--t-hover) var(--ease),
+      background-color var(--t-hover) var(--ease),
       visibility 0s;
   }
   .stamp-ui[data-still] {
@@ -2900,16 +2931,27 @@
   .sticker-tab > img {
     width: 24px;
     height: 24px;
-    transition: transform var(--t-state) var(--ease);
+    transition: rotate var(--t-hover) var(--ease);
+  }
+  /* Like the buttons: it lifts under the pointer, its sheet a shade deeper, and sinks onto its
+     shadow when pressed. */
+  .sticker-tab:focus-visible {
+    --sheet: #d5e4f6;
   }
   @media (hover: hover) {
+    .sticker-tab:hover {
+      --sheet: #d5e4f6;
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0 var(--drop);
+    }
     .sticker-tab:hover > img {
-      transform: rotate(-12deg);
+      rotate: -12deg;
     }
   }
-
   .sticker-tab:active {
+    transform: translate(3px, 3px);
     box-shadow: 0 0 0 var(--drop);
+    transition-duration: var(--t-press);
   }
   /* The last change could not be saved (and was undone): the tab says so until the next one. */
   .sticker-tab[data-failed] .sticker-tab-label::after {
@@ -3303,16 +3345,20 @@
       gap: 32px;
     }
   }
-  /* Narrower still: the note goes under the name, and the label of the newest works over them. */
-  @media (max-width: 1000px) {
-    .home-intro {
-      grid-template-columns: minmax(0, 1fr);
-    }
+  /* The label of the newest works over them (beside them from 1201px, on the featured works'
+     columns). */
+  @media (max-width: 1200px) {
     .home-recent-works {
       grid-template-columns: minmax(0, 1fr);
     }
     .home-recent-works h3 {
       padding-top: 0;
+    }
+  }
+  /* Narrower still: the note goes under the name. */
+  @media (max-width: 1000px) {
+    .home-intro {
+      grid-template-columns: minmax(0, 1fr);
     }
     .highlights {
       max-width: 420px;
@@ -3947,24 +3993,32 @@
     border-bottom: 2px solid var(--print);
     color: var(--print);
   }
+  /* The year and its 年 set as one word, then the card's name a little apart, all in the card's
+     print. The count is a round seal, its figure and 本 on one baseline. */
   .attendance-head h3 {
     display: flex;
     align-items: baseline;
-    gap: 6px;
     margin-right: auto;
     font-size: 2rem;
     line-height: 1;
     letter-spacing: 0;
   }
-  .attendance-head h3 small {
+  .attendance-head h3 span {
+    margin-left: 1px;
     font-size: var(--fs-body);
-    font-weight: 700;
+  }
+  .attendance-head h3 small {
+    margin-left: 12px;
+    font-size: var(--fs-body);
+    font-weight: 500;
     letter-spacing: 0.06em;
+    color: inherit;
   }
   .attendance-count {
     display: grid;
-    place-items: center;
     grid-auto-flow: column;
+    place-content: center;
+    align-items: baseline;
     gap: 1px;
     width: 52px;
     height: 52px;
@@ -3972,10 +4026,12 @@
     border-radius: 50%;
     font-size: 0.6875rem;
     font-weight: 700;
+    line-height: 1;
     rotate: -6deg;
   }
   .attendance-count strong {
     font-size: 1.125rem;
+    font-weight: 700;
     letter-spacing: 0;
   }
   /* The ruled grid: month labels down the side, days across the top, every fifth column a shade
@@ -4113,10 +4169,10 @@
     width: calc(var(--row) * 0.74);
     height: calc(var(--row) * 0.74);
   }
-  .attendance-stamp:is(:focus-visible, [data-hot], [data-picked]) {
+  .attendance-stamp:is(:focus-visible, [data-hot], [data-picked], [data-open]) {
     z-index: 3;
   }
-  .attendance-stamp:is(:focus-visible, [data-hot], [data-picked]) .day-stamp {
+  .attendance-stamp:is(:focus-visible, [data-hot], [data-picked], [data-open]) .day-stamp {
     scale: 1.45;
   }
   .attendance-stamp:focus-visible {
@@ -4127,8 +4183,9 @@
     outline-offset: 4px;
   }
   /* What a stamp is for, written on a slip that opens toward the middle of the card. It is only
-     faded out, so it stays the link's text for screen readers. The pointer can move onto it
-     without it going, and Escape puts it away (WCAG 1.4.13). */
+     faded out, so it stays the link's text for screen readers. The mouse can move onto it without
+     it going (data-open, a safe triangle in AttendanceCard.tsx), and Escape puts it away
+     (WCAG 1.4.13). */
   .attendance-tip {
     --x: -50%;
     --y: 4px;
@@ -4136,7 +4193,7 @@
     bottom: calc(100% + 6px);
     left: 50%;
     display: grid;
-    gap: 3px;
+    gap: 2px;
     width: max-content;
     max-width: min(250px, 66cqw);
     padding: 8px 11px 9px;
@@ -4165,62 +4222,41 @@
     top: calc(100% + 6px);
     bottom: auto;
   }
-  .attendance-stamp:is(:focus-visible, [data-picked]) .attendance-tip {
+  .attendance-stamp:is(:focus-visible, [data-picked], [data-open]) .attendance-tip {
     --y: 0px;
     opacity: 1;
     pointer-events: auto;
   }
-  @media (hover: hover) {
-    .attendance-stamp:hover {
-      z-index: 3;
-    }
-    .attendance-stamp:hover .day-stamp {
-      scale: 1.45;
-    }
-    .attendance-stamp:hover .attendance-tip {
-      --y: 0px;
-      opacity: 1;
-      pointer-events: auto;
-    }
-    /* A safe triangle: from the slip's edge to the stamp's, a band that narrows to the stamp, so
-       the pointer can cut across the corner to any part of the slip without leaving the stamp's
-       hover. It is the slip's own (the slip is in the stamp's link), so it takes the pointer only
-       while the slip does. */
-    .attendance-tip::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 100%;
-      height: calc(6px + var(--stamp-h));
-      clip-path: polygon(0 0, 100% 0, var(--safe-to) 100%, var(--safe-from) 100%);
-    }
-    .attendance-stamp[data-below] .attendance-tip::after {
-      top: auto;
-      bottom: 100%;
-      clip-path: polygon(var(--safe-from) 0, var(--safe-to) 0, 100% 100%, 0 100%);
-    }
+  /* The 6px between a slip and its stamp, as wide as the stamp, so the mouse going straight up
+     (or down) to the slip stays on the stamp. It is the slip's own, so it takes the pointer only
+     while the slip does, and covers no other stamp's day. */
+  .attendance-tip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: var(--bridge);
+    width: var(--stamp-w);
+    height: 8px;
   }
-  /* Where the stamp is, in the slip's own coordinates. */
+  .attendance-stamp[data-below] .attendance-tip::after {
+    top: auto;
+    bottom: 100%;
+  }
+  /* Where the stamp is, in the slip's own coordinates (less the slip's 2px border). */
   .attendance-stamp {
     --stamp-w: var(--cell);
-    --stamp-h: var(--row);
   }
   .attendance-stamp[data-crowd] {
     --stamp-w: calc(var(--row) * 0.45);
-    --stamp-h: calc(var(--row) * 0.45);
   }
   .attendance-tip {
-    --safe-from: calc(50% - var(--stamp-w) / 2);
-    --safe-to: calc(50% + var(--stamp-w) / 2);
+    --bridge: calc(50% - var(--stamp-w) / 2);
   }
   .attendance-stamp[data-edge='start'] .attendance-tip {
-    --safe-from: 6px;
-    --safe-to: calc(6px + var(--stamp-w));
+    --bridge: 4px;
   }
   .attendance-stamp[data-edge='end'] .attendance-tip {
-    --safe-from: calc(100% - 6px - var(--stamp-w));
-    --safe-to: calc(100% - 6px);
+    --bridge: calc(100% - 4px - var(--stamp-w));
   }
   .attendance-grid[data-quiet] .attendance-tip {
     opacity: 0;
@@ -4344,8 +4380,11 @@
     .attendance-head h3 {
       font-size: 1.5rem;
     }
-    .attendance-head h3 small {
+    .attendance-head h3 :is(span, small) {
       font-size: 0.75rem;
+    }
+    .attendance-head h3 small {
+      margin-left: 10px;
     }
     .attendance-count {
       width: 42px;

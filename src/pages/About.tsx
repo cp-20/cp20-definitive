@@ -4,6 +4,7 @@ import { responsive, sizes } from '../components/Preview.tsx';
 import Bookshelf from '../components/Bookshelf.tsx';
 import Brand from '../components/Brand.tsx';
 import Modal, { openModal } from '../components/Modal.tsx';
+import Title from '../components/Title.tsx';
 import { milestones, speedups } from '../data/editorial.ts';
 import { localImage } from '../content/images.ts';
 import { splitEmphasis } from '../content/emphasis.ts';
@@ -146,7 +147,7 @@ export default function About() {
                       </div>
                     </div>
                     {expandable && (
-                      <Modal id={m.id} title={m.title}>
+                      <Modal id={m.id} title={<Title text={m.title} />}>
                         <p class="modal-meta">
                           <time datetime={m.year.replace('.', '-')}>{m.year}</time>
                           <span>{m.grade}</span>

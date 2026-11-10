@@ -2,6 +2,7 @@ import { createSignal, For } from 'solid-js';
 import Icon from '../components/Icon.tsx';
 import Brand from '../components/Brand.tsx';
 import WorkCard from '../components/WorkCard.tsx';
+import Title from '../components/Title.tsx';
 import { articleAnchor, responsive, sizes } from '../components/Preview.tsx';
 import { AttendanceCard, DayStamp } from '../components/AttendanceCard.tsx';
 import { yearOf } from '../components/attendance.ts';
@@ -133,7 +134,9 @@ export default function Home() {
                       onPointerLeave={(e) => e.pointerType === 'mouse' && setHot()}
                     >
                       <DayStamp source={a.source} url={a.url} />
-                      <span class="recent-title">{a.title}</span>
+                      <span class="recent-title">
+                        <Title text={a.title} />
+                      </span>
                       <time datetime={a.date}>{shortDate(a.date)}</time>
                     </a>
                   </li>

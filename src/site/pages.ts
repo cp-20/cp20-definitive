@@ -39,9 +39,12 @@ type WorkArt = { id: string; src: string; width: number; height: number };
 const art = (id: string): WorkArt => ({ id, src: workArtFile(id, 640), width: 1200, height: 630 });
 /**
  * Works whose own OG image is only their name on white: their cards show a picture the build
- * draws for them instead (scripts/build/og.ts), in the site's paper and type.
+ * draws for them instead (scripts/build/og.ts), of what the work does, in the site's type.
  */
-export const WORK_ART: Partial<Record<string, WorkArt>> = { 'c-compiler': art('c-compiler') };
+export const WORK_ART: Partial<Record<string, WorkArt>> = {
+  'c-compiler': art('c-compiler'),
+  'dice-spec-v2': art('dice-spec-v2'),
+};
 export const workArtSrcset = (a: WorkArt) =>
   WORK_ART_WIDTHS.map((w) => `${workArtFile(a.id, w)} ${w}w`).join(', ');
 

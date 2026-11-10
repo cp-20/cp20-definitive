@@ -1,6 +1,7 @@
 import { createMemo, createSignal, For, onSettled, Show } from 'solid-js';
 import { articleAnchor } from './Preview.tsx';
-import { daysIn, nearest, spot, stampsOf, step, tipPlace, yearOf, type Stamp } from './attendance.ts';
+import Title from './Title.tsx';
+import { daysIn, nearest, spot, stampsOf, step, tipPlace, toward, yearOf, type Stamp } from './attendance.ts';
 import { shortDate, type Article } from '../content/content.ts';
 /** A source's stamp (its face and ink are in app.css), slanted by a steady amount per article. */
 export function DayStamp(props: { source: string; url: string }) {
@@ -13,6 +14,10 @@ const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 const MONTHS = DAYS.slice(0, 12);
 // How far from a stamp's centre a tap still picks it.
 const REACH = 26;
+// How long (ms) a slip stays while the mouse heads for it over other days, at most, and once the
+// mouse stops on the way.
+const HOLD = 300,
+  REST = 90;
 
 /**
  * A year's attendance card, like the ones stamped at morning radio exercises: twelve rows of
@@ -20,7 +25,9 @@ const REACH = 26;
  * its article and shows its title on a slip on hover or focus, which Escape puts away. The card
  * is one Tab stop; the arrow keys walk its stamps (attendance.ts). On a touch screen a tap picks
  * the stamp nearest to it, as the days are only a few pixels wide, and shows its slip; a tap on
- * the picked stamp or its slip opens the article.
+ * the picked stamp or its slip opens the article. The mouse opens the slip of the stamp it is
+ * on, and keeps it open while it heads for that slip across the days between (a safe triangle):
+ * moving across or away, or stopping, opens the slip of the stamp it is on instead.
  * With `years` and `onYear`, the other years' cards are stacked behind with index tabs to open
  * them. `hot` is the stamp (by article anchor) to mark, and `onHot` hears which one is pointed at.
  */
@@ -44,6 +51,43 @@ export function AttendanceCard(props: {
   };
   // Escape hides the slip in view until another stamp is pointed at or stepped to.
   const [quiet, setQuiet] = createSignal(false);
+  // The stamp whose slip the mouse has open.
+  const [open, setOpen] = createSignal<string>();
+  // Where the mouse last was over the card, the stamp under it there, and until when (an event's
+  // timeStamp) the open slip may stay while the mouse heads for it.
+  let last: { x: number; y: number } | undefined,
+    under: string | undefined,
+    holdEnd = 0,
+    rest: ReturnType<typeof setTimeout> | undefined;
+  const show = (to?: string) => {
+    clearTimeout(rest);
+    holdEnd = 0;
+    if (to === open()) return;
+    if (to) setQuiet(false);
+    setOpen(to);
+    props.onHot?.(to ?? picked());
+  };
+  const hover = (e: PointerEvent) => {
+    if (e.pointerType !== 'mouse') return;
+    const at = { x: e.clientX, y: e.clientY },
+      from = last,
+      leaving = e.type === 'pointerleave';
+    last = leaving ? undefined : at;
+    const on = leaving ? null : (e.target as Element).closest('.attendance-stamp');
+    under = on ? articleAnchor(on.getAttribute('href')!) : undefined;
+    if (under === open()) return show(under);
+    const now = quiet() ? null : grid.querySelector('.attendance-stamp[data-open]');
+    const slip = now?.querySelector('.attendance-tip')?.getBoundingClientRect();
+    if (slip && from && toward(from, at, slip, now!.hasAttribute('data-below'))) {
+      holdEnd ||= e.timeStamp + HOLD;
+      if (e.timeStamp < holdEnd) {
+        clearTimeout(rest);
+        rest = setTimeout(() => show(under), Math.min(REST, holdEnd - e.timeStamp));
+        return;
+      }
+    }
+    show(under);
+  };
   // The last press on the card: by what, and where the finger really was (the click after a tap
   // is moved by the browser to the middle of the link it chose).
   let grid!: HTMLDivElement, press: PointerEvent | undefined;
@@ -86,6 +130,7 @@ export function AttendanceCard(props: {
     document.addEventListener('pointerdown', away);
     document.addEventListener('keydown', escape);
     return () => {
+      clearTimeout(rest);
       document.removeEventListener('pointerdown', away);
       document.removeEventListener('keydown', escape);
     };
@@ -117,7 +162,8 @@ export function AttendanceCard(props: {
         <header class="attendance-head">
           <h3>
             {props.year}
-            <small>年 かいた日カード</small>
+            <span>年</span>
+            <small>かいた日カード</small>
           </h3>
           <p class="attendance-count">
             <strong>{stamps().length}</strong>本
@@ -129,6 +175,8 @@ export function AttendanceCard(props: {
           data-quiet={quiet() || undefined}
           onKeyDown={keyboard}
           onPointerDown={(e) => (press = e)}
+          onPointerMove={hover}
+          onPointerLeave={hover}
           onClick={tap}
         >
           <span class="attendance-corner" aria-hidden="true">
@@ -162,6 +210,7 @@ export function AttendanceCard(props: {
                   tabindex={s === tabStop() ? 0 : -1}
                   data-hot={props.hot === id(s) || undefined}
                   data-picked={picked() === id(s) || undefined}
+                  data-open={open() === id(s) || undefined}
                   data-crowd={s.of > 1 ? s.of : undefined}
                   data-edge={place.edge}
                   data-below={place.below}
@@ -169,21 +218,17 @@ export function AttendanceCard(props: {
                     'grid-area': `${s.m + 1} / ${s.d + 1}`,
                     ...(s.of > 1 && { '--dx': at.x, '--dy': at.y }),
                   }}
-                  onPointerEnter={(e) => {
-                    if (e.pointerType !== 'mouse') return;
-                    setQuiet(false);
-                    props.onHot?.(id(s));
-                  }}
-                  onPointerLeave={(e) => e.pointerType === 'mouse' && props.onHot?.(picked())}
                   onFocus={() => {
                     setQuiet(false);
                     props.onHot?.(id(s));
                   }}
-                  onBlur={() => props.onHot?.(picked())}
+                  onBlur={() => props.onHot?.(open() ?? picked())}
                 >
                   <DayStamp source={s.a.source} url={s.a.url} />
                   <span class="attendance-tip">
-                    <strong>{s.a.title}</strong>
+                    <strong>
+                      <Title text={s.a.title} />
+                    </strong>
                     <small>
                       {shortDate(s.a.date)}・{s.a.source}
                     </small>
