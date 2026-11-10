@@ -7,12 +7,13 @@ import QrCode from '../components/QrCode.tsx';
 import { openModal } from '../components/Modal.tsx';
 import profile from '../data/profile.json';
 import { TAB_PATHS, sectionName, tabIndex } from './pages.ts';
-// The index tabs, in TAB_PATHS order.
-const tabs: Record<(typeof TAB_PATHS)[number], { label: string; icon: IconName }> = {
+// The index tabs, in TAB_PATHS order. `short` is the label a phone's row of tabs shows; the link
+// keeps its full name for screen readers (the short one starts it, so a spoken "プロフ" finds it).
+const tabs: Record<(typeof TAB_PATHS)[number], { label: string; short?: string; icon: IconName }> = {
   '/': { label: 'ホーム', icon: 'Grid2x2' },
   '/works': { label: '作品', icon: 'Folder' },
   '/articles': { label: '記事', icon: 'FileText' },
-  '/about': { label: 'プロフィール', icon: 'UserRound' },
+  '/about': { label: 'プロフィール', short: 'プロフ', icon: 'UserRound' },
 };
 // Every page ends with the same accounts as the profile, and the feed.
 const footerLinks = [...profile.links, { name: 'RSS', url: '/feed.xml' }];
@@ -33,7 +34,12 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
                   aria-current={tabIndex(props.path) === i() ? 'page' : undefined}
                 >
                   <Icon name={tabs[href].icon} size={18} />
-                  <span>{tabs[href].label}</span>
+                  <span class="tab-label">{tabs[href].label}</span>
+                  {tabs[href].short && (
+                    <span class="tab-short" aria-hidden="true">
+                      {tabs[href].short}
+                    </span>
+                  )}
                 </a>
               )}
             </For>
