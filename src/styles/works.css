@@ -82,8 +82,7 @@
   /* A site's icon sits on a small white tile with a pencil line round it, whatever its own
      background (none, white or a colour), so every icon is the same shape on the paper. One drawn
      out to its edges (works.json `iconInset`) gets more room inside. */
-  .work-icon,
-  .source-icon {
+  .work-icon {
     display: inline-block;
     width: 24px;
     height: 24px;
@@ -92,6 +91,17 @@
     border-radius: 6px;
     background: #fff;
     object-fit: contain;
+  }
+  /* Where an article came out is that place's icon itself, pressed on the paper with no tile or
+     margin of its own: each is drawn at its optical size in its square (--optical, SourceIcon), so a
+     dark square and a drawing in lines look one size. Scaled, not resized, so the square keeps its
+     place in the line. */
+  .source-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    scale: var(--optical, 1);
   }
   .work-icon {
     margin-right: 8px;
@@ -695,7 +705,6 @@
     width: 20px;
     height: 20px;
     margin-top: calc((1lh - 20px) / 2);
-    border-radius: 5px;
   }
   .related-articles time {
     line-height: inherit;
