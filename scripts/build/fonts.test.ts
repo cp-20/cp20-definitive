@@ -131,7 +131,7 @@ describe('太字と手書きの文字', () => {
   });
 });
 
-describe.each(['zen-maru-gothic/zen-maru-gothic-500.woff2', 'yusei-magic/yusei-magic-400.woff2'])(
+describe.each(['zen-maru-gothic/zen-maru-gothic-700.woff2', 'yusei-magic/yusei-magic-400.woff2'])(
   '%s の絞り込み',
   (file) => {
     test('絞り込んでも、著作権・デザイナー・ライセンスの name レコードは元のまま残る（OFL の条件）', async () => {

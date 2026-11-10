@@ -17,10 +17,10 @@ import { OG_IMAGE } from '../../src/site/pages.ts';
 const INK = '#2d2a33';
 const SEAL = '#d1402c';
 
-/** A line of text in Zen Maru Gothic 500, or (`hand`) in Yusei Magic, as the pages set them. */
+/** A line of text in Zen Maru Gothic 700, or (`hand`) in Yusei Magic, as the pages set them. */
 type Run = { text: string; size: number; hand?: true };
 const FACES = {
-  round: '../../fonts/zen-maru-gothic/zen-maru-gothic-500.woff2',
+  round: '../../fonts/zen-maru-gothic/zen-maru-gothic-700.woff2',
   hand: '../../fonts/yusei-magic/yusei-magic-400.woff2',
 };
 const faceOf = (run: Run) => (run.hand ? 'hand' : 'round');

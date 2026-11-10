@@ -151,9 +151,11 @@
     --paper-2: #f6f0e1;
     --grid: rgb(86 150 100 / 0.12);
     --margin-line: rgb(255 120 150 / 0.35);
-    /* Text is --ink (12.8:1 on the paper); --muted (5.3:1) only for dates, sources and the like.
-       --faint (2.6:1) is for dotted lines and outlines, never for text. */
-    --ink: #2d2a33;
+    /* Text is --ink, the outlines' ink written a little lighter so a page of it is not black on
+       the paper (10.2:1 on it, 4.7:1 on the strongest page colour, --green); --muted (5.3:1) only
+       for dates, sources and the like. --faint (2.6:1) is for dotted lines and outlines, never
+       for text. --edge and --drop, the outlines and their hard shadows, keep the full ink. */
+    --ink: #433d47;
     --muted: #6c6873;
     --faint: #9b97a0;
     --edge: #2d2a33;
@@ -180,15 +182,16 @@
       0 0 / 60px 60px;
     /* The sticker sheet's glossy backing. */
     --sheet: #e9f1fb;
-    --on-color: #2d2a33;
+    --on-color: var(--ink);
     --hi: var(--green);
     --hi-soft: var(--green-soft);
     /* Type: three faces, one per kind of text.
        - --hand, Yusei Magic: what is written on the sheet by hand with a marker. Headings, names,
          labels, buttons and figures. Its kana are proportional and its letters and figures are
          drawn with them, so a name like 「ダイススペック v2」 sits as one line of writing.
-       - --round, Zen Maru Gothic 500: what is printed. Sentences, descriptions, dates and sources
-         (700 only for a <strong> or a link inside a sentence).
+       - --round, Zen Maru Gothic in --round-weight (700; 500 read thin on the paper): what is
+         printed. Sentences, descriptions, dates and sources, all in that one weight; a figure a
+         sentence stresses (<strong>) is written by hand instead.
        - --mono, IBM Plex Mono 400: what is written as code.
        No letter spacing anywhere: Zen Maru Gothic has no proportional kana (no palt), and any
        spacing only pulls its full-width kana further from its narrow letters and figures.
@@ -219,6 +222,7 @@
       Meiryo, system-ui, sans-serif;
     --hand: 'Yusei Magic', var(--round);
     --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --round-weight: 700;
     --tab: 50px;
     --perf: 12px;
     --perf-hole: 3.6px;
@@ -243,10 +247,12 @@
     background-size: 26px 26px;
     color: var(--ink);
     font-family: var(--round);
-    font-weight: 500;
+    font-weight: var(--round-weight);
     font-size: var(--fs-body);
     line-height: 1.8;
     -webkit-font-smoothing: antialiased;
+    /* Each face is used only in the weight it has: none is ever thickened by the browser. */
+    font-synthesis-weight: none;
     overflow-x: clip;
   }
   ::selection {
@@ -1770,10 +1776,13 @@
     font-size: var(--fs-body);
     line-height: 1.8;
   }
-  /* What came of it is the one thing set bold. */
+  /* What came of it, its figures, is written by hand into the printed line, a step larger. */
   .timeline-item p strong,
   .modal-sheet > p strong {
-    font-weight: 700;
+    font-family: var(--hand);
+    font-weight: 400;
+    font-size: var(--fs-lead);
+    line-height: 1;
     white-space: nowrap;
   }
   /* A name that is literally code: the ISUCON team 「[object Object]」, kept on one line. */
@@ -4308,7 +4317,7 @@
     margin-top: 2px;
     font-size: var(--fs-small);
     font-family: var(--round);
-    font-weight: 500;
+    font-weight: var(--round-weight);
     color: var(--muted);
   }
   /* A narrow card (beside the profile on a tablet, or on a phone): the tabs share the width, the

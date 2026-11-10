@@ -1,5 +1,5 @@
-// The site's web fonts at build time, each subset to the characters it sets: Zen Maru Gothic 500
-// to every character the built site can show, Zen Maru Gothic 700 to what it sets in bold, and
+// The site's web fonts at build time, each subset to the characters it sets: Zen Maru Gothic 700
+// to every character the built site can show (the one weight its printed text is set in), and
 // Yusei Magic to what it writes by hand (headings, names, labels and figures: the rules that name
 // var(--hand) in app.css). Each is split into the home page's characters, the profile's other ones
 // and the rest (unicode-range): a page loads only the files with characters it shows. Runs after
@@ -14,15 +14,21 @@ import { parse } from 'node-html-parser';
 
 /**
  * The faces the build subsets. `role` says which text each needs: `all` every character, `bold`
- * the text of bold rules, `hand` the text of rules set in the hand-written face.
+ * the text of bold rules, `hand` the text of rules set in the hand-written face. The printed text
+ * is all one weight, 700 (500 read thin on the paper), so there is no bold face: what a sentence
+ * stresses (a figure) is written by hand instead (app.css).
  */
-export const faces = [
-  { family: 'Zen Maru Gothic', weight: 500, file: 'zen-maru-gothic/zen-maru-gothic-500.woff2', role: 'all' },
-  { family: 'Zen Maru Gothic', weight: 700, file: 'zen-maru-gothic/zen-maru-gothic-700.woff2', role: 'bold' },
+export const faces: readonly {
+  family: 'Zen Maru Gothic' | 'Yusei Magic';
+  weight: 400 | 700;
+  file: string;
+  role: 'all' | 'bold' | 'hand';
+}[] = [
+  { family: 'Zen Maru Gothic', weight: 700, file: 'zen-maru-gothic/zen-maru-gothic-700.woff2', role: 'all' },
   { family: 'Yusei Magic', weight: 400, file: 'yusei-magic/yusei-magic-400.woff2', role: 'hand' },
-] as const;
+];
 export type Face = (typeof faces)[number];
-/** The file name stem of a face's subsets: `zen-maru-gothic-500`. */
+/** The file name stem of a face's subsets: `zen-maru-gothic-700`. */
 export const faceName = (face: Pick<Face, 'family' | 'weight'>) =>
   `${face.family.toLowerCase().replaceAll(' ', '-')}-${face.weight}`;
 const source = (face: Face) => new URL(`../../fonts/${face.file}`, import.meta.url);

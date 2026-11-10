@@ -128,15 +128,8 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
       assert.deepEqual(
         [preloads('index.html').sort(), preloads('about/index.html').sort(), preloads('articles/index.html')],
         [
-          ['yusei-magic-400', 'zen-maru-gothic-500'],
-          [
-            'yusei-magic-400',
-            'yusei-magic-400',
-            'zen-maru-gothic-500',
-            'zen-maru-gothic-500',
-            'zen-maru-gothic-700',
-            'zen-maru-gothic-700',
-          ],
+          ['yusei-magic-400', 'zen-maru-gothic-700'],
+          ['yusei-magic-400', 'yusei-magic-400', 'zen-maru-gothic-700', 'zen-maru-gothic-700'],
           [],
         ],
       );

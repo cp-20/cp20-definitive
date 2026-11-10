@@ -675,9 +675,6 @@
   .work-body p + p {
     margin-top: 16px;
   }
-  .work-body .inline-link {
-    font-weight: 700;
-  }
   .related-articles {
     border-top: 2px dashed var(--rule);
   }
@@ -712,7 +709,7 @@
     color: var(--muted);
     font-size: var(--fs-small);
     font-family: var(--round);
-    font-weight: 500;
+    font-weight: var(--round-weight);
     white-space: nowrap;
   }
   .work-neighbours {

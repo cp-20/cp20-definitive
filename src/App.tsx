@@ -16,10 +16,7 @@ import { createNavigation } from './site/navigation.ts';
 // run by prerender); the dev server, which has no prerender step, uses the full @fontsource split
 // and the whole Yusei Magic file instead.
 if (import.meta.env.DEV) {
-  void Promise.all([
-    import('@fontsource/zen-maru-gothic/500.css'),
-    import('@fontsource/zen-maru-gothic/700.css'),
-  ]);
+  void import('@fontsource/zen-maru-gothic/700.css');
   if (!isServer)
     document.fonts.add(new FontFace('Yusei Magic', 'url(/fonts/yusei-magic/yusei-magic-400.woff2)'));
 }
