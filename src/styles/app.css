@@ -541,12 +541,18 @@
     flex-direction: column;
     gap: 8px;
   }
-  /* Every tab starts on the sheet's 2px edge. Another page's tab draws that edge as its own left
-     border, so the sheet's line runs on over it and it reads as tucked behind; the current page's
-     tab has none there, so it runs on from the sheet. Under the pointer a tab is pulled a little
-     further out: it grows to the right from the edge, never parting from it (moved instead, it left
-     a gap between the sheet's edge and itself, and looked to float off the paper). */
+  /* Every tab starts on the sheet's 2px edge. Under the pointer a tab is pulled out (--pull): the
+     whole tab, its icon and name with it, moves to the right, while its root (::before) stays on the
+     sheet's edge and fills what the move opens, so the tab never parts from the paper. The root
+     is moved back by as much as the tab, at the same pace, so on every frame it stays where it is
+     and reaches the tab; only transforms move. The root covers the tab's own left border. Another
+     page's tab has the sheet's line on its root, so the line runs on over it and it reads as tucked
+     behind; the current page's tab has none there, so it runs on from the sheet. (The tab's border
+     stays one colour all round: a clear side made Chrome draw its outer edge apart from its shadow,
+     with a seam between them when zoomed.) */
   .rail nav a {
+    --pull: 0px;
+    --tab-bg: color-mix(in srgb, var(--tab-soft) 78%, var(--paper));
     position: relative;
     display: flex;
     flex-direction: row;
@@ -556,7 +562,7 @@
     padding: 14px 0 16px;
     border: 2px solid var(--edge);
     border-radius: 0 16px 16px 0;
-    background: color-mix(in srgb, var(--tab-soft) 78%, var(--paper));
+    background: var(--tab-bg);
     color: var(--ink);
     font-size: var(--fs-ui);
     font-family: var(--hand);
@@ -564,14 +570,40 @@
     letter-spacing: 0.12em;
     line-height: 1;
     writing-mode: vertical-rl;
-    translate: 0 0;
+    translate: var(--pull) 0;
     box-shadow: 3px 3px 0 var(--drop);
     /* A tab is pulled out as quickly as anything else answers the pointer; becoming the current
        one, it settles at the pace of a change of state. */
     transition:
-      width var(--t-hover) var(--ease),
       translate var(--t-hover) var(--ease),
       background-color var(--t-hover) var(--ease);
+  }
+  /* The root (::before): from the sheet's edge to a little past the tab's own left side however
+     far it is pulled, in the tab's paper with its top and bottom lines. Under it (::after), the
+     bottom of the tab's shadow, from where it starts at rest on to under the tab. Each is drawn
+     apart and only over the same paper or ink of the tab, so no edge of theirs shows on it. */
+  .rail nav a::before,
+  .rail nav a::after {
+    content: '';
+    position: absolute;
+    translate: calc(-1 * var(--pull)) 0;
+    transition: inherit;
+  }
+  .rail nav a::before {
+    top: -2px;
+    bottom: -2px;
+    left: -2px;
+    width: 10px;
+    border: 2px solid var(--edge);
+    border-right: 0;
+    background-color: var(--tab-bg);
+  }
+  .rail nav a::after {
+    top: calc(100% + 2px);
+    left: 1px;
+    width: 5px;
+    height: 3px;
+    background: var(--drop);
   }
   .rail nav a > svg {
     writing-mode: horizontal-tb;
@@ -581,14 +613,15 @@
   }
   @media (hover: hover) {
     .rail nav a:not([aria-current]):hover {
-      width: calc(var(--tab) + 6px);
+      --pull: 4px;
     }
   }
   .rail nav a[aria-current='page'] {
-    border-left-width: 0;
-    translate: 0 0;
+    --tab-bg: color-mix(in srgb, var(--tab-soft) 42%, var(--paper));
     transition-duration: var(--t-state);
-    background: color-mix(in srgb, var(--tab-soft) 42%, var(--paper));
+  }
+  .rail nav a[aria-current='page']::before {
+    border-left-color: transparent;
   }
   .rail nav a[data-tab='home'] {
     --tab-color: var(--green);
@@ -3480,6 +3513,11 @@
         translate: 0 6px;
       }
     }
+    /* A tab rises from the bottom of the screen, so it has no root on the sheet's side. */
+    .rail nav a::before,
+    .rail nav a::after {
+      content: none;
+    }
     .rail nav a[aria-current='page'] {
       width: auto;
       translate: 0 0;
@@ -3859,7 +3897,8 @@
   /* High-contrast modes replace backgrounds with Canvas, so states shown by a fill alone
      (the used sticker pips, the current tab) are redrawn in system colors. */
   @media (forced-colors: active) {
-    .rail nav a[aria-current='page'] {
+    .rail nav a[aria-current='page'],
+    .rail nav a[aria-current='page']::before {
       forced-color-adjust: none;
       border-color: Highlight;
       background: Highlight;
