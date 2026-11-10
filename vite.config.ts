@@ -76,21 +76,20 @@ const articles = (): Plugin => {
       if (resolved !== '\0' + id) return;
       for (const file of data) this.addWatchFile(file.pathname);
       const [snapshot, manual] = data.map((file) => JSON.parse(readFileSync(file, 'utf8')));
-      // Titles break between phrases like the works' sentences (not in the tests: see below).
-      const list = mergeArticles(snapshot.articles, manual).map((a) =>
-        process.env.VITEST ? a : { ...a, title: phrased(a.title) },
-      );
+      // Titles break between phrases like the works' sentences.
+      const list = mergeArticles(snapshot.articles, manual).map((a) => ({ ...a, title: phrased(a.title) }));
       return `export const articles = ${JSON.stringify(list)};\n`;
     },
   };
 };
 // The works' sentences with their phrase boundaries marked (scripts/build/phrases.ts), so they
-// break between phrases on an iPhone too. Not in the tests, which check the data as written.
+// break between phrases on an iPhone too. Not in the tests, which check works.json as written.
 const phrasedWorks = (): Plugin => ({
   name: 'cp20-phrased-works',
   enforce: 'pre',
+  apply: (_, { mode }) => mode !== 'test',
   transform(code, id) {
-    if (process.env.VITEST || !/[\\/]src[\\/]data[\\/]works\.json$/.test(id)) return;
+    if (!/[\\/]src[\\/]data[\\/]works\.json$/.test(id)) return;
     return { code: JSON.stringify(phraseWorks(JSON.parse(code))), map: null };
   },
 });
