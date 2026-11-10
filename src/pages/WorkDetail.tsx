@@ -2,7 +2,7 @@ import Brand from '../components/Brand.tsx';
 import Icon from '../components/Icon.tsx';
 import { sizes } from '../components/Preview.tsx';
 import WorkCard, { WorkImage } from '../components/WorkCard.tsx';
-import { articles, editionWorks, formatDate, sections, type Work } from '../content/content.ts';
+import { articles, editionWorks, sections, shortDate, type Work } from '../content/content.ts';
 import { splitLinks } from '../content/inline-links.ts';
 import {
   kindLabel,
@@ -120,11 +120,11 @@ export default function WorkDetail(props: { work: Work }) {
                   <a href={a.url}>
                     <Brand url={a.url} />
                     <span>
-                      {a.title}
+                      <span class="related-title">{a.title}</span>
                       {WORD_JOINER}
                       <Icon name="ArrowUpRight" size={15} />
                     </span>
-                    <time datetime={a.date}>{formatDate(a.date)}</time>
+                    <time datetime={a.date}>{shortDate(a.date)}</time>
                   </a>
                 </li>
               ))}

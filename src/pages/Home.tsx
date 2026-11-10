@@ -5,7 +5,7 @@ import WorkCard from '../components/WorkCard.tsx';
 import { articleAnchor, responsive, sizes } from '../components/Preview.tsx';
 import { AttendanceCard, DayStamp } from '../components/AttendanceCard.tsx';
 import { yearOf } from '../components/attendance.ts';
-import { articles, formatDate, sections } from '../content/content.ts';
+import { articles, sections, shortDate } from '../content/content.ts';
 import { highlightIds, milestones } from '../data/editorial.ts';
 import { localImage, seriesCover } from '../content/images.ts';
 import profile from '../data/profile.json';
@@ -135,7 +135,7 @@ export default function Home() {
                     >
                       <DayStamp source={a.source} url={a.url} />
                       <span class="recent-title">{a.title}</span>
-                      <time datetime={a.date}>{formatDate(a.date)}</time>
+                      <time datetime={a.date}>{shortDate(a.date)}</time>
                     </a>
                   </li>
                 );

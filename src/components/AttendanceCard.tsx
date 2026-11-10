@@ -1,7 +1,7 @@
 import { createMemo, createSignal, For, onSettled, Show } from 'solid-js';
 import { articleAnchor } from './Preview.tsx';
 import { daysIn, nearest, spot, stampsOf, step, tipPlace, yearOf, type Stamp } from './attendance.ts';
-import { formatDate, type Article } from '../content/content.ts';
+import { shortDate, type Article } from '../content/content.ts';
 /** A source's stamp (its face and ink are in app.css), slanted by a steady amount per article. */
 export function DayStamp(props: { source: string; url: string }) {
   const tilt = (parseInt(articleAnchor(props.url).slice(8), 36) % 31) - 15;
@@ -192,7 +192,7 @@ export function AttendanceCard(props: {
                   <span class="attendance-tip">
                     <strong>{s.a.title}</strong>
                     <small>
-                      {formatDate(s.a.date)} {s.a.source}
+                      {shortDate(s.a.date)}・{s.a.source}
                     </small>
                   </span>
                 </a>

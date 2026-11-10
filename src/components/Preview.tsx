@@ -20,7 +20,7 @@ export const sizes = {
   bookCover: '(max-width: 760px) 176px, 222px',
   homeCover: '92px',
   homeTrack: '134px',
-  track: '(max-width: 760px) calc(50vw - 60px), (max-width: 1100px) calc(50vw - 160px), 292px',
+  track: '(max-width: 760px) calc(50vw - 52px), (max-width: 1100px) calc(50vw - 160px), 292px',
 };
 export function previewFor(url: string) {
   return pages[url];

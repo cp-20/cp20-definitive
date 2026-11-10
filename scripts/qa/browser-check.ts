@@ -705,6 +705,35 @@ try {
     await page.keyboard.press('Tab');
     if (!(await page.evaluate(() => document.activeElement?.matches('.article-row:not([hidden])'))))
       throw Error('The card is more than one Tab stop');
+    // The pointer cuts across from a stamp to the far corner of its slip (over the gap and the
+    // days beside it) and the slip stays: a safe triangle keeps it on the stamp.
+    for (const crowd of [false, true]) {
+      const index = await stamps.evaluateAll(
+        (all, crowd) => all.findIndex((s) => s.hasAttribute('data-crowd') === crowd),
+        crowd,
+      );
+      if (index < 0) continue;
+      const stamp = stamps.nth(index);
+      const tip = stamp.locator('.attendance-tip');
+      await stamp.evaluate((s) => s.scrollIntoView({ block: 'center', behavior: 'instant' }));
+      await page.mouse.move(10, 10);
+      const at = (await stamp.boundingBox())!;
+      const from = { x: at.x + at.width / 2, y: at.y + at.height / 2 };
+      await page.mouse.move(from.x, from.y, { steps: 2 });
+      await expect(tip).toHaveCSS('opacity', '1');
+      const slip = (await tip.boundingBox())!;
+      const corners = [slip.x + 3, slip.x + slip.width - 3].flatMap((x) =>
+        [slip.y + 3, slip.y + slip.height - 3].map((y) => ({ x, y })),
+      );
+      const far = corners.reduce((a, b) =>
+        Math.hypot(b.x - from.x, b.y - from.y) > Math.hypot(a.x - from.x, a.y - from.y) ? b : a,
+      );
+      await page.mouse.move(far.x, far.y, { steps: 10 });
+      await expect(tip).toHaveCSS('opacity', '1');
+      if (!(await stamp.evaluate((s) => s.matches(':hover'))))
+        throw Error(`The slip went on the way to its corner (${crowd ? 'a crowded day' : 'a day'})`);
+    }
+    await page.mouse.move(10, 10);
     // A finger a few pixels off a stamp (days are narrower than a fingertip) picks it and shows
     // its slip instead of following the link; a tap on the picked stamp follows it.
     const follows = () =>
@@ -738,7 +767,7 @@ try {
     await expect(visitor.locator('[data-picked]')).toHaveCount(0);
   }
   passed(
-    'the attendance card is one Tab stop walked by arrows; a tap near a stamp picks it, a second opens it',
+    'the attendance card is one Tab stop walked by arrows; the pointer reaches any corner of a slip; a tap near a stamp picks it, a second opens it',
   );
 
   // ── Five stickers, and two tabs at once ──

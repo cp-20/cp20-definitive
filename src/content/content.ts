@@ -35,3 +35,5 @@ const dateFormat = new Intl.DateTimeFormat('ja-JP', {
   timeZone: 'Asia/Tokyo',
 });
 export const formatDate = (date: string) => dateFormat.format(new Date(date));
+/** A date as the pages show it: 2026.11.05 (formatDate's slashes are read by attendance.ts). */
+export const shortDate = (date: string) => formatDate(date).replaceAll('/', '.');

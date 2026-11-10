@@ -58,22 +58,23 @@ const startKey = (w: Pick<Work, 'productionTime'>) => {
 export const newestFirst = <T extends Pick<Work, 'productionTime'>>(list: T[]) =>
   [...list].sort((a, b) => startKey(b).localeCompare(startKey(a)));
 
-/** The period as written, with "now" in Japanese and even spacing around the dash. */
+/** The period as the pages write dates (2023.09.25), with "now" in Japanese and even spacing around the dash. */
 export const period = (productionTime: string) =>
   productionTime
     .replace(/\s*[～〜]\s*/g, ' 〜 ')
     .replace(/\bnow\b/i, '現在')
+    .replaceAll('/', '.')
     .trim();
 
 /**
- * The period of a work that went on for months, as a list shows it ("2023/06〜2024/03",
- * "2024/05〜現在"); undefined for one made within a month or so (into the next month at most),
+ * The period of a work that went on for months, as a list shows it ("2023.06〜2024.03",
+ * "2024.05〜現在"); undefined for one made within a month or so (into the next month at most),
  * which the year heading above it already dates.
  */
 export function longPeriod(productionTime: string) {
   const { start, end, ongoing } = span(productionTime);
   if (!start) return undefined;
-  const month = (d: { year: number; month: number }) => `${d.year}/${String(d.month).padStart(2, '0')}`;
+  const month = (d: { year: number; month: number }) => `${d.year}.${String(d.month).padStart(2, '0')}`;
   if (ongoing) return `${month(start)}〜現在`;
   if (!end || (end.year - start.year) * 12 + end.month - start.month < 2) return undefined;
   return `${month(start)}〜${month(end)}`;
