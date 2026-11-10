@@ -43,6 +43,13 @@ export type MockDatabase = {
   throttle: Map<string, { at: number; prev: number }>;
   latency: number;
   writes: number;
+  // A check's switches for writes, kept here instead of in a page route of its own: removing a
+  // route while the streams' polls are in flight lets Playwright hand one request to both routes,
+  // and the second answer fails with "Route is already handled".
+  /** Writes wait for this before anything else (a save held open). */
+  hold?: Promise<void>;
+  /** While true, every write fails with HTTP 503 after 800 ms (the database is down). */
+  down?: boolean;
 };
 // Pass the returned db to another context to share the database between visitors.
 export async function mockFirebase(
@@ -140,6 +147,11 @@ export async function mockFirebase(
     // Writes are multi-path updates of a record and the writer's throttle entry, checked like
     // database.rules.json: own uid only, one write a second, compare-and-swap on `prev`.
     if (request.method() !== 'PATCH' || root) return deny();
+    await db.hold;
+    if (db.down) {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return route.fulfill({ status: 503, headers: cors, json: { error: 'Test outage' } });
+    }
     const body = JSON.parse(request.postData() || '{}');
     const writes = Object.entries(body).map(([path, value]) => [path.split('/'), value] as const);
     const throttle = writes.find(([[kind]]) => kind === 'throttle');

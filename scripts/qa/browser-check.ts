@@ -2,7 +2,7 @@
 // (`npx wrangler dev`, port 8787 by default) and run `node scripts/qa/browser-check.ts`; results and
 // screenshots go to .qa/. Stickers run against firebase-mock.ts (a seeded Google sign-in and an
 // in-memory database with the same ownership and throttle rules), never the real database.
-import { chromium, devices, expect, type BrowserContext, type Page, type Route } from '@playwright/test';
+import { chromium, devices, expect, type BrowserContext, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { mockFirebase, signInAs } from './firebase-mock.ts';
@@ -22,7 +22,6 @@ declare global {
 
 const origin = process.env.CHECK_ORIGIN || 'http://127.0.0.1:8787';
 const outputDir = process.env.CHECK_OUTPUT_DIR || '.qa';
-const database = 'https://**.firebasedatabase.app/**';
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
@@ -64,6 +63,18 @@ const passed = (what: string) => {
   report.checks.push(what);
   console.log('ok:', what);
 };
+// Waits for the animations running now to end (the first page's entrance, a page turn): a box
+// measured during one is still moving, and its edges fall on fractions of a pixel. Endless ones
+// (the saving pip) are left out.
+const animationsDone = (tab: Page = page) =>
+  tab.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().endTime !== Infinity)
+        .map((a) => a.finished.catch(() => {})),
+    ),
+  );
 const settle = async (tab: Page = page) => {
   await tab.evaluate(() => document.fonts.ready);
   await tab.waitForTimeout(300);
@@ -491,16 +502,7 @@ try {
   await axe('/#sticker-sheet');
   await expect(page.locator('.sticker-hint')).toHaveCount(0);
   // The sticker shows before the save answers.
-  const gate = new Promise<void>((resolve) => (release = resolve));
-  let held = false;
-  const hold = async (route: Route) => {
-    if (route.request().method() === 'PATCH' && !held) {
-      held = true;
-      await gate;
-    }
-    await route.fallback();
-  };
-  await page.route(database, hold);
+  db.hold = new Promise<void>((resolve) => (release = resolve));
   await page.getByRole('button', { name: 'しーぴーのシールを貼る', exact: true }).click();
   const anchor = (await page.locator('[data-stamp-anchor=intro]').boundingBox())!;
   await page.mouse.click(anchor.x + anchor.width * 0.6, anchor.y + anchor.height * 0.45);
@@ -508,7 +510,7 @@ try {
   release();
   await saved(page);
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
-  await page.unroute(database, hold);
+  db.hold = undefined;
   const own = page.locator(`[data-stamp-id^="${user.uid}-"]`);
   await expect(own).toHaveCount(1);
   if (!/^[0-9a-f]{64}$/.test(db.pages.get('home')?.[user.uid].avatar ?? ''))
@@ -972,12 +974,7 @@ try {
     'none'
   )
     throw Error('Reduced motion');
-  const outage = async (route: Route) => {
-    if (route.request().method() !== 'PATCH') return route.fallback();
-    await new Promise((r) => setTimeout(r, 800));
-    await route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Test outage"}' });
-  };
-  await page.route(database, outage);
+  db.down = true;
   const clover = page.getByRole('button', { name: 'クローバーのシールを貼る', exact: true });
   const spoken = page.locator('p.visually-hidden[role=status]');
   // Escape puts the sticker back and focus returns to the sheet sticker it came from.
@@ -1000,7 +997,7 @@ try {
   await expect(page.locator('.stamp-status')).toContainText('保存できませんでした', { timeout: 20000 });
   await expect(page.locator('[data-pending=true]')).toHaveCount(0);
   await expect(spoken).toHaveText('保存できませんでした。クローバーを元に戻しました');
-  await page.unroute(database, outage);
+  db.down = false;
   const writesAfterOutage = db.writes;
   await page.keyboard.press('Enter');
   await page.keyboard.press('ArrowDown');
@@ -1024,11 +1021,11 @@ try {
   await expect(own.locator('.stamp-open')).toBeFocused();
   await saved(page);
   // A peel that fails brings the sticker back.
-  await page.route(database, outage);
+  db.down = true;
   await page.getByRole('button', { name: '最後に貼ったシールをはがす', exact: true }).click();
   await expect(page.locator('.stamp-status')).toContainText('保存できませんでした', { timeout: 20000 });
   await expect(own).toHaveCount(1);
-  await page.unroute(database, outage);
+  db.down = false;
   await page.getByRole('button', { name: '最後に貼ったシールをはがす', exact: true }).click();
   await expect(own).toHaveCount(0);
   await saved(page);
@@ -1104,6 +1101,7 @@ try {
     throw Error('A phone downloaded the desktop screenshot it does not show');
   for (const path of ['/works', '/works/dice-spec-v2']) {
     await page.goto(origin + path);
+    await animationsDone();
     const small = await page
       .locator('main :is(.work-card-open, .text-button, .repo-link, .back-link, .primary-button)')
       .evaluateAll((links) =>
