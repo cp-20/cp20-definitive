@@ -22,6 +22,8 @@ export type Work = {
   url: string;
   image?: string;
   icon?: string | null;
+  /** The site's icon is drawn out to its edges: its tile shows it a little smaller. */
+  iconInset?: boolean;
   /** Other pages about the work: the first is the button of a site that has ended. */
   links?: { label: string; url: string }[];
   repositories: string[];
@@ -100,7 +102,7 @@ export const statusTag = (w: Pick<Work, 'status'>) =>
  * work links another page about it (its first `links` entry). A site only traP members can log in
  * to shows anyone else a "Not authorized" page, so its button is what anyone can read about it:
  * its traP article, else its public repository (the site itself is `membersSite`).
- * @returns label: the button on the work's page; short: the small button on a card
+ * @returns label: the button on the work's page (a card's button names the place instead)
  */
 export function openLink(
   w: Pick<Work, 'url' | 'status' | 'links' | 'kind'> &
@@ -108,27 +110,26 @@ export function openLink(
 ) {
   if (w.status === 'ended') {
     const page = w.links?.[0];
-    return page ? { href: page.url, label: page.label, short: page.label } : undefined;
+    return page ? { href: page.url, label: page.label } : undefined;
   }
   if (w.status === 'members-only') {
     const article = w.relatedArticles?.find((url) => new URL(url).hostname === 'trap.jp');
-    if (article) return { href: article, label: 'traP の記事を読む', short: '記事' };
+    if (article) return { href: article, label: 'traP の記事を読む' };
     const repository = w.repositories?.find((r) => r.startsWith('https://github.com/'));
-    return repository ? { href: repository, label: 'GitHub で見る', short: 'GitHub' } : undefined;
+    return repository ? { href: repository, label: 'GitHub で見る' } : undefined;
   }
   return linkTo(w.url, w.kind);
 }
 
 function linkTo(url: string, kind?: Work['kind']) {
   const host = new URL(url).hostname;
-  if (host === 'github.com') return { href: url, label: 'GitHub で見る', short: 'GitHub' };
-  if (host === 'marketplace.visualstudio.com')
-    return { href: url, label: 'VS Code Marketplace で見る', short: 'Marketplace' };
+  if (host === 'github.com') return { href: url, label: 'GitHub で見る' };
+  if (host === 'marketplace.visualstudio.com') return { href: url, label: 'VS Code Marketplace で見る' };
   if (host === 'trap.jp')
     return kind === 'event'
-      ? { href: url, label: '開催記を読む', short: '開催記' }
-      : { href: url, label: 'traP の記事を読む', short: '記事' };
-  return { href: url, label: 'サイトを開く', short: '開く' };
+      ? { href: url, label: '開催記を読む' }
+      : { href: url, label: 'traP の記事を読む' };
+  return { href: url, label: 'サイトを開く' };
 }
 
 /** The site of a work only traP members can use, as a secondary link beside the main button. */

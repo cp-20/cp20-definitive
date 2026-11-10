@@ -12,13 +12,17 @@ import WorkDetail from './pages/WorkDetail.tsx';
 import NotFound from './pages/NotFound.tsx';
 import { pageInfo } from './site/route.ts';
 import { createNavigation } from './site/navigation.ts';
-// Built pages get Zen Maru Gothic as subset WOFF2 files (scripts/build/fonts.ts, run by prerender);
-// the dev server, which has no prerender step, uses the full @fontsource split instead.
-if (import.meta.env.DEV)
+// Built pages get Zen Maru Gothic and Yusei Magic as subset WOFF2 files (scripts/build/fonts.ts,
+// run by prerender); the dev server, which has no prerender step, uses the full @fontsource split
+// and the whole Yusei Magic file instead.
+if (import.meta.env.DEV) {
   void Promise.all([
     import('@fontsource/zen-maru-gothic/500.css'),
     import('@fontsource/zen-maru-gothic/700.css'),
   ]);
+  if (!isServer)
+    document.fonts.add(new FontFace('Yusei Magic', 'url(/fonts/yusei-magic/yusei-magic-400.woff2)'));
+}
 // The subset is split by page, so a page loads only the files for the characters it shows. Once
 // the page has loaded, the other files follow, so the next page's text is ready when it is opened.
 else if (!isServer) {

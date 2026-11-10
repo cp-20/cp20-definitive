@@ -31,6 +31,10 @@ import {
   Move,
   Trash2,
   QrCode,
+  Trophy,
+  BriefcaseBusiness,
+  GraduationCap,
+  Sparkles,
 } from 'lucide';
 const icons = {
   ArrowUpRight,
@@ -64,6 +68,10 @@ const icons = {
   Move,
   Trash2,
   QrCode,
+  Trophy,
+  BriefcaseBusiness,
+  GraduationCap,
+  Sparkles,
 };
 export type IconName = keyof typeof icons;
 export default function Icon(props: { name: IconName; size?: number; class?: string; stroke?: number }) {
@@ -86,5 +94,19 @@ export default function Icon(props: { name: IconName; size?: number; class?: str
         return <Shape {...attrs} />;
       })}
     </svg>
+  );
+}
+
+/**
+ * The mark of a history entry's kind, in the ink of the seals: a trophy for an award (vermilion),
+ * a briefcase for work (indigo), a mortarboard for school (sumi). One drawing per kind, the same on
+ * the home page's note and the profile's history.
+ */
+const kindIcons = { award: 'Trophy', intern: 'BriefcaseBusiness', school: 'GraduationCap' } as const;
+export function KindMark(props: { kind: keyof typeof kindIcons; size?: number }) {
+  return (
+    <span class="kind-mark" data-kind={props.kind}>
+      <Icon name={kindIcons[props.kind]} size={props.size ?? 18} stroke={2} />
+    </span>
   );
 }

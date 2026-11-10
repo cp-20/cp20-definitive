@@ -5,6 +5,7 @@
     "description": "照準を動かして11体のボスを倒す、ブラウザで遊ぶシューティングのタイムアタック。",
     "role": "1人で企画・デザイン・実装",
     "url": "https://neon-overdrive.lolipop-now.app/",
+    "icon": "/images/icons/neon-overdrive.svg",
     "repositories": ["private"],
     "productionTime": "2026/09/28 ～ 2026/10/05",
     "techStack": [
@@ -148,7 +149,7 @@
     "status": "members-only",
     "url": "https://anke-to.trap.jp",
     "image": "https://trap.jp/content/images/2026/04/anke-to-v3.png",
-    "icon": null,
+    "icon": "/images/icons/anke-to-v3.svg",
     "repositories": [],
     "productionTime": "2023/12 ～ 2026/04",
     "techStack": [],
@@ -1019,6 +1020,7 @@
     "description": "公式の OCW をスクレイピングして、東工大の講義を検索できるようにしたサービス。",
     "role": "1人で企画・デザイン・実装",
     "url": "https://titech-lecture-list.vercel.app",
+    "iconInset": true,
     "repositories": ["https://github.com/cp-20/titech-lecture-list"],
     "productionTime": "2023/04/06 ～ 2023/04/15",
     "techStack": [

@@ -81,6 +81,13 @@ export const extraNotices: Notice[] = [
     text: readFileSync(new URL('../../fonts/zen-maru-gothic/OFL.txt', import.meta.url), 'utf8').trim(),
   },
   {
+    name: 'Yusei Magic (fonts/yusei-magic, subset at build time)',
+    license: 'OFL-1.1',
+    homepage: 'https://github.com/tanukifont/YuseiMagic',
+    copyright: [],
+    text: readFileSync(new URL('../../fonts/yusei-magic/OFL.txt', import.meta.url), 'utf8').trim(),
+  },
+  {
     name: 'Twemoji graphics (the picture stickers in /stamps and the clover in the QR code)',
     license: 'CC-BY-4.0',
     homepage: 'https://github.com/jdecked/twemoji',

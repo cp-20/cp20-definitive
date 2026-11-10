@@ -1,13 +1,24 @@
 import { createMemo, createSignal, For, onSettled, Show } from 'solid-js';
 import { articleAnchor } from './Preview.tsx';
+import { brandIcon } from './Brand.tsx';
 import Title from './Title.tsx';
 import { daysIn, nearest, spot, stampsOf, step, tipPlace, toward, yearOf, type Stamp } from './attendance.ts';
 import { shortDate, type Article } from '../content/content.ts';
-/** A source's stamp (its face and ink are in app.css), slanted by a steady amount per article. */
-export function DayStamp(props: { source: string; url: string }) {
-  const tilt = (parseInt(articleAnchor(props.url).slice(8), 36) % 31) - 15;
+/**
+ * Where an article came out, by that place's own icon (its favicon, public/images/brands) on a
+ * white tile like a work's icon: on the card's day, and beside the article's title in the lists.
+ */
+export function SourceIcon(props: { source: string }) {
   return (
-    <span class="day-stamp" data-ink={props.source} style={{ rotate: `${tilt}deg` }} aria-hidden="true" />
+    <img
+      class="source-icon"
+      src={brandIcon(props.source)}
+      alt=""
+      aria-hidden="true"
+      width="16"
+      height="16"
+      loading="lazy"
+    />
   );
 }
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -224,7 +235,7 @@ export function AttendanceCard(props: {
                   }}
                   onBlur={() => props.onHot?.(open() ?? picked())}
                 >
-                  <DayStamp source={s.a.source} url={s.a.url} />
+                  <SourceIcon source={s.a.source} />
                   <span class="attendance-tip">
                     <strong>
                       <Title text={s.a.title} />

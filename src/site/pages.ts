@@ -32,22 +32,6 @@ export const canonicalUrl = (path: string) => `${SITE_ORIGIN}${path}`;
 export const FEED = { path: '/feed.xml', title: 'cp20.dev — Articles' };
 /** The picture of a shared link: scripts/build/og.ts draws it and every page's head names it. */
 export const OG_IMAGE = { path: '/images/og.png', width: 1200, height: 630 };
-/** The widths, as WebP, of the pictures the build draws for works (WORK_ART). */
-export const WORK_ART_WIDTHS = [320, 640] as const;
-export const workArtFile = (id: string, width: number) => `/images/works/${id}-${width}w.webp`;
-type WorkArt = { id: string; src: string; width: number; height: number };
-const art = (id: string): WorkArt => ({ id, src: workArtFile(id, 640), width: 1200, height: 630 });
-/**
- * Works whose own OG image is only their name on white: their cards show a picture the build
- * draws for them instead (scripts/build/og.ts), of what the work does, in the site's type.
- */
-export const WORK_ART: Partial<Record<string, WorkArt>> = {
-  'c-compiler': art('c-compiler'),
-  'dice-spec-v2': art('dice-spec-v2'),
-};
-export const workArtSrcset = (a: WorkArt) =>
-  WORK_ART_WIDTHS.map((w) => `${workArtFile(a.id, w)} ${w}w`).join(', ');
-
 /** Where a page's stamps are stored: pages/<key>. Existing records depend on this mapping. */
 export const pageKey = (path: string) =>
   path === '/' ? 'home' : path.replace(/^\/|\/$/g, '').replaceAll('/', '--');

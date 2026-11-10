@@ -8,16 +8,9 @@ import sharp from 'sharp';
 import baseWorks from '../../src/data/works.json' with { type: 'json' };
 import manual from '../../src/data/manual.json' with { type: 'json' };
 import series from '../../src/data/series.json' with { type: 'json' };
-import {
-  OG_IMAGE,
-  WORK_ART,
-  WORK_ART_WIDTHS,
-  mergeWorks,
-  sitePaths,
-  workArtFile,
-} from '../../src/site/pages.ts';
+import { OG_IMAGE, mergeWorks, sitePaths } from '../../src/site/pages.ts';
 import { spineAuthor } from '../../src/content/series-credit.ts';
-import { weights } from './fonts.ts';
+import { faceName, faces } from './fonts.ts';
 import { licensesPath } from './licenses.ts';
 import { assertOflNotice, nameRecords } from './font-names.ts';
 
@@ -77,27 +70,6 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
     );
   });
 
-  test('作品のカードに描いた絵は、幅ごとの WebP で、OG 画像と同じ縦横比', async () => {
-    const files = Object.keys(WORK_ART).flatMap((id) =>
-      WORK_ART_WIDTHS.map((width) => ({ path: workArtFile(id, width), width })),
-    );
-    const found = await Promise.all(
-      files.map(async ({ path }) => {
-        const { format, width, height } = await sharp(built(path.slice(1)).pathname).metadata();
-        return { path, format, width, height };
-      }),
-    );
-    assert.deepEqual(
-      found,
-      files.map(({ path, width }) => ({
-        path,
-        format: 'webp',
-        width,
-        height: Math.round((width * 630) / 1200),
-      })),
-    );
-  });
-
   test('本棚の本の名前には原作・原案まで全員を、背表紙には最初の名前だけを書く', () => {
     const about = read('about/index.html');
     assert.deepEqual(
@@ -115,11 +87,15 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
   });
 
   describe('フォント', () => {
-    const fonts = () => readdirSync(built('assets')).filter((f) => /^zen-maru-gothic-\d+-.*\.woff2$/.test(f));
-    // The @font-face rules every page declares: weight, file and unicode-range.
-    const faces = () =>
+    const fonts = () =>
+      readdirSync(built('assets')).filter((f) => faces.some((face) => f.startsWith(`${faceName(face)}-`)));
+    // The @font-face rules every page declares: face, file and unicode-range.
+    const declared = () =>
       [...read('index.html').matchAll(/@font-face\{([^}]*)\}/g)].map(([, rule]) => ({
-        weight: rule.match(/font-weight:(\d+)/)![1],
+        face: faceName({
+          family: rule.match(/font-family:'([^']+)'/)![1] as (typeof faces)[number]['family'],
+          weight: Number(rule.match(/font-weight:(\d+)/)![1]) as (typeof faces)[number]['weight'],
+        }),
         href: rule.match(/url\(([^)]+)\)/)![1],
         range: rule.match(/unicode-range:([^;}]*)/)?.[1] ?? '',
       }));
@@ -129,29 +105,40 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
         return Array.from({ length: parseInt(b, 16) - parseInt(a, 16) + 1 }, (_, i) => parseInt(a, 16) + i);
       });
 
-    test('どのファイルも @font-face で宣言され、太さごとに文字の範囲が重ならない', () => {
+    test('どのファイルも @font-face で宣言され、書体と太さごとに文字の範囲が重ならない', () => {
       assert.deepEqual(
-        faces()
+        declared()
           .map((f) => f.href.slice('/assets/'.length))
           .sort(),
         fonts().sort(),
       );
-      for (const weight of weights) {
-        const all = faces()
-          .filter((f) => f.weight === String(weight))
+      for (const face of faces.map(faceName)) {
+        const all = declared()
+          .filter((f) => f.face === face)
           .flatMap((f) => points(f.range));
-        assert.equal(new Set(all).size, all.length, `${weight}`);
+        assert.equal(new Set(all).size, all.length, face);
       }
     });
 
-    test('トップは太さごとに1つずつ、プロフィールは2つずつのファイルを preload する', () => {
+    test('トップとプロフィールは、自分が見せる書体と文字のファイルだけを preload する（ほかのページはしない）', () => {
       const preloads = (file: string) =>
         [...read(file).matchAll(/<link rel="preload" href="([^"]+)" as="font"/g)].map(
-          ([, href]) => faces().find((f) => f.href === href)?.weight,
+          ([, href]) => declared().find((f) => f.href === href)?.face,
         );
       assert.deepEqual(
         [preloads('index.html').sort(), preloads('about/index.html').sort(), preloads('articles/index.html')],
-        [['500', '700'], ['500', '500', '700', '700'], []],
+        [
+          ['yusei-magic-400', 'zen-maru-gothic-500'],
+          [
+            'yusei-magic-400',
+            'yusei-magic-400',
+            'zen-maru-gothic-500',
+            'zen-maru-gothic-500',
+            'zen-maru-gothic-700',
+            'zen-maru-gothic-700',
+          ],
+          [],
+        ],
       );
     });
 
@@ -172,6 +159,7 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
         /Copyright \(c\) 2013-present Cole Bemis/,
         /^@fontsource\/ibm-plex-mono@\S+ \(OFL-1\.1\)/m,
         /^Zen Maru Gothic .*\(OFL-1\.1\)/m,
+        /^Yusei Magic .*\(OFL-1\.1\)/m,
         /^Twemoji graphics .*\(CC-BY-4\.0\).*\n-+\nCopyright 2019 Twitter, Inc and other contributors/m,
         /Apache License\s+Version 2\.0/,
         /SIL OPEN FONT LICENSE Version 1\.1/,

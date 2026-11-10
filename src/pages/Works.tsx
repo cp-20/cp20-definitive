@@ -14,7 +14,6 @@ export default function Works() {
     <div class="wrap works-page">
       <header data-stamp-anchor="heading" class="page-heading">
         <h1>作品一覧</h1>
-        <p class="intro works-lead">2022年から、個人開発を中心につくってきたもの。</p>
       </header>
       <section class="works-section" aria-labelledby="works-featured">
         <h2 id="works-featured" class="works-heading">
@@ -52,7 +51,6 @@ export default function Works() {
         <h2 id="works-editions" class="works-heading">
           歴代の cp20.dev
         </h2>
-        <p class="works-note">毎年、違うフレームワークで作り直してきたポートフォリオ。</p>
         <ol class="edition-stamps">
           <For each={editionWorks}>
             {(e) => (

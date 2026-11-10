@@ -1,12 +1,11 @@
 import { createMemo, For } from 'solid-js';
-import Brand from './Brand.tsx';
 import { OGImage, articleAnchor, sizes } from './Preview.tsx';
-import { DayStamp } from './AttendanceCard.tsx';
+import { SourceIcon } from './AttendanceCard.tsx';
 import Title from './Title.tsx';
 import { shortDate, type Article } from '../content/content.ts';
 /**
  * The articles beside an attendance card: each with its OG image as a postage stamp, its title,
- * and the day's stamp from the card by its date. The row whose stamp is pointed at on the card is
+ * and, by its date, the icon of where it came out, as on the card's day. The row whose stamp is pointed at on the card is
  * marked (`hot`), and pointing at a row marks its stamp (`onHot`).
  * With `shown`, every row stays in the DOM and rows it rejects are only hidden, so another year
  * on /articles neither rebuilds the list nor detaches images.
@@ -41,9 +40,8 @@ export function ArticleRows(props: {
                   <Title text={a.title} />
                 </h3>
                 <p class="article-meta">
-                  <DayStamp source={a.source} url={a.url} />
+                  <SourceIcon source={a.source} />
                   <time datetime={a.date}>{shortDate(a.date)}</time>
-                  <Brand url={a.source} size={14} />
                   <span class="visually-hidden">{a.source}</span>
                 </p>
               </div>

@@ -14,7 +14,7 @@ import {
   sitePaths,
 } from '../../src/site/pages.ts';
 import { subsetSiteFonts } from './fonts.ts';
-import { writeOgImage, writeWorkArt } from './og.ts';
+import { writeOgImage } from './og.ts';
 
 const escapeXml = (s: string) =>
   stripInvalidText(String(s)).replace(
@@ -71,14 +71,12 @@ async function prerender() {
   await writeFile(`dist/client${FEED.path}`, buildFeed(articles));
   // The picture of a shared link (og:image in src/Document.tsx).
   await writeOgImage(`dist/client${OG_IMAGE.path}`);
-  // The pictures on the cards of works whose own OG image is only their name.
-  await writeWorkArt('dist/client');
   // The Vite manifest is only for the build; dist/client is published as-is.
   await rm('dist/client/.vite', { recursive: true, force: true });
   const fonts = await subsetSiteFonts('dist/client');
   console.log(`Prerendered ${paths.length} pages, RSS and sitemap → dist/client`);
   console.log(
-    `Fonts: ${fonts.files.map((f) => `${f.weight} ${f.characters} chars ${(f.size / 1024).toFixed(0)} kB`).join(', ')}`,
+    `Fonts: ${fonts.files.map((f) => `${f.family} ${f.weight} ${f.characters} chars ${(f.size / 1024).toFixed(0)} kB`).join(', ')}`,
   );
 }
 

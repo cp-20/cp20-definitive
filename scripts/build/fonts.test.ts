@@ -1,4 +1,4 @@
-// The web fonts the build ships: the subset of Zen Maru Gothic (its characters, the @font-face
+// The web fonts the build ships: the subsets of Zen Maru Gothic and Yusei Magic (their characters, the @font-face
 // rules, and the copyright and license records it must keep under the SIL OFL) and the filter
 // that drops the WOFF fallbacks from the other @fontsource stylesheets. The built fonts are
 // checked in dist.test.ts.
@@ -11,6 +11,7 @@ import subsetFont from 'subset-font';
 import {
   boldRules,
   boldTexts,
+  handRules,
   collectCharacters,
   dropWoffFallback,
   fontHead,
@@ -39,17 +40,19 @@ describe('collectCharacters', () => {
   });
 });
 
-test('fontHead は太さごとに、1つの WOFF2 だけを指す @font-face を宣言する', () => {
+test('fontHead は書体と太さごとに、1つの WOFF2 だけを指す @font-face を宣言する', () => {
   const head = fontHead([
     { weight: 500, href: '/assets/z-500-a.woff2' },
     { weight: 700, href: '/assets/z-700-b.woff2' },
+    { family: 'Yusei Magic', weight: 400, href: '/assets/y-400-c.woff2' },
   ]);
   assert.deepEqual(
     [
       head.match(/@font-face/g)?.length,
       head.includes("font-weight:500;src:url(/assets/z-500-a.woff2) format('woff2')}"),
+      head.includes("font-family:'Yusei Magic';font-style:normal;font-display:swap;font-weight:400;"),
     ],
-    [2, true],
+    [3, true, true],
   );
 });
 
@@ -77,9 +80,9 @@ test('slices はページごとに、それより前のページにない文字�
   assert.deepEqual(slices('あいうえおか', ['あい', 'いう']), ['あい', 'う', 'えおか']);
 });
 
-describe('太字の文字', () => {
+describe('太字と手書きの文字', () => {
   const css =
-    '@layer c{.title,.tab:hover{font-weight:700}.x:before{content:"賞"/"";font-weight:700}@media (width<9px){.y{font:700 1rem/1 a}}p{font-weight:500}}';
+    '@layer c{.title,.tab:hover{font-weight:700}.x:before{content:"賞"/"";font-weight:700}@media (width<9px){.y{font:700 1rem/1 a}}p{font-weight:500}.hand,.count strong{font-family:var(--hand);font-weight:400}}';
 
   test('boldRules は太字の規則のセレクタと、content の文字を拾う', () => {
     assert.deepEqual(boldRules(css), {
@@ -88,44 +91,62 @@ describe('太字の文字', () => {
     });
   });
 
-  const texts = boldTexts(
-    ['<h2>見出し</h2><p class="title">題名</p><a class="tab">札</a><p class="x">本文</p><p>地の文</p>'],
-    [css],
-    ['"保存できませんでした"', '"地の文"'],
-  ).join('');
+  test('handRules は var(--hand) を指定した規則のセレクタを拾う', () => {
+    assert.deepEqual(handRules(css).selectors, ['.hand', '.count strong']);
+  });
 
-  test('見出しと、太字の規則が当たる要素の文字を含む（ホバーしていなくても）', () => {
+  const page =
+    '<h2>見出し</h2><p class="title">題名</p><a class="tab">札</a><p class="x">本文</p><p>地の文</p><strong>強</strong><p class="count"><strong>数</strong></p><span class="hand">手</span>';
+  const bold = boldTexts([page], [css], ['"保存できませんでした"', '"地の文"']).join('');
+  const hand = boldTexts([page], [css], [], true).join('');
+
+  test('太字には strong と、太字の規則が当たる要素の文字が入る（ホバーしていなくても）', () => {
     assert.deepEqual(
-      ['見', '題', '札', '賞'].filter((c) => !texts.includes(c)),
+      ['題', '札', '賞', '強'].filter((c) => !bold.includes(c)),
       [],
     );
   });
 
-  test('疑似要素の規則では要素の本文を太字にしない', () => {
+  test('疑似要素の規則では要素の本文を太字にしない。見出しと、規則で並の太さに戻した strong も入れない', () => {
     assert.deepEqual(
-      ['本', '地'].filter((c) => texts.includes(c)),
+      ['本', '地', '見', '数'].filter((c) => bold.includes(c)),
       [],
     );
   });
 
   test('ページになく、スクリプトだけが出す文字は含める', () => {
-    assert.ok(texts.includes('保'));
+    assert.ok(bold.includes('保'));
+  });
+
+  test('手書きには見出しと、手書きの規則が当たる要素の文字が入る', () => {
+    assert.deepEqual(
+      ['見', '数', '手'].filter((c) => !hand.includes(c)),
+      [],
+    );
+    assert.ok(!hand.includes('題'));
+  });
+
+  test('generated: false では疑似要素の文字を入れない（ページが自分で見せる文字だけ）', () => {
+    assert.ok(!boldTexts([page], [css], [], false, { generated: false }).join('').includes('賞'));
   });
 });
 
-describe('Zen Maru Gothic の絞り込み', () => {
-  test('絞り込んでも、著作権・デザイナー・ライセンスの name レコードは元のまま残る（OFL の条件）', async () => {
-    const source = readFileSync(join(root, 'fonts/zen-maru-gothic/zen-maru-gothic-500.woff2'));
-    const original = nameRecords(source);
-    const names = nameRecords(await subsetFont(source, 'あa', subsetOptions));
-    const kept = [0, 8, 9, 11, 12, 13, 14].filter((id) => original.has(id));
-    assert.deepEqual(
-      kept.map((id) => names.get(id)),
-      kept.map((id) => original.get(id)),
-    );
-    assertOflNotice(names);
-  });
-});
+describe.each(['zen-maru-gothic/zen-maru-gothic-500.woff2', 'yusei-magic/yusei-magic-400.woff2'])(
+  '%s の絞り込み',
+  (file) => {
+    test('絞り込んでも、著作権・デザイナー・ライセンスの name レコードは元のまま残る（OFL の条件）', async () => {
+      const source = readFileSync(join(root, 'fonts', file));
+      const original = nameRecords(source);
+      const names = nameRecords(await subsetFont(source, 'あa', subsetOptions));
+      const kept = [0, 8, 9, 11, 12, 13, 14].filter((id) => original.has(id));
+      assert.deepEqual(
+        kept.map((id) => names.get(id)),
+        kept.map((id) => original.get(id)),
+      );
+      assertOflNotice(names);
+    });
+  },
+);
 
 describe('dropWoffFallback', () => {
   test('WOFF2 もある src から WOFF の候補を外す', () => {

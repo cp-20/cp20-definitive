@@ -139,6 +139,8 @@ function focusQuietly(element: HTMLElement | null) {
 }
 
 // ── Fragments and dialogs ──
+/** The fragment of the QR code's address, which names nothing on the page. */
+export const QR_DIGITS = /^#\d+$/;
 // The element a URL's #fragment names on the current page.
 const hashTarget = (url: { hash: string }) =>
   url.hash ? document.getElementById(decodeURIComponent(url.hash.slice(1))) : null;
@@ -164,6 +166,10 @@ function openHashDialog() {
 export function createNavigation() {
   const [path, setPath] = createSignal(normalizePath(currentUrl().pathname));
   onSettled(() => {
+    // The QR code's address ends in #<digits> that only draw its clover (scripts/build/qr.ts):
+    // the page drops them from the address and opens as at its plain URL.
+    if (QR_DIGITS.test(location.hash))
+      history.replaceState(history.state, '', location.pathname + location.search);
     const scroll = createScrollMemory();
     let transition: ViewTransition | undefined,
       version = 0;

@@ -48,7 +48,7 @@ export default function NotFound() {
               {(w) => (
                 <li>
                   <a href={workPath(w.id)}>
-                    <OriginalIcon url={w.url} />
+                    <OriginalIcon url={w.url} inset={w.iconInset} />
                     {w.title}
                   </a>
                 </li>

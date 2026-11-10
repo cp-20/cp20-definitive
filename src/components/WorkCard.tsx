@@ -1,10 +1,10 @@
 import { createSignal } from 'solid-js';
 import { shots } from 'virtual:cp20-media';
 import Icon from './Icon.tsx';
+import { brandIcon } from './Brand.tsx';
 import { OGImage, previewFor, responsive, sizes } from './Preview.tsx';
 import { SOLO_ROLE, kindLabel, longPeriod, openLink, statusTag, type Work } from '../content/works.ts';
 import { plain } from '../content/phrase-marks.ts';
-import { WORK_ART, workArtSrcset } from '../site/pages.ts';
 
 /**
  * A work's picture as a postage stamp on its page: the screenshot of its site for `device` when
@@ -49,40 +49,6 @@ export function WorkImage(props: {
   );
 }
 
-/**
- * A work's picture on a card: its OG image, or the one the build draws for a work whose OG image
- * is only its name (WORK_ART). Decorative, like the OG image.
- */
-function CardImage(props: { work: Work; sizes: string; priority?: boolean; eager?: boolean }) {
-  const art = WORK_ART[props.work.id];
-  if (!art)
-    return (
-      <OGImage
-        url={props.work.url}
-        alt=""
-        sizes={props.sizes}
-        priority={props.priority}
-        eager={props.eager}
-      />
-    );
-  const image = responsive(workArtSrcset(art), props.sizes);
-  return (
-    <div class="og-image" style={{ '--image-ratio': `${art.width} / ${art.height}` }}>
-      <img
-        src={art.src}
-        ref={image.ref}
-        srcset={image.srcset}
-        sizes={image.sizes}
-        alt=""
-        width={art.width}
-        height={art.height}
-        loading={props.priority || props.eager ? 'eager' : 'lazy'}
-        fetchpriority={props.priority ? 'high' : 'auto'}
-      />
-    </div>
-  );
-}
-
 /** The site's own icon beside a work's name, only when it has one (no stand-in letter). */
 function SiteIcon(props: { work: Work }) {
   const [failed, setFailed] = createSignal(false);
@@ -91,17 +57,39 @@ function SiteIcon(props: { work: Work }) {
     icon && (
       <img
         class="work-icon"
+        data-inset={props.work.iconInset || undefined}
         style={{ visibility: failed() ? 'hidden' : 'inherit' }}
         src={icon}
         alt=""
-        width="22"
-        height="22"
+        width="24"
+        height="24"
         loading="lazy"
         onError={() => setFailed(true)}
       />
     )
   );
 }
+
+/**
+ * Where a card's own button goes, said by the place itself: a repository by its GitHub path, a
+ * site by its host name, each with that place's icon (a service's logo, or the work's own icon for
+ * its own site).
+ */
+function destination(href: string, work: Pick<Work, 'url'>) {
+  const url = new URL(href);
+  const github = url.hostname === 'github.com';
+  return {
+    text: github ? url.pathname.slice(1).replace(/\/$/, '') : url.hostname.replace(/^www\./, ''),
+    icon: brandIcon(href) ?? (href === work.url ? previewFor(work.url)?.icon : undefined),
+  };
+}
+
+/** A result's mark, in the ink of an award (the same kind of drawing as the history's marks). */
+export const OutcomeMark = () => (
+  <span class="outcome-mark">
+    <Icon name="Sparkles" size={16} stroke={2} />
+  </span>
+);
 
 /**
  * A work's result, its last few words after a space (9月の月間賞, 3,912 → 9,245) kept on one line,
@@ -147,7 +135,7 @@ export default function WorkCard(props: {
               <img src={previewFor(w.url)?.icon} alt="" width="36" height="36" loading="lazy" />
             </span>
           ) : (
-            <CardImage work={w} sizes={sizes.workRow} />
+            <OGImage url={w.url} alt="" sizes={sizes.workRow} />
           )}
         </span>
         <span class="work-row-name">{w.title}</span>
@@ -164,8 +152,9 @@ export default function WorkCard(props: {
   return (
     <article class={['work-card', `work-card-${variant}`]} data-stamp-anchor={`work-${w.id}`}>
       <div class="work-card-picture">
-        <CardImage
-          work={w}
+        <OGImage
+          url={w.url}
+          alt=""
           sizes={variant === 'large' ? sizes.workCard : sizes.workThumb}
           priority={props.priority}
           eager={props.eager}
@@ -176,12 +165,14 @@ export default function WorkCard(props: {
           <a class="work-card-link" href={href}>
             <SiteIcon work={w} />
             {w.title}
+            <Icon name="ChevronRight" size={18} stroke={2.2} class="work-card-chevron" />
           </a>
           {tag && <span class="status-tag">{tag}</span>}
         </h3>
         <p class="work-card-description">{w.description}</p>
         {w.outcome && (
           <p class="work-outcome">
+            <OutcomeMark />
             {/* One flex item beside the mark, so the kept words wrap with the rest. */}
             <Outcome text={w.outcome} />
           </p>
@@ -195,10 +186,16 @@ export default function WorkCard(props: {
         )}
         {open && (
           <div class="work-card-foot">
-            <a class="work-card-open" href={open.href}>
-              {open.short}
-              <Icon name="ArrowUpRight" size={15} />
-            </a>
+            {(() => {
+              const to = destination(open.href, w);
+              return (
+                <a class="work-card-open" href={open.href} aria-label={`${open.label} ${to.text}`}>
+                  {to.icon && <img src={to.icon} alt="" width="18" height="18" />}
+                  <span>{to.text}</span>
+                  <Icon name="ArrowUpRight" size={15} />
+                </a>
+              );
+            })()}
           </div>
         )}
       </div>

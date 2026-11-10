@@ -1,36 +1,34 @@
 // The picture of a shared link (og:image, src/Document.tsx): the avatar, the name, the school and
 // the three results of the home page's note, on a sheet of the site's paper on its clover desk.
 // Drawn at build time from the same data the pages show, so it never says anything they do not.
-// Also the pictures on the cards of works whose own OG image is only their name (WORK_ART).
-// The text is set in the site's Zen Maru Gothic (and IBM Plex Mono for code) by HarfBuzz and
-// drawn as outlines, so the pictures do not depend on the fonts of the machine that builds them.
+// The text is set in the site's faces (Yusei Magic for the name and the results, Zen Maru Gothic
+// for the school) by HarfBuzz and drawn as outlines, so the picture does not depend on the fonts of
+// the machine that builds it. The results carry the same Lucide marks as on the home page.
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import sharp from 'sharp';
 import subsetFont from 'subset-font';
 import { Blob, Buffer as GlyphBuffer, Face, Font, shape } from 'harfbuzzjs';
+import { BriefcaseBusiness, GraduationCap, Trophy, type IconNode } from 'lucide';
 import { highlightIds, milestones } from '../../src/data/editorial.ts';
 import profile from '../../src/data/profile.json' with { type: 'json' };
-import works from '../../src/data/works.json' with { type: 'json' };
-import { OG_IMAGE, WORK_ART, WORK_ART_WIDTHS, workArtFile } from '../../src/site/pages.ts';
+import { OG_IMAGE } from '../../src/site/pages.ts';
 
 const INK = '#2d2a33';
-const MUTED = '#6c6873';
 const SEAL = '#d1402c';
 
-/** A line of text in Zen Maru Gothic at a weight, or (`mono`) in IBM Plex Mono 400. */
-type Run = { text: string; size: number; weight: 500 | 700; mono?: true };
+/** A line of text in Zen Maru Gothic 500, or (`hand`) in Yusei Magic, as the pages set them. */
+type Run = { text: string; size: number; hand?: true };
 const FACES = {
-  500: '../../fonts/zen-maru-gothic/zen-maru-gothic-500.woff2',
-  700: '../../fonts/zen-maru-gothic/zen-maru-gothic-700.woff2',
-  mono: '../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2',
+  round: '../../fonts/zen-maru-gothic/zen-maru-gothic-500.woff2',
+  hand: '../../fonts/yusei-magic/yusei-magic-400.woff2',
 };
-const faceOf = (run: Run) => (run.mono ? 'mono' : run.weight);
+const faceOf = (run: Run) => (run.hand ? 'hand' : 'round');
 
 /** Outlines of the lines of text, each with its width, in one face per font. */
 async function typesetter(runs: Run[]) {
   const fonts = new Map<keyof typeof FACES, { font: Font; upem: number }>();
-  for (const key of [500, 700, 'mono'] as const) {
+  for (const key of ['round', 'hand'] as const) {
     const text = runs
       .filter((r) => faceOf(r) === key)
       .map((r) => r.text)
@@ -61,18 +59,34 @@ async function typesetter(runs: Run[]) {
   };
 }
 
+/** A Lucide icon (24×24) drawn `size` wide with its top left at (x, y), in its stroke. */
+const icon = (node: IconNode, x: number, y: number, size: number, color: string) =>
+  `<g transform="translate(${x} ${y}) scale(${size / 24})" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${node
+    .map(
+      ([tag, attrs]) =>
+        `<${tag} ${Object.entries(attrs)
+          .map(([k, v]) => `${k}="${v}"`)
+          .join(' ')}/>`,
+    )
+    .join('')}</g>`;
+/** The marks of the history's kinds, as KindMark (src/components/Icon.tsx) draws them. */
+const KIND_MARKS = {
+  award: [Trophy, SEAL],
+  intern: [BriefcaseBusiness, '#3b64a8'],
+  school: [GraduationCap, 'rgb(45 42 51 / 0.78)'],
+} as const;
+
 /** The picture as a PNG. */
 export async function ogImage() {
-  const name: Run = { text: 'しーぴー', size: 104, weight: 700 };
-  const seal: Run = { text: 'cp20', size: 34, weight: 700 };
-  const school: Run = { text: profile.affiliations[0].name, size: 36, weight: 500 };
-  const site: Run = { text: 'cp20.dev', size: 28, weight: 700 };
+  const name: Run = { text: 'しーぴー', size: 104, hand: true };
+  const seal: Run = { text: 'cp20', size: 34, hand: true };
+  const school: Run = { text: profile.affiliations[0].name, size: 36 };
+  const site: Run = { text: 'cp20.dev', size: 28, hand: true };
   const results = highlightIds.map((id) => {
     const m = milestones.find((m) => m.id === id)!;
-    return { run: { text: m.title, size: 38, weight: 700 } as Run, kind: m.kind };
+    return { run: { text: m.title, size: 38, hand: true } as Run, kind: m.kind };
   });
-  const award: Run = { text: '賞', size: 22, weight: 700 };
-  const set = await typesetter([name, seal, school, site, award, ...results.map((r) => r.run)]);
+  const set = await typesetter([name, seal, school, site, ...results.map((r) => r.run)]);
 
   const { width, height } = OG_IMAGE;
   // The sheet, ruled like the site's paper, with its hard shadow on the desk.
@@ -95,11 +109,8 @@ export async function ogImage() {
   const lines = results
     .map((r, i) => {
       const y = note.y + 72 + i * 64;
-      const mark =
-        r.kind === 'award'
-          ? `<g transform="rotate(-12 ${note.x + 44} ${y - 13})"><circle cx="${note.x + 44}" cy="${y - 13}" r="19" fill="none" stroke="#d1402c" stroke-width="3"/>${set(award, note.x + 33, y - 5, '#d1402c').svg}</g>`
-          : `<path transform="rotate(-14 ${note.x + 44} ${y - 13})" d="M${note.x + 24} ${y - 22}h40l-3 9 3 9h-40l3-9z" fill="#7cc0ff" fill-opacity="0.8"/>`;
-      return mark + set(r.run, note.x + 84, y).svg;
+      const [node, color] = KIND_MARKS[r.kind];
+      return icon(node, note.x + 26, y - 32, 36, color) + set(r.run, note.x + 84, y).svg;
     })
     .join('');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -145,166 +156,4 @@ ${set(site, avatar.cx - siteWidth / 2, 424).svg}
 export async function writeOgImage(file: string) {
   await mkdir(dirname(file), { recursive: true });
   await writeFile(file, await ogImage());
-}
-
-/** The site's ruled paper, edge to edge, with the loose leaf's margin line. */
-const paper = (width: number, height: number) => {
-  const lines = [
-    ...Array.from({ length: Math.floor(width / 30) }, (_, i) => `M${30 * (i + 1)} 0V${height}`),
-    ...Array.from({ length: Math.floor(height / 30) }, (_, i) => `M0 ${30 * (i + 1)}H${width}`),
-  ];
-  return `<rect width="${width}" height="${height}" fill="#fffcf3"/>
-<path d="${lines.join('')}" stroke="rgb(86 150 100 / 0.12)" stroke-width="1.5"/>
-<path d="M90 0V${height}" stroke="rgb(255 120 150 / 0.35)" stroke-width="2.5"/>`;
-};
-
-/** A postage stamp: perforated white paper with a printed face, slanted and casting the site's shadow. */
-const stamp = (x: number, y: number, w: number, h: number, tilt: number, face: string, content: string) => {
-  const holes = [];
-  for (let i = 0; i <= w / 14; i++) holes.push([x + i * 14, y], [x + i * 14, y + h]);
-  for (let i = 1; i < h / 14; i++) holes.push([x, y + i * 14], [x + w, y + i * 14]);
-  const id = `perf-${x}-${y}`;
-  return `<mask id="${id}"><rect x="${x - 10}" y="${y - 10}" width="${w + 20}" height="${h + 20}" fill="#fff"/>${holes
-    .map(([cx, cy]) => `<circle cx="${cx}" cy="${cy}" r="4.2"/>`)
-    .join('')}</mask>
-<g transform="rotate(${tilt} ${x + w / 2} ${y + h / 2})" filter="url(#lift)">
-<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff" mask="url(#${id})"/>
-<rect x="${x + 11}" y="${y + 11}" width="${w - 22}" height="${h - 22}" fill="${face}"/>
-${content}
-</g>`;
-};
-
-/**
- * The self-hosting compiler (works.json: its second and third generations compile themselves to
- * the same output) as three stamps: 1cc built by clang, 2cc by 1cc and 3cc by 2cc, the names of
- * the generations in its Makefile, with the seal of a match under the last two.
- */
-async function compilerArt() {
-  const work = works.find((w) => w.id === 'c-compiler')!;
-  const title: Run = { text: work.title, size: 84, weight: 700 };
-  const line: Run = { text: work.description, size: 30, weight: 500 };
-  const clang: Run = { text: 'clang', size: 34, weight: 500, mono: true };
-  const names = [1, 2, 3].map((n) => ({
-    name: { text: `${n}cc`, size: 58, weight: 500, mono: true } as Run,
-    caption: { text: `${n}世代目`, size: 19, weight: 700 } as Run,
-  }));
-  const match: Run = { text: '一致', size: 27, weight: 700 };
-  const set = await typesetter([title, line, clang, match, ...names.flatMap((n) => [n.name, n.caption])]);
-  const { width, height } = { width: 1200, height: 630 };
-  const arrow = (x: number, y: number) =>
-    `<path d="M${x} ${y}h50m-13-11l13 11l-13 11" fill="none" stroke="${INK}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`;
-  const box = { w: 184, h: 132, y: 352 };
-  const faces = ['#fff1bd', '#dcecff', '#d9f2dc'];
-  const tilts = [-2, 1.6, -1.1];
-  const clangWidth = set(clang, 0, 0).width;
-  let x = 132 + clangWidth + 20;
-  let chain = set(clang, 132, box.y + box.h / 2 + 12, MUTED).svg + arrow(x, box.y + box.h / 2);
-  const centres: number[] = [];
-  names.forEach((n, i) => {
-    x += 50 + 20;
-    const nameWidth = set(n.name, 0, 0).width;
-    const inner =
-      set(n.caption, x + 24, box.y + 44, MUTED).svg +
-      set(n.name, x + (box.w - nameWidth) / 2, box.y + box.h - 30).svg;
-    chain += stamp(x, box.y, box.w, box.h, tilts[i], faces[i], inner);
-    centres.push(x + box.w / 2);
-    x += box.w + 20;
-    if (i < 2) chain += arrow(x, box.y + box.h / 2);
-  });
-  // The bracket under the last two generations, and the seal on it.
-  const [, a, b] = centres;
-  const under = box.y + box.h + 22;
-  const seal = { x: (a + b) / 2, y: under + 30 };
-  const matchWidth = set(match, 0, 0).width;
-  const bracket = `<path d="M${a} ${under}v14H${seal.x - 46}M${seal.x + 46} ${under + 14}H${b}v-14" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-<g transform="rotate(-8 ${seal.x} ${seal.y})" opacity="0.92"><circle cx="${seal.x}" cy="${seal.y}" r="38" fill="none" stroke="${SEAL}" stroke-width="4"/>${set(match, seal.x - matchWidth / 2, seal.y + 10, SEAL).svg}</g>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-<filter id="lift" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="5" dy="8" stdDeviation="4" flood-color="${INK}" flood-opacity="0.18"/></filter>
-${paper(width, height)}
-${set(title, 132, 178).svg}
-${set(line, 134, 238, MUTED).svg}
-${chain}
-${bracket}
-</svg>`;
-}
-
-/** A die's face: a rounded square at (x, y), `size` wide, slanted, with `n` pips. */
-const die = (x: number, y: number, size: number, n: number, tilt: number) => {
-  const at = [0.25, 0.5, 0.75].map((f) => f * size);
-  const pips: Record<number, [number, number][]> = {
-    1: [[1, 1]],
-    2: [[0, 0], [2, 2]],
-    3: [[0, 0], [1, 1], [2, 2]],
-    4: [[0, 0], [2, 0], [0, 2], [2, 2]],
-    5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]],
-    6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]],
-  };
-  return `<g transform="rotate(${tilt} ${x + size / 2} ${y + size / 2})">
-<rect x="${x + 6}" y="${y + 8}" width="${size}" height="${size}" rx="${size * 0.2}" fill="#0c0f17" fill-opacity="0.55"/>
-<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${size * 0.2}" fill="#fffcf3"/>
-${pips[n].map(([c, r]) => `<circle cx="${x + at[c]}" cy="${y + at[r]}" r="${size * 0.085}" fill="${n === 1 ? SEAL : INK}"/>`).join('')}
-</g>`;
-};
-
-/**
- * Dice Spec (works.json: the odds of a roll of TRPG dice) as what it answers: three dice rolled,
- * and the chance of each sum of 3D6 as bars, the 95% range in its slate and the dice's sum in
- * yellow, on the dark slate of its own pages.
- */
-async function diceArt() {
-  const work = works.find((w) => w.id === 'dice-spec-v2')!;
-  const title: Run = { text: work.title, size: 76, weight: 700 };
-  const line: Run = { text: work.description, size: 28, weight: 500 };
-  const label: Run = { text: '3D6', size: 30, weight: 500, mono: true };
-  const sums = Array.from({ length: 16 }, (_, i) => i + 3);
-  const figures = sums.map((n) => ({ text: String(n), size: 22, weight: 500, mono: true }) as Run);
-  const set = await typesetter([title, line, label, ...figures]);
-  const { width, height } = { width: 1200, height: 630 };
-  // How many of the 216 rolls of three dice make each sum.
-  const ways = sums.map((n) => {
-    let count = 0;
-    for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) for (let c = 1; c <= 6; c++) count += +(a + b + c === n);
-    return count;
-  });
-  const rolled = [5, 2, 4];
-  const sum = rolled.reduce((a, b) => a + b);
-  const chart = { x: 96, w: 1008, base: 548, top: 330 };
-  const slot = chart.w / sums.length;
-  const bars = sums
-    .map((n, i) => {
-      const h = ((chart.base - chart.top) * ways[i]) / Math.max(...ways);
-      const fill = n === sum ? '#ffd54f' : n >= 5 && n <= 16 ? '#8193b8' : '#3d475d';
-      const x = chart.x + i * slot + 8;
-      const figure = set(figures[i], 0, 0).width;
-      return `<rect x="${x.toFixed(1)}" y="${(chart.base - h).toFixed(1)}" width="${(slot - 16).toFixed(1)}" height="${h.toFixed(1)}" rx="6" fill="${fill}"/>
-${set(figures[i], chart.x + i * slot + (slot - figure) / 2, chart.base + 38, n === sum ? '#ffd54f' : '#8a94a8').svg}`;
-    })
-    .join('');
-  const dice = rolled.map((n, i) => die(846 + i * 98, 64 + [10, -8, 6][i], 84, n, [-9, 7, -4][i])).join('');
-  const dots = [];
-  for (let x = 30; x < width; x += 30) for (let y = 30; y < height; y += 30) dots.push(`M${x} ${y}h.01`);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-<rect width="${width}" height="${height}" fill="#1d2433"/>
-<path d="${dots.join('')}" stroke="#ffffff" stroke-opacity="0.07" stroke-width="3" stroke-linecap="round"/>
-${set(title, 96, 168, '#fffcf3').svg}
-${set(line, 98, 228, '#a3adc2').svg}
-${set(label, 96, chart.top - 10, '#a3adc2').svg}
-<path d="M${chart.x} ${chart.base + 0.5}H${chart.x + chart.w}" stroke="#56607a" stroke-width="2"/>
-${bars}
-${dice}
-</svg>`;
-}
-
-const workArts: Record<string, () => Promise<string>> = { 'c-compiler': compilerArt, 'dice-spec-v2': diceArt };
-
-/** Writes the works' card pictures (WORK_ART) into `dir` (dist/client), a WebP for each width. */
-export async function writeWorkArt(dir: string) {
-  for (const id of Object.keys(WORK_ART)) {
-    const svg = Buffer.from(await workArts[id]());
-    for (const width of WORK_ART_WIDTHS) {
-      const file = `${dir}${workArtFile(id, width)}`;
-      await mkdir(dirname(file), { recursive: true });
-      await sharp(svg).resize(width).webp({ quality: 88 }).toFile(file);
-    }
-  }
 }

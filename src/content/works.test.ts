@@ -66,7 +66,7 @@ describe('ボタンの行き先と文言', () => {
     assert.equal(openLink(work({ status: 'ended' })), undefined);
     assert.deepEqual(
       openLink(work({ status: 'ended', links: [{ label: '成果ページ', url: 'https://example.org/' }] })),
-      { href: 'https://example.org/', label: '成果ページ', short: '成果ページ' },
+      { href: 'https://example.org/', label: '成果ページ' },
     );
   });
 
@@ -79,7 +79,6 @@ describe('ボタンの行き先と文言', () => {
     assert.deepEqual(openLink(members({ repositories: ['private', repo] })), {
       href: repo,
       label: 'GitHub で見る',
-      short: 'GitHub',
     });
     assert.equal(openLink(members({})), undefined);
     assert.deepEqual(membersSite(members({})), { href: 'https://example.com/', label: 'サイト（部員向け）' });

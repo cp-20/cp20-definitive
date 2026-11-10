@@ -126,13 +126,14 @@ try {
           .map((i) => i.getAttribute('src')),
       );
     if (broken.length) throw Error(`Broken local images: ${broken}`);
-    // Every character on the page, its dialogs included, is in a Zen Maru Gothic file of its weight
-    // (scripts/build/fonts.ts subsets bold to what the stylesheet sets in bold).
+    // Every character on the page, its dialogs included, is in a file of its face and weight: Zen
+    // Maru Gothic 500 or 700, or Yusei Magic (scripts/build/fonts.ts subsets bold to what the
+    // stylesheet sets in bold, and the hand-written face to what it sets in it).
     const missing = await page.evaluate(() => {
-      const faces = [...document.fonts].filter((f) => f.family.replaceAll(/["']/g, '') === 'Zen Maru Gothic');
-      const covered = (weight: string, c: string) =>
-        faces.some(
+      const covered = (family: string, weight: string, c: string) =>
+        [...document.fonts].some(
           (f) =>
+            f.family.replaceAll(/["']/g, '') === family &&
             f.weight === weight &&
             f.unicodeRange.split(',').some((r) => {
               const [a, b = a] = r.trim().replace(/^U\+/i, '').split('-');
@@ -145,12 +146,18 @@ try {
         const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
         for (let n = walk.nextNode(); n; n = walk.nextNode()) {
           const el = n.parentElement!;
-          if (!el.checkVisibility() || !/Zen Maru/.test(getComputedStyle(el).fontFamily.split(',')[0]))
-            continue;
-          const weight = parseInt(getComputedStyle(el).fontWeight) >= 600 ? '700' : '500';
+          const family = getComputedStyle(el).fontFamily.split(',')[0].replaceAll(/["']/g, '');
+          if (!el.checkVisibility() || !/^(Zen Maru Gothic|Yusei Magic)$/.test(family)) continue;
+          const weight =
+            family === 'Yusei Magic'
+              ? '400'
+              : parseInt(getComputedStyle(el).fontWeight) >= 600
+                ? '700'
+                : '500';
           // (The zero-width spaces between phrases, scripts/build/phrases.ts, are drawn by no font.)
           for (const c of n.textContent!)
-            if (c.trim() && c !== '\u200b' && !covered(weight, c)) out.add(`${weight}:${c}`);
+            if (c.trim() && c !== '\u200b' && !covered(family, weight, c))
+              out.add(`${family} ${weight}:${c}`);
         }
       };
       look();
@@ -195,10 +202,10 @@ try {
   );
 
   // ── A phone's first screen (iPhone 13, above the tabs at its foot): the name, the facts, the
-  // accounts, the three results and the featured works' heading, and no link under the sticker tab.
-  // The first work's name and result are clear of the sticker tab; each result is one line down to
-  // a 375px phone, whose shorter first screen (Safari's bars shown) has no link under the tab either.
-  // In a phone's browser, whose scroll bar takes no width ──
+  // accounts, the three results and the featured works' heading. The sticker tab is in the row of
+  // the tabs, so it covers nothing of the page they do not; the first work's name and result are
+  // above them. Each result is one line down to a 375px phone, whose shorter first screen
+  // (Safari's bars shown) is checked too. In a phone's browser, whose scroll bar takes no width ──
   const phone = await browser.newContext({ ...devices['iPhone 13'] });
   await mockFirebase(phone);
   const handset = await phone.newPage();
@@ -224,25 +231,19 @@ try {
       );
     if (lines.length) throw Error(`A result takes two lines at ${width}px`);
     const sticker = (await page.locator('.sticker-tab').boundingBox())!;
+    const tabs = await page
+      .locator('.rail nav a')
+      .evaluateAll((links) =>
+        links.map((a) => a.getBoundingClientRect()).map((r) => ({ top: r.top, right: r.right })),
+      );
+    if (sticker.y < fold - 1 || tabs.some((t) => t.right > sticker.x))
+      throw Error(`The sticker tab is not beside the tabs at ${width}×${height}`);
     if (height > 600)
       for (const part of ['h3', '.work-outcome']) {
         const box = (await page.locator(`.work-cards-large > :first-child ${part}`).boundingBox())!;
-        if (box.y + box.height > sticker.y)
-          throw Error(`The first work's ${part} reaches the sticker tab at ${width}×${height}`);
+        if (box.y + box.height > fold)
+          throw Error(`The first work's ${part} reaches the tabs at ${width}×${height}`);
       }
-    const covered = await page.locator('main a').evaluateAll(
-      (links, s) =>
-        links
-          .filter((a) => {
-            const r = a.getBoundingClientRect();
-            return (
-              r.width && r.left < s.x + s.width && r.right > s.x && r.top < s.y + s.height && r.bottom > s.y
-            );
-          })
-          .map((a) => a.textContent),
-      sticker,
-    );
-    if (covered.length) throw Error(`Links under the sticker tab on a phone's first screen: ${covered}`);
   }
   await phone.close();
   // Between a phone and a wide desk the sticker tab is the clover alone, in the margin beside the
@@ -271,7 +272,7 @@ try {
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   passed(
-    "a phone's first screen holds who, the facts, the accounts, the results, the featured heading and the QR code's button, with the first work's result clear of the sticker tab; no link under the sticker tab at 800-1280px",
+    "a phone's first screen holds who, the facts, the accounts, the results, the featured heading and the QR code's button, with the first work's result above the tabs and the sticker tab beside them; no link under the sticker tab at 800-1280px",
   );
 
   // ── In-app navigation ──
@@ -328,7 +329,9 @@ try {
   await page.evaluate(() => scrollTo({ top: 900, behavior: 'instant' }));
   await page.waitForTimeout(100);
   const scroll = await page.evaluate(() => scrollY);
-  await page.locator('.rail nav a[href="/about"]').click();
+  // The tabs scroll with the sheet, so they are out of view here: clicked where they are, as a
+  // keyboard would, without scrolling to them first.
+  await page.locator('.rail nav a[href="/about"]').evaluate((a: HTMLElement) => a.click());
   await expect(page.locator('main h1')).toContainText('しーぴー');
   await page.goBack();
   await expect(page.locator('[data-article]:not([hidden])')).toHaveCount(inYear);
@@ -423,14 +426,29 @@ try {
   await expect
     .poll(() => page.locator('#qr .qr-code').evaluate((img: HTMLImageElement) => img.naturalWidth))
     .toBeGreaterThan(0);
-  // The clover in its middle is read through by error correction, as drawn in the dialog.
+  // As drawn in the dialog it reads as the site with the digits that draw its clover, and that
+  // address opens the home page as it is: no dialog, no scroll, and the digits gone from it.
   {
     const shot = await sharp(await page.locator('#qr .qr-code').screenshot())
       .ensureAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
     const read = jsQR(new Uint8ClampedArray(shot.data), shot.info.width, shot.info.height);
-    if (read?.data !== 'https://cp20.dev') throw Error(`The QR code in the dialog reads ${read?.data}`);
+    if (!/^https:\/\/cp20\.dev\/#\d+$/.test(read?.data ?? ''))
+      throw Error(`The QR code in the dialog reads ${read?.data}`);
+    await page.keyboard.press('Escape');
+    // (From another page: a scan opens the address afresh, not as a jump within the page.)
+    await page.goto(origin + '/about');
+    await page.goto(read!.data.replace('https://cp20.dev', origin));
+    await settle();
+    if (
+      (await page.locator('dialog[open]').count()) ||
+      (await page.evaluate(() => scrollY)) !== 0 ||
+      page.url() !== origin + '/'
+    )
+      throw Error("The QR code's address did not open the home page as it is");
+    await page.goto(origin + '/#qr');
+    await expect(page.locator('#qr')).toBeVisible();
   }
   await page.keyboard.press('Escape');
   await expect(page).toHaveURL(origin + '/');
@@ -1159,7 +1177,8 @@ try {
   }
   passed('no image is laid out wider than its sizes promise, at 360-1920px');
 
-  // ── Works: a featured card's open button is its own link; the cards show OG images ──
+  // ── Works: a featured card's open button is its own link and names where it goes; the cards
+  // show OG images ──
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(origin + '/works');
   await settle();
@@ -1171,17 +1190,39 @@ try {
   );
   if (underOpen !== (await open.getAttribute('href')))
     throw Error(`The open button is covered: ${underOpen}`);
-  // The compiler's own OG image is only its name, so its card shows the picture the build draws.
+  // The button says where it goes (the site's host, or the repository's path, with its icon); the
+  // card's own link, to the work's page, ends in a chevron.
+  const destinations = await page
+    .locator('.work-cards-large .work-card-open')
+    .evaluateAll((links) => links.map((a) => [a.textContent, !!a.querySelector('img')]));
+  if (
+    JSON.stringify(destinations.slice(0, 2)) !==
+    JSON.stringify([
+      ['dicespec.app', true],
+      ['cp-20/c-compiler', true],
+    ])
+  )
+    throw Error(`The featured cards' buttons say ${JSON.stringify(destinations)}`);
+  if (
+    (await page.locator('.work-card-link .work-card-chevron').count()) !==
+    (await page.locator('.work-card').count())
+  )
+    throw Error('A card link has no chevron');
+  // Every card shows the work's own OG image (from the cache in /media), the compiler's included.
   await page
     .locator('[data-stamp-anchor="work-c-compiler"] .work-card-picture img')
     .evaluate((img: HTMLImageElement) => img.decode());
+  if (
+    !(await page
+      .locator('[data-stamp-anchor="work-c-compiler"] .work-card-picture img')
+      .evaluate((img: HTMLImageElement) => img.currentSrc.includes('/media/')))
+  )
+    throw Error("The compiler's card does not show its OG image");
   const fetched = await page.evaluate(() =>
     performance.getEntriesByType('resource').map((e) => e.name.replace(location.origin, '')),
   );
   if (fetched.some((url) => url.startsWith('/images/screenshots/')))
     throw Error('The works list downloaded a screenshot; its cards show OG images');
-  if (!fetched.some((url) => url.startsWith('/images/works/c-compiler-')))
-    throw Error("The compiler's card did not show its drawn picture");
   for (const path of ['/works', '/works/dice-spec-v2']) {
     await page.goto(origin + path);
     await animationsDone();
@@ -1193,7 +1234,7 @@ try {
     if (small.length) throw Error(`Links under 44px on ${path}: ${small}`);
   }
   passed(
-    'a work card opens its page from anywhere but its open button; cards show OG images, not screenshots; 44px links',
+    'a work card opens its page from anywhere but its open button, which names where it goes; cards show OG images, not screenshots; 44px links',
   );
 
   // ── Pages swapped out and the rows of other years are released ──

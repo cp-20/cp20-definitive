@@ -32,6 +32,9 @@ export const iconWidth = 96;
  * @param cache source image URL → cached file
  * @param thumbnails other source image URLs the pages show by source (music, manga)
  */
+/** A path on this site (an icon committed under public/), not an image to fetch and cache. */
+export const isLocal = (source: string) => source.startsWith('/');
+
 export function clientMedia(
   previews: Record<string, Preview>,
   cache: Record<string, CacheEntry>,
@@ -50,10 +53,13 @@ export function clientMedia(
   > = {};
   for (const [page, p] of Object.entries(previews)) {
     const image = p.image ? cache[p.image] : undefined;
-    // Icons are shown at 26-38px: their small WebP copy when there is one, else the original.
-    const iconEntry = p.icon ? cache[p.icon] : undefined;
+    // Icons are shown at 22-38px: their small WebP copy when there is one, else the original. An
+    // icon the site keeps itself (works.json `icon`: "/images/icons/…") is used as it is.
+    const iconEntry = p.icon && !isLocal(p.icon) ? cache[p.icon] : undefined;
     const icon =
-      iconEntry && (iconEntry.variants?.find((v) => v.width === iconWidth)?.file ?? iconEntry.file);
+      p.icon && isLocal(p.icon)
+        ? p.icon
+        : iconEntry && (iconEntry.variants?.find((v) => v.width === iconWidth)?.file ?? iconEntry.file);
     const entry: (typeof pages)[string] = { width: p.width, height: p.height };
     if (image) {
       entry.image = image.file;

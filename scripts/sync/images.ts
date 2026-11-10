@@ -20,6 +20,7 @@ import sharp from 'sharp';
 import {
   variantFile,
   iconWidth,
+  isLocal,
   type CacheEntry,
   type Crop,
   type Preview,
@@ -101,7 +102,7 @@ export const iconSources = (previews: Record<string, Preview>, pages: Set<string
     Object.entries(previews)
       .filter(([page]) => pages.has(page))
       .map(([, p]) => p.icon)
-      .filter((icon): icon is string => !!icon),
+      .filter((icon): icon is string => !!icon && !isLocal(icon)),
   );
 /**
  * The music and manga entries whose thumbnails the pages show: every track, and only the series

@@ -1,8 +1,9 @@
 import Brand from '../components/Brand.tsx';
 import Icon from '../components/Icon.tsx';
 import { sizes } from '../components/Preview.tsx';
-import WorkCard, { WorkImage } from '../components/WorkCard.tsx';
+import WorkCard, { OutcomeMark, WorkImage } from '../components/WorkCard.tsx';
 import Title from '../components/Title.tsx';
+import { SourceIcon } from '../components/AttendanceCard.tsx';
 import { articles, editionWorks, sections, shortDate, type Work } from '../content/content.ts';
 import { splitLinks } from '../content/inline-links.ts';
 import {
@@ -59,7 +60,10 @@ export default function WorkDetail(props: { work: Work }) {
             {facts.map((f) => (
               <div class={{ 'work-fact-outcome': 'outcome' in f }}>
                 <dt>{f.label}</dt>
-                <dd>{f.value}</dd>
+                <dd>
+                  {'outcome' in f && <OutcomeMark />}
+                  {f.value}
+                </dd>
               </div>
             ))}
           </dl>
@@ -119,7 +123,7 @@ export default function WorkDetail(props: { work: Work }) {
               {related.map((a) => (
                 <li>
                   <a href={a.url}>
-                    <Brand url={a.url} />
+                    <SourceIcon source={a.source} />
                     <span>
                       <span class="related-title">
                         <Title text={a.title} />

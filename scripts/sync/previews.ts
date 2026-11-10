@@ -2,7 +2,7 @@
 // (previews.json). Only the head of each third-party page is read.
 import { imageSize } from 'image-size';
 import { mergeArticles } from '../../src/content/normalize.ts';
-import type { Preview } from '../../src/content/media.ts';
+import { isLocal, type Preview } from '../../src/content/media.ts';
 import { downloadRaster } from './images.ts';
 import { headElements, headRequest } from './head.ts';
 import { REFRESH_MS, eachLimited, readData, repoDirs, writeData, type Dirs } from './files.ts';
@@ -151,12 +151,13 @@ export async function syncPreviews(
           keepOldImage();
         }
       }
-      if (preview.icon && !(await reachable(preview.icon, fetch))) preview.icon = old?.icon || null;
+      if (preview.icon && !isLocal(preview.icon) && !(await reachable(preview.icon, fetch)))
+        preview.icon = old?.icon || null;
       next[url] = { ...preview, checkedAt: new Date().toISOString() };
       fetched++;
     } catch {
-      // A page behind a login (a club's members-only service) cannot be read, but the image
-      // works.json states for it can still be shown.
+      // A page behind a login (a club's members-only service) cannot be read, but the image and
+      // icon works.json states for it can still be shown.
       const image = stated.get(url)?.image;
       if (image && previous[url]?.image !== image) {
         try {
@@ -168,6 +169,11 @@ export async function syncPreviews(
           fetched++;
           return;
         } catch {}
+      }
+      if (previous[url] && restated(url)) {
+        next[url] = { ...withStated(previous[url], stated.get(url)), checkedAt: new Date().toISOString() };
+        fetched++;
+        return;
       }
       console.warn(`Preview unavailable: ${new URL(url).hostname}; retaining previous metadata`);
     }

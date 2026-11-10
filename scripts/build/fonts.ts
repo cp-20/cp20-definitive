@@ -1,19 +1,31 @@
-// The site's web fonts at build time. Subsets Zen Maru Gothic 500 to the characters the built site
-// can show and 700 to those it sets in bold, each split into the home page's characters, the
-// profile's other ones and the rest (unicode-range): the home page loads two small files, and no
-// page more than six, instead of dozens of @fontsource slices. Runs after prerender, so the text of
-// every page and every string in the client JavaScript (client-rendered views, sticker messages) is
-// included. Also the stylesheet filter vite.config.ts applies to the other @fontsource fonts.
+// The site's web fonts at build time, each subset to the characters it sets: Zen Maru Gothic 500
+// to every character the built site can show, Zen Maru Gothic 700 to what it sets in bold, and
+// Yusei Magic to what it writes by hand (headings, names, labels and figures: the rules that name
+// var(--hand) in app.css). Each is split into the home page's characters, the profile's other ones
+// and the rest (unicode-range): a page loads only the files with characters it shows. Runs after
+// prerender, so the text of every page and every string in the client JavaScript (client-rendered
+// views, sticker messages) is included. Also the stylesheet filter vite.config.ts applies to the
+// other @fontsource fonts.
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import subsetFont from 'subset-font';
 import { parse } from 'node-html-parser';
 
-export const family = 'Zen Maru Gothic';
-export const weights = [500, 700];
-const source = (weight: number) =>
-  new URL(`../../fonts/zen-maru-gothic/zen-maru-gothic-${weight}.woff2`, import.meta.url);
+/**
+ * The faces the build subsets. `role` says which text each needs: `all` every character, `bold`
+ * the text of bold rules, `hand` the text of rules set in the hand-written face.
+ */
+export const faces = [
+  { family: 'Zen Maru Gothic', weight: 500, file: 'zen-maru-gothic/zen-maru-gothic-500.woff2', role: 'all' },
+  { family: 'Zen Maru Gothic', weight: 700, file: 'zen-maru-gothic/zen-maru-gothic-700.woff2', role: 'bold' },
+  { family: 'Yusei Magic', weight: 400, file: 'yusei-magic/yusei-magic-400.woff2', role: 'hand' },
+] as const;
+export type Face = (typeof faces)[number];
+/** The file name stem of a face's subsets: `zen-maru-gothic-500`. */
+export const faceName = (face: Pick<Face, 'family' | 'weight'>) =>
+  `${face.family.toLowerCase().replaceAll(' ', '-')}-${face.weight}`;
+const source = (face: Face) => new URL(`../../fonts/${face.file}`, import.meta.url);
 
 export const isFontFile = (file: string) => /\.(woff2?|ttf|otf|eot)(\?.*)?$/i.test(file);
 
@@ -67,13 +79,14 @@ function splitSelectors(list: string) {
 
 const BOLD =
   /(?:^|;)\s*font-weight:\s*(?:bold(?:er)?|[6-9]00)\s*(?:;|$)|(?:^|;)\s*font:[^;]*\b(?:bold|[6-9]00)\b/;
+const HAND = /(?:^|;)\s*font-family:\s*var\(--hand\)/;
 
 /**
- * What a stylesheet sets in bold: the selectors of every rule with a weight of 600 or more, and
- * the text of every `content` (a pseudo-element's text, such as the seal on an award in the history).
- * Rules inside @media count too: a selector that is bold anywhere is bold.
+ * The selectors of every rule whose declarations match `test` (by default: a weight of 600 or
+ * more), and the text of every `content` (a pseudo-element's text). Rules inside @media count
+ * too: a selector that is bold anywhere is bold.
  */
-export function boldRules(css: string) {
+export function boldRules(css: string, test = BOLD) {
   const selectors: string[] = [],
     content: string[] = [];
   // Innermost blocks are the style rules: a prelude, then declarations with no braces in them.
@@ -81,11 +94,13 @@ export function boldRules(css: string) {
     for (const m of declarations.matchAll(/content:\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g))
       content.push(m[1].slice(1, -1));
     const selector = prelude.slice(prelude.lastIndexOf(';') + 1).trim();
-    if (!selector || selector.startsWith('@') || !BOLD.test(declarations)) continue;
+    if (!selector || selector.startsWith('@') || !test.test(declarations)) continue;
     selectors.push(...splitSelectors(selector));
   }
   return { selectors, content };
 }
+/** The rules set in the hand-written face (`font-family: var(--hand)`), as boldRules. */
+export const handRules = (css: string) => boldRules(css, HAND);
 
 // A selector for a pseudo-element's box: its text is the rule's `content`, not the element's.
 const GENERATED =
@@ -100,38 +115,53 @@ const tidy = (selector: string) =>
     .replace(/[\s>+~]+$/, '')
     .replace(/^[>+~]/, '* $&');
 
+const REGULAR = /(?:^|;)\s*font-weight:\s*(?:normal|[1-5]00)\s*(?:;|$)/;
+const elementSelectors = (rules: { selectors: string[] }[]) =>
+  rules
+    .flatMap((r) => r.selectors)
+    .filter((s) => !GENERATED.test(s))
+    .map((s) => tidy(s.replace(STATE, '')));
+// The elements a selector matches in a parsed page.
+function matching(root: ReturnType<typeof parse>, selector: string) {
+  try {
+    return root.querySelectorAll(selector);
+  } catch {
+    // A pseudo-class the parser does not know: match without any, which only finds more.
+    try {
+      return root.querySelectorAll(tidy(selector.replace(PSEUDO, '')) || '*:not(*)');
+    } catch {
+      return [];
+    }
+  }
+}
+
 /**
  * The text of every page that is set in bold: the elements the bold rules match (with all their
- * text: a part set back to regular inside one only adds a few letters), headings and <strong>,
- * pseudo-element text, and the strings only the client script shows (status messages and the
- * like, which cannot be placed from the HTML alone).
+ * text: a part set back to regular inside one only adds a few letters), <b> and <strong> unless a
+ * rule sets them back to regular (a figure in the hand-written face), pseudo-element text, and the
+ * strings only the client script shows (status messages and the like, which cannot be placed from
+ * the HTML alone). With `hand`, the same for the hand-written face: headings and the rules that
+ * name it. `generated: false` leaves out the pseudo-element text (any rule's, as it takes its
+ * element's face), to tell which text a page itself shows.
  */
-export function boldTexts(pages: string[], css: string[], scripts: string[]) {
-  const rules = css.map(boldRules);
-  const selectors = [
-    'h1, h2, h3, h4, h5, h6, b, strong, th',
-    ...rules
-      .flatMap((r) => r.selectors)
-      .filter((s) => !GENERATED.test(s))
-      .map((s) => tidy(s.replace(STATE, ''))),
-  ].filter(Boolean);
-  const texts = rules.flatMap((r) => r.content);
+export function boldTexts(
+  pages: string[],
+  css: string[],
+  scripts: string[],
+  hand = false,
+  { generated = true } = {},
+) {
+  const rules = css.map((sheet) => (hand ? handRules(sheet) : boldRules(sheet)));
+  const selectors = elementSelectors(rules).filter(Boolean);
+  const regular = hand ? [] : elementSelectors(css.map((sheet) => boldRules(sheet, REGULAR)));
+  const texts = generated ? rules.flatMap((r) => r.content) : [];
   for (const html of pages) {
     const root = parse(html);
-    for (const selector of new Set(selectors)) {
-      let found;
-      try {
-        found = root.querySelectorAll(selector);
-      } catch {
-        // A pseudo-class the parser does not know: match without any, which only finds more.
-        try {
-          found = root.querySelectorAll(tidy(selector.replace(PSEUDO, '')) || '*:not(*)');
-        } catch {
-          continue;
-        }
-      }
-      for (const element of found) texts.push(element.textContent);
-    }
+    const setBack = new Set(regular.flatMap((selector) => matching(root, selector)));
+    for (const element of matching(root, hand ? 'h1, h2, h3, h4, h5, h6' : 'b, strong, th'))
+      if (!setBack.has(element)) texts.push(element.textContent);
+    for (const selector of new Set(selectors))
+      for (const element of matching(root, selector)) texts.push(element.textContent);
   }
   const inPages = new Set(collectCharacters(pages));
   texts.push([...collectCharacters(scripts)].filter((c) => !inPages.has(c)).join(''));
@@ -187,12 +217,15 @@ const drawnText = (html: string) => {
  * 1.5 s, /about 2.4 → 1.8 s; /about's LCP 2.2 → 1.6 s, layout shift 0.02 → 0–0.01) for a first paint
  * 0.2–0.4 s later. With one 140 kB file per weight, preloading only delayed the first paint.
  */
-export function fontHead(files: { weight: number; href: string; range?: string }[], preload: string[] = []) {
+export function fontHead(
+  files: { family?: string; weight: number; href: string; range?: string }[],
+  preload: string[] = [],
+) {
   return `${preload
     .map((href) => `<link rel="preload" href="${href}" as="font" type="font/woff2" crossorigin>`)
     .join('')}<style>${files
     .map(
-      ({ weight, href, range }) =>
+      ({ family = faces[0].family, weight, href, range }) =>
         `@font-face{font-family:'${family}';font-style:normal;font-display:swap;font-weight:${weight};src:url(${href}) format('woff2')${range ? `;unicode-range:${range}` : ''}}`,
     )
     .join('')}</style>`;
@@ -221,18 +254,17 @@ export async function subsetSiteFonts(root: string) {
     read(await files(join(root, 'assets'), /\.css$/)),
     read(await files(join(root, 'assets'), /\.js$/)),
   ]);
-  // Regular covers every character the site can show; bold only what is set in bold, about two
-  // thirds as many (the body text's kanji are the bulk of the font). Each is split by page.
+  // Regular covers every character the site can show; bold and the hand-written face only what is
+  // set in them (the body text's kanji are the bulk of a font). Each is split by page. Whether a
+  // landing page preloads a file is judged by what it shows, without the printable ASCII every
+  // subset carries anyway.
   const landing = landingPages.map((page) => html[pages.indexOf(join(root, page))] ?? '');
-  const shown = {
-    500: landing.map((page) => collectCharacters([drawnText(page)])),
-    700: landing.map((page) => collectCharacters(boldTexts([page], css, []))),
-  };
-  const parts = {
-    500: slices(collectCharacters([...html, ...css, ...js]), shown[500]),
-    700: slices(collectCharacters(boldTexts(html, css, js)), shown[700]),
-  };
+  const texts = (face: Face, pages: string[], scripts: string[], generated = true) =>
+    face.role === 'all'
+      ? [...pages.map(drawnText), ...scripts]
+      : boldTexts(pages, css, scripts, face.role === 'hand', { generated });
   const written: {
+    family: string;
     weight: number;
     href: string;
     range: string;
@@ -241,22 +273,27 @@ export async function subsetSiteFonts(root: string) {
     // The landing pages that preload it (those that show its characters, from its own page on).
     preloadedBy: string[];
   }[] = [];
-  for (const weight of weights) {
-    const weightParts = parts[weight as keyof typeof parts];
-    for (const [part, set] of weightParts.entries()) {
+  for (const face of faces) {
+    const shown = landing.map((page) => new Set(texts(face, [page], [], false).join('')));
+    const all = collectCharacters(face.role === 'all' ? [...html, ...css, ...js] : texts(face, html, js));
+    const split = slices(
+      all,
+      shown.map((s) => collectCharacters([[...s].join('')])),
+    );
+    for (const [part, set] of split.entries()) {
       if (!set) continue;
-      const bytes = await subsetFont(await readFile(source(weight)), set, subsetOptions);
-      const name = `zen-maru-gothic-${weight}-${createHash('sha256').update(bytes).digest('hex').slice(0, 12)}.woff2`;
+      const bytes = await subsetFont(await readFile(source(face)), set, subsetOptions);
+      const name = `${faceName(face)}-${createHash('sha256').update(bytes).digest('hex').slice(0, 12)}.woff2`;
       await writeFile(join(root, 'assets', name), bytes);
       written.push({
-        weight,
+        family: face.family,
+        weight: face.weight,
         href: `/assets/${name}`,
         range: unicodeRange(set),
         size: bytes.length,
         characters: [...set].length,
         preloadedBy: landingPages.filter(
-          (_, page) =>
-            part <= page && [...set].some((c) => shown[weight as keyof typeof shown][page].includes(c)),
+          (_, page) => part <= page && [...set].some((c) => c.trim() && shown[page].has(c)),
         ),
       });
     }

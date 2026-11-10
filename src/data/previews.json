@@ -666,7 +666,7 @@
   },
   "https://neon-overdrive.lolipop-now.app/": {
     "image": "https://neon-overdrive.lolipop-now.app/og-image-20260922.png",
-    "icon": null,
+    "icon": "/images/icons/neon-overdrive.svg",
     "width": 1200,
     "height": 630,
     "checkedAt": "2026-11-09T06:41:51.553Z"
@@ -694,7 +694,7 @@
   },
   "https://anke-to.trap.jp": {
     "image": "https://trap.jp/content/images/2026/04/anke-to-v3.png",
-    "icon": null,
+    "icon": "/images/icons/anke-to-v3.svg",
     "width": 1024,
     "height": 538,
     "checkedAt": "2026-11-09T07:16:21.149Z"

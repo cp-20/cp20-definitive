@@ -14,7 +14,7 @@ const results = highlightIds.map((id) => milestones.find((m) => m.id === id)!.ti
 const descriptions: Record<string, string> = {
   '/': `しーぴー（cp20）のポートフォリオ。${school}。${results.join('、')}。`,
   '/about': `しーぴー（cp20）。${school}。${results.slice(0, 2).join('、')}。経歴と性能改善の実績。`,
-  '/works': 'しーぴー（cp20）が2022年から、個人開発を中心につくってきたもの。',
+  '/works': 'しーぴー（cp20）の作品一覧。代表作、年ごとの作品、主催したイベント、GitHub の最近の動き。',
   '/articles': 'しーぴー（cp20）がブログや traP、Zenn、Qiita などに書いた記事。',
 };
 /** A tag in a page's head: its element and attributes. */

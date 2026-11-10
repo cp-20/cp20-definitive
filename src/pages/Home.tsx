@@ -1,10 +1,10 @@
 import { createSignal, For } from 'solid-js';
-import Icon from '../components/Icon.tsx';
+import Icon, { KindMark } from '../components/Icon.tsx';
 import Brand from '../components/Brand.tsx';
 import WorkCard from '../components/WorkCard.tsx';
 import Title from '../components/Title.tsx';
 import { articleAnchor, responsive, sizes } from '../components/Preview.tsx';
-import { AttendanceCard, DayStamp } from '../components/AttendanceCard.tsx';
+import { AttendanceCard, SourceIcon } from '../components/AttendanceCard.tsx';
 import { yearOf } from '../components/attendance.ts';
 import { articles, sections, shortDate } from '../content/content.ts';
 import { highlightIds, milestones } from '../data/editorial.ts';
@@ -63,7 +63,8 @@ export default function Home() {
             <For each={highlights}>
               {(m) => (
                 <li>
-                  <a href={`/about#${m.id}`} data-kind={m.kind}>
+                  <a href={`/about#${m.id}`}>
+                    <KindMark kind={m.kind} />
                     <span class="highlight-title">
                       {/* The result (優勝, 学生2位) never splits, and goes to the next line whole. */}
                       {m.title.replace(/\S+$/, '')}
@@ -133,7 +134,7 @@ export default function Home() {
                       onPointerEnter={(e) => e.pointerType === 'mouse' && setHot(id)}
                       onPointerLeave={(e) => e.pointerType === 'mouse' && setHot()}
                     >
-                      <DayStamp source={a.source} url={a.url} />
+                      <SourceIcon source={a.source} />
                       <span class="recent-title">
                         <Title text={a.title} />
                       </span>

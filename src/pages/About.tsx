@@ -1,5 +1,5 @@
 import { For } from 'solid-js';
-import Icon from '../components/Icon.tsx';
+import Icon, { KindMark } from '../components/Icon.tsx';
 import { responsive, sizes } from '../components/Preview.tsx';
 import Bookshelf from '../components/Bookshelf.tsx';
 import Brand from '../components/Brand.tsx';
@@ -106,6 +106,29 @@ export default function About() {
         </ul>
       </section>
       <div class="profile-history-layout">
+        <aside class="profile-details" aria-labelledby="affiliations-title">
+          <h2 id="affiliations-title">所属</h2>
+          <ul class="profile-affiliations">
+            <For each={profile.affiliations}>
+              {(a) => (
+                <li>
+                  <a href={a.url}>
+                    <Brand url={a.url} size={18} />
+                    {a.name}
+                  </a>
+                  {a.sub?.map((s) => (
+                    <small>
+                      <a href={s.url}>
+                        {s.name}
+                        <Icon name="ArrowUpRight" size={13} />
+                      </a>
+                    </small>
+                  ))}
+                </li>
+              )}
+            </For>
+          </ul>
+        </aside>
         <section data-stamp-anchor="history" class="history" aria-labelledby="history-title">
           <div class="section-heading">
             <h2 id="history-title">経歴</h2>
@@ -118,7 +141,8 @@ export default function About() {
                 const expandable = m.detail.length > 0 || m.links.length > 0 || !!work;
                 return (
                   <>
-                    <div class="timeline-item" data-kind={m.kind} data-expandable={expandable || undefined}>
+                    <div class="timeline-item" data-expandable={expandable || undefined}>
+                      <KindMark kind={m.kind} />
                       <div class="timeline-date">
                         <time datetime={m.year.replace('.', '-')}>{m.year}</time>
                         <span>{m.grade}</span>
@@ -185,29 +209,6 @@ export default function About() {
             </For>
           </div>
         </section>
-        <aside class="profile-details" aria-labelledby="affiliations-title">
-          <h2 id="affiliations-title">所属</h2>
-          <ul class="profile-affiliations">
-            <For each={profile.affiliations}>
-              {(a) => (
-                <li>
-                  <a href={a.url}>
-                    <Brand url={a.url} size={18} />
-                    {a.name}
-                  </a>
-                  {a.sub?.map((s) => (
-                    <small>
-                      <a href={s.url}>
-                        {s.name}
-                        <Icon name="ArrowUpRight" size={13} />
-                      </a>
-                    </small>
-                  ))}
-                </li>
-              )}
-            </For>
-          </ul>
-        </aside>
       </div>
       <div class="favorites-heading">
         <h2>好きなもの</h2>

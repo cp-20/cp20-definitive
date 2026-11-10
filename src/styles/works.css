@@ -17,7 +17,8 @@
     background: var(--paper);
     color: var(--ink);
     font-size: var(--fs-ui);
-    font-weight: 700;
+    font-family: var(--hand);
+    font-weight: 400;
     line-height: 1.4;
     box-shadow: 2px 2px 0 var(--drop);
     transition:
@@ -77,16 +78,36 @@
   .work-card h3 {
     font-size: var(--fs-title);
     line-height: 1.5;
-    letter-spacing: 0.02em;
+  }
+  /* A site's icon sits on a small white tile with a pencil line round it, whatever its own
+     background (none, white or a colour), so every icon is the same shape on the paper. One drawn
+     out to its edges (works.json `iconInset`) gets more room inside. */
+  .work-icon,
+  .source-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    padding: 2px;
+    border: 1px solid var(--tile-line);
+    border-radius: 6px;
+    background: #fff;
+    object-fit: contain;
   }
   .work-icon {
-    display: inline-block;
-    width: 22px;
-    height: 22px;
     margin-right: 8px;
-    border-radius: 6px;
-    object-fit: contain;
-    vertical-align: -4px;
+    vertical-align: -5px;
+  }
+  .work-icon[data-inset] {
+    padding: 4px;
+  }
+  /* The way to the work's own page: a chevron after its name, stepping on with the highlighter. */
+  .work-card-chevron {
+    display: inline-block;
+    margin-left: 2px;
+    vertical-align: -3px;
+    color: var(--muted);
+    translate: var(--step, 0) 0;
+    transition: translate var(--t-hover) var(--ease);
   }
   .status-tag {
     display: inline-block;
@@ -97,8 +118,8 @@
     color: var(--ink);
     background: var(--paper);
     font-size: var(--fs-small);
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-family: var(--hand);
+    font-weight: 400;
     line-height: 1.6;
     white-space: nowrap;
     vertical-align: 2px;
@@ -110,35 +131,31 @@
     font-size: var(--fs-body);
     line-height: 1.8;
   }
-  /* A result, with a small vermilion mark pressed beside it like the one a teacher presses on
-     good work (in the ink of the seals, app.css). */
+  /* A result, with a small vermilion mark beside its first line (OutcomeMark, in the ink of an
+     award in the history). */
   .work-outcome {
     display: flex;
-    align-items: baseline;
+    align-items: start;
     gap: 8px;
     margin-top: 8px;
     color: var(--ink);
     font-size: var(--fs-ui);
-    font-weight: 700;
+    font-family: var(--hand);
+    font-weight: 400;
     line-height: 1.6;
   }
-  .work-outcome::before,
-  .work-fact-outcome dd::before {
-    content: '';
+  .outcome-mark {
+    display: grid;
     flex: none;
-    width: 0.9em;
-    height: 0.9em;
-    border: 1.5px solid var(--seal);
-    border-radius: 50%;
-    background: radial-gradient(circle, var(--seal) 0 0.16em, transparent calc(0.16em + 0.5px));
-    translate: 0 0.08em;
+    place-items: center;
+    height: 1lh;
+    color: var(--seal);
   }
   .work-card-meta {
     margin-top: 6px;
     color: var(--muted);
     font-size: var(--fs-small);
     line-height: 1.6;
-    letter-spacing: 0.04em;
   }
   .work-card-meta > span + span::before {
     content: '/';
@@ -187,24 +204,44 @@
     margin-top: auto;
     padding-top: 12px;
   }
+  /* The way out to the work itself, named by where it goes (its host, or its repository's path)
+     with that place's icon, unlike the card, which opens the work's page here. */
   .work-card-open {
     position: relative;
     z-index: 2;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     min-height: 44px;
     padding: 4px 16px;
     border: 2px solid var(--edge);
     border-radius: 999px;
     background: var(--paper);
     font-size: var(--fs-ui);
-    font-weight: 700;
+    font-family: var(--hand);
+    font-weight: 400;
     box-shadow: 2px 2px 0 var(--drop);
     transition:
       transform var(--t-hover) var(--ease),
       box-shadow var(--t-hover) var(--ease),
       background-color var(--t-hover) var(--ease);
+  }
+  .work-card-open img {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    object-fit: contain;
+  }
+  .work-card-open {
+    max-width: 100%;
+  }
+  .work-card-open span {
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--mono);
+    font-size: var(--fs-small);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .work-card-open:focus-visible {
     background: var(--hi-soft);
@@ -283,9 +320,9 @@
   }
   .work-row-name {
     align-self: end;
-    font-weight: 700;
+    font-family: var(--hand);
+    font-weight: 400;
     line-height: 1.6;
-    letter-spacing: 0.02em;
   }
   .work-row-description {
     align-self: start;
@@ -298,13 +335,6 @@
   }
 
   /* ── Works page ── */
-  /* Lines wide enough to break between phrases (see the :lang(ja) rule in app.css). */
-  :lang(ja) :is(.works-lead, .works-note) {
-    word-break: auto-phrase;
-  }
-  .works-lead {
-    color: var(--ink);
-  }
   .works-section {
     margin-top: 96px;
   }
@@ -321,10 +351,6 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px 20px;
-  }
-  .works-note {
-    margin: -8px 0 24px;
-    color: var(--ink);
   }
 
   /* A year's works under one postmark, which stays beside them while they scroll past. */
@@ -356,9 +382,9 @@
     padding: 4px 0;
     border-block: 1.5px solid var(--postmark);
     color: var(--postmark);
-    font-size: 1.375rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    font-size: 1.25rem;
+    font-family: var(--hand);
+    font-weight: 400;
     line-height: 1.3;
     text-align: center;
   }
@@ -431,9 +457,9 @@
   .edition-stamps strong {
     display: block;
     padding: 16px 16px 0;
-    font-size: 2.125rem;
-    font-weight: 700;
-    letter-spacing: 0;
+    font-size: 2.25rem;
+    font-family: var(--hand);
+    font-weight: 400;
     line-height: 1.2;
   }
   .edition-stamps span {
@@ -441,7 +467,6 @@
     padding: 4px 16px 16px;
     color: var(--ink);
     font-size: var(--fs-small);
-    letter-spacing: 0.04em;
   }
 
   /* Recent repositories: the name, what it is, the day. */
@@ -465,7 +490,6 @@
     font-family: var(--mono);
     font-size: var(--fs-ui);
     font-weight: 400;
-    letter-spacing: 0;
     overflow-wrap: break-word;
   }
   .repo-activity .repo-description {
@@ -496,7 +520,8 @@
     margin-left: -4px;
     padding: 0 4px;
     font-size: var(--fs-ui);
-    font-weight: 700;
+    font-family: var(--hand);
+    font-weight: 400;
     line-height: 1.4;
   }
   .back-link:focus-visible svg {
@@ -514,13 +539,13 @@
     margin-top: 16px;
     color: var(--ink);
     font-size: var(--fs-small);
-    font-weight: 700;
+    font-family: var(--hand);
+    font-weight: 400;
     line-height: 1.4;
-    letter-spacing: 0.06em;
   }
   .work-intro h1 {
     margin-top: 8px;
-    font-size: clamp(2rem, 3.4vw, 3rem);
+    font-size: var(--fs-h1);
     line-height: 1.3;
   }
   .back-link + h1 {
@@ -536,7 +561,7 @@
   .work-summary {
     margin-top: 16px;
     color: var(--ink);
-    font-size: var(--fs-prose);
+    font-size: var(--fs-lead);
     line-height: 1.9;
   }
   /* The facts, the result first: a label column and the values, ruled like a form. */
@@ -558,8 +583,8 @@
     padding-right: 16px;
     color: var(--muted);
     font-size: var(--fs-small);
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-family: var(--hand);
+    font-weight: 400;
     line-height: 1.85rem;
   }
   .work-facts dd {
@@ -570,9 +595,10 @@
   }
   .work-fact-outcome dd {
     display: flex;
-    align-items: baseline;
+    align-items: start;
     gap: 8px;
-    font-weight: 700;
+    font-family: var(--hand);
+    font-weight: 400;
   }
   .work-actions {
     display: flex;
@@ -591,7 +617,6 @@
     font-family: var(--mono);
     font-size: var(--fs-small);
     font-weight: 400;
-    letter-spacing: 0;
     overflow-wrap: anywhere;
   }
   .repo-link,
@@ -644,7 +669,7 @@
     margin-top: 64px;
   }
   .work-body p {
-    font-size: var(--fs-prose);
+    font-size: var(--fs-lead);
     line-height: 1.9;
   }
   .work-body p + p {
@@ -658,18 +683,25 @@
   }
   .related-articles a {
     display: grid;
-    grid-template-columns: 16px minmax(0, 1fr) auto;
-    align-items: baseline;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    align-items: start;
     gap: 12px;
     min-height: 52px;
     padding: 12px 0;
     border-bottom: 2px dashed var(--rule);
-    font-weight: 700;
+    font-family: var(--hand);
+    font-weight: 400;
     line-height: 1.6;
-    letter-spacing: 0.02em;
   }
-  .related-articles .brand-icon {
-    translate: 0 2px;
+  /* The source's icon beside the title's first line. */
+  .related-articles .source-icon {
+    width: 20px;
+    height: 20px;
+    margin-top: calc((1lh - 20px) / 2);
+    border-radius: 5px;
+  }
+  .related-articles time {
+    line-height: inherit;
   }
   .related-articles span > svg {
     display: inline-block;
@@ -679,6 +711,7 @@
   .related-articles time {
     color: var(--muted);
     font-size: var(--fs-small);
+    font-family: var(--round);
     font-weight: 500;
     white-space: nowrap;
   }
@@ -720,7 +753,7 @@
       height: 84px;
     }
     .year-mark > span {
-      font-size: 1.1875rem;
+      font-size: 1.25rem;
     }
     .work-top {
       grid-template-columns: minmax(0, 1fr);
@@ -744,7 +777,7 @@
       margin-top: 72px;
     }
     .page-heading + .works-section {
-      margin-top: 4px;
+      margin-top: 8px;
     }
     .works-year {
       margin-top: 48px;
@@ -768,7 +801,7 @@
       margin-top: 4px;
     }
     .work-card-large h3 {
-      font-size: 1.125rem;
+      font-size: 1.0625rem;
     }
     /* The result straight under the name: on the home page's first screen it is what shows of the
        first work above the sticker tab and the tabs. */
@@ -802,7 +835,7 @@
     }
     .edition-stamps strong {
       padding: 12px 12px 0;
-      font-size: 1.625rem;
+      font-size: 1.75rem;
     }
     .edition-stamps span {
       padding: 2px 12px 14px;
@@ -819,7 +852,7 @@
       padding-top: 4px;
     }
     .work-intro h1 {
-      font-size: clamp(1.75rem, (100vw - 70px) / 9.2, 2.375rem);
+      font-size: 2.25rem;
     }
     .work-hero {
       width: calc(100% - 22px);

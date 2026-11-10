@@ -43,12 +43,13 @@ export function responsive(srcset: string | undefined, sizes: string | undefined
   };
 }
 /** The site's own icon, when it has one. */
-export function OriginalIcon(props: { url: string }) {
+export function OriginalIcon(props: { url: string; inset?: boolean }) {
   const [failed, setFailed] = createSignal(false);
   return (
     <Show when={previewFor(props.url)?.icon}>
       <img
         class="original-icon"
+        data-inset={props.inset || undefined}
         style={{ visibility: failed() ? 'hidden' : 'inherit' }}
         src={previewFor(props.url)?.icon}
         alt=""
