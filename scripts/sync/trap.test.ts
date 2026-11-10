@@ -1,6 +1,5 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { article } from '../../src/content/normalize.ts';
 import { fetchTrapPosts, nextPage, parseAuthorPage } from './trap.ts';
 
 const card = (id: number, title: string, day = '2026年7月5日') => `
@@ -55,7 +54,7 @@ describe('fetchTrapPosts', () => {
       requested.push([url, format]);
       if (!(url in site)) throw fail(404);
       return site[url];
-    }, article);
+    });
     return { posts, requested };
   };
 
@@ -83,7 +82,7 @@ describe('fetchTrapPosts', () => {
       if (url === 'https://trap.jp/author/cp20/') return page(next, card(2, 'two'));
       if (url === P2) return second();
       throw fail(404);
-    }, article);
+    });
 
   test('RSS が落ちていても、著者ページだけで集める', async () => {
     assert.equal((await crawlWith(async () => page(null, card(1, 'one')))).length, 2);
@@ -111,7 +110,7 @@ describe('fetchTrapPosts', () => {
 
   test('著者ページのつくりが変わったら、1ページ目から失敗にする', async () => {
     await assert.rejects(
-      fetchTrapPosts(async (url) => (url.endsWith('/rss/') ? '<rss/>' : '<html>redesigned</html>'), article),
+      fetchTrapPosts(async (url) => (url.endsWith('/rss/') ? '<rss/>' : '<html>redesigned</html>')),
       /listed no posts/,
     );
   });

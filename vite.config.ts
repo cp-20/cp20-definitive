@@ -77,7 +77,7 @@ const articles = (): Plugin => {
       for (const file of data) this.addWatchFile(file.pathname);
       const [snapshot, manual] = data.map((file) => JSON.parse(readFileSync(file, 'utf8')));
       // Titles break between phrases like the works' sentences (not in the tests: see below).
-      const list = mergeArticles(snapshot.articles, [], manual).map((a) =>
+      const list = mergeArticles(snapshot.articles, manual).map((a) =>
         process.env.VITEST ? a : { ...a, title: phrased(a.title) },
       );
       return `export const articles = ${JSON.stringify(list)};\n`;

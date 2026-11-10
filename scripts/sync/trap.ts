@@ -5,7 +5,7 @@
 // The RSS is still read (best effort) for exact publication times; the pages only show the day.
 import { XMLParser } from 'fast-xml-parser';
 import { parse } from 'node-html-parser';
-import type { Article } from '../../src/content/normalize.ts';
+import { article, type Article } from '../../src/content/normalize.ts';
 import { headElements } from './head.ts';
 import type { Format } from './sync.ts';
 
@@ -39,10 +39,7 @@ export function rssDates(xml: string): Map<string, string> {
   return new Map(items.filter((i) => i?.link && i?.pubDate).map((i) => [String(i.link), String(i.pubDate)]));
 }
 
-export async function fetchTrapPosts(
-  request: (url: string, format: Format) => Promise<any>,
-  normalize: (title: string, url: string, date: string, source: string) => Article,
-) {
+export async function fetchTrapPosts(request: (url: string, format: Format) => Promise<any>) {
   let dates = new Map<string, string>();
   try {
     dates = rssDates(await request(`${AUTHOR}rss/`, 'xml'));
@@ -64,7 +61,7 @@ export async function fetchTrapPosts(
       // Fail so the last snapshot is kept and the next scheduled run reads a consistent list.
       if (seen.has(card.url)) throw new Error(`trap.jp: ${card.url} appeared on two pages`);
       seen.add(card.url);
-      posts.push(normalize(card.title, card.url, dates.get(card.url) ?? card.day, 'trap.jp'));
+      posts.push(article(card.title, card.url, dates.get(card.url) ?? card.day, 'trap.jp'));
     }
     const next = nextPage(html);
     if (!next) return posts;

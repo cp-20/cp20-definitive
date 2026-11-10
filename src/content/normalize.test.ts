@@ -37,13 +37,13 @@ test('掲載先とホストの違う URL の記事は受け付けない', () => 
 describe('mergeArticles', () => {
   test('編集者の上書きは、取得した記事名より優先する', () => {
     const manual = { ...noManual, overrides: { [old.url]: { title: 'editor' } } };
-    assert.equal(mergeArticles([old], [{ ...old, title: 'new' }], manual)[0].title, 'editor');
+    assert.equal(mergeArticles([old, { ...old, title: 'new' }], manual)[0].title, 'editor');
   });
 
   test('過去の記事と新しく取得した記事を、同じ URL は新しいほうを1件にして、新しい順に並べる', () => {
     const renamed = { ...old, title: 'Renamed', url: `${old.url}?utm_source=x#top` };
     assert.deepEqual(
-      mergeArticles([old], [note, renamed]).map((a) => [a.title, a.url]),
+      mergeArticles([old, note, renamed]).map((a) => [a.title, a.url]),
       [
         ['A & B', note.url],
         ['Renamed', old.url],
@@ -52,7 +52,7 @@ describe('mergeArticles', () => {
   });
 
   test('除外した記事は載せない', () => {
-    assert.deepEqual(mergeArticles([old], [], { ...noManual, exclude: [old.url] }), []);
+    assert.deepEqual(mergeArticles([old], { ...noManual, exclude: [old.url] }), []);
   });
 });
 

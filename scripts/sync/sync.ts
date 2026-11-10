@@ -180,7 +180,7 @@ const providers: Loaders = {
       (_, rows) => rows.length === 100,
     ),
   'note.com': feed('https://note.com/cp20/rss', 'note.com'),
-  'trap.jp': () => fetchTrapPosts((url, format) => request(url, { format }), article),
+  'trap.jp': () => fetchTrapPosts((url, format) => request(url, { format })),
   'sizu.me': feed('https://sizu.me/cp20/rss', 'sizu.me'),
   'blog.cp20.dev': feed('https://blog.cp20.dev/rss.xml', 'blog.cp20.dev'),
   'github.com': () =>
@@ -257,7 +257,7 @@ export async function collect(
     }
   });
   if (!successes) throw new Error('All sources failed; snapshot was not changed');
-  next.articles = mergeArticles(retained, incoming);
+  next.articles = mergeArticles([...retained, ...incoming]);
   // Checks don't change the public content timestamp; only actual data changes do.
   if (!isDeepStrictEqual([next.articles, next.repos], [previous.articles, previous.repos]))
     next.updatedAt = now;
@@ -266,9 +266,8 @@ export async function collect(
 }
 
 async function main() {
-  const dirs = repoDirs;
   const [previous, works, manual] = await Promise.all(
-    ['generated', 'works', 'manual'].map((name) => readData(dirs, name)),
+    ['generated', 'works', 'manual'].map((name) => readData(repoDirs, name)),
   );
   const pinned = new Set<string>(
     mergeWorks<{ id: string; relatedArticles?: string[] }>(works, manual).flatMap(
@@ -277,8 +276,8 @@ async function main() {
   );
   const next: Snapshot = await collect(previous, providers, { pinned });
   const picksChanged = await syncPicks(request);
-  await writeData(dirs, 'generated', next);
-  const previousPreviews = await readData(dirs, 'previews').catch(() => ({}));
+  await writeData(repoDirs, 'generated', next);
+  const previousPreviews = await readData(repoDirs, 'previews').catch(() => ({}));
   const previewChanged = await syncPreviews(request);
   // A new OG image that cannot be cached falls back to the page's previous image and file.
   const imagesChanged = await cacheImages({ previousPreviews });

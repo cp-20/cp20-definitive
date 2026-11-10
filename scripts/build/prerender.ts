@@ -41,7 +41,7 @@ async function prerender() {
     JSON.parse(await readFile(new URL(`../../src/data/${name}.json`, import.meta.url), 'utf8'));
   const [baseWorks, manual, snapshot] = await Promise.all(['works', 'manual', 'generated'].map(load));
   const works = mergeWorks(baseWorks, manual),
-    articles = mergeArticles(snapshot.articles, [], manual);
+    articles = mergeArticles(snapshot.articles, manual);
   // Strict for commits (CI); the scheduled refresh only warns, because a source dropping a linked
   // article must not fail every later refresh. The work page then leaves that link out.
   if (process.env.RELATED_ARTICLES === 'warn')

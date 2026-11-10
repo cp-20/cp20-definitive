@@ -52,12 +52,15 @@ export function article(title: unknown, url: unknown, date: unknown, source: str
     throw new Error('Unexpected article host');
   return { title: title.trim(), url: normalizedUrl, date: new Date(date as string).toISOString(), source };
 }
+/**
+ * One list, newest first: of the articles with the same URL the last one wins (so pass the older
+ * ones first), and the editor's manual.json adds, leaves out and corrects articles last.
+ */
 export function mergeArticles(
-  previous: Article[],
-  incoming: Article[],
+  articles: Article[],
   manual: ManualArticles = { articles: [], exclude: [], overrides: {} },
 ) {
-  const merged = new Map([...previous, ...incoming, ...manual.articles].map((a) => [safeUrl(a.url), a]));
+  const merged = new Map([...articles, ...manual.articles].map((a) => [safeUrl(a.url), a]));
   const excluded = new Set(manual.exclude.map(safeUrl));
   return [...merged]
     .filter(([url]) => !excluded.has(url))
