@@ -1,8 +1,9 @@
 // What the pages show of the pages they link: each work's and article's OG image and site icon
 // (previews.json). Only the head of each third-party page is read.
+import { imageSize } from 'image-size';
 import { mergeArticles } from '../../src/content/normalize.ts';
 import type { Preview } from '../../src/content/media.ts';
-import { dimensions, size } from './images.ts';
+import { downloadRaster } from './images.ts';
 import { headElements, headRequest } from './head.ts';
 import { REFRESH_MS, eachLimited, readData, repoDirs, writeData, type Dirs } from './files.ts';
 import type { Request } from './sync.ts';
@@ -16,6 +17,19 @@ const https = (s: string, base: string) => {
     return null;
   }
 };
+// Metadata sizes come from third-party pages: only plausible positive integers are kept.
+const size = (value: unknown, fallback: number) => {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 && n <= 10000 ? n : fallback;
+};
+/**
+ * The size of a new OG image, read from the image itself. It is accepted only when the cache would
+ * also accept it (images.ts); otherwise the page keeps its previous image and its cached file.
+ */
+export async function dimensions(url: string, fetcher: typeof fetch = fetch) {
+  const { width, height } = imageSize((await downloadRaster(url, fetcher)).bytes);
+  return { width: size(width, 1200), height: size(height, 630) };
+}
 export function parsePreview(html: string, url: string): Preview {
   const metas: Record<string, string> = {},
     links: { rel: string; href: string }[] = [];
@@ -93,7 +107,7 @@ export async function syncPreviews(
   ]);
   const urls: string[] = [
     ...new Set(
-      [...works, ...manual.projects, ...mergeArticles(snapshot.articles, [], manual)].map(
+      [...works, ...manual.projects, ...mergeArticles(snapshot.articles, manual)].map(
         (x: { url: string }) => x.url,
       ),
     ),

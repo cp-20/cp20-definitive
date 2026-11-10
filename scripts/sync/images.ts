@@ -41,10 +41,10 @@ type Cache = Record<string, CacheEntry>;
 type Thumbnail = { thumbnail?: string | null };
 
 // ── Accepting an image ──
-export const maxImageBytes = 15_000_000;
+const maxImageBytes = 15_000_000;
 const rasterTypes = new Set(['jpg', 'png', 'gif', 'webp', 'avif', 'ico']);
 /** The file extension of a raster image (image-size's type name), or throws for anything else. */
-export function rasterExtension(bytes: Buffer) {
+function rasterExtension(bytes: Buffer) {
   const type = imageSize(bytes).type ?? '';
   if (!rasterTypes.has(type)) throw Error('Unsupported image format');
   return type;
@@ -53,7 +53,7 @@ export function rasterExtension(bytes: Buffer) {
  * Like rasterExtension, but also decodes the whole image (ICO aside, which sharp cannot read), so a
  * file whose header is intact but whose body is truncated or corrupt is rejected before it is cached.
  */
-export async function decodableRaster(bytes: Buffer) {
+async function decodableRaster(bytes: Buffer) {
   const ext = rasterExtension(bytes);
   if (ext !== 'ico') {
     try {
@@ -80,18 +80,13 @@ async function download(url: string | URL, fetcher: typeof fetch = fetch) {
   }
   return Buffer.concat(parts);
 }
-// Metadata sizes come from third-party pages: only plausible positive integers are kept.
-export const size = (value: unknown, fallback: number) => {
-  const n = Number(value);
-  return Number.isInteger(n) && n >= 1 && n <= 10000 ? n : fallback;
-};
-// A new OG image is accepted only when the cache would also accept it (raster, at most 15 MB);
-// otherwise the page keeps its previous image and the previously cached file.
-export async function dimensions(url: string, fetcher: typeof fetch = fetch) {
+/**
+ * Downloads an image the cache takes (a decodable raster of at most 15 MB), or fails.
+ * @returns its bytes and file extension
+ */
+export async function downloadRaster(url: string | URL, fetcher: typeof fetch = fetch) {
   const bytes = await download(url, fetcher);
-  await decodableRaster(bytes);
-  const result = imageSize(bytes);
-  return { width: size(result.width, 1200), height: size(result.height, 630) };
+  return { bytes, ext: await decodableRaster(bytes) };
 }
 
 // ── Which images the pages show ──
@@ -132,10 +127,72 @@ export const framedSources = (tracks: Thumbnail[]) =>
   );
 
 // ── Caching ──
+const hash = (data: string | Buffer, length: number) =>
+  createHash('sha256').update(data).digest('hex').slice(0, length);
+/** Downloads `source` into public/media, named by its content hash, and returns its cache entry. */
+async function saveImage(source: string, dirs: Dirs, fetcher: typeof fetch): Promise<CacheEntry> {
+  const url = new URL(source);
+  if (url.protocol !== 'https:' || url.username || url.password) throw Error('Invalid source');
+  const { bytes, ext } = await downloadRaster(url, fetcher);
+  const file = `/media/${hash(bytes, 24)}.${ext}`;
+  // Named after the source as well, so two sources of the same image never share one.
+  const temporary = publicFile(dirs, `${file}.${hash(source, 8)}.tmp`);
+  await writeFile(temporary, bytes);
+  await rename(temporary, publicFile(dirs, file));
+  return { file, checkedAt: new Date().toISOString() };
+}
+
 /**
+ * Points every page whose new image or icon could not be cached (none in `next`) back at the one
+ * it had in `previousPreviews`, while that one's file is still cached in `previous`, and keeps
+ * that file in `next`. Edits `previews` and `next` in place.
+ * @param shownIcons the pages whose icons are shown (iconPages); the others' icons are not cached
+ * @returns whether any page was pointed back
+ */
+async function keepPreviousImages(
+  previews: Record<string, Preview>,
+  previousPreviews: Record<string, Preview>,
+  { next, previous, shownIcons, dirs }: { next: Cache; previous: Cache; shownIcons: Set<string>; dirs: Dirs },
+) {
+  let reverted = false;
+  for (const [page, preview] of Object.entries(previews)) {
+    const before = previousPreviews[page];
+    for (const field of ['image', 'icon'] as const) {
+      if (field === 'icon' && !shownIcons.has(page)) continue;
+      const source = preview[field];
+      const fallback = before?.[field];
+      if (!source || next[source] || !fallback || fallback === source || !previous[fallback]) continue;
+      if (!(await exists(publicFile(dirs, previous[fallback].file)))) continue;
+      next[fallback] = structuredClone(previous[fallback]);
+      preview[field] = fallback;
+      if (field === 'image') Object.assign(preview, { width: before.width, height: before.height });
+      reverted = true;
+      console.warn(`Image cache: ${new URL(page).hostname}; new ${field} not cached, kept previous one`);
+    }
+  }
+  return reverted;
+}
+
+/** The files of a cache entry: the original and its copies. */
+const entryFiles = (entry: CacheEntry) => [entry.file, ...(entry.variants ?? []).map((v) => v.file)];
+
+/** Deletes the files in public/media that no entry of `cache` uses. @returns how many are used */
+async function removeUnusedFiles(cache: Cache, dirs: Dirs) {
+  const directory = publicFile(dirs, '/media/');
+  const used = new Set(Object.values(cache).flatMap((e) => entryFiles(e).map((f) => f.split('/').at(-1))));
+  for (const filename of await readdir(directory))
+    if (!used.has(filename)) await unlink(new URL(filename, directory));
+  return used.size;
+}
+
+/**
+ * Refreshes image-cache.json and public/media: downloads the images the pages show (each again
+ * once it is a week old, or with `force`), keeps the previous file of one that fails, writes the
+ * WebP copies and deletes the files nothing uses any more.
  * @param previousPreviews previews.json as it was before this run's syncPreviews; pages whose new
  *   image or icon cannot be cached fall back to these entries (and their cached files) instead of
  *   losing the image.
+ * @returns whether the cached files changed
  */
 export async function cacheImages({
   force = false,
@@ -148,8 +205,7 @@ export async function cacheImages({
   dirs?: Dirs;
   fetch?: typeof globalThis.fetch;
 } = {}) {
-  const directory = publicFile(dirs, '/media/');
-  await mkdir(directory, { recursive: true });
+  await mkdir(publicFile(dirs, '/media/'), { recursive: true });
   const [previews, tracks, series, works, previous] = (await Promise.all([
     ...['previews', 'tracks', 'series', 'works'].map((name) => readData(dirs, name)),
     readData(dirs, 'image-cache').catch(() => ({})),
@@ -164,10 +220,9 @@ export async function cacheImages({
   const shownIcons = iconPages(works);
   const icons = iconSources(previews, shownIcons);
   const thumbnails = thumbnailSources(previews, shownItems(tracks, series));
-  const urls = [...new Set([...thumbnails, ...icons])];
   const next: Cache = {};
   let refreshed = 0;
-  await eachLimited(urls, 6, async (source) => {
+  await eachLimited([...new Set([...thumbnails, ...icons])], 6, async (source) => {
     const old = previous[source];
     const kept = old && (await exists(publicFile(dirs, old.file)));
     // A copy: addVariants rewrites entries in place, and `previous` must stay as it was for the
@@ -175,19 +230,7 @@ export async function cacheImages({
     if (kept) next[source] = structuredClone(old);
     if (!force && kept && Date.now() - Date.parse(old.checkedAt) < REFRESH_MS) return;
     try {
-      const url = new URL(source);
-      if (url.protocol !== 'https:' || url.username || url.password) throw Error('Invalid source');
-      const bytes = await download(url, fetch);
-      const ext = await decodableRaster(bytes);
-      const filename = `${createHash('sha256').update(bytes).digest('hex').slice(0, 24)}.${ext}`;
-      const file = new URL(filename, directory);
-      const temporary = new URL(
-        `${filename}.${createHash('sha256').update(source).digest('hex').slice(0, 8)}.tmp`,
-        directory,
-      );
-      await writeFile(temporary, bytes);
-      await rename(temporary, file);
-      next[source] = { file: `/media/${filename}`, checkedAt: new Date().toISOString() };
+      next[source] = await saveImage(source, dirs, fetch);
       refreshed++;
     } catch {
       console.warn(
@@ -195,44 +238,27 @@ export async function cacheImages({
       );
     }
   });
-  if (previousPreviews) {
-    let previewsReverted = false;
-    for (const [page, preview] of Object.entries(previews)) {
-      const before = previousPreviews[page];
-      for (const field of ['image', 'icon'] as const) {
-        if (field === 'icon' && !shownIcons.has(page)) continue;
-        const source = preview[field];
-        const fallback = before?.[field];
-        if (!source || next[source] || !fallback || fallback === source || !previous[fallback]) continue;
-        if (!(await exists(publicFile(dirs, previous[fallback].file)))) continue;
-        next[fallback] = structuredClone(previous[fallback]);
-        preview[field] = fallback;
-        if (field === 'image') Object.assign(preview, { width: before.width, height: before.height });
-        previewsReverted = true;
-        console.warn(`Image cache: ${new URL(page).hostname}; new ${field} not cached, kept previous one`);
-      }
-    }
-    if (previewsReverted) await writeData(dirs, 'previews', previews);
-  }
+  if (
+    previousPreviews &&
+    (await keepPreviousImages(previews, previousPreviews, { next, previous, shownIcons, dirs }))
+  )
+    await writeData(dirs, 'previews', previews);
   await addVariants(next, thumbnails, icons, framedSources(tracks), dirs);
-  const files = (entry: CacheEntry) => [entry.file, ...(entry.variants ?? []).map((v) => v.file)];
-  const content = (object: Cache) =>
+  const files = (cache: Cache) =>
     Object.fromEntries(
-      Object.keys(object)
+      Object.keys(cache)
         .sort()
-        .map((k) => [k, files(object[k])]),
+        .map((source) => [source, entryFiles(cache[source])]),
     );
-  const changed = JSON.stringify(content(next)) !== JSON.stringify(content(previous));
+  const changed = JSON.stringify(files(next)) !== JSON.stringify(files(previous));
   await writeData(
     dirs,
     'image-cache',
     Object.fromEntries(Object.entries(next).sort(([a], [b]) => a.localeCompare(b))),
   );
-  const used = new Set(Object.values(next).flatMap((p) => files(p).map((f) => f.split('/').at(-1))));
-  for (const filename of await readdir(directory))
-    if (!used.has(filename)) await unlink(new URL(filename, directory));
+  const used = await removeUnusedFiles(next, dirs);
   console.log(
-    `Image cache: ${Object.keys(next).length} source URLs, ${used.size} local files, ${refreshed} refreshed`,
+    `Image cache: ${Object.keys(next).length} source URLs, ${used} local files, ${refreshed} refreshed`,
   );
   return changed;
 }

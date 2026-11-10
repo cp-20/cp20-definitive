@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import type { CacheEntry } from '../../src/content/media.ts';
-import { addVariants, cacheImages, dimensions, framedCrop, plannedWidths } from './images.ts';
+import { addVariants, cacheImages, downloadRaster, framedCrop, plannedWidths } from './images.ts';
 import { tempDirs } from './temp-dirs.ts';
 
 const png = await readFile(new URL('../../public/images/avatar.png', import.meta.url)); // 512×512
@@ -36,12 +36,13 @@ async function dirsWith(...args: Parameters<typeof tempDirs>) {
   return box;
 }
 
-describe('新しい OG 画像の受け入れ', () => {
-  test('ラスター画像なら、その幅と高さを返す', async () => {
-    assert.deepEqual(await dimensions('https://example.com/a.png', fetchOf(() => new Response(png)).fetch), {
-      width: 512,
-      height: 512,
-    });
+describe('キャッシュに入れる画像', () => {
+  test('ラスター画像なら、その中身と拡張子を返す', async () => {
+    const { bytes, ext } = await downloadRaster(
+      'https://example.com/a',
+      fetchOf(() => new Response(png)).fetch,
+    );
+    assert.deepEqual([bytes.equals(png), ext], [true, 'png']);
   });
 
   for (const [why, answer] of [
@@ -52,7 +53,7 @@ describe('新しい OG 画像の受け入れ', () => {
     ['ヘッダーは正しいが本体が途中で切れた PNG', () => new Response(truncatedPng)],
   ] as [string, () => Response][])
     test(`${why}は受け入れない`, async () => {
-      await assert.rejects(dimensions('https://example.com/a', fetchOf(answer).fetch));
+      await assert.rejects(downloadRaster('https://example.com/a', fetchOf(answer).fetch));
     });
 });
 

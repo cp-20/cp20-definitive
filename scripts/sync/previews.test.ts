@@ -2,7 +2,7 @@
 import { describe, onTestFinished, test } from 'vitest';
 import assert from 'node:assert/strict';
 import sharp from 'sharp';
-import { keepReferenced, parsePreview, reachable, syncPreviews, withStated } from './previews.ts';
+import { dimensions, keepReferenced, parsePreview, reachable, syncPreviews, withStated } from './previews.ts';
 import { ogImage } from './picks.ts';
 import { tempDirs } from './temp-dirs.ts';
 
@@ -140,6 +140,14 @@ describe('悪意のある HTML を線形時間で読む', () => {
     assert.ok(time(() => (image = ogImage(page))) < 1000);
     assert.equal(image, 'https://public.ynjn.jp/a.jpg?x=1&y=2');
   });
+});
+
+test('新しい OG 画像の大きさは、画像そのものから読む', async () => {
+  const png = await sharp({ create: { width: 40, height: 21, channels: 3, background: '#fff' } })
+    .png()
+    .toBuffer();
+  const fetcher = (async () => new Response(png)) as unknown as typeof fetch;
+  assert.deepEqual(await dimensions('https://example.com/og.png', fetcher), { width: 40, height: 21 });
 });
 
 describe('アイコンの確認', () => {
