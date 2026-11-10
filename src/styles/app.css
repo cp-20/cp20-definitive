@@ -3417,6 +3417,9 @@
     .not-found h1 {
       font-size: var(--fs-h2);
     }
+    .not-found {
+      padding-top: 16px;
+    }
     body {
       /* Room to scroll the last links above an open sticker sheet (raised inline by Stamps.tsx). */
       padding: 10px 0 96px;
@@ -3491,9 +3494,12 @@
       width: auto;
       translate: 0 0;
     }
-    /* The tag over the page is one short line, so the first screen has room for what follows. */
+    /* The tag over the page is one short line, so the first screen has room for what follows; the
+       QR code's button stands 12px clear of the sheet's top edge as of its right one, and the page
+       starts 16px or more under them (below). */
     .site-header {
-      height: 48px;
+      height: auto;
+      padding-top: 12px;
     }
     .brand {
       font-size: var(--fs-lead);
@@ -3507,14 +3513,14 @@
       margin-bottom: 16px;
     }
     .page-heading {
-      padding: 8px 0 32px;
+      padding: 16px 0 32px;
     }
     /* The first screen holds the name, the two facts, the accounts and the three results, and
        the featured works' heading shows under them. */
     .home-intro {
       grid-template-columns: minmax(0, 1fr);
       gap: 16px;
-      padding: 0 0 22px;
+      padding: 16px 0 22px;
     }
     .home-hello {
       grid-template-areas:
@@ -3735,7 +3741,7 @@
       grid-template-areas: 'avatar name' 'text text' 'links links';
       align-items: center;
       gap: 0 16px;
-      padding: 8px 0 40px;
+      padding: 16px 0 40px;
     }
     .profile-intro {
       display: contents;

@@ -219,6 +219,14 @@ try {
     await page.goto(origin + '/');
     await settle(page);
     const fold = (await page.locator('.rail nav').boundingBox())!.y;
+    // The header's buttons stand clear of the sheet's top edge, and the page clear of them.
+    const sheet = (await page.locator('.site-body').boundingBox())!.y + 2;
+    const qr = (await page.locator('.header-qr').boundingBox())!;
+    const avatar = (await page.locator('.home-hello .avatar-stamp').boundingBox())!.y;
+    if (qr.y - sheet < 11.5 || avatar - (qr.y + qr.height) < 11.5)
+      throw Error(
+        `The top of a ${width}×${height} phone screen is cramped: ${qr.y - sheet}px, ${avatar - qr.y - qr.height}px`,
+      );
     const parts = ['.home-hello h1', '.home-facts', '.home-accounts', '.highlights', '.header-qr'];
     for (const part of height > 600 ? [...parts, '.home-works h2'] : parts) {
       const box = (await page.locator(part).boundingBox())!;
