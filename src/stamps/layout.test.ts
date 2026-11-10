@@ -58,6 +58,12 @@ describe('layoutStamps', () => {
     assert.deepEqual([shown.left, shown.top], [400, 350]);
   });
 
+  test('シールがなければ何も測らない（プリレンダー中は測るページがない）', () => {
+    const measured: string[] = [];
+    layoutStamps([], (name) => (measured.push(name), boxOf(name)));
+    assert.deepEqual(measured, []);
+  });
+
   test('表示されていないアンカーのシールは描かない', () => {
     assert.equal(layoutStamps([stamp('a', { anchor: 'gone' })], boxOf).size, 0);
   });
