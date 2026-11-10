@@ -13,54 +13,60 @@ test('srcset は元の画像と同じ名前の WebP だけから、幅の順に�
 
 describe('clientMedia', () => {
   const page = 'https://example.com/post';
-  const media = () => clientMedia(
-    {
-      [page]: {
-        image: 'https://cdn.example.com/og.png?x=1',
-        icon: 'https://cdn.example.com/icon.png',
-        width: 1200,
-        height: 630,
-        checkedAt: '2026-01-01',
+  const media = () =>
+    clientMedia(
+      {
+        [page]: {
+          image: 'https://cdn.example.com/og.png?x=1',
+          icon: 'https://cdn.example.com/icon.png',
+          width: 1200,
+          height: 630,
+          checkedAt: '2026-01-01',
+        },
+        'https://example.com/none': { image: null, icon: null, width: 1200, height: 630, checkedAt: 'x' },
       },
-      'https://example.com/none': { image: null, icon: null, width: 1200, height: 630, checkedAt: 'x' },
-    },
-    {
-      'https://cdn.example.com/og.png?x=1': {
-        file: '/media/og.png',
-        checkedAt: 'x',
-        width: 1200,
-        variants: [
-          { file: '/media/og-320w.webp', width: 320 },
-          { file: '/media/og-640w.webp', width: 640 },
-        ],
+      {
+        'https://cdn.example.com/og.png?x=1': {
+          file: '/media/og.png',
+          checkedAt: 'x',
+          width: 1200,
+          variants: [
+            { file: '/media/og-320w.webp', width: 320 },
+            { file: '/media/og-640w.webp', width: 640 },
+          ],
+        },
+        'https://cdn.example.com/icon.png': {
+          file: '/media/icon.png',
+          checkedAt: 'x',
+          width: 180,
+          variants: [{ file: '/media/icon-96w.webp', width: 96 }],
+        },
+        'https://i.ytimg.com/vi/a/hq.jpg': {
+          file: '/media/yt.jpg',
+          checkedAt: 'x',
+          width: 480,
+          variants: [{ file: '/media/yt-320w.webp', width: 320 }],
+        },
+        'https://i.ytimg.com/vi/b/hq.jpg': { file: '/media/yt-b.jpg', checkedAt: 'x' },
+        'https://i.ytimg.com/vi/c/hq.jpg': {
+          file: '/media/yt-c.jpg',
+          checkedAt: 'x',
+          width: 480,
+          crop: { left: 0, top: 45, width: 480, height: 270 },
+          variants: [
+            { file: '/media/yt-c-320w.webp', width: 320 },
+            { file: '/media/yt-c-480w.webp', width: 480 },
+          ],
+        },
+        'https://unused.example.com/a.png': { file: '/media/unused.png', checkedAt: 'x' },
       },
-      'https://cdn.example.com/icon.png': {
-        file: '/media/icon.png',
-        checkedAt: 'x',
-        width: 180,
-        variants: [{ file: '/media/icon-96w.webp', width: 96 }],
-      },
-      'https://i.ytimg.com/vi/a/hq.jpg': {
-        file: '/media/yt.jpg',
-        checkedAt: 'x',
-        width: 480,
-        variants: [{ file: '/media/yt-320w.webp', width: 320 }],
-      },
-      'https://i.ytimg.com/vi/b/hq.jpg': { file: '/media/yt-b.jpg', checkedAt: 'x' },
-      'https://i.ytimg.com/vi/c/hq.jpg': {
-        file: '/media/yt-c.jpg',
-        checkedAt: 'x',
-        width: 480,
-        crop: { left: 0, top: 45, width: 480, height: 270 },
-        variants: [
-          { file: '/media/yt-c-320w.webp', width: 320 },
-          { file: '/media/yt-c-480w.webp', width: 480 },
-        ],
-      },
-      'https://unused.example.com/a.png': { file: '/media/unused.png', checkedAt: 'x' },
-    },
-    ['https://i.ytimg.com/vi/a/hq.jpg', 'https://i.ytimg.com/vi/b/hq.jpg', 'https://i.ytimg.com/vi/c/hq.jpg', null],
-  );
+      [
+        'https://i.ytimg.com/vi/a/hq.jpg',
+        'https://i.ytimg.com/vi/b/hq.jpg',
+        'https://i.ytimg.com/vi/c/hq.jpg',
+        null,
+      ],
+    );
 
   test('ページの画像は、ローカルのパスと srcset とサイズにする', () => {
     assert.deepEqual(media().pages[page], {

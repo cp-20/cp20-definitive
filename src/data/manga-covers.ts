@@ -9,7 +9,15 @@
 // publisher's key visual behind a cover is never fetched.
 export const mangaCovers: Record<
   string,
-  { image: string; source: string; url: string; spine: string; ink: string; face: [number, number]; zoom: number }
+  {
+    image: string;
+    source: string;
+    url: string;
+    spine: string;
+    ink: string;
+    face: [number, number];
+    zoom: number;
+  }
 > = {
   放課後帰宅びより: {
     image: '/images/covers/houkago-kitaku-biyori.jpg',

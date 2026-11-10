@@ -18,7 +18,9 @@ test('空白の隣には印を入れず、印の入った文に入れ直して�
 });
 
 test('作品は、ページに文として出す欄だけに印を入れる', () => {
-  const [work] = phraseWorks([{ title: 'ビルドを速くした', description: 'ビルドを速くした', alt: 'ビルドを速くした' }]);
+  const [work] = phraseWorks([
+    { title: 'ビルドを速くした', description: 'ビルドを速くした', alt: 'ビルドを速くした' },
+  ]);
   assert.deepEqual(
     [work.title, shown(work.description), work.alt],
     ['ビルドを速くした', 'ビルドを|速くした', 'ビルドを速くした'],

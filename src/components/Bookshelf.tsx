@@ -32,7 +32,9 @@ export default function Bookshelf() {
     const book = e.target as HTMLElement;
     if (e.propertyName === 'clip-path' && book.getAttribute('aria-selected') === 'true')
       // The cover, not the slot: the slot is only a spine wide.
-      book.querySelector('.book-cover')!.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+      book
+        .querySelector('.book-cover')!
+        .scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
   };
   return (
     <div class="shelf-row">

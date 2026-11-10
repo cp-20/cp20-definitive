@@ -95,7 +95,11 @@ export async function request(
       // The token only ever goes to the API it is for.
       if (new URL(url).hostname === 'api.github.com' && process.env.GITHUB_TOKEN)
         sent.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-      const response = await fetch(url, { headers: sent, redirect: 'follow', signal: AbortSignal.timeout(20000) });
+      const response = await fetch(url, {
+        headers: sent,
+        redirect: 'follow',
+        signal: AbortSignal.timeout(20000),
+      });
       if (!response.ok)
         throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status });
       let size = 0;

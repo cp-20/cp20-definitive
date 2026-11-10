@@ -123,7 +123,10 @@ export async function syncPicks(
       seriesFrom(raw, series),
     );
     const read = await Promise.allSettled(
-      picked.map(async (s) => ({ ...s, thumbnail: ogImage(await request(s.link, { ...headRequest, fetch })) })),
+      picked.map(async (s) => ({
+        ...s,
+        thumbnail: ogImage(await request(s.link, { ...headRequest, fetch })),
+      })),
     );
     const shelf = read.map((r, i) => (r.status === 'fulfilled' ? r.value : picked[i]));
     // An inaccessible new entry must not replace the previously working shelf.

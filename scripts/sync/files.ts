@@ -15,8 +15,7 @@ export const dataFile = (dirs: Dirs, name: string) => new URL(`${name}.json`, di
 /** A served file by its public path (`/media/a.png`). */
 export const publicFile = (dirs: Dirs, path: string) => new URL(path.replace(/^\//, ''), dirs.public);
 
-export const readData = (dirs: Dirs, name: string) =>
-  readFile(dataFile(dirs, name), 'utf8').then(JSON.parse);
+export const readData = (dirs: Dirs, name: string) => readFile(dataFile(dirs, name), 'utf8').then(JSON.parse);
 
 /** Writes src/data/<name>.json whole or not at all (through a temporary file). */
 export async function writeData(dirs: Dirs, name: string, value: unknown) {

@@ -74,15 +74,23 @@ export const keepReferenced = <T>(previews: Record<string, T>, urls: string[]) =
  */
 export async function syncPreviews(
   request: Request,
-  { force = false, dirs = repoDirs, fetch = globalThis.fetch }: { force?: boolean; dirs?: Dirs; fetch?: typeof globalThis.fetch } = {},
+  {
+    force = false,
+    dirs = repoDirs,
+    fetch = globalThis.fetch,
+  }: { force?: boolean; dirs?: Dirs; fetch?: typeof globalThis.fetch } = {},
 ) {
-  const [previous, works, manual, snapshot]: [Record<string, Preview>, ({ url: string } & Stated)[], any, any] =
-    await Promise.all([
-      readData(dirs, 'previews').catch(() => ({})),
-      readData(dirs, 'works'),
-      readData(dirs, 'manual'),
-      readData(dirs, 'generated'),
-    ]);
+  const [previous, works, manual, snapshot]: [
+    Record<string, Preview>,
+    ({ url: string } & Stated)[],
+    any,
+    any,
+  ] = await Promise.all([
+    readData(dirs, 'previews').catch(() => ({})),
+    readData(dirs, 'works'),
+    readData(dirs, 'manual'),
+    readData(dirs, 'generated'),
+  ]);
   const urls: string[] = [
     ...new Set(
       [...works, ...manual.projects, ...mergeArticles(snapshot.articles, [], manual)].map(

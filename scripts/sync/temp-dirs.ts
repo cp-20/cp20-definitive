@@ -14,7 +14,8 @@ export async function tempDirs(data: Record<string, unknown>, media: Record<stri
   await mkdir(publicFile(dirs, '/media/'), { recursive: true });
   const write = (name: string, value: unknown) => writeFile(dataFile(dirs, name), JSON.stringify(value));
   for (const [name, value] of Object.entries({ works: [], ...data })) await write(name, value);
-  for (const [name, bytes] of Object.entries(media)) await writeFile(publicFile(dirs, `/media/${name}`), bytes);
+  for (const [name, bytes] of Object.entries(media))
+    await writeFile(publicFile(dirs, `/media/${name}`), bytes);
   return {
     dirs,
     load: (name: string) => readData(dirs, name),

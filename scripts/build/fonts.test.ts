@@ -24,8 +24,7 @@ import { assertOflNotice, nameRecords } from './font-names.ts';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 
 describe('collectCharacters', () => {
-  const collect = () =>
-    collectCharacters(['あ', '"\\u3044\\u{1F600}"', '<p>&#x3046;&#12360;</p>', '\u0007']);
+  const collect = () => collectCharacters(['あ', '"\\u3044\\u{1F600}"', '<p>&#x3046;&#12360;</p>', '\u0007']);
 
   test('そのままの文字、\\u エスケープ、文字参照、印字可能な ASCII を含める', () => {
     const chars = collect();

@@ -34,7 +34,11 @@ describe('parsePreview', () => {
     assert.equal(parsePreview(html, 'https://example.com').image, 'https://cdn.example.com/card.png');
   });
 
-  for (const value of ['javascript:alert(1)', 'http://example.com/a.png', 'https://user:password@example.com/a.png'])
+  for (const value of [
+    'javascript:alert(1)',
+    'http://example.com/a.png',
+    'https://user:password@example.com/a.png',
+  ])
     test(`安全でない画像 URL ${JSON.stringify(value)} は使わない`, () => {
       assert.equal(parsePreview(og(value), 'https://example.com').image, null);
     });
@@ -170,15 +174,25 @@ describe('syncPreviews', () => {
   test('新しい画像を受け入れられなければ、前の画像をその大きさのまま残す', async () => {
     const box = await dirsWith({
       previews: {
-        [page]: { image: 'https://example.com/og.png', icon: null, width: 1200, height: 600, checkedAt: '2000-01-01' },
+        [page]: {
+          image: 'https://example.com/og.png',
+          icon: null,
+          width: 1200,
+          height: 600,
+          checkedAt: '2000-01-01',
+        },
       },
       works: [{ url: page }],
     });
     const html = `${og('https://example.com/og.svg')}<meta property="og:image:width" content="1e999">`;
-    const svg = async () => new Response('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>');
+    const svg = async () =>
+      new Response('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>');
     await syncPreviews(async () => html, { dirs: box.dirs, fetch: svg as unknown as typeof fetch });
     const { image, width, height } = (await box.load('previews'))[page];
-    assert.deepEqual({ image, width, height }, { image: 'https://example.com/og.png', width: 1200, height: 600 });
+    assert.deepEqual(
+      { image, width, height },
+      { image: 'https://example.com/og.png', width: 1200, height: 600 },
+    );
   });
 
   test('ログインが必要で読めないページでも、works.json に書いた画像は使う', async () => {

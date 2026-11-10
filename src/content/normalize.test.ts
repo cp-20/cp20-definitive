@@ -24,7 +24,10 @@ test('URL から追跡用のクエリとハッシュを落とし、ほかのク�
 });
 
 test('www. の有無は同じ掲載先として受け付ける', () => {
-  assert.equal(article('x', 'https://www.zenn.dev/a', '2026-01-01', 'zenn.dev').url, 'https://www.zenn.dev/a');
+  assert.equal(
+    article('x', 'https://www.zenn.dev/a', '2026-01-01', 'zenn.dev').url,
+    'https://www.zenn.dev/a',
+  );
 });
 
 test('掲載先とホストの違う URL の記事は受け付けない', () => {

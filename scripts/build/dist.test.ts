@@ -40,9 +40,9 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
 
   // The headings outside <template>, without their markup.
   const headings = (html: string) =>
-    [...html.replace(/<template[\s\S]*?<\/template>/g, '').matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/g)].map(
-      ([, level, text]) => ({ level: +level, text: text.replace(/<[^>]+>|<!--.*?-->/g, '').trim() }),
-    );
+    [
+      ...html.replace(/<template[\s\S]*?<\/template>/g, '').matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/g),
+    ].map(([, level, text]) => ({ level: +level, text: text.replace(/<[^>]+>|<!--.*?-->/g, '').trim() }));
 
   test('どのページの見出しも、レベルを飛ばさない', () => {
     const files = [...sitePaths(mergeWorks(baseWorks, manual)).map(pageFile), '404.html'];
@@ -64,14 +64,19 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
 
   test('共有したリンクの画像は、ページが告げる大きさの PNG', async () => {
     const { format, width, height } = await sharp(built(OG_IMAGE.path.slice(1)).pathname).metadata();
-    assert.deepEqual({ format, width, height }, { format: 'png', width: OG_IMAGE.width, height: OG_IMAGE.height });
+    assert.deepEqual(
+      { format, width, height },
+      { format: 'png', width: OG_IMAGE.width, height: OG_IMAGE.height },
+    );
   });
 
   test('本棚の本の名前には原作・原案まで全員を、背表紙には最初の名前だけを書く', () => {
     const about = read('about/index.html');
     assert.deepEqual(
       series.filter(
-        (s) => !about.includes(`aria-label="${s.title} ${s.author}"`) || !about.includes(`<small>${spineAuthor(s.author)}</small>`),
+        (s) =>
+          !about.includes(`aria-label="${s.title} ${s.author}"`) ||
+          !about.includes(`<small>${spineAuthor(s.author)}</small>`),
       ),
       [],
     );
@@ -97,7 +102,12 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
       });
 
     test('どのファイルも @font-face で宣言され、太さごとに文字の範囲が重ならない', () => {
-      assert.deepEqual(faces().map((f) => f.href.slice('/assets/'.length)).sort(), fonts().sort());
+      assert.deepEqual(
+        faces()
+          .map((f) => f.href.slice('/assets/'.length))
+          .sort(),
+        fonts().sort(),
+      );
       for (const weight of weights) {
         const all = faces()
           .filter((f) => f.weight === String(weight))
@@ -138,10 +148,7 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
         /Apache License\s+Version 2\.0/,
         /SIL OPEN FONT LICENSE Version 1\.1/,
       ];
-      assert.deepEqual(
-        needles.filter((needle) => !needle.test(text)).map(String),
-        [],
-      );
+      assert.deepEqual(needles.filter((needle) => !needle.test(text)).map(String), []);
       assert.ok(existsSync(built('stamps/LICENSE-GRAPHICS.txt')));
     });
 
@@ -150,9 +157,11 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
       const start = html.indexOf('id="credits"');
       const credits = html.slice(start, html.indexOf('</dialog>', start));
       assert.deepEqual(
-        [`href="/${licensesPath}"`, 'href="/stamps/LICENSE-GRAPHICS.txt"', '© Twitter, Inc and other contributors'].filter(
-          (needle) => !credits.includes(needle),
-        ),
+        [
+          `href="/${licensesPath}"`,
+          'href="/stamps/LICENSE-GRAPHICS.txt"',
+          '© Twitter, Inc and other contributors',
+        ].filter((needle) => !credits.includes(needle)),
         [],
       );
     });

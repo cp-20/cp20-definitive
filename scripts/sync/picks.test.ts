@@ -33,9 +33,12 @@ describe('trackFrom', () => {
 
 test('サムネイルは YouTube にある一番大きいものを使う', async () => {
   const has = (name: string) =>
-    (async (url: string) => new Response(null, { status: url.includes(`/${name}.jpg`) ? 200 : 404 })) as unknown as typeof fetch;
+    (async (url: string) =>
+      new Response(null, { status: url.includes(`/${name}.jpg`) ? 200 : 404 })) as unknown as typeof fetch;
   assert.deepEqual(
-    await Promise.all([has('maxresdefault'), has('sddefault'), has('none')].map((f) => youtubeThumbnail('a', f))),
+    await Promise.all(
+      [has('maxresdefault'), has('sddefault'), has('none')].map((f) => youtubeThumbnail('a', f)),
+    ),
     [
       'https://i.ytimg.com/vi/a/maxresdefault.jpg',
       'https://i.ytimg.com/vi/a/sddefault.jpg',
@@ -71,7 +74,9 @@ test('漫画のサムネイルは、知っている出版社の CDN の og:image
     ogImage('<head><meta property="og:image" content="https://cdn-img.comic-action.com/a.png"></head>'),
     'https://cdn-img.comic-action.com/a.png',
   );
-  assert.throws(() => ogImage('<head><meta property="og:image" content="https://evil.example/a.png"></head>'));
+  assert.throws(() =>
+    ogImage('<head><meta property="og:image" content="https://evil.example/a.png"></head>'),
+  );
 });
 
 describe('syncPicks', () => {
