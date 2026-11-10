@@ -87,6 +87,19 @@ export const milestones: Milestone[] = [
     speedup: { what: 'RISC-V の int8 行列積', to: '約114倍', place: 'フィックスターズ' },
   },
   {
+    id: 'mixi-git-challenge',
+    kind: 'award',
+    year: '2025.08',
+    grade: '大学3年',
+    title: 'MIXI Git Challenge #15 2位',
+    text: '2人1組のチームで Git の問題を解き、**2位**。',
+    detail: [
+      'MIXI の Git Challenge は、Git のリポジトリに用意された問題（issue）を2人1組のチームで制限時間内に解き、得点を競う1日の競技イベント。問題は MIXI グループのエンジニアが出す。',
+      '2025年8月30日に渋谷の MIXI 本社で開かれた #15 に出て、2位になった。',
+    ],
+    links: [],
+  },
+  {
     id: 'm3',
     kind: 'intern',
     year: '2025.08',
