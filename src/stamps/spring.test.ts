@@ -65,7 +65,8 @@ describe('springStep', () => {
       left = { ...far(), tx: -400 };
     springStep(right, FRAME);
     springStep(left, FRAME);
-    assert.deepEqual([right.tilt > 0, left.tilt < 0], [true, true]);
+    assert.ok(right.tilt > 0, `右へ: ${right.tilt}`);
+    assert.ok(left.tilt < 0, `左へ: ${left.tilt}`);
   });
 
   test('止まるころには、もとの角度（base）に戻っている', () => {
@@ -137,11 +138,17 @@ describe('throwing', () => {
     assert.deepEqual(releaseVelocity([], 0), { vx: 0, vy: 0 });
   });
 
-  test('投げたシールは進んでいた向きに少し滑り、強く投げても滑りすぎない', () => {
-    const gentle = throwCarry(1000, 0),
-      hard = throwCarry(0, -20000);
-    assert.ok(gentle.x > 20 && gentle.x < 80 && gentle.y === 0, JSON.stringify(gentle));
-    assert.ok(hard.y < -60 && hard.y >= -120 && hard.x === 0, JSON.stringify(hard));
+  test('投げたシールは、進んでいた向きに少し滑る', () => {
+    const { x, y } = throwCarry(1000, 0);
+    assert.equal(y, 0);
+    assert.ok(x > 20 && x < 80, String(x));
+  });
+
+  test('強く投げても、滑るのは 120px まで', () => {
+    assert.deepEqual(throwCarry(0, -20000), { x: 0, y: -120 });
+  });
+
+  test('止まっていれば滑らない', () => {
     assert.deepEqual(throwCarry(0, 0), { x: 0, y: 0 });
   });
 });
@@ -191,17 +198,13 @@ describe('liftedSpot', () => {
     assert.deepEqual(liftedSpot(300, 120, 390, 664, 80), { x: 300, y: 120 + LIFT });
   });
 
-  for (const [x, y, w, h] of [
-    [389, 660, 390, 664],
-    [100, 40, 390, 100],
-  ])
-    test(`画面の端（${x}, ${y} / ${w}×${h}）でも、シール半分の余白を残して画面に収まる`, () => {
-      const spot = liftedSpot(x, y, w, h, 80);
-      assert.deepEqual(
-        [spot.x >= 25, spot.x <= w - 25, spot.y >= 25, spot.y <= h - 25],
-        [true, true, true, true],
-      );
-    });
+  test('右端では、シール半分（25px）の余白を残して内側に浮かぶ', () => {
+    assert.deepEqual(liftedSpot(389, 660, 390, 664, 80), { x: 390 - 25, y: 660 - LIFT });
+  });
+
+  test('低い画面で指の下に入りきらなければ、下端にシール半分の余白を残す', () => {
+    assert.deepEqual(liftedSpot(100, 40, 390, 100, 80), { x: 100, y: 100 - 25 });
+  });
 });
 
 describe('keptOnScreen', () => {
@@ -223,11 +226,20 @@ describe('keptOnScreen', () => {
 });
 
 describe('slideTime', () => {
-  test('離した速さのまま滑り出す長さにし、止まって離したときは既定の長さにする', () => {
+  // A sticker let go at (0, 0) moving right at `vx` px/s, sliding `distance` px.
+  const slide = (vx: number, distance: number) => slideTime({ x: 0, y: 0, vx, vy: 0 }, distance, 0);
+
+  test('離した速さのまま滑り出す長さにする', () => {
     // 60 px at 900 px/s: 3 × 60 / 900 s = 200 ms.
-    assert.equal(slideTime({ x: 0, y: 0, vx: 900, vy: 0 }, 60, 0), 200);
-    assert.equal(slideTime({ x: 0, y: 0, vx: 4000, vy: 0 }, 10, 0), 180);
-    assert.equal(slideTime({ x: 0, y: 0, vx: 100, vy: 0 }, 100, 0), 400);
-    assert.equal(slideTime({ x: 0, y: 0, vx: 10, vy: 0 }, 5, 0), undefined);
+    assert.equal(slide(900, 60), 200);
+  });
+
+  test('180〜400ms に収める', () => {
+    assert.equal(slide(4000, 10), 180);
+    assert.equal(slide(100, 100), 400);
+  });
+
+  test('止まって離したときは、既定の長さ（undefined）にする', () => {
+    assert.equal(slide(10, 5), undefined);
   });
 });
