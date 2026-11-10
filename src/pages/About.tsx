@@ -12,15 +12,9 @@ import { works } from '../content/content.ts';
 import { workPath } from '../site/pages.ts';
 import profile from '../data/profile.json';
 import tracks from '../data/tracks.json';
-// A line of the history with its figures in bold and a name that is code in the monospace face.
+// A line of the history with its figures written by hand.
 function Emphasis(props: { text: string }) {
-  return (
-    <>
-      {splitEmphasis(props.text).map((p) =>
-        'strong' in p ? <strong>{p.strong}</strong> : 'code' in p ? <code>{p.code}</code> : p.text,
-      )}
-    </>
-  );
+  return <>{splitEmphasis(props.text).map((p) => ('strong' in p ? <strong>{p.strong}</strong> : p.text))}</>;
 }
 export default function About() {
   return (

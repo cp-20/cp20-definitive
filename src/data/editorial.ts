@@ -4,9 +4,10 @@ export const highlightIds = ['isucon2026', 'wsh2024', 'layerx'];
 /**
  * One entry per line of the history on /about. `id` is its dialog's id, so /about#<id> opens it
  * (the home page links its achievements this way). `text` is the line under the title: what came
- * of it, with its figures as `**…**` (and a name that is code as `` `…` ``). `detail` is what its
- * dialog says, from the linked write-ups and official pages; an entry with no detail and no links
- * is not clickable. `work` is the /works page of what was made there.
+ * of it, with its figures as `**…**` (a name is written as it is, in the printed text: the ISUCON
+ * team [object Object] has a no-break space, so it stays on one line). `detail` is what its dialog
+ * says, from the linked write-ups and official pages; an entry with no detail and no links is not
+ * clickable. `work` is the /works page of what was made there.
  */
 export type Milestone = {
   id: string;
@@ -30,9 +31,9 @@ export const milestones: Milestone[] = [
     year: '2026.10',
     grade: '大学4年',
     title: 'ISUCON2026 学生2位',
-    text: 'pirosiki と2人のチーム「`[object Object]`」で、最終 **211,213点**。',
+    text: 'pirosiki と2人のチーム [object\u00a0Object] で、最終 **211,213点**。',
     detail: [
-      'チーム「`[object Object]`」として pirosiki と2人で出場し、BeReal 風の SNS「ISUReal」を8時間かけて高速化した。複数の AI Agent を並列に動かすため、ベンチのロックやタスクボードなどの道具を事前に用意して臨み、最終 211,213点で学生2位になった。',
+      'チーム [object\u00a0Object] として pirosiki と2人で出場し、BeReal 風の SNS「ISUReal」を8時間かけて高速化した。複数の AI Agent を並列に動かすため、ベンチのロックやタスクボードなどの道具を事前に用意して臨み、最終 211,213点で学生2位になった。',
       '投稿画像の JPEG 検証は判定結果を変えずに最適化し、標準ライブラリを複製した検証器で、412KB の画像の検証を 27.6ms から 1.15ms（約24倍）にした。',
     ],
     links: [

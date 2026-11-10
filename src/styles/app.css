@@ -1781,14 +1781,6 @@
     line-height: 1;
     white-space: nowrap;
   }
-  /* A name that is literally code: the ISUCON team 「[object Object]」, kept on one line. */
-  .timeline-item p code,
-  .modal-sheet > p code {
-    font-family: var(--mono);
-    font-weight: 400;
-    font-size: var(--fs-small);
-    white-space: nowrap;
-  }
   /* The title is the button; its ::after stretches the hit area over the whole entry. */
   .timeline-item h3 button {
     padding: 0;
