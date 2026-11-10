@@ -1327,8 +1327,10 @@
     height: 76px;
     object-fit: cover;
   }
+  /* The manga's whole cover, nothing cut from it: a stamp the cover's shape (480×682). */
   .home-favorites a:last-child .favorite-stamp img {
-    height: 112px;
+    height: auto;
+    aspect-ratio: 480 / 682;
   }
   .favorite-stamp svg {
     position: absolute;
@@ -2158,7 +2160,9 @@
     top: calc(50% - var(--face-y) * var(--zoom) * 142%);
     width: calc(var(--zoom) * 100%);
     max-width: none;
+    /* A cover a little taller than 480×682 is cut to it, not squeezed. */
     aspect-ratio: 480 / 682;
+    object-fit: cover;
   }
   .book[aria-selected='true'] .book-spine {
     opacity: 0;
@@ -3321,11 +3325,8 @@
     .home-favorites a:last-child .favorite-stamp {
       width: 74px;
     }
-    .favorite-stamp img {
+    .home-favorites a:first-child .favorite-stamp img {
       height: 68px;
-    }
-    .home-favorites a:last-child .favorite-stamp img {
-      height: 98px;
     }
     /* Too narrow for the facts beside the avatar and the note beside them: the facts go under
        the name, so the note keeps the width its lines need. */
