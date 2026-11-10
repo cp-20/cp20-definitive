@@ -95,6 +95,17 @@ export const extraNotices: Notice[] = [
     text: readFileSync(new URL('../../fonts/cp20-mono/OFL.txt', import.meta.url), 'utf8').trim(),
   },
   {
+    name: 'Mochiy Pop One (the letters of the word stickers in /stamps, drawn as outlines)',
+    license: 'OFL-1.1',
+    homepage: 'https://github.com/fontdasu/Mochiypop',
+    copyright: [],
+    text: [
+      'Copyright 2020 The MochiyPop Project Authors (https://github.com/fontdasu/Mochiypop)',
+      'Licensed under the SIL Open Font License, Version 1.1: https://openfontlicense.org',
+      'Files and full license text: https://cp20.dev/stamps/LICENSE-GRAPHICS.txt',
+    ].join('\n'),
+  },
+  {
     name: 'Twemoji graphics (the picture stickers in /stamps and the clover in the QR code)',
     license: 'CC-BY-4.0',
     homepage: 'https://github.com/jdecked/twemoji',

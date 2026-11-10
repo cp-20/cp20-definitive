@@ -154,6 +154,7 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
         /^Zen Maru Gothic .*\(OFL-1\.1\)/m,
         /^Yusei Magic .*\(OFL-1\.1\)/m,
         /^Twemoji graphics .*\(CC-BY-4\.0\).*\n-+\nCopyright 2019 Twitter, Inc and other contributors/m,
+        /^Mochiy Pop One .*\(OFL-1\.1\).*\n-+\nCopyright 2020 The MochiyPop Project Authors/m,
         /Apache License\s+Version 2\.0/,
         /SIL OPEN FONT LICENSE Version 1\.1/,
       ];
