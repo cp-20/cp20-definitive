@@ -127,8 +127,9 @@ try {
       );
     if (broken.length) throw Error(`Broken local images: ${broken}`);
     // Every character on the page, its dialogs included, is in a file of its face and weight: Zen
-    // Maru Gothic 500 or 700, or Yusei Magic (scripts/build/fonts.ts subsets bold to what the
-    // stylesheet sets in bold, and the hand-written face to what it sets in it).
+    // Maru Gothic 500 or 700, Yusei Magic or cp20 Mono 600 (scripts/build/fonts.ts subsets bold to
+    // what the stylesheet sets in bold, and the hand-written face and the monospace to what it sets
+    // in them).
     const missing = await page.evaluate(() => {
       const covered = (family: string, weight: string, c: string) =>
         [...document.fonts].some(
@@ -147,13 +148,15 @@ try {
         for (let n = walk.nextNode(); n; n = walk.nextNode()) {
           const el = n.parentElement!;
           const family = getComputedStyle(el).fontFamily.split(',')[0].replaceAll(/["']/g, '');
-          if (!el.checkVisibility() || !/^(Zen Maru Gothic|Yusei Magic)$/.test(family)) continue;
+          if (!el.checkVisibility() || !/^(Zen Maru Gothic|Yusei Magic|cp20 Mono)$/.test(family)) continue;
           const weight =
             family === 'Yusei Magic'
               ? '400'
-              : parseInt(getComputedStyle(el).fontWeight) >= 600
-                ? '700'
-                : '500';
+              : family === 'cp20 Mono'
+                ? '600'
+                : parseInt(getComputedStyle(el).fontWeight) >= 600
+                  ? '700'
+                  : '500';
           // (The zero-width spaces between phrases, scripts/build/phrases.ts, are drawn by no font.)
           for (const c of n.textContent!)
             if (c.trim() && c !== '\u200b' && !covered(family, weight, c))

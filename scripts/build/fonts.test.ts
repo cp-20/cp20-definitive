@@ -1,4 +1,4 @@
-// The web fonts the build ships: the subsets of Zen Maru Gothic and Yusei Magic (their characters, the @font-face
+// The web fonts the build ships: the subsets of Zen Maru Gothic, Yusei Magic and cp20 Mono (their characters, the @font-face
 // rules, and the copyright and license records it must keep under the SIL OFL) and the filter
 // that drops the WOFF fallbacks from the other @fontsource stylesheets. The built fonts are
 // checked in dist.test.ts.
@@ -12,6 +12,7 @@ import {
   boldRules,
   boldTexts,
   handRules,
+  monoRules,
   collectCharacters,
   dropWoffFallback,
   fontHead,
@@ -82,7 +83,7 @@ test('slices はページごとに、それより前のページにない文字�
 
 describe('太字と手書きの文字', () => {
   const css =
-    '@layer c{.title,.tab:hover{font-weight:700}.x:before{content:"賞"/"";font-weight:700}@media (width<9px){.y{font:700 1rem/1 a}}p{font-weight:500}.hand,.count strong{font-family:var(--hand);font-weight:400}}';
+    '@layer c{.title,.tab:hover{font-weight:700}.x:before{content:"賞"/"";font-weight:700}@media (width<9px){.y{font:700 1rem/1 a}}p{font-weight:500}.hand,.count strong{font-family:var(--hand);font-weight:400}.repo{font-family:var(--mono)}}';
 
   test('boldRules は太字の規則のセレクタと、content の文字を拾う', () => {
     assert.deepEqual(boldRules(css), {
@@ -91,14 +92,18 @@ describe('太字と手書きの文字', () => {
     });
   });
 
-  test('handRules は var(--hand) を指定した規則のセレクタを拾う', () => {
-    assert.deepEqual(handRules(css).selectors, ['.hand', '.count strong']);
+  test('handRules は var(--hand) を、monoRules は var(--mono) を指定した規則のセレクタを拾う', () => {
+    assert.deepEqual(
+      [handRules(css).selectors, monoRules(css).selectors],
+      [['.hand', '.count strong'], ['.repo']],
+    );
   });
 
   const page =
-    '<h2>見出し</h2><p class="title">題名</p><a class="tab">札</a><p class="x">本文</p><p>地の文</p><strong>強</strong><p class="count"><strong>数</strong></p><span class="hand">手</span>';
+    '<h2>見出し</h2><p class="title">題名</p><a class="tab">札</a><p class="x">本文</p><p>地の文</p><strong>強</strong><p class="count"><strong>数</strong></p><span class="hand">手</span><span class="repo">cp-20/éx</span>';
   const bold = boldTexts([page], [css], ['"保存できませんでした"', '"地の文"']).join('');
-  const hand = boldTexts([page], [css], [], true).join('');
+  const hand = boldTexts([page], [css], [], 'hand').join('');
+  const mono = boldTexts([page], [css], [], 'mono').join('');
 
   test('太字には strong と、太字の規則が当たる要素の文字が入る（ホバーしていなくても）', () => {
     assert.deepEqual(
@@ -126,27 +131,42 @@ describe('太字と手書きの文字', () => {
     assert.ok(!hand.includes('題'));
   });
 
+  test('等幅には等幅の規則が当たる要素の文字だけが入る（見出しも strong も入れない）', () => {
+    assert.deepEqual([mono.includes('é'), ['見', '強', '手'].filter((c) => mono.includes(c))], [true, []]);
+  });
+
   test('generated: false では疑似要素の文字を入れない（ページが自分で見せる文字だけ）', () => {
-    assert.ok(!boldTexts([page], [css], [], false, { generated: false }).join('').includes('賞'));
+    assert.ok(!boldTexts([page], [css], [], 'bold', { generated: false }).join('').includes('賞'));
   });
 });
 
-describe.each(['zen-maru-gothic/zen-maru-gothic-700.woff2', 'yusei-magic/yusei-magic-400.woff2'])(
-  '%s の絞り込み',
-  (file) => {
-    test('絞り込んでも、著作権・デザイナー・ライセンスの name レコードは元のまま残る（OFL の条件）', async () => {
-      const source = readFileSync(join(root, 'fonts', file));
-      const original = nameRecords(source);
-      const names = nameRecords(await subsetFont(source, 'あa', subsetOptions));
-      const kept = [0, 8, 9, 11, 12, 13, 14].filter((id) => original.has(id));
-      assert.deepEqual(
-        kept.map((id) => names.get(id)),
-        kept.map((id) => original.get(id)),
-      );
-      assertOflNotice(names);
-    });
-  },
-);
+describe.each([
+  'zen-maru-gothic/zen-maru-gothic-700.woff2',
+  'yusei-magic/yusei-magic-400.woff2',
+  'cp20-mono/cp20-mono-600.woff2',
+])('%s の絞り込み', (file) => {
+  test('絞り込んでも、著作権・デザイナー・ライセンスの name レコードは元のまま残る（OFL の条件）', async () => {
+    const source = readFileSync(join(root, 'fonts', file));
+    const original = nameRecords(source);
+    const names = nameRecords(await subsetFont(source, 'あa', subsetOptions));
+    const kept = [0, 8, 9, 11, 12, 13, 14].filter((id) => original.has(id));
+    assert.deepEqual(
+      kept.map((id) => names.get(id)),
+      kept.map((id) => original.get(id)),
+    );
+    assertOflNotice(names);
+  });
+});
+
+// "Plex" is IBM Plex's Reserved Font Name: a Modified Version (a subset) may not be named with it.
+test('cp20 Mono は絞り込んでも、書体の名前に IBM Plex の予約名「Plex」を使わない', async () => {
+  const source = readFileSync(join(root, 'fonts', 'cp20-mono/cp20-mono-600.woff2'));
+  const names = nameRecords(await subsetFont(source, 'a', subsetOptions));
+  assert.deepEqual(
+    [1, 3, 4, 6, 16, 17].map((id) => names.get(id) ?? '').filter((name) => /plex/i.test(name)),
+    [],
+  );
+});
 
 describe('dropWoffFallback', () => {
   test('WOFF2 もある src から WOFF の候補を外す', () => {

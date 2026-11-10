@@ -1,11 +1,12 @@
 // The site's web fonts at build time, each subset to the characters it sets: Zen Maru Gothic 700
-// to every character the built site can show (the one weight its printed text is set in), and
-// Yusei Magic to what it writes by hand (headings, names, labels and figures: the rules that name
-// var(--hand) in app.css). Each is split into the home page's characters, the profile's other ones
-// and the rest (unicode-range): a page loads only the files with characters it shows. Runs after
-// prerender, so the text of every page and every string in the client JavaScript (client-rendered
-// views, sticker messages) is included. Also the stylesheet filter vite.config.ts applies to the
-// other @fontsource fonts.
+// to every character the built site can show (the one weight its printed text is set in), Yusei
+// Magic to what it writes by hand (headings, names, labels and figures: the rules that name
+// var(--hand) in app.css), and the monospace to what is written as code (the rules that name
+// var(--mono)). The two Japanese faces are split into the home page's characters, the profile's
+// other ones and the rest (unicode-range): a page loads only the files with characters it shows.
+// Runs after prerender, so the text of every page and every string in the client JavaScript
+// (client-rendered views, sticker messages) is included. Also the stylesheet filter vite.config.ts
+// applies to the other @fontsource fonts.
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
@@ -14,18 +15,39 @@ import { parse } from 'node-html-parser';
 
 /**
  * The faces the build subsets. `role` says which text each needs: `all` every character, `bold`
- * the text of bold rules, `hand` the text of rules set in the hand-written face. The printed text
- * is all one weight, 700 (500 read thin on the paper), so there is no bold face: what a sentence
- * stresses (a figure) is written by hand instead (app.css).
+ * the text of bold rules, `hand` the text of rules set in the hand-written face, `mono` the text of
+ * rules set in the monospace. The printed text is all one weight, 700 (500 read thin on the paper),
+ * so there is no bold face: what a sentence stresses (a figure) is written by hand instead
+ * (app.css). `split` divides a face by page (landingPages); the monospace, a few dozen Latin
+ * letters, stays one small file.
+ *
+ * cp20 Mono is IBM Plex Mono SemiBold (600, beside the printed text's 700; 400 read thin) under
+ * another name: "Plex" is a Reserved Font Name under the SIL OFL, and a subset is a Modified
+ * Version, which may not carry it. Only the name records (IDs 1, 3, 4, 6, 16) were changed, once,
+ * from @ibm/plex-mono 2.5.0's fonts/complete/woff2/IBMPlexMono-SemiBold.woff2 (README).
  */
 export const faces: readonly {
-  family: 'Zen Maru Gothic' | 'Yusei Magic';
-  weight: 400 | 700;
+  family: 'Zen Maru Gothic' | 'Yusei Magic' | 'cp20 Mono';
+  weight: 400 | 600 | 700;
   file: string;
-  role: 'all' | 'bold' | 'hand';
+  role: 'all' | 'bold' | 'hand' | 'mono';
+  split: boolean;
 }[] = [
-  { family: 'Zen Maru Gothic', weight: 700, file: 'zen-maru-gothic/zen-maru-gothic-700.woff2', role: 'all' },
-  { family: 'Yusei Magic', weight: 400, file: 'yusei-magic/yusei-magic-400.woff2', role: 'hand' },
+  {
+    family: 'Zen Maru Gothic',
+    weight: 700,
+    file: 'zen-maru-gothic/zen-maru-gothic-700.woff2',
+    role: 'all',
+    split: true,
+  },
+  {
+    family: 'Yusei Magic',
+    weight: 400,
+    file: 'yusei-magic/yusei-magic-400.woff2',
+    role: 'hand',
+    split: true,
+  },
+  { family: 'cp20 Mono', weight: 600, file: 'cp20-mono/cp20-mono-600.woff2', role: 'mono', split: false },
 ];
 export type Face = (typeof faces)[number];
 /** The file name stem of a face's subsets: `zen-maru-gothic-700`. */
@@ -86,6 +108,7 @@ function splitSelectors(list: string) {
 const BOLD =
   /(?:^|;)\s*font-weight:\s*(?:bold(?:er)?|[6-9]00)\s*(?:;|$)|(?:^|;)\s*font:[^;]*\b(?:bold|[6-9]00)\b/;
 const HAND = /(?:^|;)\s*font-family:\s*var\(--hand\)/;
+const MONO = /(?:^|;)\s*font-family:\s*var\(--mono\)/;
 
 /**
  * The selectors of every rule whose declarations match `test` (by default: a weight of 600 or
@@ -107,6 +130,8 @@ export function boldRules(css: string, test = BOLD) {
 }
 /** The rules set in the hand-written face (`font-family: var(--hand)`), as boldRules. */
 export const handRules = (css: string) => boldRules(css, HAND);
+/** The rules set in the monospace (`font-family: var(--mono)`), as boldRules. */
+export const monoRules = (css: string) => boldRules(css, MONO);
 
 // A selector for a pseudo-element's box: its text is the rule's `content`, not the element's.
 const GENERATED =
@@ -141,30 +166,35 @@ function matching(root: ReturnType<typeof parse>, selector: string) {
   }
 }
 
+// The elements set in a face without a rule naming it: bold ones, and the headings (hand-written).
+const tags = { bold: 'b, strong, th', hand: 'h1, h2, h3, h4, h5, h6', mono: '' };
 /**
  * The text of every page that is set in bold: the elements the bold rules match (with all their
  * text: a part set back to regular inside one only adds a few letters), <b> and <strong> unless a
  * rule sets them back to regular (a figure in the hand-written face), pseudo-element text, and the
  * strings only the client script shows (status messages and the like, which cannot be placed from
  * the HTML alone). With `hand`, the same for the hand-written face: headings and the rules that
- * name it. `generated: false` leaves out the pseudo-element text (any rule's, as it takes its
- * element's face), to tell which text a page itself shows.
+ * name it; with `mono`, for the rules that name the monospace. `generated: false` leaves out the
+ * pseudo-element text (any rule's, as it takes its element's face), to tell which text a page
+ * itself shows.
  */
 export function boldTexts(
   pages: string[],
   css: string[],
   scripts: string[],
-  hand = false,
+  kind: 'bold' | 'hand' | 'mono' = 'bold',
   { generated = true } = {},
 ) {
-  const rules = css.map((sheet) => (hand ? handRules(sheet) : boldRules(sheet)));
+  const rules = css.map((sheet) =>
+    kind === 'hand' ? handRules(sheet) : kind === 'mono' ? monoRules(sheet) : boldRules(sheet),
+  );
   const selectors = elementSelectors(rules).filter(Boolean);
-  const regular = hand ? [] : elementSelectors(css.map((sheet) => boldRules(sheet, REGULAR)));
+  const regular = kind === 'bold' ? elementSelectors(css.map((sheet) => boldRules(sheet, REGULAR))) : [];
   const texts = generated ? rules.flatMap((r) => r.content) : [];
   for (const html of pages) {
     const root = parse(html);
     const setBack = new Set(regular.flatMap((selector) => matching(root, selector)));
-    for (const element of matching(root, hand ? 'h1, h2, h3, h4, h5, h6' : 'b, strong, th'))
+    for (const element of tags[kind] ? matching(root, tags[kind]) : [])
       if (!setBack.has(element)) texts.push(element.textContent);
     for (const selector of new Set(selectors))
       for (const element of matching(root, selector)) texts.push(element.textContent);
@@ -268,7 +298,7 @@ export async function subsetSiteFonts(root: string) {
   const texts = (face: Face, pages: string[], scripts: string[], generated = true) =>
     face.role === 'all'
       ? [...pages.map(drawnText), ...scripts]
-      : boldTexts(pages, css, scripts, face.role === 'hand', { generated });
+      : boldTexts(pages, css, scripts, face.role, { generated });
   const written: {
     family: string;
     weight: number;
@@ -282,10 +312,12 @@ export async function subsetSiteFonts(root: string) {
   for (const face of faces) {
     const shown = landing.map((page) => new Set(texts(face, [page], [], false).join('')));
     const all = collectCharacters(face.role === 'all' ? [...html, ...css, ...js] : texts(face, html, js));
-    const split = slices(
-      all,
-      shown.map((s) => collectCharacters([[...s].join('')])),
-    );
+    const split = face.split
+      ? slices(
+          all,
+          shown.map((s) => collectCharacters([[...s].join('')])),
+        )
+      : [all];
     for (const [part, set] of split.entries()) {
       if (!set) continue;
       const bytes = await subsetFont(await readFile(source(face)), set, subsetOptions);

@@ -88,6 +88,13 @@ export const extraNotices: Notice[] = [
     text: readFileSync(new URL('../../fonts/yusei-magic/OFL.txt', import.meta.url), 'utf8').trim(),
   },
   {
+    name: 'cp20 Mono: IBM Plex Mono SemiBold renamed, as "Plex" is a Reserved Font Name (fonts/cp20-mono, subset at build time)',
+    license: 'OFL-1.1',
+    homepage: 'https://github.com/IBM/plex',
+    copyright: [],
+    text: readFileSync(new URL('../../fonts/cp20-mono/OFL.txt', import.meta.url), 'utf8').trim(),
+  },
+  {
     name: 'Twemoji graphics (the picture stickers in /stamps and the clover in the QR code)',
     license: 'CC-BY-4.0',
     homepage: 'https://github.com/jdecked/twemoji',
@@ -161,7 +168,7 @@ export function thirdPartyLicenses(): Plugin {
         const directory = packageDirectory(id);
         if (directory) directories.add(resolve(root, directory));
       }
-      // Files copied as assets, such as the IBM Plex Mono WOFF2 referenced from app.css.
+      // Files copied as assets from a package, such as a font referenced from a stylesheet.
       for (const asset of Object.values(bundle))
         if (asset.type === 'asset')
           for (const name of asset.originalFileNames ?? []) {

@@ -128,7 +128,7 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
       assert.deepEqual(
         [preloads('index.html').sort(), preloads('about/index.html').sort(), preloads('articles/index.html')],
         [
-          ['yusei-magic-400', 'zen-maru-gothic-700'],
+          ['cp20-mono-600', 'yusei-magic-400', 'zen-maru-gothic-700'],
           ['yusei-magic-400', 'yusei-magic-400', 'zen-maru-gothic-700', 'zen-maru-gothic-700'],
           [],
         ],
@@ -150,7 +150,7 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
         /^@solidjs\/web@\S+ \(MIT\)/m,
         /^lucide@\S+ \(ISC\)/m,
         /Copyright \(c\) 2013-present Cole Bemis/,
-        /^@fontsource\/ibm-plex-mono@\S+ \(OFL-1\.1\)/m,
+        /^cp20 Mono: IBM Plex Mono .*\(OFL-1\.1\).*\n-+\nCopyright © 2017 IBM Corp\. with Reserved Font Name "Plex"/m,
         /^Zen Maru Gothic .*\(OFL-1\.1\)/m,
         /^Yusei Magic .*\(OFL-1\.1\)/m,
         /^Twemoji graphics .*\(CC-BY-4\.0\).*\n-+\nCopyright 2019 Twitter, Inc and other contributors/m,
