@@ -42,18 +42,29 @@ export function stampsOf(items: Article[], year: number): Stamp[] {
   return stamps;
 }
 
+/** The side of a day's stamp, in rows: a little under a row, so it spills over the day's lines. */
+export const STAMP = 0.92;
+
 /**
- * Where a stamp sits on its day, in rows from the middle of the day (x across, y down). Alone it
- * is in the middle; two or more on a day go round a small ring from the top left, clockwise, so
- * each shows and has its own patch to point at or tap. The ring is narrower than it is tall, as
- * the days are.
+ * Where a stamp sits on its day and how large it is, in rows from the middle of the day (x across,
+ * y down, `size` its side). Alone it fills the stamp's square in the middle. Several share that
+ * square in a grid of equal cells: two one above the other (the day is narrower than it is tall),
+ * three or more two to a line, in reading order, a last one alone centred under the others. The
+ * grid is centred on the day, so a day's stamps line up with its column and its month whatever
+ * their number, and none covers another.
  */
 export function spot({ nth, of }: Pick<Stamp, 'nth' | 'of'>) {
-  if (of < 2) return { x: 0, y: 0 };
-  const turn = 2 * Math.PI * (nth / of - 0.375),
-    r = of === 2 ? 0.3 : 0.4;
-  const round = (n: number) => Math.round(n * 1000) / 1000 || 0;
-  return { x: round(r * 0.7 * Math.cos(turn)), y: round(r * Math.sin(turn)) };
+  const across = of < 3 ? 1 : 2,
+    lines = Math.ceil(of / across);
+  const size = STAMP / lines;
+  const line = Math.floor(nth / across),
+    inLine = line === lines - 1 ? of - line * across : across;
+  const round = (n: number) => Math.round(n * 10000) / 10000 || 0;
+  return {
+    x: round(((nth % across) - (inLine - 1) / 2) * size),
+    y: round((line - (lines - 1) / 2) * size),
+    size: round(size),
+  };
 }
 
 /**

@@ -729,6 +729,56 @@ try {
   {
     await page.goto(origin + '/articles');
     await settle();
+    // On every year's card, each stamp sits on the middle of its day's square (between the ruled
+    // lines, drawn 1px wide at the start of each day: half a pixel past the middle of the track),
+    // and the stamps of a day with several make a block centred there, none on another.
+    for (let i = 0; i < (await page.locator('.attendance-tab').count()); i++) {
+      await page.locator('.attendance-tab').nth(i).click();
+      await animationsDone();
+      const off = await page.locator('.attendance-grid').evaluate((grid) => {
+        const style = getComputedStyle(grid);
+        const tracks = (list: string) => list.split(' ').map(parseFloat);
+        const [cols, rows] = [tracks(style.gridTemplateColumns), tracks(style.gridTemplateRows)];
+        const box = grid.getBoundingClientRect();
+        const middle = (sizes: number[], start: number, n: number) =>
+          start + sizes.slice(0, n).reduce((a, b) => a + b, 0) + sizes[n] / 2 + 0.5;
+        const days = new Map<string, DOMRect[]>();
+        for (const stamp of grid.querySelectorAll<HTMLElement>('.attendance-stamp')) {
+          const day = stamp.style.gridArea;
+          days.set(day, [
+            ...(days.get(day) ?? []),
+            stamp.querySelector('.source-icon')!.getBoundingClientRect(),
+          ]);
+        }
+        return [...days].flatMap(([day, icons]) => {
+          const [row, column] = day.split('/').map((n) => parseInt(n) - 1);
+          const [left, right, top, bottom] = [
+            Math.min(...icons.map((r) => r.left)),
+            Math.max(...icons.map((r) => r.right)),
+            Math.min(...icons.map((r) => r.top)),
+            Math.max(...icons.map((r) => r.bottom)),
+          ];
+          const dx = (left + right) / 2 - middle(cols, box.left, column),
+            dy = (top + bottom) / 2 - middle(rows, box.top, row);
+          const overlap = icons.some((a, j) =>
+            icons.some(
+              (b, k) =>
+                j < k &&
+                a.left < b.right - 0.5 &&
+                b.left < a.right - 0.5 &&
+                a.top < b.bottom - 0.5 &&
+                b.top < a.bottom - 0.5,
+            ),
+          );
+          return Math.abs(dx) > 0.3 || Math.abs(dy) > 0.3 || overlap
+            ? [`${day}: ${dx.toFixed(2)}, ${dy.toFixed(2)}${overlap ? ', overlapping' : ''}`]
+            : [];
+        });
+      });
+      if (off.length) throw Error(`Stamps off the middle of their day: ${off.join('; ')}`);
+    }
+    await page.goto(origin + '/articles');
+    await settle();
     const stamps = page.locator('.attendance-stamp');
     await page.locator('.attendance-tab[aria-pressed="true"]').focus();
     await page.keyboard.press('Tab');
@@ -835,7 +885,7 @@ try {
     await expect(visitor.locator('[data-picked]')).toHaveCount(0);
   }
   passed(
-    'the attendance card is one Tab stop walked by arrows; the pointer reaches any corner of a slip, yet going to a stamp near by opens its slip; a tap near a stamp picks it, a second opens it',
+    "every year's stamps sit on the middle of their day, several on a day as a centred block; the attendance card is one Tab stop walked by arrows; the pointer reaches any corner of a slip, yet going to a stamp near by opens its slip; a tap near a stamp picks it, a second opens it",
   );
 
   // ── Five stickers, and two tabs at once ──

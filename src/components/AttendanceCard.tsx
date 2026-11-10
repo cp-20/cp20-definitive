@@ -227,6 +227,7 @@ export function AttendanceCard(props: {
                   data-below={place.below}
                   style={{
                     'grid-area': `${s.m + 1} / ${s.d + 1}`,
+                    '--size': at.size,
                     ...(s.of > 1 && { '--dx': at.x, '--dy': at.y }),
                   }}
                   onFocus={() => {

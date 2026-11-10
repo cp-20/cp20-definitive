@@ -1,7 +1,18 @@
 // The arithmetic of the yearly attendance cards: days, the stamps of a day, keys and taps.
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { dayOf, daysIn, nearest, spot, stampsOf, step, tipPlace, toward, yearsOf } from './attendance.ts';
+import {
+  STAMP,
+  dayOf,
+  daysIn,
+  nearest,
+  spot,
+  stampsOf,
+  step,
+  tipPlace,
+  toward,
+  yearsOf,
+} from './attendance.ts';
 
 const article = (date: string, n = 0) => ({
   title: `t${n}`,
@@ -57,27 +68,46 @@ describe('stampsOf', () => {
 });
 
 describe('spot', () => {
-  test('その日に1つだけのスタンプは真ん中に置く', () => {
-    assert.deepEqual(spot({ nth: 0, of: 1 }), { x: 0, y: 0 });
+  test('その日に1つだけのスタンプは、日の真ん中にスタンプの大きさで置く', () => {
+    assert.deepEqual(spot({ nth: 0, of: 1 }), { x: 0, y: 0, size: STAMP });
   });
-  test('同じ日に2つなら、真ん中をはさんで左上と右下に置く', () => {
+  test('同じ日に2つなら、日の列の真ん中で上下に並べる', () => {
     const [a, b] = [0, 1].map((nth) => spot({ nth, of: 2 }));
-    assert.deepEqual([Math.sign(a.x), Math.sign(a.y)], [-1, -1]);
-    assert.deepEqual([b.x, b.y], [-a.x, -a.y]);
+    assert.deepEqual([a.x, b.x], [0, 0]);
+    assert.deepEqual([a.y, b.y], [-STAMP / 4, STAMP / 4]);
   });
-  for (const of of [2, 3, 5, 8])
-    test(`同じ日に${of}つあっても、それぞれに離れた場所を、その日と隣の行の内側に与える`, () => {
+  test('3つなら、上に2つ、下の1つはその真ん中に置く', () => {
+    const at = [0, 1, 2].map((nth) => spot({ nth, of: 3 }));
+    assert.deepEqual(
+      at.map((p) => [p.x, p.y]),
+      [
+        [-STAMP / 4, -STAMP / 4],
+        [STAMP / 4, -STAMP / 4],
+        [0, STAMP / 4],
+      ],
+    );
+  });
+  for (const of of [2, 3, 4, 5, 8])
+    test(`同じ日に${of}つでも、1つのときのスタンプの正方形を、重ならない同じ大きさのマスで分け、その日の真ん中にそろえる`, () => {
       const at = Array.from({ length: of }, (_, nth) => spot({ nth, of }));
-      // Inside the day's column, reaching at most into the rows above and below.
-      assert.ok(
-        at.every((p) => Math.abs(p.x) <= 0.3 && Math.abs(p.y) <= 0.4),
-        JSON.stringify(at),
-      );
-      // No two closer than a fifth of a row, so each keeps a patch of its own.
-      const closest = Math.min(
-        ...at.flatMap((p, i) => at.slice(i + 1).map((q) => Math.hypot(p.x - q.x, p.y - q.y))),
-      );
-      assert.ok(closest > 0.2, `一番近い2つの間: ${closest}`);
+      const edges = {
+        left: Math.min(...at.map((p) => p.x - p.size / 2)),
+        right: Math.max(...at.map((p) => p.x + p.size / 2)),
+        top: Math.min(...at.map((p) => p.y - p.size / 2)),
+        bottom: Math.max(...at.map((p) => p.y + p.size / 2)),
+      };
+      const near = (a: number, b: number) => Math.abs(a - b) < 1e-3;
+      // The group's box is centred on the day and within the single stamp's square.
+      assert.ok(near(edges.left, -edges.right) && near(edges.top, -edges.bottom), JSON.stringify(edges));
+      assert.ok(edges.bottom - edges.top <= STAMP + 1e-3 && edges.right - edges.left <= STAMP + 1e-3);
+      // All the same size, and no two overlapping.
+      assert.equal(new Set(at.map((p) => p.size)).size, 1);
+      for (const [i, p] of at.entries())
+        for (const q of at.slice(i + 1))
+          assert.ok(
+            Math.abs(p.x - q.x) >= p.size - 1e-3 || Math.abs(p.y - q.y) >= p.size - 1e-3,
+            JSON.stringify([p, q]),
+          );
     });
 });
 
