@@ -4,7 +4,7 @@ import { pages } from 'virtual:cp20-media';
 // Upper bounds of the laid-out image widths (measured at 320-1920px wide viewports, and checked
 // by scripts/qa/browser-check.ts; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
 export const sizes = {
-  articleRow: '(max-width: 600px) 104px, 124px',
+  articleRow: '(max-width: 600px) 128px, (max-width: 1199px) 148px, 160px',
   // WorkCard.tsx and a work's page (src/styles/works.css): a featured card (three across, then a
   // row), a list card's stamp, a one-line row, the page's picture and the phone screen on it.
   workCard: '(max-width: 760px) 96px, (max-width: 1000px) 224px, 300px',

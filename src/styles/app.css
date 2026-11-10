@@ -4247,18 +4247,18 @@
   .attendance-tip small {
     line-height: 1.5;
   }
-  /* The open year's articles: each with its OG image as a small postage stamp, its title, and
-     its day's stamp by the date. */
+  /* The open year's articles: each with its OG image as a postage stamp large enough to read its
+     picture, its title, and its day's stamp by the date. */
   .attendance-desk .article-list {
     position: relative;
     display: grid;
   }
   .article-row {
-    --perf: 6px;
-    --perf-hole: 1.8px;
+    --perf: 7px;
+    --perf-hole: 2.1px;
     display: grid;
-    grid-template-columns: 104px minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: 18px;
     align-items: start;
     padding: 16px 0;
     border-bottom: 1.5px dashed color-mix(in srgb, var(--edge) 22%, transparent);
@@ -4401,8 +4401,12 @@
       max-width: 568px;
     }
     .attendance-desk .article-list {
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      column-gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      column-gap: 28px;
+    }
+    .article-row {
+      grid-template-columns: 148px minmax(0, 1fr);
+      gap: 16px;
     }
   }
   @media (max-width: 600px) {
@@ -4413,8 +4417,11 @@
       grid-template-columns: minmax(0, 1fr);
     }
     .article-row {
-      grid-template-columns: 96px minmax(0, 1fr);
-      padding: 12px 0;
+      --perf: 6px;
+      --perf-hole: 1.8px;
+      grid-template-columns: 128px minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px 0;
     }
   }
   /* Without JavaScript the open year cannot change, so every article is listed under the latest
