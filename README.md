@@ -27,7 +27,16 @@ npm run build
 
 ### 書体のお試し（一時的）
 
-実際のページで書体の組み合わせを比べるための一時的な仕組みです。どのページでも URL に `?font=<名前>` を付けて開くと、その組（`current` いまの組、`yusei-kaku` 手書き＋端正なゴシック、`klee` ペン字のノート、`kiwi` やわらかい丸、`mincho` 明朝の見出し、`zenkaku` 上品なゴシック、`lineseed` くっきりモダン、`ud` 読みやすさ重視）に切り替わり、選んだ組は localStorage に残ってほかのページや再読み込みでも続きます。同時に左下（スマートフォンでは下のタブの上）に「書体：…」のパネルが出て（`?font` だけなら組はそのまま）、見出し・文・数字と欧文・コードの書体が並んだ一覧から選び直せます。`?font=off` かパネルの「お試しをやめる」で元に戻り、パネルも消えます。組は `src/site/font-trial.ts`（各役の書体・太さ・欧文の size-adjust・字間）、読み込みとパネルは `src/site/font-trial-panel.ts` にあり、書体は @fontsource のスタイルシートを選んだときにだけ読み込むので、お試しをしていない訪問者には（`App.tsx` の数行のほかは）何も増えません。組を決めたら、この2つのファイルと `App.tsx` の呼び出し、`scripts/build/fonts.ts` の除外、使わない @fontsource のパッケージを外し、選んだ書体をサイトの書体（`fonts/`、`scripts/build/fonts.ts` でサブセット化）に置き換えます。
+実際のページで書体を選び、細かく合わせるための一時的な仕組みです。どのページでも URL に `?font=<プリセット>` を付けて開くと（`?font` だけなら前の設定のまま）、左下（スマートフォンでは下のタブの上）に「書体：…」のパネルが出ます。開くと、役割ごとに独立して設定できます。
+
+- プリセット：前回の8つの組（`current` いまの組、`yusei-kaku` 手書き＋端正なゴシック、`klee` ペン字のノート、`kiwi` やわらかい丸、`mincho` 明朝の見出し、`zenkaku` 上品なゴシック、`lineseed` くっきりモダン、`ud` 読みやすさ重視）。選ぶとすべての役がその組になり、そこから微調整します。「プリセットに戻す」で調整を消せます。
+- 見出し・文：書体（Yusei Magic、Zen Maru Gothic、Zen Kaku Gothic New、Klee One、Kiwi Maru、M PLUS Rounded 1c、Zen Old Mincho、LINE Seed JP、Murecho、BIZ UDPGothic）、太さ（その書体にあるウェイトだけ）、字間（-0.05〜0.15em）、大きさ（80〜130%）、仮名を詰める（palt）。
+- 数字・欧文：「和文の書体のまま」か Inter・DM Sans。太さは文のもの、「見出しにも使う」で見出しにも（太さは見出しの太さに近いもの）。大きさは和文の仮名とのつり合いを測った値に対する倍率。
+- コード：IBM Plex Mono（いまの cp20 Mono）、JetBrains Mono、DM Mono、M PLUS 1 Code の書体・太さ・字間・大きさ。
+
+設定はアドレスバーの URL（`?font=mincho~h:klee-one:600:20:105~f:inter:500:100:b` のように、プリセットの名前と、変えた役だけ）と localStorage に残り、ほかのページや再読み込みでも続きます。「URL をコピー」でいまのページを同じ設定で開く URL を共有できます。`?font=off` かパネルの「お試しをやめる」で元に戻り、パネルも消えます。
+
+大きさは書体ごとの `size-adjust`、太さはその太さの書体を役の規則の太さで登録し直すことで変え、字間と palt はその役の書体を決めている規則（`font-family: var(--hand)` など）に足します（行の高さや余白は変えないので、レイアウトの比較になります）。書体は選んだ書体と太さの @fontsource のスタイルシートだけを jsDelivr（版を固定）から読み込み、文字の範囲ごとに分かれたファイルもページが使う分だけが読まれます。そのため `public/_headers` の CSP の `font-src` と `connect-src` に `https://cdn.jsdelivr.net` を足しています。サイトの書体をそのまま使う役は何も読み込まず、お試しをしていない訪問者には（`App.tsx` の数行のほかは）何も増えません。ビルドにも書体は入りません。設定と書体の一覧・プリセットは `src/site/font-trial.ts`、読み込みとパネルは `src/site/font-trial-panel.ts` にあります。決めたら、この2つのファイルと `App.tsx` の呼び出し、`scripts/build/fonts.ts` の除外、CSP の jsDelivr を外し、選んだ書体をサイトの書体（`fonts/`、`scripts/build/fonts.ts` でサブセット化）に置き換えます。
 
 ## 本番公開の初期設定
 

@@ -39,8 +39,8 @@ else if (!isServer) {
   else addEventListener('load', idle, { once: true });
 }
 // The typeface trial (site/font-trial.ts), temporary: only a visit that asks for it with ?font=,
-// or that chose a set on an earlier page (its STORAGE_KEY, written out here so the pages carry none
-// of the trial's code), loads its panel and faces.
+// or that kept a trial from an earlier page (its STORAGE_KEY, written out here so the pages carry
+// none of the trial's code), loads its panel and the faces it chose.
 if (!isServer) {
   const param = new URLSearchParams(location.search).get('font');
   let stored: string | null = null;
