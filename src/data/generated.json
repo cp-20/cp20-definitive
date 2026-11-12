@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-12T07:16:33.111Z",
+  "updatedAt": "2026-11-12T19:58:27.964Z",
   "articles": [
     {
       "title": "社会性",
@@ -477,7 +477,27 @@
       "description": "A fast malloc for most use cases: arithmetic size-class dispatch, lock-free batched free lists, and a JIT-compiled entry point — benchmarked against glibc, tcmalloc, jemalloc and mimalloc.",
       "language": "C",
       "stars": 0,
-      "updatedAt": "2026-11-12T07:13:05Z",
+      "updatedAt": "2026-11-12T17:17:33Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cjk-webfont-compression",
+      "url": "https://github.com/cp-20/cjk-webfont-compression",
+      "description": "Measured CJK web font compression: GLC (beats WOFF2 by 9-34% at bounded perceptual error), a delivery-layer study, and three published negative results",
+      "language": "HTML",
+      "stars": 0,
+      "updatedAt": "2026-11-12T08:46:33Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-11-12T07:17:03Z",
       "fork": false,
       "archived": false
     },
@@ -488,16 +508,6 @@
       "language": "TypeScript",
       "stars": 2,
       "updatedAt": "2026-11-12T06:46:09Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-11-12T06:22:12Z",
       "fork": false,
       "archived": false
     },
@@ -1375,39 +1385,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T07:16:33.111Z",
+      "lastSuccess": "2026-11-12T19:58:27.964Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T07:16:33.111Z",
+      "lastSuccess": "2026-11-12T19:58:27.964Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T07:16:33.111Z",
+      "lastSuccess": "2026-11-12T19:58:27.964Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T07:16:33.111Z",
+      "lastSuccess": "2026-11-12T19:58:27.964Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T07:16:33.111Z",
+      "lastSuccess": "2026-11-12T19:58:27.964Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T07:16:33.111Z",
-      "count": 130
+      "lastSuccess": "2026-11-12T19:58:27.964Z",
+      "count": 131
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T07:16:33.111Z",
+      "lastSuccess": "2026-11-12T19:58:27.964Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-12T07:16:33.111Z"
+  "checkedAt": "2026-11-12T19:58:27.964Z"
 }
