@@ -92,16 +92,14 @@
     background: #fff;
     object-fit: contain;
   }
-  /* Where an article came out is that place's icon itself, pressed on the paper with no tile or
-     margin of its own: each is drawn at its optical size in its square (--optical, SourceIcon), so a
-     dark square and a drawing in lines look one size. Scaled, not resized, so the square keeps its
-     place in the line. */
+  /* Where an article came out is that place's tile (SourceIcon, source-tiles.ts): its logo on a
+     rounded square of one shape and size, which carries its own pencil line, so it needs no
+     border or margin here. */
   .source-icon {
     display: inline-block;
     width: 24px;
     height: 24px;
     object-fit: contain;
-    scale: var(--optical, 1);
   }
   .work-icon {
     margin-right: 8px;
@@ -703,9 +701,10 @@
   }
   /* The source's icon beside the title's first line. */
   .related-articles .source-icon {
-    width: 20px;
-    height: 20px;
-    margin-top: calc((1lh - 20px) / 2);
+    justify-self: center;
+    width: 18px;
+    height: 18px;
+    margin-top: calc((1lh - 18px) / 2);
   }
   .related-articles time {
     line-height: inherit;

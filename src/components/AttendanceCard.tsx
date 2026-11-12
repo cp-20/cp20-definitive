@@ -1,44 +1,24 @@
 import { createMemo, createSignal, For, onSettled, Show } from 'solid-js';
 import { articleAnchor } from './Preview.tsx';
 import { brandIcon } from './Brand.tsx';
+import { sourceTile } from './source-tiles.ts';
 import Title from './Title.tsx';
 import { daysIn, nearest, spot, stampsOf, step, tipPlace, toward, yearOf, type Stamp } from './attendance.ts';
 import { shortDate, type Article } from '../content/content.ts';
 /**
- * How much of its square each place's icon fills, so that all look one size on the paper (optical
- * sizing): an icon with a ground of its own (blog.cp20.dev's dark square, Qiita's green disc) reads
- * larger than a drawing in lines or strokes (sizu.me, M3, Zenn, traP) drawn as large, so the
- * heavier the shape, the smaller it is drawn. note's is its own favicon, a small black n in the
- * middle of a white square, so it is mostly white: its square, edged with the pencil line of an
- * icon's tile, is drawn a little larger than the dark one. Judged by eye on the card and in the
- * lists; a place not listed fills its square. (sizu.me's and M3's favicons are lines on white:
- * their white was made transparent, so only the lines are pressed.)
- */
-const optical: Record<string, number> = {
-  'blog.cp20.dev': 0.76,
-  'note.com': 0.86,
-  'qiita.com': 0.84,
-  'trap.jp': 0.86,
-  'zenn.dev': 0.96,
-  'sizu.me': 1,
-  'm3tech.blog': 1,
-};
-/**
- * Where an article came out, by that place's own icon (its favicon, public/images/brands), pressed
- * straight onto the paper at its optical size: on the card's day, and beside the article's title
- * in the lists.
+ * Where an article came out, by that place's tile (its logo on a rounded square, source-tiles.ts),
+ * pressed onto the paper: on the card's day, and beside the article's title in the lists.
  */
 export function SourceIcon(props: { source: string }) {
   return (
     <img
       class="source-icon"
-      src={brandIcon(props.source)}
+      src={sourceTile(props.source) ?? brandIcon(props.source)}
       alt=""
       aria-hidden="true"
       width="16"
       height="16"
       loading="lazy"
-      style={{ '--optical': optical[props.source] ?? 1 }}
     />
   );
 }

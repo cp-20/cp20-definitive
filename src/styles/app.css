@@ -4184,7 +4184,7 @@
     z-index: 3;
   }
   .attendance-stamp:is(:focus-visible, [data-hot], [data-picked], [data-open]) .source-icon {
-    scale: calc(var(--optical, 1) * 1.45);
+    scale: 1.45;
   }
   .attendance-stamp:focus-visible {
     outline-width: 2px;
@@ -4331,8 +4331,8 @@
     line-height: 1.6;
   }
   .article-meta .source-icon {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
   /* Home: the latest card, then the newest few by name, each dated under its title, with its
      stamp beside the first line. The title runs inline, so its highlighter follows each line. */
@@ -4353,10 +4353,10 @@
   }
   .recent-articles .source-icon {
     position: absolute;
-    left: 0;
-    top: calc(12px + (1lh - 20px) / 2);
-    width: 20px;
-    height: 20px;
+    left: 2px;
+    top: calc(12px + (1lh - 18px) / 2);
+    width: 18px;
+    height: 18px;
   }
   .recent-articles time {
     display: block;

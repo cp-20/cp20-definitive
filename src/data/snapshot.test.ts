@@ -4,13 +4,16 @@
 // is to fix.
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import { readdir } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { clientMedia, coverSrcsets, type CacheEntry, type Preview } from '../content/media.ts';
 import { splitLinks } from '../content/inline-links.ts';
 import { splitEmphasis } from '../content/emphasis.ts';
 import { SOLO_ROLE, openLink, type Work } from '../content/works.ts';
+import { mergeArticles, type ManualArticles } from '../content/normalize.ts';
+import type { Article } from '../content/content.ts';
+import { sourceTile, tiledSources } from '../components/source-tiles.ts';
 import { mergeWorks, sitePaths } from '../site/pages.ts';
 import { highlightIds, milestones, speedups } from './editorial.ts';
 import { mangaCovers } from './manga-covers.ts';
@@ -28,6 +31,7 @@ import tracks from './tracks.json' with { type: 'json' };
 import series from './series.json' with { type: 'json' };
 import baseWorks from './works.json' with { type: 'json' };
 import manual from './manual.json' with { type: 'json' };
+import generated from './generated.json' with { type: 'json' };
 
 const cache: Record<string, CacheEntry> = cacheJson;
 const previews = previewsJson as Record<string, Preview>;
@@ -351,5 +355,33 @@ describe('経歴（editorial.ts）', () => {
       ),
     ];
     assert.deepEqual(missing, []);
+  });
+});
+
+describe('記事の掲載先のタイル（public/images/brands/tiles）', () => {
+  const tiles = `${publicDir}/images/brands/tiles`;
+  test('記事の掲載先はどれもタイルを持ち、フォルダにはそのタイルだけがある', async () => {
+    const sources = new Set(
+      mergeArticles(generated.articles as Article[], manual as ManualArticles).map((a) => a.source),
+    );
+    const files = (await readdir(tiles)).map((name) => `/images/brands/tiles/${name}`);
+    const used = tiledSources.map(sourceTile);
+    assert.deepEqual(
+      {
+        noTile: [...sources].filter((source) => !sourceTile(source)),
+        missing: used.filter((file) => !files.includes(file!)),
+        unused: files.filter((file) => !used.includes(file)),
+      },
+      { noTile: [], missing: [], unused: [] },
+    );
+  });
+
+  test('どのタイルも、同じ大きさの角丸の四角を地の色で塗り、同じ鉛筆の線で縁取る', async () => {
+    const frame =
+      /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="8" fill="#[0-9a-f]{3,6}" stroke="#433d47" stroke-opacity="\.2" stroke-width="2"\/>/;
+    const broken: string[] = [];
+    for (const name of await readdir(tiles))
+      if (!frame.test(await readFile(`${tiles}/${name}`, 'utf8'))) broken.push(name);
+    assert.deepEqual(broken, []);
   });
 });
