@@ -35,7 +35,7 @@ export default function Credits() {
           <a href="https://simpleicons.org">Simple Icons</a>（CC0）と各サービスのファビコン、シールの絵柄は{' '}
           <a href="https://github.com/jdecked/twemoji">Twemoji</a>（© Twitter, Inc and other contributors、
           <a href="/stamps/LICENSE-GRAPHICS.txt">CC BY 4.0</a>
-          ）、文字のシールは Mochiy Pop One の字形、フォントは Yusei Magic / Zen Maru Gothic / IBM Plex
+          ）、文字のシールは Cherry Bomb One の字形、フォントは Yusei Magic / Zen Maru Gothic / IBM Plex
           Mono（どれも SIL OFL 1.1。IBM Plex Mono は Reserved Font Name のため「cp20
           Mono」と名前を変えて使用）
         </dd>

@@ -87,7 +87,7 @@ test('シールの絵柄のライセンスは、著作権者を書く', () => {
 
 test('文字のシールの字形のフォントは、著作権者と SIL OFL の本文を載せる', () => {
   const graphics = read('public/stamps/LICENSE-GRAPHICS.txt');
-  assert.match(graphics, /Copyright 2020 The MochiyPop Project Authors/);
+  assert.match(graphics, /Copyright 2019 The Cherry Bomb Project Authors/);
   assert.match(graphics, /SIL OPEN FONT LICENSE Version 1\.1/);
 });
 

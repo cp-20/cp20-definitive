@@ -95,12 +95,12 @@ export const extraNotices: Notice[] = [
     text: readFileSync(new URL('../../fonts/cp20-mono/OFL.txt', import.meta.url), 'utf8').trim(),
   },
   {
-    name: 'Mochiy Pop One (the letters of the word stickers in /stamps, drawn as outlines)',
+    name: 'Cherry Bomb One (the letters of the word stickers in /stamps, drawn as outlines)',
     license: 'OFL-1.1',
-    homepage: 'https://github.com/fontdasu/Mochiypop',
+    homepage: 'https://github.com/satsuyako/CherryBomb',
     copyright: [],
     text: [
-      'Copyright 2020 The MochiyPop Project Authors (https://github.com/fontdasu/Mochiypop)',
+      'Copyright 2019 The Cherry Bomb Project Authors (https://github.com/satsuyako/CherryBomb)',
       'Licensed under the SIL Open Font License, Version 1.1: https://openfontlicense.org',
       'Files and full license text: https://cp20.dev/stamps/LICENSE-GRAPHICS.txt',
     ].join('\n'),

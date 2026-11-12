@@ -2497,7 +2497,7 @@
   /* Once it rests, the sticker you just put down answers once, in its own way (transform only,
      so nothing around it moves), by its kind (sticker-kinds.ts; the retired ones still answer when
      moved): the heart, 「すき」, 「エモ」 and 「かわいい」 beat, the eyes blink, the sparkles and
-     「おめでと」 give off sparks, いいね, 「なるほど」, 「わかる」 and 「学び」 nod, the rest hop. */
+     「おめでと」 give off sparks, いいね, 「なるほど」, 「わかる」 and 「まなび」 nod, the rest hop. */
   .sticker[data-kind] {
     --cheer: cheer-hop;
   }

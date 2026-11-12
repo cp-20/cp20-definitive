@@ -15,16 +15,17 @@ Changes: scaled and placed in the middle of the QR code (scripts/build/qr.ts).
 
 Files: suki.svg, naruhodo.svg, arigato.svg, emo.svg, wakaru.svg,
        manabi.svg, erai.svg, kawaii.svg, otsukare.svg, omedeto.svg
-       (the word stickers: すき, なるほど, ありがと, エモ, わかる, 学び,
-       えらい, かわいい, おつかれ, おめでと)
+       (the word stickers: すき, なるほど, ありがと, エモ, わかる,
+       まなび, えらい, かわいい, おつかれ, おめでと)
 Source: drawn for cp20.dev, not part of Twemoji, after the manner of mixi2's
         Japanese word reactions (round pop letters in one soft colour);
         no mixi2 artwork, lettering or trademark is used, only the words.
-        The letters are outlines of Mochiy Pop One, emboldened, set in a
-        soft gradient of a colour of their own on a white backing.
-Font: Mochiy Pop One, https://github.com/fontdasu/Mochiypop
-      Copyright 2020 The MochiyPop Project Authors
-      (https://github.com/fontdasu/Mochiypop)
+        The letters are outlines of Cherry Bomb One, rounded with a thin
+        stroke of their own colour, set in a soft gradient of a colour of
+        their own on a white backing.
+Font: Cherry Bomb One, https://github.com/satsuyako/CherryBomb
+      Copyright 2019 The Cherry Bomb Project Authors
+      (https://github.com/satsuyako/CherryBomb)
 License: SIL Open Font License 1.1, https://openfontlicense.org
          (its text follows the Twemoji license below).
 
@@ -428,10 +429,10 @@ Creative Commons may be contacted at creativecommons.org.
 
 =======================================================================
 
-The license of Mochiy Pop One, whose letters the word stickers are drawn
+The license of Cherry Bomb One, whose letters the word stickers are drawn
 from, follows.
 
-Copyright 2020 The MochiyPop Project Authors (https://github.com/fontdasu/Mochiypop)
+Copyright 2019 The Cherry Bomb Project Authors (https://github.com/satsuyako/CherryBomb)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

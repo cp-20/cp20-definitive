@@ -3,8 +3,9 @@
 // already put on the pages with it still show (and can still be moved or peeled off), but the
 // sheet no longer offers it. `symbol` names its picture under /stamps; the design without one is
 // the site owner's own icon instead. Word stickers (「…」) say a short feeling in letters, after
-// mixi2's Japanese word reactions (round pop letters in one soft colour each,
-// public/stamps/LICENSE-GRAPHICS.txt).
+// mixi2's Japanese word reactions (Cherry Bomb One's round pop letters in one soft colour each,
+// public/stamps/LICENSE-GRAPHICS.txt). The face has kana but no kanji, so a word is written in kana
+// (「まなび」).
 export type StickerKind = { symbol: string; name: string; retired?: true };
 export const STICKER_KINDS: readonly StickerKind[] = [
   { symbol: 'clover', name: 'クローバー' },
@@ -18,7 +19,7 @@ export const STICKER_KINDS: readonly StickerKind[] = [
   { symbol: 'arigato', name: '「ありがと」' },
   { symbol: 'emo', name: '「エモ」' },
   { symbol: 'wakaru', name: '「わかる」' },
-  { symbol: 'manabi', name: '「学び」' },
+  { symbol: 'manabi', name: '「まなび」' },
   { symbol: 'erai', name: '「えらい」' },
   { symbol: 'kawaii', name: '「かわいい」' },
   { symbol: 'otsukare', name: '「おつかれ」' },
