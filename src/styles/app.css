@@ -4157,29 +4157,40 @@
      its place and --size, in rows), each taking the pointer on its own cell. A mark is centred on
      the middle of its day's square between the ruled lines, which are drawn 1px wide at the start
      of each day (so half a pixel past the middle of the track), whether it is wider than the day
-     or not. */
+     or not.
+     The tile is a whole number of pixels square and placed by layout, not by a transform, so its
+     edges are snapped to device pixels: at the card's fractional sizes (21.28px, 13.19px on a
+     phone) a translate of -50% put its sides and its top and bottom on different sub-pixel
+     phases, and on some days it was drawn a pixel wider than tall, the dark blog tile most
+     visibly. */
   .attendance-stamp {
     position: relative;
   }
   .attendance-stamp[data-crowd] {
     z-index: 1;
     place-self: center;
+    left: calc(var(--dx) * var(--row));
+    top: calc(var(--dy) * var(--row));
     width: calc(var(--row) * var(--size));
     height: calc(var(--row) * var(--size));
-    translate: calc(var(--dx) * var(--row)) calc(var(--dy) * var(--row));
   }
   .attendance-stamp .source-icon {
+    --tile: calc(var(--row) * var(--size));
     position: absolute;
-    top: calc(50% + 0.5px);
-    left: calc(50% + 0.5px);
-    width: calc(var(--row) * var(--size));
-    height: calc(var(--row) * var(--size));
+    top: calc(50% + 0.5px - var(--tile) / 2);
+    left: calc(50% + 0.5px - var(--tile) / 2);
+    width: var(--tile);
+    height: var(--tile);
     max-width: none;
-    translate: -50% -50%;
     pointer-events: none;
     transition:
       scale var(--t-hover) var(--ease),
       opacity var(--t-state) var(--ease);
+  }
+  @supports (width: round(1.5px, 1px)) {
+    .attendance-stamp .source-icon {
+      --tile: round(calc(var(--row) * var(--size)), 1px);
+    }
   }
   .attendance-stamp:is(:focus-visible, [data-hot], [data-picked], [data-open]) {
     z-index: 3;
