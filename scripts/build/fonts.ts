@@ -288,7 +288,11 @@ export async function subsetSiteFonts(root: string) {
   const [html, css, js] = await Promise.all([
     read(pages),
     read(await files(join(root, 'assets'), /\.css$/)),
-    read(await files(join(root, 'assets'), /\.js$/)),
+    // The typeface trial's panel (src/site/font-trial-panel.ts, temporary) is set in the system's
+    // face, so its text needs none of these.
+    read(
+      (await files(join(root, 'assets'), /\.js$/)).filter((f) => !/[\\/]font-trial-panel-[^\\/]*$/.test(f)),
+    ),
   ]);
   // Regular covers every character the site can show; bold and the hand-written face only what is
   // set in them (the body text's kanji are the bulk of a font). Each is split by page. Whether a

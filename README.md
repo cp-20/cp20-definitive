@@ -25,6 +25,10 @@ npm run build
 
 初期データを同梱しているため、収集なしでもビルドできます。
 
+### 書体のお試し（一時的）
+
+実際のページで書体の組み合わせを比べるための一時的な仕組みです。どのページでも URL に `?font=<名前>` を付けて開くと、その組（`current` いまの組、`yusei-kaku` 手書き＋端正なゴシック、`klee` ペン字のノート、`kiwi` やわらかい丸、`mincho` 明朝の見出し、`zenkaku` 上品なゴシック、`lineseed` くっきりモダン、`ud` 読みやすさ重視）に切り替わり、選んだ組は localStorage に残ってほかのページや再読み込みでも続きます。同時に左下（スマートフォンでは下のタブの上）に「書体：…」のパネルが出て（`?font` だけなら組はそのまま）、見出し・文・数字と欧文・コードの書体が並んだ一覧から選び直せます。`?font=off` かパネルの「お試しをやめる」で元に戻り、パネルも消えます。組は `src/site/font-trial.ts`（各役の書体・太さ・欧文の size-adjust・字間）、読み込みとパネルは `src/site/font-trial-panel.ts` にあり、書体は @fontsource のスタイルシートを選んだときにだけ読み込むので、お試しをしていない訪問者には（`App.tsx` の数行のほかは）何も増えません。組を決めたら、この2つのファイルと `App.tsx` の呼び出し、`scripts/build/fonts.ts` の除外、使わない @fontsource のパッケージを外し、選んだ書体をサイトの書体（`fonts/`、`scripts/build/fonts.ts` でサブセット化）に置き換えます。
+
 ## 本番公開の初期設定
 
 **公開はCloudflare Workers Builds（CloudflareのGit連携）で行います。`main` へのpushごとにCloudflare上でビルドしてデプロイします。GitHub Actionsは記事などの定期収集とスナップショットのコミット、PR・`main` の検証（`CI`）、Firebaseルールのデプロイ（専用DBのみ。下記「ルールの更新」）を担当します。Cloudflareの認証情報は持ちません。**
