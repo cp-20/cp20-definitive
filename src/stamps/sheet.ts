@@ -74,9 +74,12 @@ export function createSheet(options: {
     (next || sheetFocus(target))?.focus({ preventScroll: !next });
   }
   // Where a sticker of the sheet sits on screen (the tab while the sheet is closed), and its size
-  // there as a scale of one in hand (40px), so it leaves and goes back at the size it is drawn.
+  // there as a scale of one in hand (40px), so it leaves and goes back at the size it is drawn. A
+  // kind the sheet no longer offers (sticker-kinds.ts) goes back into the middle of its stickers.
   function slotCenter(kind: number) {
-    const slot = open() ? sheet?.querySelector(`[data-sticker-kind="${kind}"]`) : null;
+    const slot = open()
+      ? (sheet?.querySelector(`[data-sticker-kind="${kind}"]`) ?? sheet?.querySelector('.stamp-choices'))
+      : null;
     const img = (slot || document.querySelector('.sticker-tab'))?.querySelector('img');
     const box = (slot || img)?.getBoundingClientRect();
     const scale = img ? parseFloat(getComputedStyle(img).width) / 40 : 0.6;

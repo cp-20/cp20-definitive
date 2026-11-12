@@ -11,6 +11,8 @@ import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { throttlePath, writeBody } from '../../src/stamps/write.ts';
 import { mergeWorks, stampPageKeys } from '../../src/site/pages.ts';
+import { STICKER_KIND_COUNT } from '../../src/stamps/limits.ts';
+import { STICKER_KINDS } from '../../src/stamps/sticker-kinds.ts';
 const emulator = process.env.STAMPS_RULES_EMULATOR;
 if (process.env.STAMPS_LIVE_TEST !== '1' && !emulator)
   throw Error(
@@ -153,6 +155,11 @@ if (google) {
     await expect(write('home', 'someone-else', record(stamp), google), 401, 'other owner write denied');
     await expect(put(record({ ...stamp, x: 2 })), 401, 'out-of-range position denied');
     await expect(put(record({ ...stamp, kind: 99 })), 401, 'unknown stamp denied');
+    await expect(
+      put(record({ ...stamp, kind: STICKER_KIND_COUNT })),
+      401,
+      'kind past the last design denied',
+    );
     await expect(put(record({ ...stamp, html: '<script>' })), 401, 'extra stamp data denied');
     await expect(put(record(stamp, { avatar: 'https://example.com/a.png' })), 401, 'non-hash avatar denied');
     await expect(put(record(stamp, { email: 'a@example.com' })), 401, 'extra record data denied');
@@ -226,7 +233,11 @@ if (google) {
       401,
       'child write with a valid throttle entry denied',
     );
-    await expect(put(record({ ...stamp, x: 0.4 })), 200, 'update after the interval accepted');
+    await expect(
+      put(record({ ...stamp, x: 0.4, kind: STICKER_KIND_COUNT - 1 })),
+      200,
+      'update to the last design after the interval accepted',
+    );
     await expect(request(`pages/home/${uid}`, 'DELETE', undefined, google), 200, 'own stamp removable');
     await expect(put(record(stamp)), 401, 'delete then immediate re-create denied');
     await expect(
@@ -236,6 +247,13 @@ if (google) {
     );
     await sleep(1100);
     await expect(put(record(stamp)), 200, 're-create after the interval accepted');
+    // A design taken off the sheet is still on the pages, so moving one of them still saves.
+    await sleep(1100);
+    await expect(
+      put(record({ ...stamp, kind: STICKER_KINDS.findIndex((k) => k.retired) })),
+      200,
+      'a retired design accepted',
+    );
     await sleep(1100);
     await expect(write(lastPage, uid, record(stamp), google), 200, `${lastPage} (last listed page) accepted`);
     await sleep(1100);

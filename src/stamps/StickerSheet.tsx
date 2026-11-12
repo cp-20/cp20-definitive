@@ -4,7 +4,7 @@ import { For, Show } from 'solid-js';
 import type { Account } from './types.ts';
 import { STAMPS_PER_PAGE as LIMIT } from './limits.ts';
 import Icon from '../components/Icon.tsx';
-import { STICKER_KINDS, StickerFace, gravatarUrl } from './kinds.tsx';
+import { SHEET_KINDS, STICKER_KINDS, StickerFace, gravatarUrl } from './kinds.tsx';
 import type { createInput } from './input.ts';
 export function StickerTab(props: {
   ref: (el: HTMLButtonElement) => void;
@@ -150,28 +150,27 @@ export function StickerSheet(props: {
         <p class="sticker-hint">ログインすると、シールを貼れます。貼ったシールはみんなに見えます。</p>
       </Show>
       <div class="stamp-choices" role="group" aria-label="シールの種類">
-        <For each={STICKER_KINDS}>
-          {(item, i) => (
+        <For each={SHEET_KINDS}>
+          {(kind) => (
             <button
               class="sheet-sticker"
-              data-sticker-kind={i()}
-              data-word={item.word ? 'true' : undefined}
+              data-sticker-kind={kind}
               aria-label={
                 props.account
-                  ? `${item.name}のシールを貼る${props.remaining > 0 ? '' : '（一番古いシールと入れ替わります）'}`
-                  : `${item.name}のシール（ログインすると貼れます）`
+                  ? `${STICKER_KINDS[kind].name}のシールを貼る${props.remaining > 0 ? '' : '（一番古いシールと入れ替わります）'}`
+                  : `${STICKER_KINDS[kind].name}のシール（ログインすると貼れます）`
               }
-              data-taken={props.taken === i() ? 'true' : undefined}
-              onPointerDown={(e) => input.grab(e, { kind: i(), from: 'sheet' })}
+              data-taken={props.taken === kind ? 'true' : undefined}
+              onPointerDown={(e) => input.grab(e, { kind, from: 'sheet' })}
               onPointerMove={input.follow}
               onPointerUp={input.release}
               onPointerCancel={() => input.cancel(true)}
               onClick={(e) => {
-                if (e.detail === 0) input.aimWithKeys(i());
+                if (e.detail === 0) input.aimWithKeys(kind);
               }}
             >
-              <span class="sticker" data-kind={i()}>
-                <StickerFace kind={i()} />
+              <span class="sticker" data-kind={kind}>
+                <StickerFace kind={kind} />
               </span>
             </button>
           )}

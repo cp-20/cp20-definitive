@@ -6,16 +6,22 @@ Source: Twemoji, https://github.com/jdecked/twemoji (assets/svg)
 Copyright 2019 Twitter, Inc and other contributors
 License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
 Changes: none; the files are the upstream SVGs, renamed.
+Note: eyes, heart, sparkles and thumb are no longer on the sticker sheet;
+      they stay for the stickers visitors already placed with them.
 
 File: /images/qr-cp20.svg (the QR code of https://cp20.dev)
 Source: the clover of clover.svg above (Twemoji, same copyright and license).
 Changes: scaled and placed in the middle of the QR code (scripts/build/qr.ts).
 
-Files: suki.svg, naruhodo.svg, arigato.svg (the word stickers)
+Files: suki.svg, naruhodo.svg, arigato.svg, emo.svg, wakaru.svg,
+       manabi.svg, erai.svg, kawaii.svg, otsukare.svg, omedeto.svg
+       (the word stickers: すき, なるほど, ありがと, エモ, わかる, 学び,
+       えらい, かわいい, おつかれ, おめでと)
 Source: drawn for cp20.dev, not part of Twemoji, after the manner of mixi2's
-        word reactions (round pop letters in one soft colour); no mixi2
-        artwork is used. The letters are outlines of Mochiy Pop One,
-        emboldened, set in a soft gradient on a white backing.
+        Japanese word reactions (round pop letters in one soft colour);
+        no mixi2 artwork, lettering or trademark is used, only the words.
+        The letters are outlines of Mochiy Pop One, emboldened, set in a
+        soft gradient of a colour of their own on a white backing.
 Font: Mochiy Pop One, https://github.com/fontdasu/Mochiypop
       Copyright 2020 The MochiyPop Project Authors
       (https://github.com/fontdasu/Mochiypop)

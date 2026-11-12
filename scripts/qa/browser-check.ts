@@ -529,6 +529,17 @@ try {
   await expect(guest.getByRole('button', { name: 'Google でログイン' })).toBeVisible();
   // One line says what signing in is for; once signed in it is gone.
   await expect(guest.locator('.sticker-hint')).toContainText('みんなに見えます');
+  // The sheet offers the stickers of sticker-kinds.ts that are not retired, in two rows of six (by
+  // their place in the layout: the sheet is drawn a little tilted).
+  const offered = await guest
+    .locator('.sheet-sticker')
+    .evaluateAll((slots) =>
+      slots.map((s) => [(s as HTMLElement).dataset.stickerKind, (s as HTMLElement).offsetTop]),
+    );
+  if (offered.length !== 12 || new Set(offered.map(([, top]) => top)).size !== 2)
+    throw Error(`The sheet does not lay out twelve stickers in two rows: ${JSON.stringify(offered)}`);
+  if (offered.some(([kind]) => ['1', '2', '3', '4'].includes(kind as string)))
+    throw Error('The sheet offers a retired sticker');
   await guest.getByRole('button', { name: /^クローバー/ }).click();
   await expect(guest.locator('.stamp-overlay')).toHaveCount(0);
   await page.locator('.sticker-tab').click();
@@ -617,7 +628,7 @@ try {
 
   // ── Stickers by touch ──
   await visitor.locator('.sticker-tab').tap();
-  await visitor.getByRole('button', { name: 'ハートのシールを貼る', exact: true }).tap();
+  await visitor.getByRole('button', { name: '「すき」のシールを貼る', exact: true }).tap();
   await visitor.touchscreen.tap(160, 190);
   await expect(visitor.locator('[data-pending=true]')).toHaveCount(1);
   await saved(visitor);
@@ -711,9 +722,9 @@ try {
   const cardBox = (await card.boundingBox())!;
   const onCard = { x: cardBox.x + cardBox.width / 2, y: cardBox.y + cardBox.height * 0.75 };
   // The sheet stays open from the page before.
-  const heart = visitor.getByRole('button', { name: 'ハートのシールを貼る', exact: true });
-  if (!(await heart.isVisible())) await visitor.locator('.sticker-tab').tap();
-  await heart.tap();
+  const suki = visitor.getByRole('button', { name: '「すき」のシールを貼る', exact: true });
+  if (!(await suki.isVisible())) await visitor.locator('.sticker-tab').tap();
+  await suki.tap();
   await visitor.touchscreen.tap(onCard.x, onCard.y);
   await saved(visitor);
   const onLink = (await visitor.locator('.placed-stamp[data-owned]').boundingBox())!;

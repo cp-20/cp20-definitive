@@ -2495,21 +2495,22 @@
       var(--cheer, none) var(--t-enter) var(--ease) calc(max(var(--slide-time, 0ms), var(--t-state)) + 40ms);
   }
   /* Once it rests, the sticker you just put down answers once, in its own way (transform only,
-     so nothing around it moves): the heart and 「すき」 beat, the eyes blink, the sparkles give off
-     sparks, いいね and 「なるほど」 nod, the rest hop. */
+     so nothing around it moves), by its kind (sticker-kinds.ts; the retired ones still answer when
+     moved): the heart, 「すき」, 「エモ」 and 「かわいい」 beat, the eyes blink, the sparkles and
+     「おめでと」 give off sparks, いいね, 「なるほど」, 「わかる」 and 「学び」 nod, the rest hop. */
   .sticker[data-kind] {
     --cheer: cheer-hop;
   }
-  .sticker:is([data-kind='2'], [data-kind='4'], [data-kind='6']) {
+  .sticker:is([data-kind='2'], [data-kind='4'], [data-kind='6'], [data-kind='9'], [data-kind='13']) {
     --cheer: cheer-beat;
   }
-  .sticker:is([data-kind='1'], [data-kind='7']) {
+  .sticker:is([data-kind='1'], [data-kind='7'], [data-kind='10'], [data-kind='11']) {
     --cheer: cheer-nod;
   }
   .sticker[data-kind='3'] {
     --cheer: cheer-blink;
   }
-  .placed-stamp[data-fresh]:has(> .sticker[data-kind='2'])::after {
+  .placed-stamp[data-fresh]:has(> .sticker:is([data-kind='2'], [data-kind='15']))::after {
     content: '';
     position: absolute;
     inset: -9px;
@@ -2733,26 +2734,25 @@
       inset: -9px -4px;
     }
   }
+  /* Twelve stickers in two rows of six, each in a round die-cut slot of its own: the clover and
+     the owner's icon, then the words. */
   .stamp-choices {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 4px;
     margin-top: 6px;
   }
+  /* No padding: a button's own would leave a narrow slot (a phone's) less room than the sticker,
+     squeezing it. */
   .sheet-sticker {
     display: grid;
     place-items: center;
     aspect-ratio: 1;
+    padding: 0;
     border: 1.5px dashed rgb(45 42 51 / 0.22);
     border-radius: 50%;
     cursor: grab;
     touch-action: none;
-  }
-  /* The word stickers: a row of their own, spread under the pictures, each slot one column wide. */
-  .sheet-sticker[data-word] {
-    grid-column: span 2;
-    justify-self: center;
-    width: calc((100% - 4px) / 2);
   }
   .sheet-sticker .sticker {
     transition: transform var(--t-hover) var(--ease);
