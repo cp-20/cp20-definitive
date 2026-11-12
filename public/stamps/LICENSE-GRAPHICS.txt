@@ -6,17 +6,16 @@ Source: Twemoji, https://github.com/jdecked/twemoji (assets/svg)
 Copyright 2019 Twitter, Inc and other contributors
 License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
 Changes: none; the files are the upstream SVGs, renamed.
-Note: eyes, heart, sparkles and thumb are no longer on the sticker sheet;
-      they stay for the stickers visitors already placed with them.
 
 File: /images/qr-cp20.svg (the QR code of https://cp20.dev)
 Source: the clover of clover.svg above (Twemoji, same copyright and license).
 Changes: scaled and placed in the middle of the QR code (scripts/build/qr.ts).
 
-Files: suki.svg, naruhodo.svg, arigato.svg, emo.svg, wakaru.svg,
-       manabi.svg, erai.svg, kawaii.svg, otsukare.svg, omedeto.svg
-       (the word stickers: すき, なるほど, ありがと, エモ, わかる,
-       まなび, えらい, かわいい, おつかれ, おめでと)
+Files: suki.svg, naruhodo.svg, arigato.svg, tensai.svg, wakaru.svg,
+       omedeto.svg, emo.svg, manabi.svg, erai.svg, kawaii.svg,
+       otsukare.svg
+       (the word stickers: すき, なるほど, ありがと, てんさい, わかる,
+       おめでと, エモ, まなび, えらい, かわいい, おつかれ)
 Source: drawn for cp20.dev, not part of Twemoji, after the manner of mixi2's
         Japanese word reactions (round pop letters in one soft colour);
         no mixi2 artwork, lettering or trademark is used, only the words.
@@ -28,6 +27,8 @@ Font: Cherry Bomb One, https://github.com/satsuyako/CherryBomb
       (https://github.com/satsuyako/CherryBomb)
 License: SIL Open Font License 1.1, https://openfontlicense.org
          (its text follows the Twemoji license below).
+Note: emo, manabi, erai, kawaii and otsukare are no longer on the sticker
+      sheet; they stay for the stickers visitors already placed with them.
 
 The license text of the Twemoji files follows.
 

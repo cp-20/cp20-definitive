@@ -5,29 +5,30 @@
 // the site owner's own icon instead. Word stickers (「…」) say a short feeling in letters, after
 // mixi2's Japanese word reactions (Cherry Bomb One's round pop letters in one soft colour each,
 // public/stamps/LICENSE-GRAPHICS.txt). The face has kana but no kanji, so a word is written in kana
-// (「まなび」).
+// (「てんさい」, 「まなび」). Pictures are Twemoji, as mixi2 offers emoji beside its words.
 export type StickerKind = { symbol: string; name: string; retired?: true };
 export const STICKER_KINDS: readonly StickerKind[] = [
   { symbol: 'clover', name: 'クローバー' },
-  { symbol: 'thumb', name: 'いいね', retired: true },
-  { symbol: 'sparkles', name: 'きらきら', retired: true },
-  { symbol: 'eyes', name: '見てる', retired: true },
-  { symbol: 'heart', name: 'ハート', retired: true },
+  { symbol: 'thumb', name: 'いいね' },
+  { symbol: 'sparkles', name: 'きらきら' },
+  { symbol: 'eyes', name: '見てる' },
+  { symbol: 'heart', name: 'ハート' },
   { symbol: '', name: 'しーぴー' },
   { symbol: 'suki', name: '「すき」' },
   { symbol: 'naruhodo', name: '「なるほど」' },
   { symbol: 'arigato', name: '「ありがと」' },
-  { symbol: 'emo', name: '「エモ」' },
+  { symbol: 'emo', name: '「エモ」', retired: true },
   { symbol: 'wakaru', name: '「わかる」' },
-  { symbol: 'manabi', name: '「まなび」' },
-  { symbol: 'erai', name: '「えらい」' },
-  { symbol: 'kawaii', name: '「かわいい」' },
-  { symbol: 'otsukare', name: '「おつかれ」' },
+  { symbol: 'manabi', name: '「まなび」', retired: true },
+  { symbol: 'erai', name: '「えらい」', retired: true },
+  { symbol: 'kawaii', name: '「かわいい」', retired: true },
+  { symbol: 'otsukare', name: '「おつかれ」', retired: true },
   { symbol: 'omedeto', name: '「おめでと」' },
+  { symbol: 'tensai', name: '「てんさい」' },
 ];
 /**
- * The stickers the sheet offers, by kind, in the order it lays them out: six to a row, the
- * clover and the owner's icon first, then the words, no two of a colour side by side or one
- * above the other.
+ * The stickers the sheet offers, by kind, in the order it lays them out: six to a row, pictures
+ * and words taking turns as in mixi2's reactions (the clover first, the owner's icon last), no
+ * two of a colour side by side or one above the other.
  */
-export const SHEET_KINDS: readonly number[] = [0, 5, 6, 7, 8, 9, 12, 11, 10, 14, 13, 15];
+export const SHEET_KINDS: readonly number[] = [0, 6, 1, 7, 2, 8, 16, 4, 15, 3, 10, 5];

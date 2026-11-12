@@ -12,6 +12,7 @@ import profile from '../../src/data/profile.json' with { type: 'json' };
 import works from '../../src/data/works.json' with { type: 'json' };
 import manual from '../../src/data/manual.json' with { type: 'json' };
 import { mergeWorks } from '../../src/site/pages.ts';
+import { STICKER_KINDS } from '../../src/stamps/sticker-kinds.ts';
 
 declare global {
   interface Window {
@@ -538,7 +539,7 @@ try {
     );
   if (offered.length !== 12 || new Set(offered.map(([, top]) => top)).size !== 2)
     throw Error(`The sheet does not lay out twelve stickers in two rows: ${JSON.stringify(offered)}`);
-  if (offered.some(([kind]) => ['1', '2', '3', '4'].includes(kind as string)))
+  if (offered.some(([kind]) => STICKER_KINDS[Number(kind)]?.retired !== undefined))
     throw Error('The sheet offers a retired sticker');
   await guest.getByRole('button', { name: /^クローバー/ }).click();
   await expect(guest.locator('.stamp-overlay')).toHaveCount(0);

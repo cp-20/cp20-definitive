@@ -2496,8 +2496,9 @@
   }
   /* Once it rests, the sticker you just put down answers once, in its own way (transform only,
      so nothing around it moves), by its kind (sticker-kinds.ts; the retired ones still answer when
-     moved): the heart, 「すき」, 「エモ」 and 「かわいい」 beat, the eyes blink, the sparkles and
-     「おめでと」 give off sparks, いいね, 「なるほど」, 「わかる」 and 「まなび」 nod, the rest hop. */
+     moved): the heart, 「すき」, 「エモ」 and 「かわいい」 beat, the eyes blink, the sparkles,
+     「おめでと」 and 「てんさい」 give off sparks, いいね, 「なるほど」, 「わかる」 and 「まなび」 nod,
+     the rest hop. */
   .sticker[data-kind] {
     --cheer: cheer-hop;
   }
@@ -2510,7 +2511,7 @@
   .sticker[data-kind='3'] {
     --cheer: cheer-blink;
   }
-  .placed-stamp[data-fresh]:has(> .sticker:is([data-kind='2'], [data-kind='15']))::after {
+  .placed-stamp[data-fresh]:has(> .sticker:is([data-kind='2'], [data-kind='15'], [data-kind='16']))::after {
     content: '';
     position: absolute;
     inset: -9px;
@@ -2734,8 +2735,8 @@
       inset: -9px -4px;
     }
   }
-  /* Twelve stickers in two rows of six, each in a round die-cut slot of its own: the clover and
-     the owner's icon, then the words. */
+  /* Twelve stickers in two rows of six, each in a round die-cut slot of its own: pictures and
+     words taking turns, the clover first and the owner's icon last. */
   .stamp-choices {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
