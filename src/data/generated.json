@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-12T19:58:27.964Z",
+  "updatedAt": "2026-11-13T06:50:46.355Z",
   "articles": [
     {
       "title": "社会性",
@@ -477,7 +477,7 @@
       "description": "A fast malloc for most use cases: arithmetic size-class dispatch, lock-free batched free lists, and a JIT-compiled entry point — benchmarked against glibc, tcmalloc, jemalloc and mimalloc.",
       "language": "C",
       "stars": 0,
-      "updatedAt": "2026-11-12T17:17:33Z",
+      "updatedAt": "2026-11-13T06:47:55Z",
       "fork": false,
       "archived": false
     },
@@ -485,9 +485,29 @@
       "name": "cjk-webfont-compression",
       "url": "https://github.com/cp-20/cjk-webfont-compression",
       "description": "Measured CJK web font compression: GLC (beats WOFF2 by 9-34% at bounded perceptual error), a delivery-layer study, and three published negative results",
-      "language": "HTML",
+      "language": "Python",
       "stars": 0,
-      "updatedAt": "2026-11-12T08:46:33Z",
+      "updatedAt": "2026-11-13T05:00:48Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "traq-bot-ts",
+      "url": "https://github.com/cp-20/traq-bot-ts",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 4,
+      "updatedAt": "2026-11-13T04:34:15Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "asterion-manifest",
+      "url": "https://github.com/cp-20/asterion-manifest",
+      "description": "",
+      "language": "JavaScript",
+      "stars": 2,
+      "updatedAt": "2026-11-12T21:02:24Z",
       "fork": false,
       "archived": false
     },
@@ -497,7 +517,7 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-12T07:17:03Z",
+      "updatedAt": "2026-11-12T19:58:51Z",
       "fork": false,
       "archived": false
     },
@@ -508,26 +528,6 @@
       "language": "TypeScript",
       "stars": 2,
       "updatedAt": "2026-11-12T06:46:09Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "asterion-manifest",
-      "url": "https://github.com/cp-20/asterion-manifest",
-      "description": "",
-      "language": "JavaScript",
-      "stars": 2,
-      "updatedAt": "2026-11-11T22:40:54Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "traq-bot-ts",
-      "url": "https://github.com/cp-20/traq-bot-ts",
-      "description": "",
-      "language": "TypeScript",
-      "stars": 4,
-      "updatedAt": "2026-11-11T22:09:32Z",
       "fork": false,
       "archived": false
     },
@@ -646,7 +646,7 @@
       "url": "https://github.com/cp-20/trap-api-playground",
       "description": "",
       "language": "TypeScript",
-      "stars": 0,
+      "stars": 1,
       "updatedAt": "2026-07-02T17:57:35Z",
       "fork": false,
       "archived": false
@@ -1385,39 +1385,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T19:58:27.964Z",
+      "lastSuccess": "2026-11-13T06:50:46.355Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T19:58:27.964Z",
+      "lastSuccess": "2026-11-13T06:50:46.355Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T19:58:27.964Z",
+      "lastSuccess": "2026-11-13T06:50:46.355Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T19:58:27.964Z",
+      "lastSuccess": "2026-11-13T06:50:46.355Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T19:58:27.964Z",
+      "lastSuccess": "2026-11-13T06:50:46.355Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T19:58:27.964Z",
+      "lastSuccess": "2026-11-13T06:50:46.355Z",
       "count": 131
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-12T19:58:27.964Z",
+      "lastSuccess": "2026-11-13T06:50:46.355Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-12T19:58:27.964Z"
+  "checkedAt": "2026-11-13T06:50:46.355Z"
 }
