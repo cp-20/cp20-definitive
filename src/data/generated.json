@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-15T18:54:18.226Z",
+  "updatedAt": "2026-11-16T06:37:08.005Z",
   "articles": [
     {
       "title": "社会性",
@@ -477,7 +477,17 @@
       "description": "A fast malloc for most use cases: arithmetic size-class dispatch, lock-free batched free lists, and a JIT-compiled entry point — benchmarked against glibc, tcmalloc, jemalloc and mimalloc.",
       "language": "C",
       "stars": 0,
-      "updatedAt": "2026-11-15T18:49:54Z",
+      "updatedAt": "2026-11-16T02:22:55Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-11-15T18:54:50Z",
       "fork": false,
       "archived": false
     },
@@ -508,16 +518,6 @@
       "language": "TypeScript",
       "stars": 2,
       "updatedAt": "2026-11-15T09:17:45Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-11-15T06:40:26Z",
       "fork": false,
       "archived": false
     },
@@ -1395,39 +1395,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-15T18:54:18.226Z",
+      "lastSuccess": "2026-11-16T06:37:08.005Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-15T18:54:18.226Z",
+      "lastSuccess": "2026-11-16T06:37:08.005Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-15T18:54:18.226Z",
+      "lastSuccess": "2026-11-16T06:37:08.005Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-15T18:54:18.226Z",
+      "lastSuccess": "2026-11-16T06:37:08.005Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-15T18:54:18.226Z",
+      "lastSuccess": "2026-11-16T06:37:08.005Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-15T18:54:18.226Z",
+      "lastSuccess": "2026-11-16T06:37:08.005Z",
       "count": 132
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-15T18:54:18.226Z",
+      "lastSuccess": "2026-11-16T06:37:08.005Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-15T18:54:18.226Z"
+  "checkedAt": "2026-11-16T06:37:08.005Z"
 }
