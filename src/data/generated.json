@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-20T07:22:11.653Z",
+  "updatedAt": "2026-11-20T20:26:06.582Z",
   "articles": [
     {
       "title": "社会性",
@@ -477,7 +477,17 @@
       "description": "",
       "language": "JavaScript",
       "stars": 2,
-      "updatedAt": "2026-11-20T04:22:06Z",
+      "updatedAt": "2026-11-20T18:51:25Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "regex-calc",
+      "url": "https://github.com/cp-20/regex-calc",
+      "description": "正規表現 (s///) だけで計算する電卓 — YAPC::Tokyo 2026 LT「正規表現で電卓を作る」",
+      "language": "HTML",
+      "stars": 0,
+      "updatedAt": "2026-11-20T18:11:38Z",
       "fork": false,
       "archived": false
     },
@@ -487,7 +497,7 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-19T20:42:43Z",
+      "updatedAt": "2026-11-20T07:22:37Z",
       "fork": false,
       "archived": false
     },
@@ -1395,39 +1405,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T07:22:11.653Z",
+      "lastSuccess": "2026-11-20T20:26:06.582Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T07:22:11.653Z",
+      "lastSuccess": "2026-11-20T20:26:06.582Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T07:22:11.653Z",
+      "lastSuccess": "2026-11-20T20:26:06.582Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T07:22:11.653Z",
+      "lastSuccess": "2026-11-20T20:26:06.582Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T07:22:11.653Z",
+      "lastSuccess": "2026-11-20T20:26:06.582Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T07:22:11.653Z",
-      "count": 133
+      "lastSuccess": "2026-11-20T20:26:06.582Z",
+      "count": 134
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T07:22:11.653Z",
+      "lastSuccess": "2026-11-20T20:26:06.582Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-20T07:22:11.653Z"
+  "checkedAt": "2026-11-20T20:26:06.582Z"
 }
