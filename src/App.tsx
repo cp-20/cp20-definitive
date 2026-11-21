@@ -27,8 +27,9 @@ if (import.meta.env.DEV) {
 }
 // The subset is split by page, so a page loads only the files for the characters it shows. Once
 // the page has loaded, the other files follow, so the next page's text is ready when it is opened;
-// not for a visitor who asked to save data, whose next page loads only the files it shows.
-else if (!isServer && !(navigator as { connection?: { saveData?: boolean } }).connection?.saveData) {
+// not for a visitor who asked to save data or is on a slow connection (about 180 kB), whose next
+// page loads only the files it shows. Browsers that do not tell (Safari, Firefox) get them.
+else if (!isServer && fastConnection()) {
   const own = new Set(['Zen Maru Gothic', 'Yusei Magic', 'cp20 Mono']);
   const rest = () => {
     for (const face of document.fonts)
@@ -38,6 +39,11 @@ else if (!isServer && !(navigator as { connection?: { saveData?: boolean } }).co
   const idle = () => ('requestIdleCallback' in window ? requestIdleCallback(rest) : setTimeout(rest, 200));
   if (document.readyState === 'complete') idle();
   else addEventListener('load', idle, { once: true });
+}
+function fastConnection() {
+  const connection = (navigator as { connection?: { saveData?: boolean; effectiveType?: string } })
+    .connection;
+  return !connection?.saveData && (!connection?.effectiveType || connection.effectiveType === '4g');
 }
 function Page(props: { path: string }) {
   const info = pageInfo(props.path);
