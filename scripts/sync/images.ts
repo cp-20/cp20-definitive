@@ -397,6 +397,10 @@ export async function addVariants(
     }
     const widths = new Set(thumbnail ? plannedWidths(crop?.width ?? width ?? 0) : []);
     if (crop) widths.add(crop.width);
+    // A JPEG or PNG thumbnail also gets a WebP copy at full size (dropped below when it saves
+    // nothing), which the pages list instead of the original: on a high-density screen the
+    // largest candidate is the one shown, and it is several times smaller as WebP.
+    else if (thumbnail && width && /\.(jpe?g|png)$/i.test(entry.file)) widths.add(width);
     if (icon && (width ?? 0) >= iconWidth * 1.25) widths.add(iconWidth);
     const variants: Variant[] = [];
     for (const w of [...widths].sort((a, b) => a - b)) {

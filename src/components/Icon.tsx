@@ -1,4 +1,3 @@
-import { dynamic } from '@solidjs/web';
 import {
   ArrowUpRight,
   ArrowRight,
@@ -74,6 +73,28 @@ const icons = {
   Sparkles,
 };
 export type IconName = keyof typeof icons;
+const escapeAttribute = (value: unknown) =>
+  String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
+// Each icon's shapes as markup, built once. The shapes never change, so the page sets them as the
+// SVG's innerHTML: hydration keeps the server's shapes as they are (Solid skips innerHTML while
+// hydrating) instead of claiming every <path> through a dynamic component, which was the largest
+// part of hydrating a page.
+const markup = new Map<IconName, string>();
+const shapes = (name: IconName) => {
+  let html = markup.get(name);
+  if (html === undefined) {
+    html = icons[name]
+      .map(
+        ([tag, attrs]) =>
+          `<${tag}${Object.entries(attrs)
+            .map(([key, value]) => ` ${key}="${escapeAttribute(value)}"`)
+            .join('')}/>`,
+      )
+      .join('');
+    markup.set(name, html);
+  }
+  return html;
+};
 export default function Icon(props: { name: IconName; size?: number; class?: string; stroke?: number }) {
   // Official Lucide node data; no Solid 1 runtime from a framework wrapper.
   return (
@@ -88,12 +109,8 @@ export default function Icon(props: { name: IconName; size?: number; class?: str
       stroke-linejoin="round"
       aria-hidden="true"
       class={props.class}
-    >
-      {icons[props.name].map(([tag, attrs]) => {
-        const Shape = dynamic(() => tag);
-        return <Shape {...attrs} />;
-      })}
-    </svg>
+      innerHTML={shapes(props.name)}
+    />
   );
 }
 

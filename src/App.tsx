@@ -26,8 +26,9 @@ if (import.meta.env.DEV) {
   }
 }
 // The subset is split by page, so a page loads only the files for the characters it shows. Once
-// the page has loaded, the other files follow, so the next page's text is ready when it is opened.
-else if (!isServer) {
+// the page has loaded, the other files follow, so the next page's text is ready when it is opened;
+// not for a visitor who asked to save data, whose next page loads only the files it shows.
+else if (!isServer && !(navigator as { connection?: { saveData?: boolean } }).connection?.saveData) {
   const own = new Set(['Zen Maru Gothic', 'Yusei Magic', 'cp20 Mono']);
   const rest = () => {
     for (const face of document.fonts)

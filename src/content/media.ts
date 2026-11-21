@@ -43,13 +43,15 @@ export function clientMedia(
   thumbnails: (string | null | undefined)[],
   committed: Record<string, string> = {},
 ) {
-  const srcset = (image: CacheEntry, fallbackWidth?: number) =>
-    image.variants?.length
-      ? [
-          ...image.variants.map((v) => `${v.file} ${v.width}w`),
-          `${image.file} ${image.width || fallbackWidth}w`,
-        ].join(', ')
-      : undefined;
+  // The original is a candidate only when no WebP copy is as large (images.ts writes one at full
+  // size for a JPEG or PNG, unless it would be no smaller).
+  const srcset = (image: CacheEntry, fallbackWidth?: number) => {
+    if (!image.variants?.length) return undefined;
+    const width = image.width || fallbackWidth;
+    const candidates = image.variants.map((v) => `${v.file} ${v.width}w`);
+    if (!width || image.variants.at(-1)!.width < width) candidates.push(`${image.file} ${width}w`);
+    return candidates.join(', ');
+  };
   const pages: Record<
     string,
     { image?: string; srcset?: string; width: number; height: number; icon?: string }

@@ -1,7 +1,8 @@
 import { getRequestEvent, isServer } from '@solidjs/web';
 import { works } from '../content/content.ts';
 import { plain } from '../content/phrase-marks.ts';
-import { highlightIds, milestones } from '../data/editorial.ts';
+import { highlightIds } from '../data/editorial.ts';
+import { milestones } from 'virtual:cp20-editorial';
 import profile from '../data/profile.json';
 import { SITE_ORIGIN, STATIC_PAGES, canonicalUrl, normalizePath, workPath } from './pages.ts';
 export function currentUrl() {

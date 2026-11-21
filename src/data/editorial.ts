@@ -295,11 +295,11 @@ export const milestones: Milestone[] = [
   },
 ];
 /** The featured awards on /about, newest first, each with the history entry it opens. */
-export const awardCards = milestones.flatMap((m) =>
+export const awardCards = /* @__PURE__ */ milestones.flatMap((m) =>
   m.awardCard ? [{ ...m.awardCard, id: m.id, year: m.year }] : [],
 );
 /** The internships on /about, newest first, each with the history entry it opens. */
-export const internCards = milestones.flatMap((m) =>
+export const internCards = /* @__PURE__ */ milestones.flatMap((m) =>
   m.internCard ? [{ ...m.internCard, id: m.id, ongoing: m.ongoing }] : [],
 );
 export const editions = [

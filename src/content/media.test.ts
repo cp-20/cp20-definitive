@@ -58,12 +58,22 @@ describe('clientMedia', () => {
             { file: '/media/yt-c-480w.webp', width: 480 },
           ],
         },
+        'https://i.ytimg.com/vi/d/hq.jpg': {
+          file: '/media/yt-d.jpg',
+          checkedAt: 'x',
+          width: 480,
+          variants: [
+            { file: '/media/yt-d-320w.webp', width: 320 },
+            { file: '/media/yt-d-480w.webp', width: 480 },
+          ],
+        },
         'https://unused.example.com/a.png': { file: '/media/unused.png', checkedAt: 'x' },
       },
       [
         'https://i.ytimg.com/vi/a/hq.jpg',
         'https://i.ytimg.com/vi/b/hq.jpg',
         'https://i.ytimg.com/vi/c/hq.jpg',
+        'https://i.ytimg.com/vi/d/hq.jpg',
         null,
       ],
     );
@@ -92,6 +102,11 @@ describe('clientMedia', () => {
       'https://i.ytimg.com/vi/c/hq.jpg': {
         src: '/media/yt-c-480w.webp',
         srcset: '/media/yt-c-320w.webp 320w, /media/yt-c-480w.webp 480w',
+      },
+      // A full-size WebP copy stands in for the original as the largest candidate.
+      'https://i.ytimg.com/vi/d/hq.jpg': {
+        src: '/media/yt-d.jpg',
+        srcset: '/media/yt-d-320w.webp 320w, /media/yt-d-480w.webp 480w',
       },
     });
   });

@@ -220,18 +220,26 @@ describe('addVariants', () => {
   afterAll(() => box.cleanup());
   const metadata = (file: string) => sharp(new URL(`media/${file}`, box.dirs.public).pathname).metadata();
 
-  test('サムネイルには、320px の WebP の縮小版を作って記録する', async () => {
-    const meta = await metadata('og-320w.webp');
+  test('サムネイルには、320px と原寸の WebP の縮小版を作って記録する', async () => {
+    const [small, full] = await Promise.all([metadata('og-320w.webp'), metadata('og-512w.webp')]);
     assert.deepEqual(
-      [cache['https://example.com/og.png'], [meta.format, meta.width, meta.height]],
+      [
+        cache['https://example.com/og.png'],
+        [small.format, small.width, small.height],
+        [full.format, full.width, full.height],
+      ],
       [
         {
           file: '/media/og.png',
           checkedAt: 'x',
           width: 512,
-          variants: [{ file: '/media/og-320w.webp', width: 320 }],
+          variants: [
+            { file: '/media/og-320w.webp', width: 320 },
+            { file: '/media/og-512w.webp', width: 512 },
+          ],
         },
         ['webp', 320, 320],
+        ['webp', 512, 512],
       ],
     );
   });
