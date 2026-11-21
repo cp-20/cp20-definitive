@@ -17,3 +17,17 @@ declare module 'virtual:cp20-media' {
 declare module 'virtual:cp20-articles' {
   export const articles: { title: string; url: string; source: string; date: string }[];
 }
+
+// Generated at build time from editorial.ts and profile.json by vite.config.ts (phraseMilestones / phraseAffiliations).
+declare module 'virtual:cp20-editorial' {
+  export const milestones: import('../data/editorial.ts').Milestone[];
+  export const awardCards: { id: string; year: string; event: string; result: string }[];
+  export const internCards: {
+    id: string;
+    ongoing?: boolean;
+    company: string;
+    period: string;
+    summary: string;
+  }[];
+  export const affiliations: { name: string; url: string; sub?: { name: string; url: string }[] }[];
+}

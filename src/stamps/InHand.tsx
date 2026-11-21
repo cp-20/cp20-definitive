@@ -24,7 +24,7 @@ export function InHand(props: {
           aria-roledescription={input.byKeys() ? 'シールの配置' : undefined}
           aria-label={
             input.byKeys()
-              ? `シールを${props.held!.from === 'page' ? '動かす' : '貼る'}場所を選択。矢印キーで移動（Shiftを押しながらで大きく移動）、Enterで貼る、EscapeかTabでやめる`
+              ? `シールを${props.held!.from === 'page' ? '動かす' : '貼る'}場所を選択。矢印キーで移動 (Shiftを押しながらで大きく移動)、Enterで貼る、EscapeかTabでやめる`
               : undefined
           }
           aria-hidden={input.byKeys() ? undefined : 'true'}

@@ -1,4 +1,18 @@
 {
+  "https://github.com/cp-20/faster-malloc": {
+    "image": "/images/works/faster-malloc.png",
+    "icon": null,
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-20T00:00:00.000Z"
+  },
+  "https://traq-it.trap.show/": {
+    "image": "https://traq-it.trap.show/og.png",
+    "icon": "https://traq-it.trap.show/apple-touch-icon.png",
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-20T00:00:00.000Z"
+  },
   "https://trap-conference.trap.show/": {
     "image": "https://trap-conference.trap.show/og.png",
     "icon": "https://trap-conference.trap.show/apple-touch-icon.png",

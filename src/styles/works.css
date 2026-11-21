@@ -48,7 +48,6 @@
   /* A section title on the works pages: the page's highlighter under it. */
   .works-heading {
     width: fit-content;
-    padding-right: 4px;
     font-size: var(--fs-h2);
     background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 94%, transparent 94%);
   }
@@ -78,6 +77,9 @@
   .work-card h3 {
     font-size: var(--fs-title);
     line-height: 1.5;
+  }
+  .work-card-title {
+    color: var(--ink-heading);
   }
   /* A site's icon sits on a small white tile with a pencil line round it, whatever its own
      background (none, white or a colour), so every icon is the same shape on the paper. One drawn
@@ -166,17 +168,19 @@
     line-height: 1.6;
   }
   .work-card-meta > span + span::before {
-    content: '/';
+    content: '・';
     margin: 0 0.5em;
     color: var(--faint);
   }
-  /* Pictures in cards are cut to one shape, so a row of them lines up. */
-  .work-card-picture .og-image {
+  /* Pictures in cards share one shape so a row of them lines up; the ratio sits on the image
+     inside the stamp's padding so 1200×630 OG images are never cropped at the bottom. */
+  .work-card-picture .og-image img,
+  .work-card-picture .og-image.unavailable {
     aspect-ratio: 1200 / 630;
   }
   .work-card-picture .og-image img {
     object-fit: cover;
-    object-position: 50% 0;
+    object-position: center;
   }
 
   /* A featured work: its OG image over its text, and the open button at the foot. */
@@ -283,10 +287,10 @@
   .work-card-small .work-card-picture {
     --perf: 9px;
     --perf-hole: 2.7px;
-    rotate: -1.5deg;
+    rotate: -0.8deg;
   }
   .work-cards-small > :nth-child(even) .work-card-picture {
-    rotate: 1.2deg;
+    rotate: 0.7deg;
   }
   /* Two to a row only where each line of a description still holds about 20 characters; a year
      beside its postmark is one column, each card no wider than a line of about 30. */
@@ -297,50 +301,6 @@
   }
   .works-year .work-card-small {
     max-width: 640px;
-  }
-
-  /* A line for a work: the site's icon (or a small stamp), its name and, under it, what it is. */
-  .work-row {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
-    align-items: center;
-    column-gap: 12px;
-    min-height: 56px;
-    padding: 6px 0;
-  }
-  /* Both rows' pictures are one square stamp: the site's icon, or the middle of its picture. */
-  .work-row-picture {
-    --perf: 5px;
-    --perf-hole: 1.5px;
-    grid-row: 1 / 3;
-    width: 44px;
-    rotate: -2deg;
-  }
-  .work-row-picture .og-image {
-    aspect-ratio: 1;
-  }
-  .work-row-picture .og-image img {
-    object-fit: cover;
-    object-position: 50% 50%;
-  }
-  .work-row-picture .work-row-icon img {
-    object-fit: contain;
-    padding: 2px;
-  }
-  .work-row-name {
-    align-self: end;
-    font-family: var(--hand);
-    font-weight: 400;
-    line-height: 1.6;
-  }
-  .work-row-description {
-    align-self: start;
-    overflow: hidden;
-    color: var(--ink);
-    font-size: var(--fs-ui);
-    line-height: 1.6;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   /* ── Works page ── */
@@ -413,10 +373,10 @@
     height: 100%;
     padding: 12px;
     filter: var(--stamp-shadow);
-    rotate: -2deg;
+    rotate: -1.2deg;
   }
   .edition-stamps li:nth-child(even) a {
-    rotate: 2.5deg;
+    rotate: 1.2deg;
   }
   .edition-stamps a::after {
     content: '';
@@ -495,11 +455,21 @@
   }
   /* A repository's name is written as code: the monospace, in its one weight. */
   .repo-activity .repo-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     min-width: 0;
+    color: var(--ink-heading);
     font-family: var(--mono);
     font-size: var(--fs-ui);
     font-weight: 600;
     overflow-wrap: break-word;
+  }
+  .repo-external {
+    flex: none;
+    color: var(--muted);
+    translate: var(--step, 0px) calc(var(--step, 0px) * -0.5);
+    transition: translate var(--t-hover) var(--ease);
   }
   .repo-activity .repo-description {
     min-width: 0;
@@ -609,6 +579,24 @@
     font-family: var(--hand);
     font-weight: 400;
   }
+  .tech-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tech-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border: 1.5px solid color-mix(in srgb, var(--edge) 28%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--hi-soft) 55%, var(--paper));
+    font-size: var(--fs-small);
+    font-family: var(--round);
+    font-weight: var(--round-weight);
+    color: var(--ink);
+    line-height: 1.5;
+  }
   .work-actions {
     display: flex;
     flex-wrap: wrap;
@@ -650,7 +638,7 @@
     width: 100%;
     max-width: 440px;
     justify-self: end;
-    rotate: 1.2deg;
+    rotate: 0.6deg;
   }
   .with-phone .work-hero {
     margin-bottom: 40px;
@@ -662,7 +650,7 @@
     left: -26px;
     bottom: -44px;
     width: min(30%, 136px);
-    rotate: -5deg;
+    rotate: -3deg;
   }
   /* About forty characters to a line. */
   .work-body {
@@ -706,19 +694,21 @@
     height: 18px;
     margin-top: calc((1lh - 18px) / 2);
   }
-  .related-articles time {
-    line-height: inherit;
-  }
   .related-articles span > svg {
     display: inline-block;
     margin-left: 4px;
     vertical-align: -0.125em;
   }
-  .related-articles time {
+  .related-meta {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 4px;
     color: var(--muted);
     font-size: var(--fs-small);
     font-family: var(--round);
     font-weight: var(--round-weight);
+    line-height: inherit;
     white-space: nowrap;
   }
   .work-neighbours {
@@ -769,7 +759,7 @@
       max-width: 560px;
       justify-self: start;
       margin-left: 22px;
-      rotate: -0.8deg;
+      rotate: -0.5deg;
     }
   }
   @media (max-width: 900px) {
@@ -878,6 +868,15 @@
     .works-heading-row,
     .work-neighbours > .works-heading {
       margin-bottom: 16px;
+    }
+  }
+  @media (max-width: 600px) {
+    .related-articles a {
+      grid-template-columns: 20px minmax(0, 1fr);
+      row-gap: 4px;
+    }
+    .related-meta {
+      grid-column: 2;
     }
   }
 }

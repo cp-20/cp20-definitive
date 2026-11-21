@@ -8,7 +8,8 @@ import { clientMedia, coverSrcsets } from './src/content/media.ts';
 import { shownSeriesThumbnail } from './src/data/manga-covers.ts';
 import { mergeArticles } from './src/content/normalize.ts';
 import { thirdPartyLicenses } from './scripts/build/licenses.ts';
-import { phrased, phraseWorks } from './scripts/build/phrases.ts';
+import { phraseAffiliations, phraseMilestones, phrased, phraseWorks } from './scripts/build/phrases.ts';
+import { milestones as rawMilestones } from './src/data/editorial.ts';
 // Every browser that runs this site reads WOFF2, so the WOFF fallback in @fontsource's
 // @font-face rules only adds weight to the render-blocking stylesheet.
 const woff2Only = (): Plugin => ({
@@ -86,6 +87,37 @@ const articles = (): Plugin => {
     },
   };
 };
+// `virtual:cp20-editorial`: milestones and affiliations with Japanese phrase boundaries applied.
+const editorial = (): Plugin => {
+  const id = 'virtual:cp20-editorial';
+  const profileFile = new URL('./src/data/profile.json', import.meta.url);
+  const editorialFile = new URL('./src/data/editorial.ts', import.meta.url);
+  return {
+    name: 'cp20-editorial',
+    resolveId: (source) => (source === id ? '\0' + id : undefined),
+    load(resolved) {
+      if (resolved !== '\0' + id) return;
+      this.addWatchFile(profileFile.pathname);
+      this.addWatchFile(editorialFile.pathname);
+      const profile = JSON.parse(readFileSync(profileFile, 'utf8'));
+      const milestones = phraseMilestones(rawMilestones);
+      const awardCards = milestones.flatMap((m) =>
+        m.awardCard ? [{ ...m.awardCard, id: m.id, year: m.year }] : [],
+      );
+      const internCards = milestones.flatMap((m) =>
+        m.internCard ? [{ ...m.internCard, id: m.id, ongoing: m.ongoing }] : [],
+      );
+      const affiliations = phraseAffiliations(profile.affiliations);
+      return [
+        `export const milestones = ${JSON.stringify(milestones)};`,
+        `export const awardCards = ${JSON.stringify(awardCards)};`,
+        `export const internCards = ${JSON.stringify(internCards)};`,
+        `export const affiliations = ${JSON.stringify(affiliations)};`,
+        '',
+      ].join('\n');
+    },
+  };
+};
 // The works' sentences with their phrase boundaries marked (scripts/build/phrases.ts), so they
 // break between phrases on an iPhone too. Not in the tests, which check works.json as written.
 const phrasedWorks = (): Plugin => ({
@@ -102,6 +134,7 @@ export default defineConfig({
     woff2Only(),
     media(),
     articles(),
+    editorial(),
     phrasedWorks(),
     thirdPartyLicenses(),
     solid({ start: { renderMode: 'async', devtools: false }, ssr: true }),

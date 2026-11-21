@@ -56,7 +56,7 @@ export default function Modal(props: {
           </h2>
           <button
             type="button"
-            class="icon-button modal-close"
+            class="modal-close"
             aria-label="閉じる"
             onClick={(e) => e.currentTarget.closest('dialog')?.close()}
           >

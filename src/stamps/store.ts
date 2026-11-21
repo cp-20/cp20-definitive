@@ -50,7 +50,7 @@ export function createStampStore(options: {
       options.changed();
       let stop: (() => void) | undefined,
         disposed = false;
-      const lost = () => setConnection('シールに接続できません');
+      const lost = () => setConnection('シールの読み込みに失敗しました');
       // Navigating quickly through pages opens no stream for the ones passed through.
       const timer = setTimeout(async () => {
         if (!enabled) return;

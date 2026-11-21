@@ -5,7 +5,7 @@ import Bookshelf from '../components/Bookshelf.tsx';
 import Brand from '../components/Brand.tsx';
 import Modal, { openModal } from '../components/Modal.tsx';
 import Title from '../components/Title.tsx';
-import { milestones, speedups } from '../data/editorial.ts';
+import { affiliations, awardCards, internCards, milestones } from 'virtual:cp20-editorial';
 import { localImage } from '../content/images.ts';
 import { splitEmphasis } from '../content/emphasis.ts';
 import { works } from '../content/content.ts';
@@ -36,27 +36,6 @@ export default function About() {
             <small class="visually-hidden">プロフィール：</small>
             しーぴー<span>cp20</span>
           </h1>
-
-          {/* Breaks between phrases in every browser (Safari has no word-break: auto-phrase). */}
-          <p>
-            フロントエンドを
-            <wbr />
-            中心に、
-            <wbr />
-            バックエンドや
-            <wbr />
-            インフラも
-            <wbr />
-            触っています。
-            <br class="desktop-break" />
-            個人開発では
-            <wbr />
-            Webアプリや
-            <wbr />
-            Cコンパイラなどを
-            <wbr />
-            つくっています。
-          </p>
           <div class="profile-links">
             <For each={profile.links}>
               {(l) => (
@@ -69,30 +48,42 @@ export default function About() {
           </div>
         </div>
       </header>
-      <section class="speed-section" data-stamp-anchor="speed" aria-labelledby="speed-title">
+      <section class="awards-section" data-stamp-anchor="awards" aria-labelledby="awards-title">
         <div class="section-heading">
-          <h2 id="speed-title">速くしてきたもの</h2>
+          <h2 id="awards-title">主な受賞</h2>
         </div>
-        <ul class="speed-stamps">
-          <For each={speedups}>
-            {(s) => (
+        <ul class="award-stamps">
+          <For each={awardCards}>
+            {(a) => (
               <li>
-                <button type="button" aria-haspopup="dialog" onClick={() => openModal(s.id)}>
-                  <span class="speed-place">{s.place}</span>
-                  <span class="speed-what">{s.what}</span>
-                  <span class="speed-figure">
-                    {s.from && (
-                      <span class="speed-from">
-                        {s.from}
-                        <span aria-hidden="true"> →</span>
-                        <span class="visually-hidden">から</span>
-                      </span>
-                    )}
-                    <strong>
-                      {/* The digits are the denomination; 約, the unit and the like stay small. */}
-                      {s.to.split(/([\d.,]+)/).map((part, i) => (i % 2 ? <span>{part}</span> : part))}
-                    </strong>
+                <button type="button" aria-haspopup="dialog" onClick={() => openModal(a.id)}>
+                  <span class="award-year">{a.year}</span>
+                  <span class="award-event">{a.event}</span>
+                  <span class="award-result">{a.result}</span>
+                </button>
+              </li>
+            )}
+          </For>
+        </ul>
+      </section>
+      <section class="interns-section" data-stamp-anchor="interns" aria-labelledby="interns-title">
+        <div class="section-heading">
+          <h2 id="interns-title">インターン</h2>
+        </div>
+        <ul class="intern-list">
+          <For each={internCards}>
+            {(i) => (
+              <li>
+                <button type="button" aria-haspopup="dialog" onClick={() => openModal(i.id)}>
+                  <KindMark kind="intern" />
+                  <span class="intern-body">
+                    <span class="intern-head">
+                      <span class="intern-company">{i.company}</span>
+                      <span class="intern-period">{i.period}</span>
+                    </span>
+                    <span class="intern-summary">{i.summary}</span>
                   </span>
+                  <Icon name="ChevronRight" size={16} stroke={2.2} class="intern-chevron" />
                 </button>
               </li>
             )}
@@ -103,17 +94,17 @@ export default function About() {
         <aside class="profile-details" aria-labelledby="affiliations-title">
           <h2 id="affiliations-title">所属</h2>
           <ul class="profile-affiliations">
-            <For each={profile.affiliations}>
+            <For each={affiliations}>
               {(a) => (
                 <li>
                   <a href={a.url}>
                     <Brand url={a.url} size={18} />
-                    {a.name}
+                    <span class="affiliation-label">{a.name}</span>
                   </a>
                   {a.sub?.map((s) => (
                     <small>
                       <a href={s.url}>
-                        {s.name}
+                        <span class="affiliation-label">{s.name}</span>
                         <Icon name="ArrowUpRight" size={13} />
                       </a>
                     </small>
@@ -148,9 +139,10 @@ export default function About() {
                               type="button"
                               aria-haspopup="dialog"
                               data-opens={m.id}
+                              title="詳しい説明を開く"
                               onClick={() => openModal(m.id)}
                             >
-                              {m.title}
+                              <span class="timeline-title">{m.title}</span>
                               <span class="timeline-more" aria-hidden="true">
                                 <Icon name="Plus" size={14} stroke={3} />
                               </span>

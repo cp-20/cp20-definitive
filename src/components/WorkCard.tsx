@@ -114,11 +114,10 @@ function Outcome(props: { text: string }) {
  * - small: a work in a list. A small picture beside its name, what it is, the result, and who
  *   made it with whom or how long it took when that is not plain from the list (but not when, for
  *   a `featured` work, as on the featured cards).
- * - row: one line with the icon (or a small picture), the name and what it is.
  */
 export default function WorkCard(props: {
   work: Work;
-  variant?: 'large' | 'small' | 'row';
+  variant?: 'large' | 'small';
   priority?: boolean;
   eager?: boolean;
   featured?: boolean;
@@ -126,22 +125,6 @@ export default function WorkCard(props: {
   const w = props.work;
   const variant = props.variant ?? 'small';
   const href = `/works/${w.id}`;
-  if (variant === 'row')
-    return (
-      <a class="work-row" href={href} data-stamp-anchor={`work-${w.id}`}>
-        <span class="work-row-picture" aria-hidden="true">
-          {previewFor(w.url)?.icon ? (
-            <span class="og-image work-row-icon">
-              <img src={previewFor(w.url)?.icon} alt="" width="36" height="36" loading="lazy" />
-            </span>
-          ) : (
-            <OGImage url={w.url} alt="" sizes={sizes.workRow} />
-          )}
-        </span>
-        <span class="work-row-name">{w.title}</span>
-        <span class="work-row-description">{w.description}</span>
-      </a>
-    );
   const open = variant === 'large' ? openLink(w) : undefined;
   const meta = [
     w.kind === 'event' ? undefined : kindLabel(w),
@@ -164,7 +147,7 @@ export default function WorkCard(props: {
         <h3>
           <a class="work-card-link" href={href}>
             <SiteIcon work={w} />
-            {w.title}
+            <span class="work-card-title">{w.title}</span>
             <Icon name="ChevronRight" size={18} stroke={2.2} class="work-card-chevron" />
           </a>
           {tag && <span class="status-tag">{tag}</span>}

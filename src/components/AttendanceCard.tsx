@@ -1,7 +1,7 @@
 import { createMemo, createSignal, For, onSettled, Show } from 'solid-js';
 import { articleAnchor } from './Preview.tsx';
 import { brandIcon } from './Brand.tsx';
-import { sourceTile } from './source-tiles.ts';
+import { sourceLabel, sourceTile } from './source-tiles.ts';
 import Title from './Title.tsx';
 import { daysIn, nearest, spot, stampsOf, step, tipPlace, toward, yearOf, type Stamp } from './attendance.ts';
 import { shortDate, type Article } from '../content/content.ts';
@@ -160,6 +160,7 @@ export function AttendanceCard(props: {
                   class="attendance-tab"
                   data-year={y % 4}
                   aria-pressed={y === props.year ? 'true' : 'false'}
+                  title={`${y}年 (${count}本)`}
                   onClick={() => props.onYear!(y)}
                 >
                   {y}
@@ -243,7 +244,7 @@ export function AttendanceCard(props: {
                       <Title text={s.a.title} />
                     </strong>
                     <small>
-                      {shortDate(s.a.date)}・{s.a.source}
+                      {shortDate(s.a.date)}・{sourceLabel(s.a.source)}
                     </small>
                   </span>
                 </a>

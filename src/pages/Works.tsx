@@ -81,7 +81,10 @@ export default function Works() {
               <li>
                 <a href={r.url}>
                   <span class="repo-name">
-                    {nameParts(r.name).map((part, i) => (i ? [<wbr />, part] : part))}
+                    <span class="repo-name-text">
+                      {nameParts(r.name).map((part, i) => (i ? [<wbr />, part] : part))}
+                    </span>
+                    <Icon name="ArrowUpRight" size={14} class="repo-external" />
                   </span>
                   <span class="repo-description">{r.description}</span>
                   <time datetime={r.updatedAt}>{shortDate(r.updatedAt)}</time>

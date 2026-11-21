@@ -81,7 +81,7 @@ describe('ボタンの行き先と文言', () => {
       label: 'GitHub で見る',
     });
     assert.equal(openLink(members({})), undefined);
-    assert.deepEqual(membersSite(members({})), { href: 'https://example.com/', label: 'サイト（部員向け）' });
+    assert.deepEqual(membersSite(members({})), { href: 'https://example.com/', label: 'サイト (部員向け)' });
     assert.equal(membersSite(work({})), undefined);
   });
 
@@ -98,7 +98,7 @@ describe('ボタンの行き先と文言', () => {
   });
 
   test('部員向けと公開終了は、開く前に分かるように書く', () => {
-    assert.equal(statusLabel({ status: 'members-only' }), 'traP 部員向け（ログインが必要）');
+    assert.equal(statusLabel({ status: 'members-only' }), 'traP 部員向け (ログインが必要)');
     assert.equal(statusLabel({ status: 'ended' }), '終了');
     assert.equal(statusLabel({}), undefined);
   });

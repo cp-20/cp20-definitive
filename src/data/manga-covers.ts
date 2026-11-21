@@ -27,7 +27,7 @@ export const mangaCovers: Record<
     ink: '#5b3a86',
     face: [0.62, 0.31],
     zoom: 2.8,
-    source: 'webアクション（双葉社）',
+    source: 'webアクション (双葉社)',
     url: 'https://comic-action.com/episode/4856001361584756651',
   },
   やめろ好きになってしまう: {
@@ -63,7 +63,7 @@ export const mangaCovers: Record<
     ink: '#ffffff',
     face: [0.785, 0.597],
     zoom: 3.8,
-    source: 'カドコミ（KADOKAWA）',
+    source: 'カドコミ (KADOKAWA)',
     url: 'https://comic-walker.com/detail/KC_000933_S',
   },
   ざこのみなさんお大事に: {

@@ -27,7 +27,7 @@ export default function Document(props: { children: JSX.Element }) {
         <meta property="og:image" content={canonicalUrl(OG_IMAGE.path)} />
         <meta property="og:image:width" content={String(OG_IMAGE.width)} />
         <meta property="og:image:height" content={String(OG_IMAGE.height)} />
-        <meta property="og:image:alt" content="しーぴー（cp20）のアイコンと名前、実績" />
+        <meta property="og:image:alt" content="しーぴー (cp20) のアイコンと名前、実績" />
         <meta name="twitter:card" content="summary_large_image" />
         <HydrationScript />
       </head>

@@ -92,7 +92,7 @@ export function kindLabel(w: Pick<Work, 'kind' | 'tags'>) {
 
 /** Who can open the site, as a work's page states it beside 「公開」, when not everyone can. */
 export const statusLabel = (w: Pick<Work, 'status'>) =>
-  w.status === 'ended' ? '終了' : w.status === 'members-only' ? 'traP 部員向け（ログインが必要）' : undefined;
+  w.status === 'ended' ? '終了' : w.status === 'members-only' ? 'traP 部員向け (ログインが必要)' : undefined;
 /** The same, short enough for a tag on a card. */
 export const statusTag = (w: Pick<Work, 'status'>) =>
   w.status === 'ended' ? '公開終了' : w.status === 'members-only' ? '部員向け' : undefined;
@@ -134,7 +134,7 @@ function linkTo(url: string, kind?: Work['kind']) {
 
 /** The site of a work only traP members can use, as a secondary link beside the main button. */
 export const membersSite = (w: Pick<Work, 'url' | 'status'>) =>
-  w.status === 'members-only' ? { href: w.url, label: 'サイト（部員向け）' } : undefined;
+  w.status === 'members-only' ? { href: w.url, label: 'サイト (部員向け)' } : undefined;
 
 /** Public repositories other than the page the main button opens: "owner/name" and URL. */
 export const publicRepositories = (w: Pick<Work, 'url' | 'repositories'>, main = w.url) =>

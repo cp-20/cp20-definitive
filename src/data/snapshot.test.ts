@@ -15,7 +15,7 @@ import { mergeArticles, type ManualArticles } from '../content/normalize.ts';
 import type { Article } from '../content/content.ts';
 import { sourceTile, tiledSources } from '../components/source-tiles.ts';
 import { mergeWorks, sitePaths } from '../site/pages.ts';
-import { highlightIds, milestones, speedups } from './editorial.ts';
+import { awardCards, highlightIds, internCards, milestones } from './editorial.ts';
 import { mangaCovers } from './manga-covers.ts';
 import {
   framedCrop,
@@ -342,19 +342,15 @@ describe('経歴（editorial.ts）', () => {
     );
   });
 
-  test('1行で強調した数字と「速くしてきたもの」の数字は、その経歴の詳しい説明にも書いてある', () => {
-    const missing = [
-      ...milestones.flatMap((m) =>
-        splitEmphasis(m.text)
-          .flatMap((p) => ('strong' in p ? (p.strong.match(/[\d,.]+/g) ?? []) : []))
-          .filter((figure) => !detailOf(m.id).includes(figure))
-          .map((figure) => `${m.id}: ${figure}`),
-      ),
-      ...speedups.flatMap((s) =>
-        [s.from, s.to].filter((v) => v && !detailOf(s.id).includes(normalize(v))).map((v) => `${s.id}: ${v}`),
-      ),
-    ];
+  test('1行で強調した数字は、その経歴の詳しい説明にも書いてあり、主な受賞とインターンも対応する経歴を指す', () => {
+    const missing = milestones.flatMap((m) =>
+      splitEmphasis(m.text)
+        .flatMap((p) => ('strong' in p ? (p.strong.match(/[\d,.]+/g) ?? []) : []))
+        .filter((figure) => !detailOf(m.id).includes(figure))
+        .map((figure) => `${m.id}: ${figure}`),
+    );
     assert.deepEqual(missing, []);
+    assert.ok(awardCards.length > 0 && internCards.length > 0);
   });
 });
 

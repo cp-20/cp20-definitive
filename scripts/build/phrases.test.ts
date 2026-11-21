@@ -2,7 +2,7 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { BREAK, plain } from '../../src/content/phrase-marks.ts';
-import { phraseWorks, phrased } from './phrases.ts';
+import { phraseWorks, phrased, phrasedInline } from './phrases.ts';
 
 const shown = (text: string) => text.replaceAll(BREAK, '|');
 
@@ -17,12 +17,21 @@ test('空白の隣には印を入れず、印の入った文に入れ直して�
   assert.equal(phrased(phrased('すでに分かれた文')), phrased('すでに分かれた文'));
 });
 
-test('作品は、ページに文として出す欄だけに印を入れる', () => {
+test('作品は、ページに文として出す欄と制作メモに印を入れる', () => {
   const [work] = phraseWorks([
-    { title: 'ビルドを速くした', description: 'ビルドを速くした', alt: 'ビルドを速くした' },
+    {
+      title: 'ビルドを速くした',
+      description: 'ビルドを速くした',
+      alt: 'ビルドを速くした',
+      comments: ['[リンクの記事](https://example.com/path)で**詳しく解説**しました。'],
+    },
   ]);
   assert.deepEqual(
-    [work.title, shown(work.description), work.alt],
-    ['ビルドを速くした', 'ビルドを|速くした', 'ビルドを速くした'],
+    [work.title, shown(work.description), work.alt, work.comments[0].includes('https://example.com/path')],
+    ['ビルドを速くした', 'ビルドを|速くした', 'ビルドを速くした', true],
+  );
+  assert.equal(
+    plain(phrasedInline(work.comments[0])),
+    '[リンクの記事](https://example.com/path)で**詳しく解説**しました。',
   );
 });

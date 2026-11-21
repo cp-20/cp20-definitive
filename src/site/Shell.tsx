@@ -46,7 +46,7 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
           </nav>
         </aside>
         <header class="site-header wrap" data-stamp-anchor="header">
-          <a class="brand" href="/">
+          <a class="brand" href="/" title="ホームに戻る">
             <img src="/stamps/clover.svg" alt="" width="22" height="22" />
             cp20.dev
           </a>
@@ -54,7 +54,8 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
           <button
             type="button"
             class="header-qr"
-            aria-label="QR コード"
+            aria-label="このサイトの QR コードを表示"
+            title="QR コードを表示"
             aria-haspopup="dialog"
             data-opens="qr"
             onClick={() => openModal('qr')}
@@ -67,7 +68,7 @@ export default function Shell(props: { path: string; children: JSX.Element }) {
           <div class="footer-links">
             <For each={footerLinks}>
               {(l) => (
-                <a href={l.url}>
+                <a href={l.url} title={l.url === '/feed.xml' ? '記事の RSS フィード (XML)' : undefined}>
                   <Brand url={l.url} />
                   {l.name}
                 </a>

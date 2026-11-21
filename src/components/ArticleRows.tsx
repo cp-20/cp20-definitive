@@ -1,6 +1,7 @@
 import { createMemo, For } from 'solid-js';
 import { OGImage, articleAnchor, sizes } from './Preview.tsx';
 import { SourceIcon } from './AttendanceCard.tsx';
+import { sourceLabel } from './source-tiles.ts';
 import Title from './Title.tsx';
 import { shortDate, type Article } from '../content/content.ts';
 /**
@@ -41,8 +42,11 @@ export function ArticleRows(props: {
                 </h3>
                 <p class="article-meta">
                   <SourceIcon source={a.source} />
+                  <span class="article-source">{sourceLabel(a.source)}</span>
+                  <span class="article-sep" aria-hidden="true">
+                    ・
+                  </span>
                   <time datetime={a.date}>{shortDate(a.date)}</time>
-                  <span class="visually-hidden">{a.source}</span>
                 </p>
               </div>
             </a>

@@ -147,11 +147,19 @@ export function StampLayer(props: {
             onKeyDown={input.menuHandlers.onKeyDown}
             onFocusOut={input.menuHandlers.onFocusOut}
           >
-            <button type="button" aria-label="動かす" onClick={input.menuHandlers.move}>
-              <Icon name="Move" size={22} />
+            <button type="button" aria-label="動かす" title="位置を動かす" onClick={input.menuHandlers.move}>
+              <Icon name="Move" size={18} />
+              <span>動かす</span>
             </button>
-            <button type="button" class="stamp-peel" aria-label="はがす" onClick={input.menuHandlers.peel}>
-              <Icon name="Trash2" size={22} />
+            <button
+              type="button"
+              class="stamp-peel"
+              aria-label="はがす"
+              title="シールをはがす"
+              onClick={input.menuHandlers.peel}
+            >
+              <Icon name="Trash2" size={18} />
+              <span>はがす</span>
             </button>
           </div>
         )}

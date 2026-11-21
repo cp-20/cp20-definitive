@@ -28,17 +28,24 @@ import { parse } from 'node-html-parser';
  */
 export const faces: readonly {
   family: 'Zen Maru Gothic' | 'Yusei Magic' | 'cp20 Mono';
-  weight: 400 | 600 | 700;
+  weight: 400 | 500 | 600 | 700;
   file: string;
   role: 'all' | 'bold' | 'hand' | 'mono';
   split: boolean;
 }[] = [
   {
     family: 'Zen Maru Gothic',
-    weight: 700,
-    file: 'zen-maru-gothic/zen-maru-gothic-700.woff2',
+    weight: 500,
+    file: 'zen-maru-gothic/zen-maru-gothic-500.woff2',
     role: 'all',
     split: true,
+  },
+  {
+    family: 'Zen Maru Gothic',
+    weight: 700,
+    file: 'zen-maru-gothic/zen-maru-gothic-700.woff2',
+    role: 'bold',
+    split: false,
   },
   {
     family: 'Yusei Magic',
@@ -190,14 +197,18 @@ export function boldTexts(
   );
   const selectors = elementSelectors(rules).filter(Boolean);
   const regular = kind === 'bold' ? elementSelectors(css.map((sheet) => boldRules(sheet, REGULAR))) : [];
+  const otherFace =
+    kind === 'bold' ? elementSelectors(css.flatMap((sheet) => [handRules(sheet), monoRules(sheet)])) : [];
   const texts = generated ? rules.flatMap((r) => r.content) : [];
   for (const html of pages) {
     const root = parse(html);
     const setBack = new Set(regular.flatMap((selector) => matching(root, selector)));
+    const maskedFace = new Set(otherFace.flatMap((selector) => matching(root, selector)));
     for (const element of tags[kind] ? matching(root, tags[kind]) : [])
-      if (!setBack.has(element)) texts.push(element.textContent);
+      if (!setBack.has(element) && !maskedFace.has(element)) texts.push(element.textContent);
     for (const selector of new Set(selectors))
-      for (const element of matching(root, selector)) texts.push(element.textContent);
+      for (const element of matching(root, selector))
+        if (!maskedFace.has(element)) texts.push(element.textContent);
   }
   const inPages = new Set(collectCharacters(pages));
   texts.push([...collectCharacters(scripts)].filter((c) => !inPages.has(c)).join(''));
@@ -288,11 +299,7 @@ export async function subsetSiteFonts(root: string) {
   const [html, css, js] = await Promise.all([
     read(pages),
     read(await files(join(root, 'assets'), /\.css$/)),
-    // The typeface trial's panel (src/site/font-trial-panel.ts, temporary) is set in the system's
-    // face, so its text needs none of these.
-    read(
-      (await files(join(root, 'assets'), /\.js$/)).filter((f) => !/[\\/]font-trial-panel-[^\\/]*$/.test(f)),
-    ),
+    read(await files(join(root, 'assets'), /\.js$/)),
   ]);
   // Regular covers every character the site can show; bold and the hand-written face only what is
   // set in them (the body text's kanji are the bulk of a font). Each is split by page. Whether a

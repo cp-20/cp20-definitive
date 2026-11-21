@@ -21,7 +21,8 @@ export function StickerTab(props: {
       data-open={props.open === false ? 'true' : undefined}
       data-failed={props.failed ? 'true' : undefined}
       inert={props.open !== false}
-      aria-label={`シール帳を開く（このページのシール${props.count}枚）`}
+      aria-label={`シール帳を開く (このページのシール${props.count}枚)`}
+      title={`シール帳を開く (このページのシール${props.count}枚)`}
       onPointerEnter={props.connect}
       onClick={props.onClick}
     >
@@ -111,10 +112,14 @@ export function StickerSheet(props: {
             class="sticker-pips"
             role="img"
             aria-label={`このページに貼れるシール 残り${Math.max(0, LIMIT - props.owned)}枚`}
+            title={`このページに貼れるシール：あと${Math.max(0, LIMIT - props.owned)}枚 (最大${LIMIT}枚)`}
           >
             <For each={Array.from({ length: LIMIT }, (_, n) => n)}>
               {(n) => <span data-used={n < props.owned ? 'true' : undefined} />}
             </For>
+          </span>
+          <span class="sticker-remaining" aria-hidden="true">
+            あと{Math.max(0, LIMIT - props.owned)}枚
           </span>
         </Show>
         <span class="sticker-head-space" />
@@ -124,6 +129,7 @@ export function StickerSheet(props: {
             disabled={!props.owned}
             onClick={props.undo}
             aria-label="最後に貼ったシールをはがす"
+            title="最後に貼ったシールをはがす"
           >
             <Icon name="RotateCcw" size={15} />
           </button>
@@ -132,22 +138,28 @@ export function StickerSheet(props: {
           class="sheet-tool stamp-hide"
           aria-pressed={props.hidden ? 'true' : 'false'}
           aria-label="シールを隠す"
+          title={props.hidden ? 'ページ上のシールを再表示する' : 'ページ上のシールを一時的に隠す'}
           onClick={() => props.setHidden(!props.hidden)}
         >
           <Icon name={props.hidden ? 'EyeOff' : 'Eye'} size={15} />
         </button>
         <Show when={props.account}>
-          <button class="sheet-tool" aria-label="ログアウト" onClick={props.signOut}>
+          <button class="sheet-tool" aria-label="ログアウト" title="ログアウト" onClick={props.signOut}>
             <Icon name="LogOut" size={15} />
           </button>
         </Show>
-        <button class="sheet-tool" aria-label="シール帳を閉じる" onClick={props.close}>
+        <button
+          class="sheet-tool"
+          aria-label="シール帳を閉じる"
+          title="シール帳を閉じる"
+          onClick={props.close}
+        >
           <Icon name="ChevronDown" size={16} />
         </button>
       </header>
       {/* Before signing in, one line says what signing in is for and who sees what you place. */}
       <Show when={!props.account}>
-        <p class="sticker-hint">ログインすると、シールを貼れます。貼ったシールはみんなに見えます。</p>
+        <p class="sticker-hint">Google でログインすると貼れます (みんなに見えます)</p>
       </Show>
       <div class="stamp-choices" role="group" aria-label="シールの種類">
         <For each={SHEET_KINDS}>
@@ -155,10 +167,15 @@ export function StickerSheet(props: {
             <button
               class="sheet-sticker"
               data-sticker-kind={kind}
+              title={
+                props.account
+                  ? `${STICKER_KINDS[kind].name}のシール`
+                  : `${STICKER_KINDS[kind].name}のシール (ログインすると貼れます)`
+              }
               aria-label={
                 props.account
-                  ? `${STICKER_KINDS[kind].name}のシールを貼る${props.remaining > 0 ? '' : '（一番古いシールと入れ替わります）'}`
-                  : `${STICKER_KINDS[kind].name}のシール（ログインすると貼れます）`
+                  ? `${STICKER_KINDS[kind].name}のシールを貼る${props.remaining > 0 ? '' : ' (一番古いシールと入れ替わります)'}`
+                  : `${STICKER_KINDS[kind].name}のシール (ログインすると貼れます)`
               }
               data-taken={props.taken === kind ? 'true' : undefined}
               onPointerDown={(e) => input.grab(e, { kind, from: 'sheet' })}

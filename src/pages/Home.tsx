@@ -5,6 +5,7 @@ import WorkCard from '../components/WorkCard.tsx';
 import Title from '../components/Title.tsx';
 import { articleAnchor, responsive, sizes } from '../components/Preview.tsx';
 import { AttendanceCard, SourceIcon } from '../components/AttendanceCard.tsx';
+import { sourceLabel } from '../components/source-tiles.ts';
 import { yearOf } from '../components/attendance.ts';
 import { articles, sections, shortDate } from '../content/content.ts';
 import { highlightIds, milestones } from '../data/editorial.ts';
@@ -17,8 +18,6 @@ import series from '../data/series.json';
 // where to reach him (Twitter's DMs are the way in; there is no mail address).
 const highlights = highlightIds.map((id) => milestones.find((m) => m.id === id)!);
 const accounts = profile.links.filter((l) => l.name === 'Twitter' || l.name === 'GitHub');
-// The newest works after the featured ones (the years on /works list them newest first).
-const recent = sections.years.flatMap((y) => y.works).slice(0, 2);
 
 export default function Home() {
   const [hot, setHot] = createSignal<string>();
@@ -41,11 +40,12 @@ export default function Home() {
             しーぴー<span>cp20</span>
           </h1>
           <p class="home-facts">
-            東京科学大学 情報工学系 学士4年。
+            東京科学大学
+            <wbr /> 情報工学系
+            <wbr /> 学士4年
+            <wbr /> (権藤研)
             <br />
-            フロントエンドを中心に、
-            <wbr />
-            バックエンドも。
+            traP / LayerX インターン
           </p>
           <div class="home-accounts">
             <For each={accounts}>
@@ -67,8 +67,10 @@ export default function Home() {
                     <KindMark kind={m.kind} />
                     <span class="highlight-title">
                       {/* The result (優勝, 学生2位) never splits, and goes to the next line whole. */}
-                      {m.title.replace(/\S+$/, '')}
-                      <span class="nowrap">{m.title.match(/\S+$/)?.[0]}</span>
+                      <span class="highlight-name">
+                        {m.title.replace(/\S+$/, '')}
+                        <span class="nowrap">{m.title.match(/\S+$/)?.[0]}</span>
+                      </span>
                       {m.ongoing && <small>{m.year}〜</small>}
                     </span>
                     <Icon name="ChevronRight" size={18} />
@@ -96,17 +98,11 @@ export default function Home() {
             {(w, i) => <WorkCard work={w} variant="large" priority={i() === 0} eager />}
           </For>
         </div>
-        <div class="home-recent-works">
-          <h3>最近つくったもの</h3>
-          <ul>
-            <For each={recent}>
-              {(w) => (
-                <li>
-                  <WorkCard work={w} variant="row" />
-                </li>
-              )}
-            </For>
-          </ul>
+        <div class="home-works-more">
+          <a href="/works" class="under-link">
+            すべての作品を見る
+            <Icon name="ArrowRight" size={16} />
+          </a>
         </div>
       </section>
       <div class="home-middle">
@@ -138,7 +134,11 @@ export default function Home() {
                       <span class="recent-title">
                         <Title text={a.title} />
                       </span>
-                      <time datetime={a.date}>{shortDate(a.date)}</time>
+                      <span class="recent-meta">
+                        <time datetime={a.date}>{shortDate(a.date)}</time>
+                        <span aria-hidden="true">・</span>
+                        <span>{sourceLabel(a.source)}</span>
+                      </span>
                     </a>
                   </li>
                 );
@@ -161,7 +161,10 @@ export default function Home() {
                 />
                 <Icon name="Music" size={16} />
               </span>
-              <span class="favorite-name">{track.title}</span>
+              <span class="favorite-caption">
+                <span class="favorite-kind">音楽</span>
+                <span class="favorite-name">{track.title}</span>
+              </span>
             </a>
             <a href="/about#manga">
               <span class="favorite-stamp">
@@ -175,9 +178,16 @@ export default function Home() {
                 />
                 <Icon name="BookOpen" size={16} />
               </span>
-              <span class="favorite-name">{book.title}</span>
+              <span class="favorite-caption">
+                <span class="favorite-kind">漫画</span>
+                <span class="favorite-name">{book.title}</span>
+              </span>
             </a>
           </div>
+          <a href="/about#music" class="under-link home-likes-more">
+            もっと見る
+            <Icon name="ArrowRight" size={16} />
+          </a>
         </aside>
       </div>
     </div>

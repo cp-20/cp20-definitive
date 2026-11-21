@@ -63,8 +63,8 @@ export const stampAt = (
   accept: (stamp: ShownStamp) => boolean,
 ) => shown.findLast((s) => accept(s) && Math.hypot(s.left - px, s.top - py) <= STICKER_RADIUS);
 
-/** The menu of one of your stickers (.stamp-menu in app.css): two 44px buttons in a pill. */
-export const MENU_WIDTH = 104,
+/** The menu of one of your stickers (.stamp-menu in app.css): two labeled buttons in a pill. */
+export const MENU_WIDTH = 176,
   MENU_HEIGHT = 56;
 // Kept between the menu and the sticker, and between the menu and the screen's edges.
 const MENU_GAP = 8;

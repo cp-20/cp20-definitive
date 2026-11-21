@@ -4,6 +4,7 @@ import { sizes } from '../components/Preview.tsx';
 import WorkCard, { OutcomeMark, WorkImage } from '../components/WorkCard.tsx';
 import Title from '../components/Title.tsx';
 import { SourceIcon } from '../components/AttendanceCard.tsx';
+import { sourceLabel } from '../components/source-tiles.ts';
 import { articles, editionWorks, sections, shortDate, type Work } from '../content/content.ts';
 import { splitLinks } from '../content/inline-links.ts';
 import {
@@ -34,13 +35,24 @@ export default function WorkDetail(props: { work: Work }) {
   );
   const repositories = publicRepositories(w, open?.href);
   const edition = editionWorks.find((e) => e.id === w.id);
-  const facts = [
-    w.outcome && { label: '成果', value: w.outcome, outcome: true },
-    w.role && { label: '役割', value: w.role },
-    { label: w.kind === 'event' ? '開催' : '期間', value: period(w.productionTime) },
-    edition && { label: '技術', value: edition.tech },
-    statusLabel(w) && { label: '公開', value: statusLabel(w)! },
-  ].filter((f) => !!f);
+  type Fact = {
+    label: string;
+    value?: string;
+    outcome?: boolean;
+    techList?: string[];
+  };
+  const rawFacts: (Fact | null)[] = [
+    w.outcome ? { label: '成果', value: w.outcome, outcome: true } : null,
+    w.role ? { label: '役割', value: w.role } : null,
+    { label: w.kind === 'event' ? '開催時期' : '制作期間', value: period(w.productionTime) },
+    edition
+      ? { label: '使用技術', value: edition.tech }
+      : w.techStack.length > 0
+        ? { label: '使用技術', techList: w.techStack.map((t) => t.label) }
+        : null,
+    statusLabel(w) ? { label: '公開状況', value: statusLabel(w)! } : null,
+  ];
+  const facts = rawFacts.filter((f): f is Fact => f !== null);
   const kind = kindLabel(w);
   const phone = !!w.screenshots?.some((s) => s.device === 'mobile');
   return (
@@ -49,7 +61,7 @@ export default function WorkDetail(props: { work: Work }) {
         <header class="work-intro" data-stamp-anchor="heading">
           <a href="/works" class="back-link">
             <Icon name="ArrowLeft" size={16} />
-            作品一覧
+            作品一覧に戻る
           </a>
           {kind && <p class="work-kind">{kind}</p>}
           <h1>
@@ -58,11 +70,19 @@ export default function WorkDetail(props: { work: Work }) {
           <p class="work-summary">{w.summary ?? w.description}</p>
           <dl class="work-facts">
             {facts.map((f) => (
-              <div class={{ 'work-fact-outcome': 'outcome' in f }}>
+              <div class={{ 'work-fact-outcome': !!f.outcome }}>
                 <dt>{f.label}</dt>
                 <dd>
-                  {'outcome' in f && <OutcomeMark />}
-                  {f.value}
+                  {f.outcome && <OutcomeMark />}
+                  {f.techList ? (
+                    <span class="tech-chips">
+                      {f.techList.map((label) => (
+                        <span class="tech-chip">{label}</span>
+                      ))}
+                    </span>
+                  ) : (
+                    f.value
+                  )}
                 </dd>
               </div>
             ))}
@@ -131,7 +151,11 @@ export default function WorkDetail(props: { work: Work }) {
                       {WORD_JOINER}
                       <Icon name="ArrowUpRight" size={15} />
                     </span>
-                    <time datetime={a.date}>{shortDate(a.date)}</time>
+                    <span class="related-meta">
+                      <span>{sourceLabel(a.source)}</span>
+                      <span aria-hidden="true">・</span>
+                      <time datetime={a.date}>{shortDate(a.date)}</time>
+                    </span>
                   </a>
                 </li>
               ))}
@@ -149,7 +173,7 @@ export default function WorkDetail(props: { work: Work }) {
           ))}
         </div>
         <a class="text-button works-back" href="/works">
-          作品一覧へ
+          すべての作品を見る
           <Icon name="ChevronRight" size={16} />
         </a>
       </nav>

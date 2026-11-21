@@ -6,10 +6,9 @@ import { pages } from 'virtual:cp20-media';
 export const sizes = {
   articleRow: '(max-width: 600px) 128px, (max-width: 1199px) 148px, 160px',
   // WorkCard.tsx and a work's page (src/styles/works.css): a featured card (three across, then a
-  // row), a list card's stamp, a one-line row, the page's picture and the phone screen on it.
+  // row), a list card's stamp, the page's picture and the phone screen on it.
   workCard: '(max-width: 760px) 96px, (max-width: 1000px) 224px, 300px',
   workThumb: '(max-width: 760px) 92px, 140px',
-  workRow: '84px',
   workHero: '(max-width: 760px) calc(100vw - 74px), (max-width: 1000px) 560px, 440px',
   workPhone: '136px',
   // The open book on the /about shelf (spines show a corner of the same image).

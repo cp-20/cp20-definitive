@@ -185,7 +185,7 @@ try {
       if (width === 390) {
         const small = await page
           .locator(
-            '.footer-links a, .footer-button, .profile-links a, .under-link, .speed-stamps button, .rail nav a, .sticker-tab',
+            '.footer-links a, .footer-button, .profile-links a, .under-link, .award-stamps button, .intern-list button, .rail nav a, .sticker-tab',
           )
           .evaluateAll((els) =>
             els.flatMap((el) => {
@@ -422,7 +422,7 @@ try {
   await expect(page).toHaveURL(origin + '/about');
   await expect(page.locator('[data-opens="m3"]')).toBeFocused();
   await expect(page.locator('[data-opens="m3"]')).toBeInViewport();
-  await page.locator('.speed-stamps button', { hasText: 'LayerX' }).click();
+  await page.locator('.intern-list button', { hasText: 'LayerX' }).click();
   await expect(page.locator('#layerx')).toBeVisible();
   await page.keyboard.press('Escape');
   // From another page (the home page's achievements), the page turns, then the dialog opens.

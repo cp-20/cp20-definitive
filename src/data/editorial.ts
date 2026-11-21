@@ -21,8 +21,10 @@ export type Milestone = {
   work?: string;
   /** Still going on (shown as "<year>〜" where the title does not date it). */
   ongoing?: boolean;
-  /** A speed-up for the strip above the history: what got faster, from what to what, and where. */
-  speedup?: { what: string; from?: string; to: string; place: string };
+  /** Featured award stamp on /about. */
+  awardCard?: { event: string; result: string };
+  /** Internship summary card on /about. */
+  internCard?: { company: string; period: string; summary: string };
 };
 export const milestones: Milestone[] = [
   {
@@ -31,15 +33,15 @@ export const milestones: Milestone[] = [
     year: '2026.10',
     grade: '大学4年',
     title: 'ISUCON2026 学生2位',
-    text: 'pirosiki と2人のチーム [object\u00a0Object] で、最終 **211,213点**。',
+    text: 'Webアプリ高速化競技に2人で出場し、AIエージェントを並列活用して最終 **211,213点**。',
     detail: [
-      'チーム [object\u00a0Object] として pirosiki と2人で出場し、BeReal 風の SNS「ISUReal」を8時間かけて高速化した。複数の AI Agent を並列に動かすため、ベンチのロックやタスクボードなどの道具を事前に用意して臨み、最終 211,213点で学生2位になった。',
-      '投稿画像の JPEG 検証は判定結果を変えずに最適化し、標準ライブラリを複製した検証器で、412KB の画像の検証を 27.6ms から 1.15ms（約24倍）にした。',
+      'Webサービスの負荷耐性や応答速度を8時間で競う ISUCON に、pirosiki と2人チーム [object\u00a0Object] として出場した。お題の BeReal 風 SNS「ISUReal」を高速化し、最終スコア 211,213点で学生2位になった。',
+      '当日は複数の AI エージェントを並列に動かせるよう、ベンチマーク実行の排他制御や共有タスクボードを事前に自作して投入。アプリ・DB のボトルネック解消を並行で進めた。',
     ],
     links: [
       { label: 'ISUCON2026 に AI Agent と出て学生2位でした', url: 'https://blog.cp20.dev/posts/isucon2026/' },
     ],
-    speedup: { what: '投稿画像の検証', from: '27.6ms', to: '1.15ms', place: 'ISUCON2026' },
+    awardCard: { event: 'ISUCON2026', result: '学生2位' },
   },
   {
     id: 'deploynow2026',
@@ -47,10 +49,10 @@ export const milestones: Milestone[] = [
     year: '2026.10',
     grade: '大学4年',
     title: 'デプロイナウコンテスト 月間賞',
-    text: 'みんなのものさしが**9月の月間賞**に。',
+    text: 'みんなの感覚を数字で比べるWebアプリ「みんなのものさし」が**9月の月間賞**を受賞。',
     detail: [
-      'GMOペパボの「デプロイナウコンテスト byGMOペパボ」は、ロリポップ！デプロイナウで公開した Web アプリ・Web サイトのコンテスト。9月から11月までは毎月、運営が選んだ作品に月間賞を贈る。',
-      'みんなのものさしは、9月の月間賞の12作品の1つに選ばれた。運営のコメントは「『ちょっと』って何分？ 数字で答えると、みんなとのズレが見える。PCでもスマホでも、答える操作まで気持ちいい。」',
+      'GMOペパボが主催する Web アプリコンテスト「デプロイナウコンテスト byGMOペパボ」で、自作アプリ「みんなのものさし」が9月の月間賞に選ばれた。',
+      '「『ちょっと』って何分？」のような曖昧な感覚を数字で答えて分布を比べられるアプリで、運営からは「数字で答えると、みんなとのズレが見える。PCでもスマホでも、答える操作まで気持ちいい。」と講評をもらった。',
     ],
     links: [{ label: 'デプロイナウコンテスト byGMOペパボ', url: 'https://lolipop.jp/deploy-now/contest/' }],
     work: 'minna-no-monosashi',
@@ -62,15 +64,20 @@ export const milestones: Milestone[] = [
     ongoing: true,
     grade: '大学4年',
     title: 'LayerX インターン',
-    text: '社内の AI エージェント基盤 haro を開発。CI のチェックアウトを **65.9秒→17.5秒**に。',
+    text: 'バクラクの開発基盤チームで、社内AIエージェント開発や CI 高速化 (チェックアウト **65.9秒→17.5秒**) を担当。',
     detail: [
-      '2026年9月から約1ヶ月の短期インターンでバクラクの Enabling チームに入り、その後も継続している。社内の AI エージェント基盤 haro の v2 で、チャットから登録できるカスタムスキルと、PR の自動レビューやコンフリクト解消をする GitHub 連携をつくった。',
-      'CI ではチェックアウトを 65.9 秒から 17.5 秒に縮め、フロントエンドのビルドとテストも Vitest の設定見直しと TypeScript 7 への移行で約2割速くした。',
+      '2026年9月から1ヶ月の短期インターンでバクラク事業部の開発基盤 (Enabling) チームに参加し、その後も継続して働いている。',
+      '社内向け AI エージェント基盤「haro」の開発に参加し、チャットから手順や観点を登録・共有できるカスタムスキル機能や、GitHub の PR から自動レビュー・コンフリクト解消を動かせる連携、UI・UX の改善などを実装した。',
+      'あわせて開発体験の改善として、CI のコード取得時間を 65.9秒から 17.5秒へ短縮。Vitest の設定見直しや TypeScript 7 への移行で、フロントエンドのビルド・テストも約2割速くした。',
     ],
     links: [
       { label: 'LayerX を1ヶ月楽しんできました！', url: 'https://blog.cp20.dev/posts/layerx-internship/' },
     ],
-    speedup: { what: 'CI のチェックアウト', from: '65.9秒', to: '17.5秒', place: 'LayerX' },
+    internCard: {
+      company: 'LayerX',
+      period: '2026.09〜',
+      summary: 'バクラク開発基盤・社内AIエージェントとCI高速化',
+    },
   },
   {
     id: 'fixstars',
@@ -78,13 +85,17 @@ export const milestones: Milestone[] = [
     year: '2026.03',
     grade: '大学3年',
     title: 'フィックスターズ インターン',
-    text: 'oneDNN の int8 演算を RISC-V 向けに高速化し、行列積を**約114倍**に。',
+    text: '深層学習ライブラリ oneDNN の RISC-V 向け推論処理を高速化し、行列積を**約114倍**に改善。',
     detail: [
-      'オープンソースの DNN ライブラリ oneDNN で、RISC-V では fp32 より遅かった int8 の演算を、RISC-V のベクトル拡張（RVV）向けに高速化した。実機（Milk-V Jupiter）で測りながら、キャッシュブロッキングなどでハードウェアの限界近くまで詰めた。',
-      '行列積は約114倍、畳み込みは約14.5倍（1x1 の畳み込みは約1450倍）速くなった。',
+      'オープンソースの深層学習向け演算ライブラリ oneDNN で、RISC-V CPU 上の量子化 (int8) 演算を高速化した。本来は省メモリ・高速なはずの int8 処理が通常精度 (fp32) より遅い課題に対し、CPU のベクトル命令 (RVV) を使う実装へ書き換えた。',
+      '実機 (Milk-V Jupiter) で計測しながらメモリアクセス効率を詰め (キャッシュブロッキングなど)、最終的に行列積を約114倍、畳み込みを約14.5倍 (1×1 畳み込みは約1,450倍) まで高速化した。',
     ],
     links: [],
-    speedup: { what: 'RISC-V の int8 行列積', to: '約114倍', place: 'フィックスターズ' },
+    internCard: {
+      company: 'フィックスターズ',
+      period: '2026.03',
+      summary: '深層学習ライブラリ oneDNN の RISC-V 向け高速化',
+    },
   },
   {
     id: 'mixi-git-challenge',
@@ -92,10 +103,10 @@ export const milestones: Milestone[] = [
     year: '2025.08',
     grade: '大学3年',
     title: 'MIXI Git Challenge #15 2位',
-    text: '2人1組のチームで Git の問題を解き、**2位**。',
+    text: 'Git の操作力やトラブル対応力を競う1日イベントにペアで出場し、**2位**に入賞。',
     detail: [
-      'MIXI の Git Challenge は、Git のリポジトリに用意された問題（issue）を2人1組のチームで制限時間内に解き、得点を競う1日の競技イベント。問題は MIXI グループのエンジニアが出す。',
-      '2025年8月30日に渋谷の MIXI 本社で開かれた #15 に出て、2位になった。',
+      'MIXI グループのエンジニアが出題する Git リポジトリ上の課題 (issue) を、2人1組のチームで制限時間内に解決して得点を競う1日の競技イベント。',
+      '2025年8月30日に渋谷の MIXI 本社で開かれた #15 に出場し、2位に入賞した。',
     ],
     links: [],
   },
@@ -105,10 +116,11 @@ export const milestones: Milestone[] = [
     year: '2025.08',
     grade: '大学3年',
     title: 'M3 エンジニアインターン',
-    text: '請求画面の遅いクエリをキャッシュし、いちばん重い医院の応答を**約4秒→約35ミリ秒**に。',
+    text: 'クリニック向けサービスの請求画面を高速化し、最も重い医院の応答を**約4秒→約35ms**に短縮。',
     detail: [
-      'エムスリーのデジスマチームで2週間。請求画面の遅いクエリを EXPLAIN ANALYZE で調べて PostgreSQL の Materialized View にキャッシュし、いちばん重い医院で約4秒かかっていた応答を約35ミリ秒にした。',
-      'ほかにログインの流れと並び順の改修（API の変更を含む）や、マイクロサービスごとの Redis を1つにまとめる移行に取り組んだ。',
+      'エムスリーの医療機関向けサービス「デジスマ診療」のチームに2週間参加した。',
+      '請求画面の表示が遅い原因を DB の実行計画 (EXPLAIN ANALYZE) から特定し、PostgreSQL の Materialized View で集計結果を事前キャッシュする構成に変更。最もデータ量の多い医院で約4秒かかっていた応答を約35msまで縮めた。',
+      'そのほか、API の変更を伴うログイン導線・一覧の並び順改修や、複数サービスに分かれていた Redis の統合移行も担当した。',
     ],
     links: [
       {
@@ -116,7 +128,7 @@ export const milestones: Milestone[] = [
         url: 'https://www.m3tech.blog/entry/2025/09/26/170000',
       },
     ],
-    speedup: { what: '請求画面の応答', from: '約4秒', to: '約35ミリ秒', place: 'M3' },
+    internCard: { company: 'M3', period: '2025.08', summary: 'デジスマ診療・請求画面の高速化と Redis 統合' },
   },
   {
     id: 'cyberagent',
@@ -124,9 +136,16 @@ export const milestones: Milestone[] = [
     year: '2025.02',
     grade: '大学2年',
     title: 'CyberAgent CA Tech JOB',
-    text: 'ABEMA の Web TV チームで約10日間。',
-    detail: ['ABEMA の Web TV チームに配属され、約10日間働いた。Lint ルールの修正などに取り組んだ。'],
+    text: 'ABEMA の Web TV チームで、約10日間の就業型インターンに参加し既存画面の改善などを担当。',
+    detail: [
+      'ABEMA のテレビ・Web 向け開発チーム (Web TV チーム) に配属され、約10日間の実務に参加した。既存画面の改善や機能追加、コード品質を保つ静的解析 (Lint) ルールの修正などに取り組んだ。',
+    ],
     links: [],
+    internCard: {
+      company: 'CyberAgent',
+      period: '2025.02',
+      summary: 'ABEMA Web TV チーム・既存画面の改善など',
+    },
   },
   {
     id: 'mixi-bug-shooting',
@@ -134,11 +153,13 @@ export const milestones: Milestone[] = [
     year: '2024.12',
     grade: '大学2年',
     title: 'MIXI Bug Shooting Challenge 優勝',
-    text: '当日組んだペアで出場し、**1位（MVP）**。',
+    text: 'サービスの障害調査とバグ修正を競う1日イベントにペアで出場し、**1位 (MVP)** を獲得。',
     detail: [
-      '1日のイベントに1人で申し込み、当日組んだペアで出た。架空のサービスに届いた問い合わせを BigQuery のログとコードから調べて、コードを直し、サポートへの回答と修正の PR を出す形式で、1位（MVP）になった。',
+      '架空の Web サービスに届いたユーザー問い合わせをもとに、原因調査から修正までを制限時間内で競う1日イベント。個人応募で当日組んだペアとして出場した。',
+      'BigQuery のアクセスログやアプリコードから不具合の原因を特定し、サポート向けの調査報告と修正 PR を提出する形式で、1位 (MVP) を獲得した。',
     ],
     links: [{ label: 'MIXI Bug Shooting Challenge で優勝しました', url: 'https://trap.jp/post/2228/' }],
+    awardCard: { event: 'MIXI Bug Shooting Challenge', result: '優勝・MVP' },
   },
   {
     id: 'flatt-security',
@@ -146,11 +167,17 @@ export const milestones: Milestone[] = [
     year: '2024.04',
     grade: '大学2年',
     title: 'Flatt Security インターン',
-    text: 'Shisho Cloud の開発に、ソフトウェアエンジニアとして**1年半**。',
+    text: 'クラウドセキュリティ製品 Shisho Cloud の開発に**1年半**携わり、Azure 連携などを実装。',
     detail: [
-      'クラウドセキュリティ製品 Shisho Cloud のチームで、2024年4月から2025年9月まで学業と並行して働いた。ほかのインターン生がセキュリティ診断をするなか、1人だけソフトウェアエンジニアとして開発に入っていた。',
+      'クラウド環境のセキュリティ対策を支援する製品「Shisho Cloud」の開発チームに、2024年4月から2025年9月までの1年半、ソフトウェアエンジニアとして学業と並行して参加した。',
+      '最も大きなタスクとして、OIDC フェデレーションを用いた認可基盤による Azure 連携 (Azure サポート) を実装。そのほか、デザインシステムの導入などプロダクト全体の基盤整備にも携わった。',
     ],
     links: [],
+    internCard: {
+      company: 'Flatt Security',
+      period: '2024.04〜2025.09',
+      summary: 'Shisho Cloud の Azure 連携・プロダクト開発',
+    },
   },
   {
     id: 'wsh2024',
@@ -158,12 +185,13 @@ export const milestones: Milestone[] = [
     year: '2024.03',
     grade: '大学1年',
     title: 'Web Speed Hackathon 2024 優勝',
-    text: '重い漫画サイトを2日間で速くし、**初出場で優勝**。',
+    text: '意図的に重く作られたWebアプリ (漫画サイト) を2日間で高速化する競技に**初出場で優勝**。',
     detail: [
-      '重い Web アプリを2日間で速くする競技に初めて出た。題材は漫画サイトで、jQuery や重い依存の削除、画像の縮小と AVIF 化、SSR の修正、ReDoS になる正規表現の修正などをした。',
-      '最終スコア 542.85 で5位だったが、上位のチームが E2E テストに通らず、繰り上がって優勝した。',
+      '極端に遅い Web アプリを2日間でどこまで軽くできるか競う大会に初出場した。題材は電子漫画サイトで、不要なライブラリの削除、画像の軽量化 (縮小・AVIF 変換)、サーバー側レンダリング (SSR) の不具合修正、処理が極端に重くなる正規表現 (ReDoS) の修正などを行った。',
+      '計測スコアは 542.85 で全体5位だったが、表示崩れや機能壊れを検証する E2E テストを確実に通したことで繰り上がり優勝となった。',
     ],
     links: [{ label: 'Web Speed Hackathon 2024に初出場して優勝しました', url: 'https://trap.jp/post/2170/' }],
+    awardCard: { event: 'Web Speed Hackathon 2024', result: '優勝' },
   },
   {
     id: 'line',
@@ -171,10 +199,10 @@ export const milestones: Milestone[] = [
     year: '2023.08',
     grade: '大学1年',
     title: 'LINE インターン',
-    text: '4人チームでバックエンドと性能改善を担当し、**完成度賞とパフォーマンス賞**。',
+    text: 'ハッカソン型インターンで配達員アプリのバックエンドと負荷対策を担当し、**完成度賞・パフォーマンス賞**を受賞。',
     detail: [
-      '京都で13日間のハッカソン形式のインターン。4人チームでクイックコマースの配達員向けアプリをつくり、バックエンドを Go（Gin・gorm）と Redis で担当した。',
-      '2週目は性能改善を主導し、負荷試験で約2,000 RPS を出せるようにして、完成度賞とパフォーマンス賞をもらった。',
+      '京都で開催された13日間のハッカソン形式インターン。4人チームで即配サービスの配達員向けアプリを開発し、Go (Gin・gorm) と Redis を使ったバックエンドを担当した。',
+      '2週目には性能改善を主導して、負荷試験で毎秒約2,000リクエスト (約2,000 RPS) をさばける状態まで引き上げ、完成度賞とパフォーマンス賞の2冠を受賞した。',
     ],
     links: [
       {
@@ -182,7 +210,11 @@ export const milestones: Milestone[] = [
         url: 'https://zenn.dev/trap/articles/line-summer-intern-2023',
       },
     ],
-    speedup: { what: '負荷試験', to: '約2,000 RPS', place: 'LINE' },
+    internCard: {
+      company: 'LINE',
+      period: '2023.08',
+      summary: '配達員アプリ開発・完成度賞 / パフォーマンス賞',
+    },
   },
   {
     id: 'sechack365',
@@ -190,10 +222,10 @@ export const milestones: Milestone[] = [
     year: '2023.05',
     grade: '大学1年',
     title: 'SecHack365 採択',
-    text: '技術記事の未読消化を助ける ReadStack を、ブラウザ拡張とスマホアプリで開発。',
+    text: 'NICTの若手育成プログラムに参加し、技術記事の積読を消化するアプリ「ReadStack」を開発。',
     detail: [
-      'NICT の若手セキュリティイノベーター育成プログラム。開発駆動コースで、元の記事を読むだけで未読管理が半自動で進む ReadStack を、ブラウザ拡張とスマホアプリとしてつくった。',
-      '2024年3月に修了し、2024年度はアシスタントとして関わった。',
+      '情報通信研究機構 (NICT) が主催する1年間の若手セキュリティイノベーター育成プログラム。ものづくりを通じて学ぶ開発駆動コースに採択された。',
+      '「あとで読む」記事が溜まり続ける課題を解決するため、普段どおり記事を読むだけで既読管理が半自動で進む「ReadStack」をブラウザ拡張とスマホアプリで開発した。2024年3月に修了し、翌年度はアシスタントとして運営に関わった。',
     ],
     links: [{ label: '2023年度の成果物', url: 'https://sechack365.nict.go.jp/achievement/2023/#area_24dn' }],
     work: 'read-stack',
@@ -204,14 +236,18 @@ export const milestones: Milestone[] = [
     year: '2023.04',
     grade: '大学1年',
     title: '東京工業大学 入学',
-    text: '東京工業大学（現 東京科学大学）情報理工学院。',
+    text: '東京工業大学 (現・東京科学大学) 情報理工学院に入学。',
     detail: [
-      '一般選抜で情報理工学院に入った。2024年10月に東京医科歯科大学と統合して東京科学大学になり、いまは情報工学系に所属している。',
+      '総合型選抜には不合格となったものの、一般選抜で東京工業大学 情報理工学院に入学した。2024年10月に東京医科歯科大学との統合で東京科学大学となり、現在は情報工学系で学んでいる。',
     ],
     links: [
       {
         label: '東京工業大学 情報理工学院 一般選抜 合格体験記',
         url: 'https://note.com/cp20/n/n3be2d294a6f3',
+      },
+      {
+        label: '東京工業大学 情報理工学院 総合型選抜 ”不”合格体験記',
+        url: 'https://note.com/cp20/n/n84d2de414f5e',
       },
     ],
   },
@@ -221,13 +257,14 @@ export const milestones: Milestone[] = [
     year: '2022.03',
     grade: '高校2年',
     title: 'Imagine Cup アジア教育部門優勝',
-    text: 'ブラウザで動く初心者向けのプログラミング言語 Laze を、高校の2人で出品。',
+    text: 'Microsoft の学生向け国際大会に、母語で書けてブラウザで動く自作言語「Laze」を2人で出品し優勝。',
     detail: [
-      'Microsoft の学生向け国際コンテスト。同じ高校の2人で Laze Project Team として、英語以外の言語でも書けて環境構築なしにブラウザで動く初心者向けのプログラミング言語 Laze を出し、アジアの教育部門で優勝した。',
+      'Microsoft が主催する学生向けの国際技術コンテスト。同じ高校の同級生と2人 (Laze Project Team) で出場し、アジアの教育部門で優勝した。',
+      '英語の壁や環境構築の難しさで挫折しがちな初心者向けに、日本語などの母語で書けてブラウザだけで動かせるプログラミング言語「Laze」を開発して出品した。',
     ],
     links: [
       {
-        label: 'Microsoft の発表（アジアの部門優勝チーム）',
+        label: 'Microsoft の発表 (アジアの部門優勝チーム)',
         url: 'https://news.microsoft.com/apac/2022/04/08/team-nana-shilpa-from-sri-lanka-crowned-asia-winner-for-microsofts-2022-imagine-cup-world-finals/',
       },
       {
@@ -235,6 +272,7 @@ export const milestones: Milestone[] = [
         url: 'https://speakerdeck.com/cp20/gao-xiao-sheng-gaimagine-cupdeshang-qu-tutekitati-yan-ji',
       },
     ],
+    awardCard: { event: 'Imagine Cup', result: 'アジア教育部門優勝' },
   },
   {
     id: 'jsec',
@@ -242,10 +280,10 @@ export const milestones: Milestone[] = [
     year: '2021.12',
     grade: '高校2年',
     title: 'JSEC 優秀賞',
-    text: '多言語対応のコンパイラ言語 Laze と、その実行サイトの研究を2人で。',
+    text: '高校生・高専生の科学技術コンテストで、多言語対応の自作言語「Laze」とWeb実行環境の研究が受賞。',
     detail: [
-      '高校生・高専生の科学技術研究のコンテスト。「ブラウザ上で実行可能な多言語対応のコンパイラ言語 Laze と簡単に Laze を実行できるウェブサイトの開発」を2人で出した。',
-      '英語が苦手だったり環境構築でつまずいたりしてプログラミングをやめてしまう人のために、何も入れずにブラウザで書き始められるようにした。',
+      '朝日新聞社などが主催する高校生・高専生向けの科学技術研究コンテスト。同級生と2人で「ブラウザ上で実行可能な多言語対応のコンパイラ言語 Laze と簡単に Laze を実行できるウェブサイトの開発」を応募し、優秀賞を受けた。',
+      '英語が苦手だったり環境構築でつまずいたりしてプログラミングを諦めてしまう人のために、ソフトをインストールせずブラウザだけですぐ書き始められる仕組みを研究・制作した。',
     ],
     links: [
       { label: 'JSEC2021 受賞研究', url: 'https://manabu.asahi.com/jsec/2021/award/index.html' },
@@ -256,8 +294,14 @@ export const milestones: Milestone[] = [
     ],
   },
 ];
-/** The speed-ups in the strip on /about, newest first, each with the history entry it opens. */
-export const speedups = milestones.flatMap((m) => (m.speedup ? [{ ...m.speedup, id: m.id }] : []));
+/** The featured awards on /about, newest first, each with the history entry it opens. */
+export const awardCards = milestones.flatMap((m) =>
+  m.awardCard ? [{ ...m.awardCard, id: m.id, year: m.year }] : [],
+);
+/** The internships on /about, newest first, each with the history entry it opens. */
+export const internCards = milestones.flatMap((m) =>
+  m.internCard ? [{ ...m.internCard, id: m.id, ongoing: m.ongoing }] : [],
+);
 export const editions = [
   { year: '2023', tech: 'Next.js', image: '2023-portfolio' },
   { year: '2024', tech: 'Qwik', image: '2024-portfolio' },

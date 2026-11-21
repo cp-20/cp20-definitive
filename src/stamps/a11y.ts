@@ -27,7 +27,7 @@ export function stampPlace(anchor: string, label: string | null | undefined): st
 }
 
 // Said instead of a place while the sticker in hand is over the open sheet (or the tab).
-export const OVER_SHEET = 'シール帳の上（ここには貼れません）';
+export const OVER_SHEET = 'シール帳の上 (ここには貼れません)';
 
 /**
  * @param event kept / blocked-kept: one of your stickers being moved went back where it was on the page

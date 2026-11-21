@@ -9,13 +9,10 @@ export default function Credits() {
       <dl class="credits">
         <dt>アイコン</dt>
         <dd>
-          <a href="https://twitter.com/sora_douhu">空どうふ（@sora_douhu）</a>
+          <a href="https://twitter.com/sora_douhu">空どうふ (@sora_douhu)</a>
         </dd>
         <dt>音楽</dt>
-        <dd>
-          <a href="https://2026.cp20.dev/featured-tracks">2026版のおすすめ曲</a>
-          から。サムネイルは YouTube（各動画の投稿者）
-        </dd>
+        <dd>YouTube 公開曲の公式動画サムネイルを利用しています。</dd>
         <dt>漫画の表紙</dt>
         <dd class="credits-list">
           <For each={series}>
@@ -28,20 +25,19 @@ export default function Credits() {
           </For>
         </dd>
         <dt>作品・記事の画像</dt>
-        <dd>各作品・記事の公開ページの OG 画像</dd>
+        <dd>各作品・記事の公開ページから取得した OG 画像・スクリーンショット</dd>
         <dt>素材</dt>
         <dd>
-          <a href="https://lucide.dev">Lucide</a>（ISC、一部は Feather 由来で MIT）、サービスのロゴは{' '}
-          <a href="https://simpleicons.org">Simple Icons</a>（CC0）と各サービスのファビコン、シールの絵柄は{' '}
-          <a href="https://github.com/jdecked/twemoji">Twemoji</a>（© Twitter, Inc and other contributors、
-          <a href="/stamps/LICENSE-GRAPHICS.txt">CC BY 4.0</a>
-          ）、文字のシールは Cherry Bomb One の字形、フォントは Yusei Magic / Zen Maru Gothic / IBM Plex
-          Mono（どれも SIL OFL 1.1。IBM Plex Mono は Reserved Font Name のため「cp20
-          Mono」と名前を変えて使用）
+          <a href="https://lucide.dev">Lucide</a> (ISC、一部は Feather 由来で MIT)、サービスのロゴは{' '}
+          <a href="https://simpleicons.org">Simple Icons</a> (CC0) と各サービスのファビコン、シールの絵柄は{' '}
+          <a href="https://github.com/jdecked/twemoji">Twemoji</a> (© Twitter, Inc and other contributors、
+          <a href="/stamps/LICENSE-GRAPHICS.txt">CC BY 4.0</a>) 、文字のシールは Cherry Bomb One
+          の字形、フォントは Yusei Magic / Zen Maru Gothic / IBM Plex Mono (どれも SIL OFL 1.1。IBM Plex Mono
+          は Reserved Font Name のため「cp20 Mono」と名前を変えて使用)
         </dd>
         <dt>ライブラリ</dt>
         <dd>
-          SolidJS（MIT）、Firebase（Apache-2.0）ほか。
+          SolidJS (MIT)、Firebase (Apache-2.0) ほか。
           <a href="/third-party-licenses.txt">ライセンス全文</a>
         </dd>
       </dl>

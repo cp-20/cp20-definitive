@@ -141,6 +141,7 @@ describe('太字と手書きの文字', () => {
 });
 
 describe.each([
+  'zen-maru-gothic/zen-maru-gothic-500.woff2',
   'zen-maru-gothic/zen-maru-gothic-700.woff2',
   'yusei-magic/yusei-magic-400.woff2',
   'cp20-mono/cp20-mono-600.woff2',

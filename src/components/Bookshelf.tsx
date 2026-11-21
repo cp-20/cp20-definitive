@@ -42,7 +42,7 @@ export default function Bookshelf() {
         class="bookshelf"
         ref={shelf}
         role="tablist"
-        aria-label="本棚"
+        aria-label="好きな漫画の本棚"
         onKeyDown={keyboard}
         onTransitionEnd={reveal}
       >
@@ -108,7 +108,7 @@ export default function Bookshelf() {
         <For each={series}>
           {(s, i) => (
             <p data-open={open() === i() || undefined}>
-              <a href={s.link}>
+              <a href={s.link} title="公式ページを開く">
                 {s.title}
                 <Icon name="ArrowUpRight" size={15} />
               </a>

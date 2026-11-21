@@ -86,15 +86,30 @@
     text-wrap: pretty;
   }
   /* Japanese has no spaces, so balance/wrapping would split words mid-phrase; break between phrases instead
-     (in Chromium; the sentences below are marked for every browser). Not in narrow columns (article
-     titles, which are marked) or for long words the dictionary cannot split (見つかりません): there it
-     gives up mid-word anyway and only adds lines, leaving fragments like 「ん。」 alone. */
+     (in Chromium; the sentences below are marked for every browser). Strict line-break forbids orphans
+     and punctuation/kinsoku violations across Japanese copy. */
   :lang(ja)
-    :is(h1, h2, h3, h4, .timeline-item p, .work-body p, .modal-sheet > p):not(
-      .article-row h3,
-      .not-found h1
-    ) {
+    :is(
+      h1,
+      h2,
+      h3,
+      h4,
+      .award-event,
+      .award-result,
+      .favorite-name,
+      .music-item h4,
+      .music-item p,
+      .book-caption p,
+      .credits dd,
+      .sticker-hint,
+      .not-found p
+    ):not(.article-row h3, .not-found h1) {
     word-break: auto-phrase;
+    line-break: strict;
+    overflow-wrap: anywhere;
+  }
+  :lang(ja) :is(.award-event, .award-result, .favorite-name, .music-item h4) {
+    text-wrap: balance;
   }
   /* Sentences whose phrase boundaries are marked (zero-width spaces from scripts/build/phrases.ts,
      or <wbr> in a page's own text) break only there, so Safari, which has no auto-phrase, breaks
@@ -105,14 +120,19 @@
     .work-outcome,
     .work-summary,
     .work-facts dd,
-    .work-row-description,
+    .work-body p,
     .article-row h3,
     .recent-title,
     .attendance-tip strong,
     .home-facts,
-    .profile-intro > p
+    .timeline-item p,
+    .modal-sheet > p,
+    .modal-links a,
+    .intern-summary,
+    .profile-affiliations li
   ) {
     word-break: keep-all;
+    line-break: strict;
     overflow-wrap: anywhere;
   }
   .nowrap {
@@ -140,14 +160,15 @@
     --desk-dot: #bcdcae;
     --paper: #fffcf3;
     --paper-2: #f6f0e1;
-    --grid: rgb(86 150 100 / 0.12);
-    --margin-line: rgb(255 120 150 / 0.35);
+    --grid: rgb(86 150 100 / 0.08);
+    --margin-line: rgb(255 120 150 / 0.24);
     /* Text is --ink, the outlines' ink written a little lighter so a page of it is not black on
        the paper (10.2:1 on it, 4.7:1 on the strongest page colour, --green); --muted (5.3:1) only
        for dates, sources and the like. --faint (2.6:1) is for dotted lines and outlines, never
        for text. --edge and --drop, the outlines and their hard shadows, keep the full ink. */
-    --ink: #433d47;
-    --muted: #6c6873;
+    --ink-heading: #26222b;
+    --ink: #4a4450;
+    --muted: #66606e;
     --faint: #9b97a0;
     --edge: #2d2a33;
     --drop: #2d2a33;
@@ -180,19 +201,19 @@
        - --hand, Yusei Magic: what is written on the sheet by hand with a marker. Headings, names,
          labels, buttons and figures. Its kana are proportional and its letters and figures are
          drawn with them, so a name like 「ダイススペック v2」 sits as one line of writing.
-       - --round, Zen Maru Gothic in --round-weight (700; 500 read thin on the paper): what is
-         printed. Sentences, descriptions, dates and sources, all in that one weight; a figure a
-         sentence stresses (<strong>) is written by hand instead.
+       - --round, Zen Maru Gothic in --round-weight (500): what is
+         printed. Sentences, descriptions, dates and sources; emphasized phrases in profiles
+         and dialogs (<strong>) step up to 700 with a subtle marker underline.
        - --mono, cp20 Mono (IBM Plex Mono SemiBold renamed, scripts/build/fonts.ts) in 600: what is
          written as code, as heavy as the printed text beside it (400 read thin).
        No letter spacing anywhere: Zen Maru Gothic has no proportional kana (no palt), and any
        spacing only pulls its full-width kana further from its narrow letters and figures.
        Sizes come from one ladder: 12 13 15 17 20 28 36 48 72 (px). */
-    --fs-display: 4.5rem;
+    --fs-display: 4rem;
     --fs-h1: 3rem;
-    --fs-h2: 1.75rem;
+    --fs-h2: 1.875rem;
     --fs-h3: 1.25rem;
-    --fs-title: 1.0625rem;
+    --fs-title: 1.125rem;
     --fs-lead: 1.0625rem;
     --fs-body: 0.9375rem;
     --fs-ui: 0.9375rem;
@@ -201,20 +222,21 @@
     /* Motion: paper and controls ease out and never overshoot; only stickers (and stamps pressed
        onto the paper) spring. Five durations, from a press to a page turn. */
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
-    --ease-turn: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-turn: cubic-bezier(0.32, 0.08, 0.24, 1);
     --ease-exit: cubic-bezier(0.4, 0, 1, 1);
     --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
     --t-press: 80ms;
     --t-hover: 180ms;
     --t-state: 280ms;
     --t-enter: 420ms;
-    --t-page: 520ms;
+    --t-page: 460ms;
+    --sheet-radius: 26px;
     --round:
       'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', 'Noto Sans CJK JP',
       Meiryo, system-ui, sans-serif;
     --hand: 'Yusei Magic', var(--round);
     --mono: 'cp20 Mono', ui-monospace, monospace;
-    --round-weight: 700;
+    --round-weight: 500;
     --tab: 50px;
     --perf: 12px;
     --perf-hole: 3.6px;
@@ -260,17 +282,20 @@
     font-size: var(--fs-h1);
     font-family: var(--hand);
     font-weight: 400;
+    color: var(--ink-heading);
     line-height: 1.2;
   }
   h2 {
     font-size: var(--fs-h2);
     font-family: var(--hand);
     font-weight: 400;
+    color: var(--ink-heading);
   }
   h3,
   h4 {
     font-family: var(--hand);
     font-weight: 400;
+    color: var(--ink-heading);
   }
   h3 {
     font-size: var(--fs-title);
@@ -301,7 +326,7 @@
     color: var(--on-color);
     background: color-mix(in srgb, var(--hi) 55%, transparent);
     clip-path: polygon(3% 0, 97% 4%, 100% 50%, 97% 96%, 2% 100%, 0 50%);
-    rotate: -2deg;
+    rotate: -1deg;
   }
   /* A text link on its own line: the text stays small, the row a fingertip (44px) tall. */
   .under-link {
@@ -384,37 +409,6 @@
     box-shadow: 0 0 0 var(--drop);
     transition-duration: var(--t-press);
   }
-  .icon-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border: 2px solid var(--edge);
-    border-radius: 50%;
-    background: var(--paper);
-    box-shadow: 2px 2px 0 var(--drop);
-    flex-shrink: 0;
-    transition:
-      transform var(--t-hover) var(--ease),
-      box-shadow var(--t-hover) var(--ease),
-      background var(--t-hover) var(--ease);
-  }
-  .icon-button:focus-visible {
-    background: var(--hi-soft);
-  }
-  @media (hover: hover) {
-    .icon-button:hover {
-      background: var(--hi-soft);
-      transform: translate(-1px, -1px);
-      box-shadow: 3px 3px 0 var(--drop);
-    }
-  }
-  .icon-button:active {
-    transform: translate(2px, 2px);
-    box-shadow: 0 0 0 var(--drop);
-    transition-duration: var(--t-press);
-  }
   .skip-link {
     position: fixed;
     z-index: 100;
@@ -436,15 +430,6 @@
   section[id] {
     scroll-margin-top: 24px;
   }
-  /* A line break only where both sentences fit a line each. */
-  .desktop-break {
-    display: none;
-  }
-  @media (min-width: 1280px) {
-    .desktop-break {
-      display: inline;
-    }
-  }
 }
 
 /* ───────────────────────── layout ───────────────────────── */
@@ -453,22 +438,22 @@
   [data-section='home'] {
     --hi: var(--green);
     --hi-soft: var(--green-soft);
-    --page: color-mix(in srgb, var(--green-soft) 42%, var(--paper));
+    --page: color-mix(in srgb, var(--green-soft) 18%, var(--paper));
   }
   [data-section='works'] {
     --hi: var(--pink);
     --hi-soft: var(--pink-soft);
-    --page: color-mix(in srgb, var(--pink-soft) 42%, var(--paper));
+    --page: color-mix(in srgb, var(--pink-soft) 18%, var(--paper));
   }
   [data-section='articles'] {
     --hi: var(--blue);
     --hi-soft: var(--blue-soft);
-    --page: color-mix(in srgb, var(--blue-soft) 42%, var(--paper));
+    --page: color-mix(in srgb, var(--blue-soft) 18%, var(--paper));
   }
   [data-section='about'] {
     --hi: var(--yellow);
     --hi-soft: var(--yellow-soft);
-    --page: color-mix(in srgb, var(--yellow-soft) 42%, var(--paper));
+    --page: color-mix(in srgb, var(--yellow-soft) 18%, var(--paper));
   }
 
   /* The loose-leaf sheet. */
@@ -524,15 +509,15 @@
     padding-inline: 40px;
   }
 
-  /* Index tabs on the sheet's right edge. Each tab belongs to the page of the same color:
-     the current page's tab is cut from the sheet itself (no seam), the others peek out from behind it. */
+  /* Index tabs on the sheet's right edge. Each tab keeps its own paper color across pages;
+     the current page's tab stays slightly pulled out from the sheet edge. */
   .rail {
     position: absolute;
     z-index: 20;
     top: 64px;
     bottom: 64px;
     left: 100%;
-    width: calc(var(--tab) + 10px);
+    width: calc(var(--tab) + 12px);
   }
   /* The tabs stay on the sheet's edge where they are cut, scrolling with it like the paper's own
      tabs, instead of following the window. */
@@ -541,15 +526,10 @@
     flex-direction: column;
     gap: 8px;
   }
-  /* Every tab starts on the sheet's 2px edge. Under the pointer a tab is pulled out (--pull): the
-     whole tab, its icon and name with it, moves to the right, while its root (::before) stays on the
-     sheet's edge and fills what the move opens, so the tab never parts from the paper. The root
-     is moved back by as much as the tab, at the same pace, so on every frame it stays where it is
-     and reaches the tab; only transforms move. The root covers the tab's own left border. Another
-     page's tab has the sheet's line on its root, so the line runs on over it and it reads as tucked
-     behind; the current page's tab has none there, so it runs on from the sheet. (The tab's border
-     stays one colour all round: a clear side made Chrome draw its outer edge apart from its shadow,
-     with a seam between them when zoomed.) */
+  /* Every tab starts on the sheet's 2px edge. Under the pointer or on the current page a tab is
+     pulled out (--pull): the whole tab moves to the right while its root (::before) stays anchored
+     to the sheet's edge and covers the gap so the tab never parts from the paper. Keeping --tab-bg
+     constant prevents the active tab from washing out when its page opens. */
   .rail nav a {
     --pull: 0px;
     --tab-bg: color-mix(in srgb, var(--tab-soft) 78%, var(--paper));
@@ -572,16 +552,11 @@
     writing-mode: vertical-rl;
     translate: var(--pull) 0;
     box-shadow: 3px 3px 0 var(--drop);
-    /* A tab is pulled out as quickly as anything else answers the pointer; becoming the current
-       one, it settles at the pace of a change of state. */
-    transition:
-      translate var(--t-hover) var(--ease),
-      background-color var(--t-hover) var(--ease);
+    transition: translate var(--t-hover) var(--ease);
   }
-  /* The root (::before): from the sheet's edge to a little past the tab's own left side however
-     far it is pulled, in the tab's paper with its top and bottom lines. Under it (::after), the
-     bottom of the tab's shadow, from where it starts at rest on to under the tab. Each is drawn
-     apart and only over the same paper or ink of the tab, so no edge of theirs shows on it. */
+  /* The root (::before): from the sheet's edge to past the tab's own left side however far it is
+     pulled, in the tab's paper with its top, left and bottom lines. Under it (::after), the bottom
+     of the tab's shadow, from where it starts at rest on to under the tab. */
   .rail nav a::before,
   .rail nav a::after {
     content: '';
@@ -593,15 +568,15 @@
     top: -2px;
     bottom: -2px;
     left: -2px;
-    width: 10px;
+    width: 14px;
     border: 2px solid var(--edge);
     border-right: 0;
-    background-color: var(--tab-bg);
+    background: var(--tab-bg);
   }
   .rail nav a::after {
     top: calc(100% + 2px);
     left: 1px;
-    width: 5px;
+    width: 8px;
     height: 3px;
     background: var(--drop);
   }
@@ -617,11 +592,13 @@
     }
   }
   .rail nav a[aria-current='page'] {
-    --tab-bg: color-mix(in srgb, var(--tab-soft) 42%, var(--paper));
+    --pull: 6px;
+    color: var(--ink-heading);
     transition-duration: var(--t-state);
   }
   .rail nav a[aria-current='page']::before {
     border-left-color: transparent;
+    background: linear-gradient(90deg, var(--page) 0%, var(--tab-bg) 65%);
   }
   .rail nav a[data-tab='home'] {
     --tab-color: var(--green);
@@ -655,11 +632,12 @@
     border: 2px solid var(--edge);
     border-radius: 12px;
     background: var(--paper);
+    color: var(--ink-heading);
     font-size: var(--fs-h3);
     font-family: var(--hand);
     font-weight: 400;
     box-shadow: 2px 2px 0 var(--drop);
-    rotate: -1.5deg;
+    rotate: -0.8deg;
     transition:
       transform var(--t-hover) var(--ease),
       box-shadow var(--t-hover) var(--ease),
@@ -742,7 +720,7 @@
     font-weight: 400;
   }
   .footer-links a svg {
-    color: var(--faint);
+    color: var(--muted);
   }
   .footer-bottom {
     display: flex;
@@ -823,7 +801,6 @@
     margin-top: 8px;
     background: linear-gradient(transparent 60%, var(--hi-soft) 60%, var(--hi-soft) 94%, transparent 94%);
     width: fit-content;
-    padding-right: 4px;
   }
   .section-heading > h3 {
     display: flex;
@@ -991,20 +968,20 @@
         calc(100% - var(--perf)) no-repeat;
   }
   .og-image {
-    aspect-ratio: var(--image-ratio, 1.90476);
     width: 100%;
-    display: grid;
-    place-items: center;
   }
-  /* Out of flow, so the frame's size comes from its aspect ratio alone. */
+  /* Aspect ratio sits on the image itself (inside the stamp's padding) so padding never squashes it. */
   .og-image img {
-    position: absolute;
-    top: calc(var(--perf) * 0.9);
-    left: calc(var(--perf) * 0.9);
-    width: calc(100% - var(--perf) * 1.8);
-    height: calc(100% - var(--perf) * 1.8);
+    width: 100%;
+    height: auto;
+    aspect-ratio: var(--image-ratio, 1200 / 630);
     object-fit: contain;
     background: #fff;
+  }
+  .og-image.unavailable {
+    display: grid;
+    place-items: center;
+    aspect-ratio: var(--image-ratio, 1200 / 630);
   }
   .og-image.unavailable::after {
     content: '';
@@ -1132,7 +1109,7 @@
     position: relative;
     padding: 20px 18px 4px 20px;
     background: var(--yellow-soft);
-    rotate: 1.5deg;
+    rotate: 0.6deg;
     box-shadow: 2px 5px 0 -1px color-mix(in srgb, var(--drop) 20%, transparent);
   }
   .highlights::before {
@@ -1153,6 +1130,7 @@
     gap: 12px;
     min-height: 52px;
     padding: 6px 0;
+    color: var(--ink-heading);
     font-family: var(--hand);
     font-weight: 400;
     line-height: 1.6;
@@ -1189,50 +1167,9 @@
     margin: 0 0 0 auto;
   }
 
-  /* ── Home: the featured works, then the newest others on one line ── */
-  .home-recent-works {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: start;
-    gap: 8px 32px;
-    margin-top: 48px;
-    padding-top: 24px;
-    border-top: 2px dashed var(--rule);
-  }
-  /* A label for the two rows, a step below their names and on the first one's baseline. */
-  .home-recent-works h3 {
-    padding-top: 10px;
-    font-size: var(--fs-small);
-    line-height: 1.4;
-    white-space: nowrap;
-  }
-  .home-recent-works ul {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px 32px;
-  }
-  /* On the featured works' three columns: the label under the first, a work under each other.
-     Narrower, a column is too narrow for a work's sentence: the label goes over the two works,
-     which share the three columns' width. */
-  @media (min-width: 1201px) {
-    .home-recent-works {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .home-recent-works ul {
-      grid-column: 2 / 4;
-      grid-template-columns: subgrid;
-    }
-  }
-  /* Two works only, so each says all of its one sentence. */
-  .home-recent-works .work-row {
-    align-items: start;
-  }
-  .home-recent-works .work-row-picture {
-    align-self: start;
-    margin-top: 4px;
-  }
-  .home-recent-works .work-row-description {
-    white-space: normal;
+  /* ── Home: the featured works ── */
+  .home-works-more {
+    display: none;
   }
 
   /* ── Home: writing and the things he likes ── */
@@ -1304,7 +1241,7 @@
     margin-top: 72px;
     padding: 32px 24px 24px;
     background: var(--yellow-soft);
-    rotate: 1.5deg;
+    rotate: 0.6deg;
     box-shadow: 3px 6px 0 -1px color-mix(in srgb, var(--drop) 18%, transparent);
   }
   .home-likes::before {
@@ -1330,7 +1267,7 @@
      spaces. */
   .home-favorites {
     display: grid;
-    grid-template-columns: minmax(64px, 1fr) auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: auto auto;
     column-gap: 16px;
     margin-top: 16px;
@@ -1339,22 +1276,25 @@
     display: grid;
     grid-row: span 2;
     grid-template-rows: subgrid;
-    row-gap: 16px;
+    row-gap: 14px;
+    justify-items: start;
   }
   .favorite-stamp {
     --perf: 8px;
     --perf-hole: 2.4px;
     align-self: end;
-    width: min(100%, 140px);
-    rotate: -5deg;
+    width: 100%;
+    max-width: 148px;
+    rotate: -4deg;
   }
   .home-favorites a:last-child .favorite-stamp {
-    width: 84px;
-    rotate: 6deg;
+    width: min(100%, 92px);
+    rotate: 4deg;
   }
   .favorite-stamp img {
     width: 100%;
-    height: 76px;
+    height: auto;
+    aspect-ratio: 16 / 9;
     object-fit: cover;
   }
   /* The manga's whole cover, nothing cut from it: a stamp the cover's shape (480×682). */
@@ -1373,13 +1313,33 @@
     background: var(--pink);
     color: var(--on-color);
   }
+  .favorite-caption {
+    display: block;
+    min-width: 0;
+  }
+  .favorite-kind {
+    display: block;
+    margin-bottom: 2px;
+    font-size: var(--fs-small);
+    font-family: var(--hand);
+    font-weight: 400;
+    color: var(--muted);
+    line-height: 1.4;
+  }
   .favorite-name {
+    display: inline;
+    color: var(--ink-heading);
     font-size: var(--fs-small);
     font-family: var(--hand);
     font-weight: 400;
     line-height: 1.6;
     word-break: keep-all;
     overflow-wrap: break-word;
+  }
+  .home-likes-more {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
   }
 
   /* ── What answers the pointer ──
@@ -1389,37 +1349,31 @@
      else moves or changes colour. A keyboard focus shows the same, and a finger shows the
      highlighter at once while it presses. */
   :where(
-    .highlight-title,
-    .work-card-link,
-    .work-row-name,
+    .highlight-name,
+    .work-card-title,
     .article-row h3,
     .recent-title,
     .related-title,
-    .timeline-item h3,
+    .timeline-title,
     .music-item h4,
     .favorite-name,
-    .repo-name
+    .repo-name-text,
+    .intern-company
   ) {
     background: var(--marker-band) no-repeat 0 0 / var(--mark, 0%) 100%;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
     transition: background-size var(--mark-time, 0s) var(--ease);
   }
-  /* Titles that are boxes of their own (grid items) are marked line by line. */
-  :where(.highlight-title, .work-row-name, .favorite-name, .repo-name) {
-    justify-self: start;
-    background-repeat: repeat-y;
-    background-size: var(--mark, 0%) 1lh;
-  }
   :is(
     .highlights li a,
-    .work-row,
     .article-row,
     .recent-articles a,
     .related-articles a,
     .music-item,
     .home-favorites a,
-    .repo-activity a
+    .repo-activity a,
+    .intern-list button
   ):focus-visible,
   .work-card:has(.work-card-link:focus-visible),
   .timeline-item:has(button:focus-visible),
@@ -1433,12 +1387,12 @@
     :is(
       .highlights li a,
       .work-card,
-      .work-row,
       .related-articles a,
       .timeline-item:has(button:hover),
       .music-item,
       .home-favorites a,
-      .repo-activity a
+      .repo-activity a,
+      .intern-list button
     ):hover {
       --mark: 100%;
       --mark-time: var(--t-state);
@@ -1459,14 +1413,14 @@
   :is(
     .highlights li a,
     .work-card,
-    .work-row,
     .article-row,
     .recent-articles a,
     .related-articles a,
     .timeline-item:has(button),
     .music-item,
     .home-favorites a,
-    .repo-activity a
+    .repo-activity a,
+    .intern-list button
   ):active {
     --mark: 100%;
     --mark-time: 0s;
@@ -1508,11 +1462,6 @@
     font-size: var(--fs-display);
     line-height: 1.1;
   }
-  .profile-intro > p:not(.eyebrow) {
-    margin-top: 16px;
-    font-size: var(--fs-lead);
-    line-height: 1.9;
-  }
   .profile-links {
     display: flex;
     flex-wrap: wrap;
@@ -1552,54 +1501,50 @@
     box-shadow: 0 0 0 var(--drop);
     transition-duration: var(--t-press);
   }
-  /* What got faster, as a sheet of stamps: where (the country name), what, and the figure as the
-     denomination. Each opens the history entry it came from. */
-  .speed-section {
-    margin-bottom: 96px;
+  /* Flagship award stamps and internship cards on /about; each opens its milestone dialog. */
+  .awards-section {
+    margin-bottom: 64px;
   }
-  .speed-stamps {
+  .award-stamps {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
   }
-  .speed-stamps > li:nth-child(odd) {
-    rotate: -1.5deg;
+  .award-stamps > li:nth-child(odd) {
+    rotate: -0.75deg;
   }
-  .speed-stamps > li:nth-child(even) {
-    rotate: 1.5deg;
+  .award-stamps > li:nth-child(even) {
+    rotate: 0.75deg;
   }
-  .speed-stamps > li:nth-child(5n + 1) {
+  .award-stamps > li:nth-child(4n + 1) {
     --tint: var(--yellow-soft);
   }
-  .speed-stamps > li:nth-child(5n + 2) {
-    --tint: var(--blue-soft);
-  }
-  .speed-stamps > li:nth-child(5n + 3) {
+  .award-stamps > li:nth-child(4n + 2) {
     --tint: var(--pink-soft);
   }
-  .speed-stamps > li:nth-child(5n + 4) {
+  .award-stamps > li:nth-child(4n + 3) {
+    --tint: var(--blue-soft);
+  }
+  .award-stamps > li:nth-child(4n) {
     --tint: var(--green-soft);
   }
-  .speed-stamps > li:nth-child(5n) {
-    --tint: color-mix(in srgb, var(--yellow-soft) 50%, var(--pink-soft));
-  }
-  .speed-stamps button {
+  .award-stamps button {
     position: relative;
     isolation: isolate;
     display: flex;
     flex-direction: column;
+    gap: 4px;
     width: 100%;
     height: 100%;
-    min-height: 150px;
-    padding: 24px 20px 20px;
+    min-height: 128px;
+    padding: 22px 18px 18px;
     text-align: start;
     line-height: 1.5;
     word-break: auto-phrase;
     filter: var(--stamp-shadow);
   }
-  /* The perforated paper, and the printed area inside it. */
-  .speed-stamps button::before,
-  .speed-stamps button::after {
+  .award-stamps button::before,
+  .award-stamps button::after {
     content: '';
     position: absolute;
     z-index: -2;
@@ -1612,7 +1557,7 @@
       radial-gradient(circle, transparent 4px, #000 4.5px) -6px -6px / 12px 12px,
       linear-gradient(#000, #000) 6px 6px / calc(100% - 12px) calc(100% - 12px) no-repeat;
   }
-  .speed-stamps button::after {
+  .award-stamps button::after {
     z-index: -1;
     inset: 12px;
     border-radius: 2px;
@@ -1620,56 +1565,120 @@
     -webkit-mask: none;
     mask: none;
   }
-  /* A stamp that is itself the link answers only by lifting off the paper. */
-  .speed-stamps button:focus-visible {
+  .award-stamps button:focus-visible {
     filter: var(--stamp-shadow-up);
   }
   @media (hover: hover) {
-    .speed-stamps button {
+    .award-stamps button {
       transition: filter var(--t-hover) var(--ease);
     }
-    .speed-stamps button:hover {
+    .award-stamps button:hover {
       filter: var(--stamp-shadow-up);
     }
   }
-  /* Where, like a stamp's country name. */
-  .speed-place {
+  .award-year {
     font-size: var(--fs-small);
-    font-family: var(--hand);
-    font-weight: 400;
-    line-height: 1.4;
+    color: var(--muted);
+    line-height: 1.3;
   }
-  .speed-what {
-    margin-top: 4px;
-    font-size: var(--fs-body);
-  }
-  /* The figures sit on the bottom edge, so they line up across the sheet. */
-  .speed-figure {
-    display: grid;
-    margin-top: auto;
-    padding-top: 12px;
-    line-height: 1.2;
-  }
-  .speed-from {
+  .award-event {
     font-size: var(--fs-ui);
+    font-family: var(--round);
+    font-weight: var(--round-weight);
+    color: var(--ink);
+    line-height: 1.45;
   }
-  .speed-figure strong {
-    font-size: var(--fs-small);
+  .award-result {
+    margin-top: auto;
+    padding-top: 8px;
+    font-size: var(--fs-title);
     font-family: var(--hand);
     font-weight: 400;
+    color: var(--ink-heading);
+    line-height: 1.35;
+  }
+  .interns-section {
+    margin-bottom: 80px;
+  }
+  .intern-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+  }
+  .intern-list button {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+    width: 100%;
+    height: 100%;
+    min-height: 56px;
+    padding: 14px 16px;
+    border: 2px solid var(--edge);
+    border-radius: 12px;
+    background: var(--paper);
+    box-shadow: 3px 3px 0 var(--drop);
+    text-align: start;
+    transition:
+      transform var(--t-hover) var(--ease),
+      box-shadow var(--t-hover) var(--ease);
+  }
+  .intern-list button:focus-visible {
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--drop);
+  }
+  @media (hover: hover) {
+    .intern-list button:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0 var(--drop);
+    }
+  }
+  .intern-list button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--drop);
+    transition-duration: var(--t-press);
+  }
+  .intern-body {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+  .intern-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+  }
+  .intern-company {
+    display: inline;
+    font-size: var(--fs-title);
+    font-family: var(--hand);
+    font-weight: 400;
+    color: var(--ink-heading);
+    line-height: 1.45;
+  }
+  .intern-period {
+    font-size: var(--fs-small);
+    color: var(--muted);
     white-space: nowrap;
   }
-  .speed-figure strong > span {
-    margin-inline: 1px;
-    font-size: var(--fs-h2);
+  .intern-summary {
+    font-size: var(--fs-body);
+    color: var(--ink);
+    line-height: 1.6;
   }
-  /* The name tag of affiliations, then the history under it: nothing follows the reader down
-     the page, and no column is left empty beside the long history. */
+  .intern-chevron {
+    height: 1lh;
+    color: var(--muted);
+    translate: var(--step, 0) 0;
+    transition: translate var(--t-hover) var(--ease);
+  }
+  /* Affiliations beside the history on wide viewports; stacked below 960px. */
   .profile-history-layout {
     display: grid;
-    gap: 64px;
+    gap: 56px;
   }
-  /* Affiliations: a name tag clipped to the page, its places in two columns where they fit. */
+  /* Affiliations: a name tag clipped to the page. */
   .profile-details {
     position: relative;
     width: min(100%, 720px);
@@ -1678,9 +1687,9 @@
     border-radius: 16px;
     background: var(--paper);
     box-shadow: 5px 5px 0 var(--drop);
-    rotate: -1deg;
+    rotate: -0.4deg;
   }
-  @media (min-width: 761px) {
+  @media (min-width: 641px) and (max-width: 960px) {
     .profile-affiliations {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       column-gap: 32px;
@@ -1716,10 +1725,6 @@
     font-family: var(--hand);
     font-weight: 400;
     line-height: 1.6;
-    /* Wrap between phrases, never inside a word. */
-    word-break: keep-all;
-    word-break: auto-phrase;
-    overflow-wrap: anywhere;
   }
   /* Each place's own logo is its bullet; the clover stands in for one without a logo. */
   .profile-affiliations li:not(:has(> a > .brand-icon))::before {
@@ -1732,19 +1737,29 @@
     background: url('/stamps/clover.svg') center / contain no-repeat;
   }
   .profile-affiliations a {
-    background: linear-gradient(var(--hi), var(--hi)) no-repeat 0 100% / 0% 2px;
-    transition: background-size var(--t-hover) var(--ease);
+    justify-self: start;
+    width: fit-content;
+    max-width: 100%;
+    color: var(--ink-heading);
   }
   .profile-affiliations small a {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    color: var(--ink);
   }
-  .profile-affiliations a:focus-visible {
+  .affiliation-label {
+    display: inline;
+    background: linear-gradient(var(--hi), var(--hi)) no-repeat 0 100% / 0% 2px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    transition: background-size var(--t-hover) var(--ease);
+  }
+  .profile-affiliations a:focus-visible .affiliation-label {
     background-size: 100% 2px;
   }
   @media (hover: hover) {
-    .profile-affiliations a:hover {
+    .profile-affiliations a:hover .affiliation-label {
       background-size: 100% 2px;
     }
   }
@@ -1779,6 +1794,29 @@
     padding: 16px 0;
     border-radius: 10px;
   }
+  @media (min-width: 961px) {
+    .profile-history-layout {
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 48px;
+      align-items: start;
+    }
+    .profile-details {
+      position: sticky;
+      top: 32px;
+      width: 100%;
+      padding: 28px 20px 20px;
+    }
+    .timeline {
+      --route-x: 94px;
+    }
+    .timeline-item {
+      grid-template-columns: 76px minmax(0, 1fr);
+      gap: 36px;
+    }
+    .history > .section-heading {
+      padding-left: 112px;
+    }
+  }
   /* Each checkpoint on the route is the entry's mark (see .highlights), centred on the route and
      on the title's first line. */
   .timeline-item > .kind-mark {
@@ -1808,14 +1846,22 @@
     font-size: var(--fs-body);
     line-height: 1.8;
   }
-  /* What came of it, its figures, is written by hand into the printed line, a step larger. */
+  /* Emphasized phrases step up to the printed face's bold weight with a subtle marker underline. */
   .timeline-item p strong,
   .modal-sheet > p strong {
-    font-family: var(--hand);
-    font-weight: 400;
-    font-size: var(--fs-lead);
-    line-height: 1;
-    white-space: nowrap;
+    font-family: var(--round);
+    font-weight: 700;
+    color: var(--ink-heading);
+    background: linear-gradient(
+      transparent 66%,
+      color-mix(in srgb, var(--hi-soft) 90%, transparent) 66%,
+      color-mix(in srgb, var(--hi-soft) 90%, transparent) 95%,
+      transparent 95%
+    );
+    padding: 0 2px;
+    border-radius: 2px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
   /* The title is the button; its ::after stretches the hit area over the whole entry. */
   .timeline-item h3 button {
@@ -1845,16 +1891,16 @@
     margin-left: 8px;
     border: 2px solid var(--edge);
     border-radius: 50%;
-    background: var(--paper);
+    background: var(--hi-soft);
     vertical-align: -4px;
     transition: background-color var(--t-hover) var(--ease);
   }
   .timeline-item:has(button:focus-visible) .timeline-more {
-    background: var(--marker);
+    background: var(--hi);
   }
   @media (hover: hover) {
     .timeline-item:has(button:hover) .timeline-more {
-      background: var(--marker);
+      background: var(--hi);
     }
   }
   .favorites-heading {
@@ -1911,11 +1957,24 @@
     fill: currentColor;
     margin-left: 3px;
   }
-  .music-item:nth-child(odd) {
-    rotate: -0.8deg;
+  .music-item:nth-child(odd) .music-image {
+    rotate: -0.75deg;
   }
-  .music-item:nth-child(even) {
-    rotate: 0.8deg;
+  .music-item:nth-child(even) .music-image {
+    rotate: 0.75deg;
+  }
+  /* On touch screens without hover, show a compact play badge on the corner so items read as videos. */
+  @media (hover: none) {
+    .play-symbol {
+      top: auto;
+      left: auto;
+      right: 10px;
+      bottom: 10px;
+      width: 38px;
+      height: 38px;
+      margin: 0;
+      opacity: 1;
+    }
   }
   /* The play button only fades: a moving layer is assumed to overlap the title below it, which
      Chromium then draws as a separate (tilted) layer and the text goes soft until the hover ends. */
@@ -2218,7 +2277,7 @@
     display: inline-block;
     margin-left: 4px;
     vertical-align: -1px;
-    color: var(--faint);
+    color: var(--muted);
   }
   .book-caption span {
     display: block;
@@ -2276,6 +2335,37 @@
   .modal:focus {
     outline: none;
   }
+  .modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin: -6px -8px 0 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--muted);
+    flex-shrink: 0;
+    transition:
+      background-color var(--t-hover) var(--ease),
+      color var(--t-hover) var(--ease);
+  }
+  .modal-close:focus-visible {
+    background: color-mix(in srgb, var(--ink) 8%, transparent);
+    color: var(--ink-heading);
+  }
+  @media (hover: hover) {
+    .modal-close:hover {
+      background: color-mix(in srgb, var(--ink) 7%, transparent);
+      color: var(--ink-heading);
+    }
+  }
+  .modal-close:active {
+    background: color-mix(in srgb, var(--ink) 12%, transparent);
+    color: var(--ink-heading);
+    transition-duration: var(--t-press);
+  }
   .modal-meta {
     display: flex;
     gap: 8px;
@@ -2307,8 +2397,7 @@
     word-break: auto-phrase;
   }
   /* Their underline and its answer to the pointer are with the footer's (layout). */
-  .modal-links a,
-  .credits a {
+  .modal-links a {
     font-family: var(--hand);
     font-weight: 400;
   }
@@ -2334,7 +2423,8 @@
     color: var(--muted);
   }
   .credits a {
-    font-weight: 400;
+    font-family: var(--round);
+    font-weight: var(--round-weight);
   }
   /* Only the list of covers is laid out as items; other entries are running text. */
   .credits .credits-list {
@@ -2371,6 +2461,7 @@
     position: absolute;
     top: 10px;
     right: 10px;
+    margin: 0;
   }
   .qr-code {
     width: min(264px, 100%);
@@ -2573,11 +2664,17 @@
     transform-origin: 50% 0;
   }
   .stamp-menu > button {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: var(--fs-small);
+    font-family: var(--hand);
+    font-weight: 400;
+    white-space: nowrap;
     transition: background-color var(--t-hover) var(--ease);
   }
   .stamp-menu > .stamp-peel {
@@ -2663,7 +2760,7 @@
     z-index: 60;
     right: 20px;
     bottom: 20px;
-    width: 300px;
+    width: 316px;
     padding: 10px 12px 10px;
     border: 2px solid var(--edge);
     border-radius: 18px;
@@ -2671,7 +2768,7 @@
       linear-gradient(135deg, rgb(255 255 255 / 0.7), transparent 45%),
       repeating-linear-gradient(-45deg, transparent 0 9px, rgb(255 255 255 / 0.35) 9px 11px), var(--sheet);
     box-shadow: 4px 4px 0 var(--drop);
-    rotate: -1.5deg;
+    rotate: 0deg;
     view-transition-name: stickers;
     transition:
       translate var(--t-state) var(--ease),
@@ -2710,6 +2807,9 @@
   }
   /* A fingertip gets a larger button, and a little more around it that still counts. */
   @media (pointer: coarse) {
+    .sticker-sheet-head {
+      gap: 2px;
+    }
     .sheet-tool {
       position: relative;
       width: 36px;
@@ -2776,8 +2876,9 @@
   }
   .sticker-hint {
     margin: 8px 2px 2px;
-    font-size: 0.8125rem;
-    line-height: 1.6;
+    font-size: var(--fs-small);
+    line-height: 1.55;
+    color: var(--muted);
     word-break: auto-phrase;
   }
   .stamp-status {
@@ -2863,6 +2964,27 @@
   .sticker-pips > span[data-used] {
     background: var(--seal);
     scale: 0.85;
+  }
+  .sticker-remaining {
+    margin-left: 6px;
+    font-size: var(--fs-small);
+    font-family: var(--round);
+    font-weight: var(--round-weight);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  @media (pointer: coarse) {
+    .sticker-pips {
+      gap: 2px;
+      margin-left: 4px;
+    }
+    .sticker-pips > span {
+      width: 8px;
+      height: 8px;
+    }
+    .sticker-remaining {
+      margin-left: 4px;
+    }
   }
   .sticker-sheet[data-saving] .sticker-pips > span[data-used] {
     animation: pip-saving 900ms var(--ease) infinite alternate;
@@ -3043,17 +3165,11 @@
     animation: none;
     backface-visibility: hidden;
   }
-  /* The eye sits just off the binding. Right on it (perspective() in the turning transform), the
-     page at 90deg is edge-on to the eye and Chromium re-rasterizes the live page, the new one on
-     a turn back, at every step of the turn. */
+  /* The viewer watches the center of the sheet from a natural reading distance, avoiding close-up
+     foreshortening while the turning page pivots around its binding edge. */
   ::view-transition-image-pair(root) {
-    perspective: 3200px;
-  }
-  :root[data-flip='forward']::view-transition-image-pair(root) {
-    perspective-origin: calc(var(--flip-old-left) + 48px) 50%;
-  }
-  :root[data-flip='back']::view-transition-image-pair(root) {
-    perspective-origin: calc(var(--flip-new-left) + 48px) 50%;
+    perspective: 4600px;
+    perspective-origin: 50% 48%;
   }
   :root[data-flip='fade']::view-transition-old(root) {
     animation: page-out var(--t-hover) var(--ease) both;
@@ -3063,29 +3179,107 @@
   }
   :root[data-flip='forward']::view-transition-old(root) {
     z-index: 1;
+    mix-blend-mode: normal;
     clip-path: inset(
-      var(--flip-old-top) var(--flip-old-right) var(--flip-old-bottom) var(--flip-old-left) round 26px
+      var(--flip-old-top) var(--flip-old-right) var(--flip-old-bottom) var(--flip-old-left) round
+        var(--sheet-radius)
     );
     transform-origin: var(--flip-old-left) 50%;
-    animation: turn-away var(--t-page) var(--ease-turn) both;
+    animation: turn-away var(--t-page) cubic-bezier(0.36, 0.06, 0.22, 1) both;
+  }
+  :root[data-flip='forward']::view-transition-new(root) {
+    mix-blend-mode: normal;
+    clip-path: inset(
+      var(--flip-new-top) var(--flip-new-right) var(--flip-new-bottom) var(--flip-new-left) round
+        var(--sheet-radius)
+    );
+    animation: page-reveal var(--t-page) var(--ease) both;
   }
   /* The new image already paints above the old one; a z-index here hides the old image in Chromium. */
   :root[data-flip='back']::view-transition-new(root) {
+    mix-blend-mode: normal;
     clip-path: inset(
-      var(--flip-new-top) var(--flip-new-right) var(--flip-new-bottom) var(--flip-new-left) round 26px
+      var(--flip-new-top) var(--flip-new-right) var(--flip-new-bottom) var(--flip-new-left) round
+        var(--sheet-radius)
     );
     transform-origin: var(--flip-new-left) 50%;
-    animation: turn-back var(--t-page) var(--ease-turn) both;
+    animation: turn-back var(--t-page) cubic-bezier(0.22, 0.78, 0.28, 1) both;
+  }
+  :root[data-flip='back']::view-transition-old(root) {
+    mix-blend-mode: normal;
+    clip-path: inset(
+      var(--flip-old-top) var(--flip-old-right) var(--flip-old-bottom) var(--flip-old-left) round
+        var(--sheet-radius)
+    );
+    animation: page-shade var(--t-page) var(--ease) both;
   }
   @keyframes turn-away {
-    to {
-      transform: rotateY(-90deg);
+    0% {
+      transform: rotateY(0deg);
+      filter: brightness(1);
+      opacity: 1;
+    }
+    30% {
+      filter: brightness(0.94);
+      opacity: 0.9;
+    }
+    72% {
+      filter: brightness(0.88);
+      opacity: 0.32;
+    }
+    100% {
+      transform: rotateY(-85deg);
+      filter: brightness(0.84);
+      opacity: 0;
     }
   }
-  /* Starts just short of edge-on, so its edge shows from the first frame. */
+  @keyframes page-reveal {
+    0% {
+      filter: brightness(0.93);
+      opacity: 0;
+    }
+    72% {
+      filter: brightness(0.98);
+      opacity: 1;
+    }
+    100% {
+      filter: brightness(1);
+      opacity: 1;
+    }
+  }
+  /* Turns back onto the stack with subtle page shading and fade-in from above. */
   @keyframes turn-back {
-    from {
-      transform: rotateY(-88deg);
+    0% {
+      transform: rotateY(-85deg);
+      filter: brightness(0.84);
+      opacity: 0;
+    }
+    28% {
+      filter: brightness(0.88);
+      opacity: 0.36;
+    }
+    72% {
+      filter: brightness(0.95);
+      opacity: 0.92;
+    }
+    100% {
+      transform: rotateY(0deg);
+      filter: brightness(1);
+      opacity: 1;
+    }
+  }
+  @keyframes page-shade {
+    0% {
+      filter: brightness(1);
+      opacity: 1;
+    }
+    28% {
+      filter: brightness(0.98);
+      opacity: 1;
+    }
+    100% {
+      filter: brightness(0.92);
+      opacity: 0;
     }
   }
   /* Only the page the visit starts on settles onto the paper, and its stamps are pressed on.
@@ -3379,16 +3573,6 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
-  /* The label of the newest works over them (beside them from 1201px, on the featured works'
-     columns). */
-  @media (max-width: 1200px) {
-    .home-recent-works {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .home-recent-works h3 {
-      padding-top: 0;
-    }
-  }
   /* Narrower still: the note goes under the name. */
   @media (max-width: 1000px) {
     .home-intro {
@@ -3431,11 +3615,12 @@
   @media (max-width: 760px) {
     /* ...and of the tabs along the bottom edge, which are there even without the sticker tab. */
     html {
-      --tabs-cover: calc(58px + env(safe-area-inset-bottom));
+      --tabs-cover: calc(62px + env(safe-area-inset-bottom));
     }
     /* A page's title a step smaller on a phone: a work's name still fits a line or two. */
     :root {
       --fs-h1: 2.25rem;
+      --sheet-radius: 20px;
     }
     /* 「ページが見つかりません」 stays one line (10em in the hand-written face). */
     .not-found h1 {
@@ -3446,7 +3631,7 @@
     }
     body {
       /* Room to scroll the last links above an open sticker sheet (raised inline by Stamps.tsx). */
-      padding: 10px 0 96px;
+      padding: 10px 0 104px;
     }
     .site-body {
       width: calc(100% - 20px);
@@ -3471,8 +3656,8 @@
     .wrap {
       padding-inline: 18px;
     }
-    /* Tabs peek up from the bottom edge of the screen. Fixed over the page, they stay above the
-       stickers (.stamp-layer) scrolling under them, but below the placement overlay and the sheet. */
+    /* Tabs peek up from the bottom edge of the screen, inset clearly from the sheet borders so
+       their edges do not align with the sheet frame behind them. */
     .rail {
       position: fixed;
       z-index: 30;
@@ -3482,9 +3667,8 @@
       bottom: 0;
       width: auto;
       margin: 0;
-      /* The sticker button takes the right end of the row, beside the tabs, so it never sits on
-         the text above them. */
-      padding: 0 62px 0 10px;
+      padding: 0 70px 0 18px;
+      pointer-events: none;
     }
     .rail nav {
       position: static;
@@ -3494,10 +3678,11 @@
     .rail nav a {
       flex: 1;
       width: auto;
+      flex-direction: column;
       justify-content: center;
-      gap: 5px;
-      height: 58px;
-      padding: 0 0 max(8px, env(safe-area-inset-bottom));
+      gap: 4px;
+      height: calc(62px + env(safe-area-inset-bottom));
+      padding: 6px 4px calc(10px + env(safe-area-inset-bottom));
       border: 2px solid var(--edge);
       border-bottom: 0;
       border-radius: 16px 16px 0 0;
@@ -3506,12 +3691,13 @@
       white-space: nowrap;
       margin: 0;
       writing-mode: horizontal-tb;
-      translate: 0 10px;
+      translate: 0 6px;
       box-shadow: none;
+      pointer-events: auto;
     }
     @media (hover: hover) {
       .rail nav a:not([aria-current]):hover {
-        translate: 0 6px;
+        translate: 0 3px;
       }
     }
     /* A tab rises from the bottom of the screen, so it has no root on the sheet's side. */
@@ -3521,6 +3707,7 @@
     }
     .rail nav a[aria-current='page'] {
       width: auto;
+      background: var(--tab-bg);
       translate: 0 0;
     }
     /* A tab in the row shows the short label (プロフ for プロフィール); the full one stays its name. */
@@ -3560,8 +3747,8 @@
        the featured works' heading shows under them. */
     .home-intro {
       grid-template-columns: minmax(0, 1fr);
-      gap: 16px;
-      padding: 16px 0 22px;
+      gap: 12px;
+      padding: 16px 0 14px;
     }
     .home-hello {
       grid-template-areas:
@@ -3576,7 +3763,7 @@
     }
     .home-hello h1 {
       gap: 2px 12px;
-      font-size: 3rem;
+      font-size: 2.5rem;
     }
     .modal-sheet {
       padding: 16px 16px 24px;
@@ -3586,17 +3773,17 @@
       font-size: 0.9375rem;
     }
     .home-facts {
-      margin-top: 12px;
+      margin-top: 10px;
       font-size: var(--fs-body);
       line-height: 1.75;
     }
     .home-accounts {
       gap: 12px;
-      margin-top: 12px;
+      margin-top: 10px;
     }
     .highlights {
-      padding: 16px 12px 4px 12px;
-      rotate: 0.8deg;
+      padding: 14px 12px 4px;
+      rotate: 0deg;
     }
     .highlights li a {
       gap: 10px;
@@ -3610,39 +3797,39 @@
       display: none;
     }
     .home-works .section-heading {
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     /* The works' tab is at the foot of the screen, and on a short phone (375×548) this link would sit
        under the sticker tab. */
     .home-works .section-heading .under-link {
       display: none;
     }
-    .home-recent-works {
-      margin-top: 40px;
-    }
-    .home-recent-works ul {
-      grid-template-columns: minmax(0, 1fr);
+    .home-works-more {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 16px;
     }
     .home-middle {
       gap: 48px;
       margin-top: 72px;
     }
-    /* The song and the manga side by side across the note, 24px apart (the song's mark sticks
-       out 10px): the song's stamp takes the width the manga's column leaves (its 16:9 picture
-       whole), and the cover its size beside the desk's, so the two read as one pair about as tall
-       as each other instead of two small stamps at the note's two ends. */
+    .home-likes {
+      margin-top: 56px;
+      padding: 28px 18px 20px;
+      rotate: 0deg;
+    }
+    .profile-details {
+      rotate: 0deg;
+    }
     .home-favorites {
-      column-gap: 24px;
+      column-gap: 20px;
     }
     .home-favorites .favorite-stamp {
       width: 100%;
+      max-width: 160px;
     }
     .home-favorites a:last-child .favorite-stamp {
-      width: 84px;
-    }
-    .home-favorites a:first-child .favorite-stamp img {
-      height: auto;
-      aspect-ratio: 16 / 9;
+      width: min(100%, 104px);
     }
     .music-list {
       grid-template-columns: minmax(0, 1fr);
@@ -3688,9 +3875,6 @@
     .profile-avatar .avatar-stamp {
       width: 140px;
     }
-    .desktop-break {
-      display: none;
-    }
     .timeline {
       --route-x: 8px;
       --seal-top: 14px;
@@ -3724,16 +3908,16 @@
     }
     .sticker-sheet {
       right: 10px;
-      bottom: 66px;
-      width: min(300px, calc(100vw - 20px));
+      bottom: calc(70px + env(safe-area-inset-bottom));
+      width: min(316px, calc(100vw - 20px));
       padding: 8px 10px;
       rotate: 0deg;
     }
     .sticker-tab {
-      right: 10px;
-      bottom: calc(4px + env(safe-area-inset-bottom));
-      width: 44px;
-      height: 44px;
+      right: 16px;
+      bottom: calc(7px + env(safe-area-inset-bottom));
+      width: 46px;
+      height: 46px;
       font-size: var(--fs-small);
     }
     .stamp-choices {
@@ -3742,61 +3926,43 @@
     }
   }
   /* ── About on narrower pages ── */
-  /* Five stamps in a row need about 170px each; below that they go three to a row, the last two
-     centred like a part-used sheet. */
-  @media (max-width: 1239px) {
-    .speed-stamps {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .speed-stamps > li {
-      flex: 0 0 calc((100% - 44px) / 3);
+  @media (max-width: 1000px) {
+    .award-stamps {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
     }
   }
   @media (max-width: 760px) {
-    /* A strip of stamps, each as wide as its figure, that the finger slides along; the next one
-       peeks in at the edge. */
-    .speed-section {
-      margin-bottom: 72px;
+    .awards-section {
+      margin-bottom: 56px;
     }
-    .speed-section .section-heading {
-      margin-bottom: 8px;
-    }
-    .speed-stamps {
-      flex-wrap: nowrap;
-      justify-content: start;
+    .award-stamps {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
-      margin-inline: -18px;
-      padding: 8px 18px 14px;
-      overflow-x: auto;
-      overscroll-behavior-x: contain;
-      scroll-snap-type: x mandatory;
-      scroll-padding-inline: 18px;
-      scrollbar-width: none;
     }
-    .speed-stamps::-webkit-scrollbar {
-      display: none;
+    .award-stamps > li:nth-child(odd),
+    .award-stamps > li:nth-child(even) {
+      rotate: 0deg;
     }
-    .speed-stamps > li {
-      flex: 0 0 auto;
-      scroll-snap-align: start;
+    .award-stamps button {
+      min-height: 112px;
+      padding: 18px 16px 16px;
     }
-    .speed-stamps button {
-      width: max-content;
-      min-width: 136px;
-      max-width: 200px;
-      min-height: 0;
-      padding: 20px 18px 18px;
+    .interns-section {
+      margin-bottom: 64px;
     }
-    .speed-figure strong > span {
-      font-size: 1.75rem;
+    .intern-list {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+    }
+    .intern-list button {
+      padding: 12px 14px;
     }
     /* The avatar beside the name as on the home page, so the speed-ups start within the first
        screen. */
     .profile-header {
       grid-template-columns: 76px minmax(0, 1fr);
-      grid-template-areas: 'avatar name' 'text text' 'links links';
+      grid-template-areas: 'avatar name' 'links links';
       align-items: center;
       gap: 0 16px;
       padding: 16px 0 40px;
@@ -3815,13 +3981,7 @@
       grid-area: name;
       gap: 2px 12px;
       margin-top: 0;
-      font-size: 3rem;
-    }
-    .profile-intro > p:not(.eyebrow) {
-      grid-area: text;
-      margin-top: 16px;
-      font-size: var(--fs-body);
-      line-height: 1.9;
+      font-size: 2.5rem;
     }
     .profile-links {
       grid-area: links;
@@ -3834,9 +3994,6 @@
     }
     .music-item > div:last-child {
       padding: 8px 0 0;
-    }
-    .sticker-tab {
-      height: 44px;
     }
     /* Nothing smaller than 13px on a phone. */
     .profile-affiliations small,
@@ -3864,22 +4021,9 @@
       font-size: var(--fs-body);
     }
   }
-  @media (max-width: 380px) {
-    .speed-stamps {
-      margin-inline: -14px;
-      padding-inline: 14px;
-      scroll-padding-inline: 14px;
-    }
-  }
   /* A short window beside the sheet (a laptop, or the page zoomed in): the tabs keep only their
      names, so all four end above the sticker button in the corner. */
   @media (min-width: 761px) and (max-height: 720px) {
-    .rail nav a > svg {
-      display: none;
-    }
-  }
-  /* Below this, a tab is too narrow for the icon and the longest label (ホーム, プロフ) on one line. */
-  @media (max-width: 370px) {
     .rail nav a > svg {
       display: none;
     }
@@ -3892,7 +4036,7 @@
       padding-inline: 14px;
     }
     .home-hello h1 {
-      font-size: 2.25rem;
+      font-size: 2.125rem;
     }
   }
   /* High-contrast modes replace backgrounds with Canvas, so states shown by a fill alone
@@ -4317,11 +4461,14 @@
     pointer-events: none;
   }
   .article-row > .og-image {
+    rotate: -0.8deg;
+  }
+  .article-row > .og-image img,
+  .article-row > .og-image.unavailable {
     aspect-ratio: 1200 / 630;
-    rotate: -1.5deg;
   }
   .article-row:nth-child(even of :not([hidden])) > .og-image {
-    rotate: 1.2deg;
+    rotate: 0.7deg;
   }
   .article-text {
     min-width: 0;
@@ -4330,17 +4477,23 @@
      marked while it or its stamp on the card is pointed at (data-hot, "What answers the
      pointer"). */
   .article-row h3 {
-    font-size: var(--fs-body);
+    color: var(--ink-heading);
+    font-size: 1rem;
     line-height: 1.6;
   }
   .article-meta {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 2px 6px;
     margin-top: 2px;
     font-size: var(--fs-small);
     color: var(--muted);
     line-height: 1.6;
+  }
+  .article-meta > span:first-of-type,
+  .article-meta time {
+    white-space: nowrap;
   }
   .article-meta .source-icon {
     width: 16px;
@@ -4357,7 +4510,8 @@
     min-height: 48px;
     padding: 12px 0 12px 32px;
     border-bottom: 1.5px dashed color-mix(in srgb, var(--edge) 22%, transparent);
-    font-size: var(--fs-body);
+    color: var(--ink-heading);
+    font-size: 1rem;
     font-family: var(--hand);
     font-weight: 400;
     line-height: 1.6;
@@ -4370,8 +4524,11 @@
     width: 18px;
     height: 18px;
   }
-  .recent-articles time {
-    display: block;
+  .recent-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 4px;
     margin-top: 2px;
     font-size: var(--fs-small);
     font-family: var(--round);

@@ -23,3 +23,16 @@ export const tiledSources = Object.keys(TILES);
 /** The tile of an article's source (its host name), if it has one. */
 export const sourceTile = (source: string): string | undefined =>
   TILES[source] && `/images/brands/tiles/${TILES[source]}.svg`;
+
+const SOURCE_LABELS: Record<string, string> = {
+  'blog.cp20.dev': '個人ブログ',
+  'trap.jp': 'traP ブログ',
+  'zenn.dev': 'Zenn',
+  'qiita.com': 'Qiita',
+  'note.com': 'note',
+  'sizu.me': 'しずかなインターネット',
+  'm3tech.blog': 'M3 Tech Blog',
+};
+
+/** Human-friendly label for an article's publication source. */
+export const sourceLabel = (source: string): string => SOURCE_LABELS[source] ?? source;

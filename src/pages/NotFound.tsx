@@ -8,9 +8,10 @@ import { featuredIds } from '../data/editorial.ts';
 import { workPath } from '../site/pages.ts';
 // The other pages, with the icons of their index tabs.
 const pages: { href: string; label: string; icon: IconName }[] = [
+  { href: '/', label: 'ホーム', icon: 'Grid2x2' },
   { href: '/works', label: '作品一覧', icon: 'Folder' },
-  { href: '/about', label: 'プロフィール', icon: 'UserRound' },
   { href: '/articles', label: '記事', icon: 'FileText' },
+  { href: '/about', label: 'プロフィール', icon: 'UserRound' },
 ];
 const featured = featuredIds.flatMap((id) => works.filter((w) => w.id === id));
 export default function NotFound() {
@@ -29,7 +30,11 @@ export default function NotFound() {
         <wbr />
         見つかりません。
       </h1>
-      <p class="not-found-lead">アドレスが変わったか、まちがっているかもしれません。</p>
+      <p class="not-found-lead">
+        {missingWork()
+          ? 'お探しの作品ページが見つかりませんでした。下の作品一覧から選んでみてください。'
+          : 'URL が変わったか、入力がまちがっているかもしれません。代表作やほかのページから探してみてください。'}
+      </p>
       <Show
         when={missingWork()}
         fallback={
@@ -42,7 +47,7 @@ export default function NotFound() {
         }
       >
         <section class="not-found-section" aria-labelledby="not-found-works">
-          <h2 id="not-found-works">作品</h2>
+          <h2 id="not-found-works">すべての作品</h2>
           <ul class="not-found-all">
             <For each={works}>
               {(w) => (
