@@ -20,14 +20,6 @@ const pageFile = (path: string) => (path === '/' ? 'index.html' : `${path.slice(
 const head = (file: string) => read(file).split('</head>')[0];
 
 describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
-  test('ページのスクリプトは、最初の描画を待たせないよう低い優先度で読む', () => {
-    for (const path of [...sitePaths(mergeWorks(baseWorks, manual)), '/404'])
-      assert.match(
-        head(path === '/404' ? '404.html' : pageFile(path)),
-        /<script type="module" src="\/assets\/[^"]+\.js" async fetchpriority="low">/,
-        path,
-      );
-  });
   test('トップは正規 URL を名乗って検索エンジンに載せ、404 は載せないよう求めて正規 URL を名乗らない', () => {
     const indexing = (file: string) => {
       const h = head(file);

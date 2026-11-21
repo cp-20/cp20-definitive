@@ -33,17 +33,6 @@ export function buildFeed(articles: Article[]) {
     .join('')}</channel></rss>`;
 }
 
-/**
- * The app's script, at low priority. Every page is complete without it (its links are plain links),
- * so the stylesheet that holds the first paint and the fonts it waits for come first instead of
- * sharing the connection with it.
- */
-export const lowPriorityApp = (html: string) =>
-  html.replace(
-    /<script type="module" src="([^"]+)" async>/,
-    '<script type="module" src="$1" async fetchpriority="low">',
-  );
-
 async function prerender() {
   // The SSR build only exists once `vite build` has run.
   const server = '../../dist/server/server.js';
@@ -70,7 +59,7 @@ async function prerender() {
           ? 'dist/client/404.html'
           : `dist/client${path}/index.html`;
     await mkdir(output.slice(0, output.lastIndexOf('/')), { recursive: true });
-    await writeFile(output, lowPriorityApp(await response.text()));
+    await writeFile(output, await response.text());
   }
   await writeFile(
     'dist/client/sitemap.xml',
