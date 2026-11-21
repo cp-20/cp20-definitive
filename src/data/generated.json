@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-20T20:26:06.582Z",
+  "updatedAt": "2026-11-21T01:22:24.459Z",
   "articles": [
     {
       "title": "社会性",
@@ -472,6 +472,16 @@
   ],
   "repos": [
     {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-11-21T01:21:55Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "asterion-manifest",
       "url": "https://github.com/cp-20/asterion-manifest",
       "description": "",
@@ -488,16 +498,6 @@
       "language": "HTML",
       "stars": 0,
       "updatedAt": "2026-11-20T18:11:38Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-11-20T07:22:37Z",
       "fork": false,
       "archived": false
     },
@@ -1405,39 +1405,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T20:26:06.582Z",
+      "lastSuccess": "2026-11-21T01:22:24.459Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T20:26:06.582Z",
+      "lastSuccess": "2026-11-21T01:22:24.459Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T20:26:06.582Z",
+      "lastSuccess": "2026-11-21T01:22:24.459Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T20:26:06.582Z",
+      "lastSuccess": "2026-11-21T01:22:24.459Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T20:26:06.582Z",
+      "lastSuccess": "2026-11-21T01:22:24.459Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T20:26:06.582Z",
+      "lastSuccess": "2026-11-21T01:22:24.459Z",
       "count": 134
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-20T20:26:06.582Z",
+      "lastSuccess": "2026-11-21T01:22:24.459Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-20T20:26:06.582Z"
+  "checkedAt": "2026-11-21T01:22:24.459Z"
 }
