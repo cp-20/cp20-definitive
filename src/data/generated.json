@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-21T19:21:04.743Z",
+  "updatedAt": "2026-11-22T06:56:08.615Z",
   "articles": [
     {
       "title": "社会性",
@@ -472,12 +472,22 @@
   ],
   "repos": [
     {
+      "name": "regex-calc",
+      "url": "https://github.com/cp-20/regex-calc",
+      "description": "正規表現 (s///) だけで計算する電卓 — YAPC::Tokyo 2026 LT「正規表現で電卓を作る」",
+      "language": "HTML",
+      "stars": 0,
+      "updatedAt": "2026-11-22T06:15:29Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "cp20-definitive",
       "url": "https://github.com/cp-20/cp20-definitive",
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-21T07:16:07Z",
+      "updatedAt": "2026-11-21T19:21:31Z",
       "fork": false,
       "archived": false
     },
@@ -488,16 +498,6 @@
       "language": "JavaScript",
       "stars": 2,
       "updatedAt": "2026-11-20T18:51:25Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "regex-calc",
-      "url": "https://github.com/cp-20/regex-calc",
-      "description": "正規表現 (s///) だけで計算する電卓 — YAPC::Tokyo 2026 LT「正規表現で電卓を作る」",
-      "language": "HTML",
-      "stars": 0,
-      "updatedAt": "2026-11-20T18:11:38Z",
       "fork": false,
       "archived": false
     },
@@ -1405,39 +1405,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-21T19:21:04.743Z",
+      "lastSuccess": "2026-11-22T06:56:08.615Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-21T19:21:04.743Z",
+      "lastSuccess": "2026-11-22T06:56:08.615Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-21T19:21:04.743Z",
+      "lastSuccess": "2026-11-22T06:56:08.615Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-21T19:21:04.743Z",
+      "lastSuccess": "2026-11-22T06:56:08.615Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-21T19:21:04.743Z",
+      "lastSuccess": "2026-11-22T06:56:08.615Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-21T19:21:04.743Z",
+      "lastSuccess": "2026-11-22T06:56:08.615Z",
       "count": 134
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-21T19:21:04.743Z",
+      "lastSuccess": "2026-11-22T06:56:08.615Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-21T19:21:04.743Z"
+  "checkedAt": "2026-11-22T06:56:08.615Z"
 }
