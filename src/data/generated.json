@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-22T06:56:08.615Z",
+  "updatedAt": "2026-11-22T19:45:02.325Z",
   "articles": [
     {
       "title": "社会性",
@@ -472,12 +472,12 @@
   ],
   "repos": [
     {
-      "name": "regex-calc",
-      "url": "https://github.com/cp-20/regex-calc",
-      "description": "正規表現 (s///) だけで計算する電卓 — YAPC::Tokyo 2026 LT「正規表現で電卓を作る」",
-      "language": "HTML",
+      "name": "trpg-session-logging",
+      "url": "https://github.com/cp-20/trpg-session-logging",
+      "description": "",
+      "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-22T06:15:29Z",
+      "updatedAt": "2026-11-22T15:39:12Z",
       "fork": false,
       "archived": false
     },
@@ -487,7 +487,17 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-21T19:21:31Z",
+      "updatedAt": "2026-11-22T06:56:38Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "regex-calc",
+      "url": "https://github.com/cp-20/regex-calc",
+      "description": "正規表現 (s///) だけで計算する電卓 — YAPC::Tokyo 2026 LT「正規表現で電卓を作る」",
+      "language": "HTML",
+      "stars": 0,
+      "updatedAt": "2026-11-22T06:15:29Z",
       "fork": false,
       "archived": false
     },
@@ -528,16 +538,6 @@
       "language": "C",
       "stars": 0,
       "updatedAt": "2026-11-18T12:39:56Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "trpg-session-logging",
-      "url": "https://github.com/cp-20/trpg-session-logging",
-      "description": "",
-      "language": "",
-      "stars": 0,
-      "updatedAt": "2026-11-15T09:17:56Z",
       "fork": false,
       "archived": false
     },
@@ -1405,39 +1405,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-22T06:56:08.615Z",
+      "lastSuccess": "2026-11-22T19:45:02.325Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-22T06:56:08.615Z",
+      "lastSuccess": "2026-11-22T19:45:02.325Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-22T06:56:08.615Z",
+      "lastSuccess": "2026-11-22T19:45:02.325Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-22T06:56:08.615Z",
+      "lastSuccess": "2026-11-22T19:45:02.325Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-22T06:56:08.615Z",
+      "lastSuccess": "2026-11-22T19:45:02.325Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-22T06:56:08.615Z",
+      "lastSuccess": "2026-11-22T19:45:02.325Z",
       "count": 134
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-22T06:56:08.615Z",
+      "lastSuccess": "2026-11-22T19:45:02.325Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-22T06:56:08.615Z"
+  "checkedAt": "2026-11-22T19:45:02.325Z"
 }
