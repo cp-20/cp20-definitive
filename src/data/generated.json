@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-23T07:44:53.364Z",
+  "updatedAt": "2026-11-23T23:57:30.393Z",
   "articles": [
     {
       "title": "社会性",
@@ -472,22 +472,12 @@
   ],
   "repos": [
     {
-      "name": "trpg-session-logging",
-      "url": "https://github.com/cp-20/trpg-session-logging",
-      "description": "",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-11-23T07:25:33Z",
-      "fork": false,
-      "archived": false
-    },
-    {
       "name": "asterion-manifest",
       "url": "https://github.com/cp-20/asterion-manifest",
       "description": "",
       "language": "JavaScript",
       "stars": 2,
-      "updatedAt": "2026-11-23T01:24:41Z",
+      "updatedAt": "2026-11-23T23:56:18Z",
       "fork": false,
       "archived": false
     },
@@ -497,7 +487,17 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-22T19:45:42Z",
+      "updatedAt": "2026-11-23T07:45:29Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "trpg-session-logging",
+      "url": "https://github.com/cp-20/trpg-session-logging",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-11-23T07:25:33Z",
       "fork": false,
       "archived": false
     },
@@ -1405,39 +1405,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T07:44:53.364Z",
+      "lastSuccess": "2026-11-23T23:57:30.393Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T07:44:53.364Z",
+      "lastSuccess": "2026-11-23T23:57:30.393Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T07:44:53.364Z",
+      "lastSuccess": "2026-11-23T23:57:30.393Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T07:44:53.364Z",
+      "lastSuccess": "2026-11-23T23:57:30.393Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T07:44:53.364Z",
+      "lastSuccess": "2026-11-23T23:57:30.393Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T07:44:53.364Z",
+      "lastSuccess": "2026-11-23T23:57:30.393Z",
       "count": 134
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T07:44:53.364Z",
+      "lastSuccess": "2026-11-23T23:57:30.393Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-23T07:44:53.364Z"
+  "checkedAt": "2026-11-23T23:57:30.393Z"
 }
