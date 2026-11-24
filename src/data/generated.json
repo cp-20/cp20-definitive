@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-23T23:57:30.393Z",
+  "updatedAt": "2026-11-24T09:58:47.832Z",
   "articles": [
     {
       "title": "社会性",
@@ -472,32 +472,22 @@
   ],
   "repos": [
     {
-      "name": "asterion-manifest",
-      "url": "https://github.com/cp-20/asterion-manifest",
+      "name": "kakeibo-next",
+      "url": "https://github.com/cp-20/kakeibo-next",
       "description": "",
-      "language": "JavaScript",
-      "stars": 2,
-      "updatedAt": "2026-11-23T23:56:18Z",
+      "language": "Kotlin",
+      "stars": 0,
+      "updatedAt": "2026-11-24T09:35:29Z",
       "fork": false,
       "archived": false
     },
     {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "TypeScript",
+      "name": "faster-malloc",
+      "url": "https://github.com/cp-20/faster-malloc",
+      "description": "A fast malloc for most use cases: arithmetic size-class dispatch, lock-free batched free lists, and a JIT-compiled entry point — benchmarked against glibc, tcmalloc, jemalloc and mimalloc.",
+      "language": "C",
       "stars": 0,
-      "updatedAt": "2026-11-23T07:45:29Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "trpg-session-logging",
-      "url": "https://github.com/cp-20/trpg-session-logging",
-      "description": "",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-11-23T07:25:33Z",
+      "updatedAt": "2026-11-24T09:26:24Z",
       "fork": false,
       "archived": false
     },
@@ -507,7 +497,37 @@
       "description": "正規表現 (s///) だけで計算する電卓 — YAPC::Tokyo 2026 LT「正規表現で電卓を作る」",
       "language": "HTML",
       "stars": 0,
-      "updatedAt": "2026-11-22T06:15:29Z",
+      "updatedAt": "2026-11-24T07:04:22Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "trpg-session-logging",
+      "url": "https://github.com/cp-20/trpg-session-logging",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-11-24T05:37:07Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-11-23T23:58:18Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "asterion-manifest",
+      "url": "https://github.com/cp-20/asterion-manifest",
+      "description": "",
+      "language": "JavaScript",
+      "stars": 2,
+      "updatedAt": "2026-11-23T23:56:18Z",
       "fork": false,
       "archived": false
     },
@@ -528,16 +548,6 @@
       "language": "Jinja",
       "stars": 1,
       "updatedAt": "2026-11-19T04:44:18Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "faster-malloc",
-      "url": "https://github.com/cp-20/faster-malloc",
-      "description": "A fast malloc for most use cases: arithmetic size-class dispatch, lock-free batched free lists, and a JIT-compiled entry point — benchmarked against glibc, tcmalloc, jemalloc and mimalloc.",
-      "language": "C",
-      "stars": 0,
-      "updatedAt": "2026-11-18T12:39:56Z",
       "fork": false,
       "archived": false
     },
@@ -1405,39 +1415,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T23:57:30.393Z",
+      "lastSuccess": "2026-11-24T09:58:47.832Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T23:57:30.393Z",
+      "lastSuccess": "2026-11-24T09:58:47.832Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T23:57:30.393Z",
+      "lastSuccess": "2026-11-24T09:58:47.832Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T23:57:30.393Z",
+      "lastSuccess": "2026-11-24T09:58:47.832Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T23:57:30.393Z",
+      "lastSuccess": "2026-11-24T09:58:47.832Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T23:57:30.393Z",
-      "count": 134
+      "lastSuccess": "2026-11-24T09:58:47.832Z",
+      "count": 135
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-23T23:57:30.393Z",
+      "lastSuccess": "2026-11-24T09:58:47.832Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-23T23:57:30.393Z"
+  "checkedAt": "2026-11-24T09:58:47.832Z"
 }
