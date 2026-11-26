@@ -12,6 +12,7 @@ import { OG_IMAGE, mergeWorks, sitePaths } from '../../src/site/pages.ts';
 import { spineAuthor } from '../../src/content/series-credit.ts';
 import { faceName, faces } from './fonts.ts';
 import { licensesPath } from './licenses.ts';
+import { PATH_MARK, joinAnchor } from '../../src/stamps/anchor-path.ts';
 import { assertOflNotice, nameRecords } from './font-names.ts';
 
 const built = (path: string) => new URL(`../../dist/client/${path}`, import.meta.url);
@@ -52,6 +53,17 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
         .map((h) => `${file}: h${h.level} ${h.text}`),
     );
     assert.deepEqual(skipped, []);
+  });
+
+  test('シールの貼り先の名前は、要素までの道筋の区切りを含まず保存できる形', () => {
+    const files = [...sitePaths(mergeWorks(baseWorks, manual)).map(pageFile), '404.html'];
+    const bad = files.flatMap((file) =>
+      [...read(file).matchAll(/data-stamp-anchor="([^"]*)"/g)]
+        .map(([, name]) => name)
+        .filter((name) => name.includes(PATH_MARK) || joinAnchor(name, []) !== name)
+        .map((name) => `${file}: ${name}`),
+    );
+    assert.deepEqual(bad, []);
   });
 
   test('/ と /about の h1 は別の文で、/about のものはプロフィールを名乗る', () => {

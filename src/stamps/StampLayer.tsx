@@ -8,6 +8,7 @@ import Icon from '../components/Icon.tsx';
 import { StickerFace, stickerName } from './kinds.tsx';
 import { Avatar, type OwnAvatar } from './Avatar.tsx';
 import type { ShownStamp } from './placement.ts';
+import { markedName } from './anchor-path.ts';
 import type { Held } from './hand.ts';
 import type { createInput } from './input.ts';
 export function StampLayer(props: {
@@ -76,7 +77,7 @@ export function StampLayer(props: {
             <span
               class="placed-stamp"
               data-stamp-id={s().id}
-              data-anchor={s().anchor}
+              data-anchor={markedName(s().anchor)}
               data-owned={props.isOwn(s()) ? 'true' : undefined}
               data-pending={s().owner === 'local' ? 'true' : undefined}
               data-fresh={props.isFresh(s().key) ? 'true' : undefined}
