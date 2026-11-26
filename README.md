@@ -29,7 +29,7 @@ npm run build
 
 **公開はCloudflare Workers Builds（CloudflareのGit連携）で行います。`main` へのpushごとにCloudflare上でビルドしてデプロイします。GitHub Actionsは記事などの定期収集とスナップショットのコミット、PR・`main` の検証（`CI`）、Firebaseルールのデプロイ（専用DBのみ。下記「ルールの更新」）を担当します。Cloudflareの認証情報は持ちません。**
 
-2026-10-06に `cp-20/cp20-definitive` の `main` とWorkerの接続を設定済みです。公開URLは [cp20-definitive.cp20.workers.dev](https://cp20-definitive.cp20.workers.dev/)。ルートディレクトリは `/`、ビルド・デプロイコマンドは下記のとおりです。非本番ブランチの自動ビルドは無効です。
+2026-10-06に `cp-20/cp20-definitive` の `main` とWorkerの接続を設定済みです。公開URLは [cp20.dev](https://cp20.dev/) だけで、workers.dev とプレビューURLは無効です（`wrangler.jsonc` の `workers_dev`・`preview_urls`）。ルートディレクトリは `/`、ビルド・デプロイコマンドは下記のとおりです。非本番ブランチの自動ビルドは無効です。
 
 1. このフォルダをGitHubリポジトリの `main` に配置。
 2. Actionsにスナップショットを書き戻す権限を許可。ブランチ保護を使う場合も更新経路を確保。
@@ -147,7 +147,7 @@ scripts はNodeの型除去でTypeScriptをそのまま実行します（tsx等�
 **公開前に必要な設定（Firebase Console）**
 
 1. Authentication → Sign-in method で **Google** を有効化。
-2. Authentication → Settings → 承認済みドメインに `cp20-definitive.cp20.workers.dev` と `cp20.dev`（開発時は `localhost`）を追加。
+2. Authentication → Settings → 承認済みドメインに `cp20.dev`（開発時は `localhost`）を追加。
 3. Actionsの `Firebase rules` ワークフロー（`main` へのマージで自動、または Run workflow）で `database.rules.json` をデプロイ（Google ログインのみ書き込み可・`avatar` 項目の検証を含む）。ファイルがページ一覧や `main` と食い違っている、またはエミュレーターでの検証に失敗したときはデプロイせずに止まります（手動の `npm run firebase:rules` も同じ。下記「ルールの更新」）。
 
 Firebase Auth（Googleのポップアップログイン）でログインしたUIDの領域だけ書き込み・削除を許可します。ルールで `auth.token.firebase.sign_in_provider == 'google.com'` を必須にしているため、匿名認証などでは書き込めません。1ページ・1人あたり5つ、6つ目から古いものを置き換え（貼り直しは同じ枠の位置だけを書き換えるので、ほかのシールは消えません）。表示は更新が新しい100人分（最大500個）に制限し、絞り込みなしの公開読込は拒否します。座標・種類・角度・タイムスタンプ・Gravatarハッシュ（64桁の16進数）・項目をDBルールで検証し、1秒未満の連続更新を拒否。間隔は削除しても残る `throttle/$uid` で数え、レコードの書込はその更新と同時（`updatedAt` も毎回サーバー時刻）でなければ拒否するため、子パスへの部分書込や削除→再作成でも回避できません。古いUIDのレコードは自動削除しません。

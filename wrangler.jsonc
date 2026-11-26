@@ -8,6 +8,9 @@
   // Only the paths the 2026 edition answered for terminals run the Worker (worker/index.ts);
   // the rest are served from the assets without it.
   "main": "worker/index.ts",
+  // Only cp20.dev serves the site: no workers.dev address and no preview URLs to index.
+  "workers_dev": false,
+  "preview_urls": false,
   "assets": {
     "directory": "./dist/client",
     "binding": "ASSETS",
