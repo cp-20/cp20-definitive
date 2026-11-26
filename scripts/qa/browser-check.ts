@@ -490,7 +490,7 @@ try {
   await expect(page.locator('.not-found-all a')).toHaveCount(mergeWorks(works, manual).length);
   await page.goto(origin + '/no-such-page');
   await expect(page.locator('.not-found-featured a')).toHaveCount(3);
-  for (const width of [320, 390, 1440]) {
+  for (const width of [320, 390, 761, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const h1 = await page
       .locator('main h1')
@@ -571,8 +571,19 @@ try {
   // The sticker shows before the save answers.
   db.hold = new Promise<void>((resolve) => (release = resolve));
   await page.getByRole('button', { name: 'しーぴーのシールを貼る', exact: true }).click();
-  const anchor = (await page.locator('[data-stamp-anchor=intro]').boundingBox())!;
-  await page.mouse.click(anchor.x + anchor.width * 0.6, anchor.y + anchor.height * 0.45);
+  // On the greeting: the section is one column on a phone and two on a wide screen.
+  const anchor = (await page.locator('[data-stamp-anchor=intro] h1').boundingBox())!;
+  const aim = { x: anchor.x + anchor.width * 0.3, y: anchor.y + anchor.height * 0.5 };
+  // The element of the page the sticker goes on, marked to find it again at other widths.
+  await page.evaluate(
+    ([x, y]) =>
+      document
+        .elementsFromPoint(x, y)
+        .find((el) => !el.closest('.placed-stamp,.stamp-layer,.sticker-sheet,.sticker-tab,.stamp-overlay'))!
+        .setAttribute('data-qa-under', ''),
+    [aim.x, aim.y],
+  );
+  await page.mouse.click(aim.x, aim.y);
   await expect(page.locator('[data-pending=true]')).toHaveCount(1);
   release();
   await saved(page);
@@ -587,18 +598,34 @@ try {
   )
     throw Error('A sticker record holds more than the stickers and their time');
   await expect(visitor.locator(`[data-stamp-id="${await own.getAttribute('data-stamp-id')}"]`)).toBeVisible();
-  // It stays on the same spot of its anchor at any width.
-  for (const width of [390, 1440]) {
+  // It is stored against the element under it inside the section, not the section, and stays on
+  // that element at any width, though the section around it changes shape.
+  {
+    const stored = Object.values(db.pages.get('home')?.[user.uid]?.stamps ?? {}) as { anchor: string }[];
+    if (!stored[0]?.anchor.startsWith('intro--')) throw Error(`Coarse stamp anchor: ${stored[0]?.anchor}`);
+  }
+  for (const width of [390, 1440, 1024]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.waitForTimeout(350);
-    const box = (await own.boundingBox())!,
-      target = (await page.locator('[data-stamp-anchor=intro]').boundingBox())!;
-    if (
-      Math.abs(box.x + box.width / 2 - target.x - target.width * 0.6) > 2 ||
-      Math.abs(box.y + box.height / 2 - target.y - target.height * 0.45) > 2
-    )
-      throw Error('Responsive stamp anchor');
+    const box = (await own.boundingBox())!;
+    const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await page.evaluate((y) => scrollBy(0, y - innerHeight / 2), center.y);
+    const shown = (await own.boundingBox())!;
+    const on = await page.evaluate(
+      ([x, y]) => {
+        const under = document
+          .elementsFromPoint(x, y)
+          .find((el) => !el.closest('.placed-stamp,.stamp-layer,.sticker-sheet,.sticker-tab,.stamp-overlay'));
+        const marked = document.querySelector('[data-qa-under]')!;
+        return !!under && (marked.contains(under) || under.contains(marked));
+      },
+      [shown.x + shown.width / 2, shown.y + shown.height / 2],
+    );
+    if (!on) throw Error(`Responsive stamp anchor at ${width}px`);
   }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.waitForTimeout(350);
   // Hovering shows who placed it; a click opens its menu, and moving it from there lifts it for
   // the next click to put down elsewhere.
   const placed = (await own.boundingBox())!;
@@ -796,12 +823,18 @@ try {
   await visitor.goto(origin + '/articles');
   await settle(visitor);
   const card = visitor.locator('a.article-row').nth(1);
-  await card.scrollIntoViewIfNeeded();
-  const cardBox = (await card.boundingBox())!;
-  const onCard = { x: cardBox.x + cardBox.width / 2, y: cardBox.y + cardBox.height * 0.75 };
-  // The sheet stays open from the page before.
+  // The sheet stays open from the page before. The card is brought up clear of it, since a tap
+  // over the sheet puts the sticker back.
   const suki = visitor.getByRole('button', { name: '「すき」のシールを貼る', exact: true });
   if (!(await suki.isVisible())) await visitor.locator('.sticker-tab').tap();
+  await card.evaluate((el) => {
+    el.scrollIntoView({ block: 'start', behavior: 'instant' });
+    scrollBy({ top: -120, behavior: 'instant' });
+  });
+  const cardBox = (await card.boundingBox())!;
+  const onCard = { x: cardBox.x + cardBox.width / 2, y: cardBox.y + cardBox.height * 0.75 };
+  const sheetTop = (await visitor.locator('.sticker-sheet').boundingBox())!.y;
+  if (onCard.y > sheetTop - 30) throw Error('The card is under the sticker sheet');
   await suki.tap();
   await visitor.touchscreen.tap(onCard.x, onCard.y);
   await saved(visitor);
@@ -1266,8 +1299,17 @@ try {
   await expect(page.locator('.stamp-overlay')).toBeFocused();
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('Enter');
+  // One arrow press moves it (it is not taken for setting it down where it was).
+  await expect(spoken).toHaveText(/^クローバーを(?:.+の上に)?貼りました。残り\d枚$/);
   await expect(own.locator('.stamp-open')).toBeFocused();
   await saved(page);
+  // Set down again without moving, it stays where it is, and focus is back on it.
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.stamp-overlay')).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(spoken).toHaveText('クローバーを元の場所に戻しました');
+  await expect(own.locator('.stamp-open')).toBeFocused();
   // A peel that fails brings the sticker back.
   db.down = true;
   await page.getByRole('button', { name: '最後に貼ったシールをはがす', exact: true }).click();

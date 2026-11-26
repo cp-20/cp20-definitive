@@ -139,6 +139,13 @@ export function createHand(options: {
     if (!next?.isConnected || (document.activeElement && document.activeElement !== document.body)) return;
     flush();
     next.focus({ preventScroll: true });
+    // Shown again only just now, the button may not take focus until the page has been drawn
+    // with it: then it gets focus on the next frame, unless focus has gone somewhere meanwhile.
+    if (document.activeElement !== next)
+      requestAnimationFrame(() => {
+        const now = document.activeElement;
+        if (next.isConnected && (!now || now === document.body)) next.focus({ preventScroll: true });
+      });
   }
   // Let go of the sticker: it flies back to the sheet (or to where it was) and disappears.
   function returnHeld(h: Held, blocked = false) {
@@ -190,10 +197,11 @@ export function createHand(options: {
       y = clamp(py - motion.oy + carry.y, STICKER_RADIUS, innerHeight - STICKER_RADIUS);
     // Set down where it was picked up: nothing changes. A finger cannot aim as finely as a
     // mouse, and a tapped sticker floats away from its spot, so a tap on either puts it back.
-    // The keys always set it down under the sticker in hand, so only its old spot counts there.
+    // The keys always set it down under the sticker in hand and aim it exactly, so only its old
+    // spot itself counts there: one arrow press (16px, less than a finger's reach) moves it.
     if (h.from === 'page') {
       const home = homeOf(h),
-        reach = h.pointer === 'mouse' ? 6 : STICKER_RADIUS,
+        reach = h.pointer === 'mouse' ? 6 : h.pointer === 'keys' ? 1 : STICKER_RADIUS,
         tapped = h.mode === 'aim' && h.pointer !== 'mouse' && h.pointer !== 'keys';
       if (
         Math.hypot(x - home.x, y - home.y) < reach ||
