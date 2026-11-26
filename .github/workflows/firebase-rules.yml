@@ -1,12 +1,12 @@
-# Deploys database.rules.json to the stamps database when it changes on main,
-# after checking it on the Realtime Database emulator.
+# Deploys database.rules.json to the stamps database and storage.rules to Cloud Storage (the
+# visitors' icon pictures) when they change on main, after checking both on the emulators.
 name: Firebase rules
 on:
   push:
     branches: [main]
-    paths: [database.rules.json]
+    paths: [database.rules.json, storage.rules]
   pull_request:
-    paths: [database.rules.json]
+    paths: [database.rules.json, storage.rules]
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,12 +30,13 @@ jobs:
           java-version: 21
       - name: Test on the emulator
         run: >-
-          npx --yes "$FIREBASE_TOOLS" emulators:exec --project cp20-platform --only database
-          "STAMPS_RULES_EMULATOR=127.0.0.1:9000 node scripts/firebase/rules-check.ts"
+          npx --yes "$FIREBASE_TOOLS" emulators:exec --project cp20-platform --only database,storage
+          "STAMPS_RULES_EMULATOR=127.0.0.1:9000 node scripts/firebase/rules-check.ts &&
+          STORAGE_RULES_EMULATOR=127.0.0.1:9199 node scripts/firebase/storage-check.ts"
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       - name: Deploy
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        run: npx --yes "$FIREBASE_TOOLS" deploy --only database:portfolio-stamps --project cp20-platform --non-interactive
+        run: npx --yes "$FIREBASE_TOOLS" deploy --only database:portfolio-stamps,storage --project cp20-platform --non-interactive

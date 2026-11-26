@@ -1,10 +1,12 @@
 // The sticker sheet: sign-in, the stickers to take, your remaining count and the sheet's tools,
 // with the tab it folds into.
-import { For, Show } from 'solid-js';
+import { createSignal, For, Show } from 'solid-js';
 import type { Account } from './types.ts';
 import { STAMPS_PER_PAGE as LIMIT } from './limits.ts';
 import Icon from '../components/Icon.tsx';
-import { SHEET_KINDS, STICKER_KINDS, StickerFace, gravatarUrl } from './kinds.tsx';
+import { SHEET_KINDS, STICKER_KINDS, StickerFace } from './kinds.tsx';
+import { Avatar, type OwnAvatar } from './Avatar.tsx';
+import { AVATAR_SHOWN_MAX } from './avatar.ts';
 import type { createInput } from './input.ts';
 export function StickerTab(props: {
   ref: (el: HTMLButtonElement) => void;
@@ -57,12 +59,20 @@ export function StickerSheet(props: {
   connect: () => void;
   signIn: () => void;
   signOut: () => void;
+  own: OwnAvatar;
+  avatarBusy: boolean;
+  avatarStatus: { text: string; error?: boolean };
+  uploadAvatar: (file: File) => void;
+  resetAvatar: () => void;
   undo: () => void;
   setHidden: (hidden: boolean) => void;
   close: () => void;
   onClick: (e: MouseEvent) => void;
 }) {
   const { input } = props;
+  // The icon editor under the header, opened from your icon; and whether a picture is shown.
+  const [editing, setEditing] = createSignal(false),
+    [picture, setPicture] = createSignal(false);
   return (
     <section
       ref={props.ref}
@@ -93,20 +103,16 @@ export function StickerSheet(props: {
             </button>
           }
         >
-          <a
+          <button
             class="account-avatar"
-            href="https://gravatar.com/profile"
-            target="_blank"
-            rel="noreferrer"
-            title="Gravatar でアイコンを変更"
+            aria-expanded={editing() ? 'true' : 'false'}
+            aria-controls="avatar-editor"
+            aria-label="アイコンを変える"
+            title="アイコンを変える"
+            onClick={() => setEditing(!editing())}
           >
-            <img
-              src={gravatarUrl(props.account!.avatar, 64)}
-              alt="Gravatar でアイコンを変更"
-              width="28"
-              height="28"
-            />
-          </a>
+            <Avatar uid={props.account!.uid} own={props.own} size={28} onShown={setPicture} />
+          </button>
           {/* One pip per sticker you can place on this page. */}
           <span
             class="sticker-pips"
@@ -157,6 +163,46 @@ export function StickerSheet(props: {
           <Icon name="ChevronDown" size={16} />
         </button>
       </header>
+      {/* Your icon, shown beside your stickers: a picture you choose (shrunk before it is stored),
+          or the pattern every account has. */}
+      <Show when={props.account && editing()}>
+        <div id="avatar-editor" class="avatar-editor">
+          <Avatar
+            class="avatar-editor-icon"
+            uid={props.account!.uid}
+            own={props.own}
+            size={AVATAR_SHOWN_MAX}
+          />
+          <div class="avatar-editor-body">
+            <p>シールに添えるアイコン</p>
+            <div class="avatar-editor-actions">
+              <label class="sheet-button" data-disabled={props.avatarBusy || undefined}>
+                <Icon name="ImageUp" size={14} />
+                画像を選ぶ
+                <input
+                  class="visually-hidden"
+                  type="file"
+                  accept="image/*"
+                  disabled={props.avatarBusy}
+                  onChange={(e) => {
+                    const file = e.currentTarget.files?.[0];
+                    e.currentTarget.value = '';
+                    if (file) props.uploadAvatar(file);
+                  }}
+                />
+              </label>
+              <Show when={picture()}>
+                <button class="sheet-button" disabled={props.avatarBusy} onClick={props.resetAvatar}>
+                  模様に戻す
+                </button>
+              </Show>
+            </div>
+          </div>
+          <p class="avatar-editor-status" role="status" data-error={props.avatarStatus.error || undefined}>
+            {props.avatarStatus.text || '真ん中を正方形に切り抜いて保存します。画像はみんなに見えます。'}
+          </p>
+        </div>
+      </Show>
       {/* Before signing in, one line says what signing in is for and who sees what you place, and
           a fold under it lists everything that becomes public, so it can be read before the
           Google sign-in rather than found out after. */}
@@ -170,18 +216,10 @@ export function StickerSheet(props: {
             </summary>
             <ul>
               <li>貼ったシールの種類と位置</li>
-              <li>
-                シールに添える{' '}
-                <a href="https://gravatar.com" target="_blank" rel="noreferrer">
-                  Gravatar
-                </a>{' '}
-                アイコン (未登録なら自動生成の模様)
-              </li>
-              <li>アイコン表示用の、メールアドレスのハッシュ値 (メールアドレスを知る人は照合できます)</li>
+              <li>シールに添えるアイコン (自分で選んだ画像か、アカウントごとの模様)</li>
             </ul>
             <p>
-              メールアドレスそのものや名前は公開しません。シールをすべてはがすと、そのページの公開データ
-              (ハッシュ値を含む) は消えます。
+              メールアドレスや名前は公開しません。シールをすべてはがすと、そのページの記録は消えます。アイコン画像は別で残りますが、いつでも変えたり消したりできます。
             </p>
           </details>
         </div>

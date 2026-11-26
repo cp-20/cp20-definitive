@@ -1,0 +1,17 @@
+rules_version = '2';
+// Cloud Storage holds one thing: each visitor's icon picture, at avatars/<uid>. Anyone can load a
+// picture; only its owner, signed in with Google, can put or delete it, and only a small WebP or
+// JPEG (the site shrinks it to 112px first; see src/stamps/avatar.ts).
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /avatars/{uid} {
+      allow get: if true;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.resource.size <= 64 * 1024
+        && request.resource.contentType.matches('image/(webp|jpeg)');
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

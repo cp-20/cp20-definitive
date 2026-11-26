@@ -1,9 +1,9 @@
 // The shapes of stickers and accounts, shared by the sticker UI and the lazily loaded client
 // (client.ts) without the UI importing the client module for its types.
 export type Stamp = { anchor: string; x: number; y: number; kind: number; angle: number; createdAt: number };
-export type PlacedStamp = Stamp & { id: string; owner: string; slot: string; avatar?: string };
-// A signed-in visitor: the Firebase UID and the Gravatar hash shown on their stickers.
-export type Account = { uid: string; avatar: string };
+export type PlacedStamp = Stamp & { id: string; owner: string; slot: string };
+// A signed-in visitor: the Firebase UID, which also names their icon (avatar.ts).
+export type Account = { uid: string };
 // A change to the visitor's stickers on one page.
 export type Change = { id: string; path: string } & (
   | { type: 'add'; stamp: PlacedStamp }

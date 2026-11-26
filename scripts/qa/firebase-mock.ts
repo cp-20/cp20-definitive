@@ -37,10 +37,12 @@ export function googleToken(uid: string, email: string) {
     firebase: { sign_in_provider: 'google.com' },
   })}.mock`;
 }
-type Record_ = { avatar?: string; updatedAt?: number; stamps?: Record<string, unknown> };
+type Record_ = { updatedAt?: number; stamps?: Record<string, unknown> };
 export type MockDatabase = {
   pages: Map<string, Record<string, Record_>>;
   throttle: Map<string, { at: number; prev: number }>;
+  /** Icon pictures in Cloud Storage by uid, as uploaded (checked like storage.rules). */
+  avatars: Map<string, { type: string; body: Buffer }>;
   latency: number;
   writes: number;
   // A check's switches for writes, kept here instead of in a page route of its own: removing a
@@ -56,7 +58,7 @@ export async function mockFirebase(
   context: BrowserContext,
   {
     latency = 250,
-    db = { pages: new Map(), throttle: new Map(), latency, writes: 0 } as MockDatabase,
+    db = { pages: new Map(), throttle: new Map(), avatars: new Map(), latency, writes: 0 } as MockDatabase,
   }: { latency?: number; db?: MockDatabase } = {},
 ) {
   // Streams poll the mocked REST endpoint; a fulfilled route cannot stay open.
@@ -89,13 +91,49 @@ export async function mockFirebase(
       }
     };
   });
-  // Gravatar is the only remote image; serve a local placeholder.
-  await context.route(/gravatar\.com\/avatar/, (route) =>
-    route.fulfill({
-      contentType: 'image/svg+xml',
-      body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#f0a6c2"/><circle cx="32" cy="26" r="12" fill="#fff"/><rect x="14" y="42" width="36" height="22" rx="11" fill="#fff"/></svg>',
-    }),
-  );
+  // Cloud Storage holds the icon pictures: uploads (multipart, as the site sends them), loads and
+  // deletes, allowed like storage.rules (own uid, Google sign-in, WebP or JPEG up to 64KB).
+  await context.route(/firebasestorage\.googleapis\.com/, async (route) => {
+    const request = route.request();
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+    const url = new URL(request.url());
+    const name = decodeURIComponent(url.searchParams.get('name') ?? url.pathname.split('/o/')[1] ?? '');
+    const uid = /^avatars\/([^/]+)$/.exec(name)?.[1];
+    const token = claims((request.headers().authorization ?? '').replace(/^Firebase /, ''));
+    const owner = !!uid && token.user_id === uid && token.firebase?.sign_in_provider === 'google.com';
+    const deny = () => route.fulfill({ status: 403, headers: cors, json: { error: { code: 403 } } });
+    if (request.method() === 'GET') {
+      const picture = uid && db.avatars.get(uid);
+      return picture
+        ? route.fulfill({
+            headers: { ...cors, 'cache-control': 'public, max-age=300' },
+            contentType: picture.type,
+            body: picture.body,
+          })
+        : route.fulfill({ status: 404, headers: cors, json: { error: { code: 404 } } });
+    }
+    if (request.method() === 'DELETE') {
+      if (!owner) return deny();
+      db.avatars.delete(uid!);
+      return route.fulfill({ status: 204, headers: cors });
+    }
+    // A multipart upload: the JSON metadata part, then the picture.
+    const raw = request.postDataBuffer() ?? Buffer.alloc(0);
+    const boundary = /boundary=(\S+)/.exec(request.headers()['content-type'] ?? '')?.[1] ?? '';
+    const parts = raw.toString('latin1').split(`--${boundary}`).slice(1, -1);
+    const meta = JSON.parse(Buffer.from(parts[0]?.split('\r\n\r\n')[1] ?? '{}', 'latin1').toString());
+    const body = Buffer.from(
+      (parts[1] ?? '').split('\r\n\r\n').slice(1).join('\r\n\r\n').replace(/\r\n$/, ''),
+      'latin1',
+    );
+    if (!owner || !/^image\/(webp|jpeg)$/.test(meta.contentType) || body.length > 64 * 1024) return deny();
+    await new Promise((resolve) => setTimeout(resolve, db.latency));
+    db.avatars.set(uid!, { type: meta.contentType, body });
+    return route.fulfill({
+      headers: cors,
+      json: { name, contentType: meta.contentType, size: String(body.length) },
+    });
+  });
   await context.route(
     /identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com/,
     async (route: Route) => {

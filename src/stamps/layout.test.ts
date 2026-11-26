@@ -90,12 +90,6 @@ describe('layoutStamps', () => {
     assert.equal(after.get(visualKey(stamp('a')))?.left, 450);
   });
 
-  test('持ち主のアバターが変わったシールは、新しいオブジェクトにする', () => {
-    const before = layoutStamps([stamp('a')], boxOf);
-    const after = layoutStamps([stamp('a', { avatar: 'ab'.repeat(32) })], boxOf, before);
-    assert.equal(after.get(visualKey(stamp('a')))?.avatar, 'ab'.repeat(32));
-  });
-
   test('保存されて id が変わったシールは、新しいオブジェクトにする', () => {
     const before = layoutStamps([stamp('local-1', { owner: 'local' })], boxOf);
     const after = layoutStamps([stamp('me-0')], boxOf, before);

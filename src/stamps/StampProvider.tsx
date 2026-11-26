@@ -122,7 +122,6 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
     setHidden(readPref(HIDE_KEY) === 'true');
     return () => hand.stop();
   });
-  const avatarOf = (s: PlacedStamp) => s.avatar || (store.isOwn(s) ? account.account()?.avatar : undefined);
   // A sticker of yours in hand from the page is put back (peeled off) by a click on the sheet.
   const dropOnSheet = (e: MouseEvent) => {
     const h = hand.held();
@@ -136,7 +135,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         path={props.path}
         held={hand.held()}
         isOwn={store.isOwn}
-        avatarOf={avatarOf}
+        own={account.own()}
         isFresh={edits.isFresh}
         settlesFrom={edits.settlesFrom}
         isLeaving={edits.isLeaving}
@@ -180,6 +179,11 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           connect={connect}
           signIn={account.signIn}
           signOut={account.signOut}
+          own={account.own()}
+          avatarBusy={account.avatarBusy()}
+          avatarStatus={account.avatarStatus()}
+          uploadAvatar={account.uploadAvatar}
+          resetAvatar={account.resetAvatar}
           undo={edits.undo}
           setHidden={(value) => {
             setHidden(value);

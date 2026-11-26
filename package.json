@@ -14,7 +14,7 @@
     "deploy": "npm run verify && wrangler deploy",
     "dev:worker": "wrangler dev --ip 0.0.0.0 --port 8787",
     "rules": "node scripts/firebase/rules.ts",
-    "firebase:rules": "node scripts/firebase/rules.ts --check && firebase deploy --only database:portfolio-stamps --project cp20-platform",
+    "firebase:rules": "node scripts/firebase/rules.ts --check && firebase deploy --only database:portfolio-stamps,storage --project cp20-platform",
     "cache:images": "node scripts/sync/images.ts",
     "screenshots": "node scripts/sync/screenshots.ts"
   },

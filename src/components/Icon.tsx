@@ -34,6 +34,7 @@ import {
   BriefcaseBusiness,
   GraduationCap,
   Sparkles,
+  ImageUp,
 } from 'lucide';
 const icons = {
   ArrowUpRight,
@@ -71,6 +72,7 @@ const icons = {
   BriefcaseBusiness,
   GraduationCap,
   Sparkles,
+  ImageUp,
 };
 export type IconName = keyof typeof icons;
 const escapeAttribute = (value: unknown) =>

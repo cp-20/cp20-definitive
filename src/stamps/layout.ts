@@ -22,7 +22,6 @@ const sameShown = (a: PlacedStamp, b: PlacedStamp) =>
   a.id === b.id &&
   a.owner === b.owner &&
   a.slot === b.slot &&
-  a.avatar === b.avatar &&
   a.createdAt === b.createdAt;
 
 /**

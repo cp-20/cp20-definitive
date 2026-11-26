@@ -4,10 +4,9 @@ import { ANCHOR_PATTERN, MAX_ANGLE, STAMP_SLOTS as SLOTS, STICKER_KIND_COUNT } f
 import type { PlacedStamp, Stamp } from './types.ts';
 
 // As stored, or as the stream delivers it: anything may be in it.
-type StampRecord = { updatedAt?: unknown; stamps?: Record<string, unknown> | unknown[]; avatar?: unknown };
+type StampRecord = { updatedAt?: unknown; stamps?: Record<string, unknown> | unknown[] };
 
 const anchorPattern = new RegExp(ANCHOR_PATTERN);
-const gravatarPattern = /^[0-9a-f]{64}$/;
 const fraction = (v: unknown) => typeof v === 'number' && v >= 0 && v <= 1;
 // What the rules accept. Anything else (e.g. a `{".value", ".priority"}` pair from the stream)
 // is dropped, so it can neither break the drawing nor be written back.
@@ -43,8 +42,6 @@ export const recordStamps = (owner: string, record: StampRecord | null | undefin
     id: `${owner}-${slot}`,
     owner,
     slot,
-    avatar:
-      typeof record?.avatar === 'string' && gravatarPattern.test(record.avatar) ? record.avatar : undefined,
   }));
 
 type Look = Omit<Stamp, 'createdAt'>;
@@ -82,8 +79,8 @@ export function moveIn(record: StampRecord | null | undefined, target: PlacedSta
 }
 
 /**
- * The record to store for the edited stamps: deleted once empty (null), else the stamps with the
- * visitor's Gravatar hash and the update time.
+ * The record to store for the edited stamps: deleted once empty (null), else the stamps and the
+ * update time. Nothing about the visitor but their account ID (the record's key) is stored.
  */
-export const nextRecord = (stamps: Record<string, unknown>, avatar: string, updatedAt: unknown) =>
-  Object.keys(stamps).length ? { stamps, updatedAt, avatar } : null;
+export const nextRecord = (stamps: Record<string, unknown>, updatedAt: unknown) =>
+  Object.keys(stamps).length ? { stamps, updatedAt } : null;

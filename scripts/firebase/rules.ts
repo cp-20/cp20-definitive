@@ -83,10 +83,6 @@ export function buildRules(pageKeys: readonly string[]) {
                 $other: { '.validate': false },
               },
             },
-            // The Gravatar hash shown on the visitor's stickers.
-            avatar: {
-              '.validate': 'newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/)',
-            },
             $other: { '.validate': false },
           }),
         },

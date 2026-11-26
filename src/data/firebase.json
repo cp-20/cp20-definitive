@@ -3,5 +3,6 @@
   "authDomain": "cp20-platform.firebaseapp.com",
   "projectId": "cp20-platform",
   "appId": "1:23281202436:web:ff25fac996d61c0370cc51",
-  "databaseURL": "https://cp20-platform-portfolio-stamps.asia-southeast1.firebasedatabase.app"
+  "databaseURL": "https://cp20-platform-portfolio-stamps.asia-southeast1.firebasedatabase.app",
+  "storageBucket": "cp20-platform.firebasestorage.app"
 }

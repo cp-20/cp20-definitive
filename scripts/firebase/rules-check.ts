@@ -69,7 +69,6 @@ if (emulator) {
   assert.equal(loaded.status, 200, `rules load: ${await loaded.text()}`);
 }
 const uidOf = (token: string) => JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).user_id;
-const avatar = 'a'.repeat(64);
 const stamp: Record<string, unknown> = {
   anchor: 'intro',
   x: 0.3,
@@ -81,7 +80,6 @@ const stamp: Record<string, unknown> = {
 const record = (s: unknown, extra = {}) => ({
   updatedAt: { '.sv': 'timestamp' },
   stamps: { 0: s },
-  avatar,
   ...extra,
 });
 let checks = 0;
@@ -161,7 +159,7 @@ if (google) {
       'kind past the last design denied',
     );
     await expect(put(record({ ...stamp, html: '<script>' })), 401, 'extra stamp data denied');
-    await expect(put(record(stamp, { avatar: 'https://example.com/a.png' })), 401, 'non-hash avatar denied');
+    await expect(put(record(stamp, { avatar: 'a'.repeat(64) })), 401, 'avatar (no longer stored) denied');
     await expect(put(record(stamp, { email: 'a@example.com' })), 401, 'extra record data denied');
     // A priority slips past type and $other checks and would reach every subscriber.
     const big = 'p'.repeat(4096);
@@ -178,18 +176,13 @@ if (google) {
         401,
         `${field} priority denied`,
       );
-    await expect(
-      put(record(stamp, { avatar: { '.value': avatar, '.priority': 'p' } })),
-      401,
-      'avatar priority denied',
-    );
     {
       const body: Record<string, unknown> = writeBody('home', uid, record(stamp), null);
       body[throttlePath(uid)] = { ...(body[throttlePath(uid)] as object), '.priority': big };
       await expect(request('', 'PATCH', body, google), 401, 'throttle priority denied');
     }
     await expect(
-      put({ updatedAt: { '.sv': 'timestamp' }, stamps: { 5: stamp }, avatar }),
+      put({ updatedAt: { '.sv': 'timestamp' }, stamps: { 5: stamp } }),
       401,
       'sixth slot denied',
     );

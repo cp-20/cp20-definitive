@@ -5,7 +5,8 @@
 import { createEffect, createSignal, For, onSettled, Show } from 'solid-js';
 import type { PlacedStamp } from './types.ts';
 import Icon from '../components/Icon.tsx';
-import { StickerFace, gravatarUrl, stickerName } from './kinds.tsx';
+import { StickerFace, stickerName } from './kinds.tsx';
+import { Avatar, type OwnAvatar } from './Avatar.tsx';
 import type { ShownStamp } from './placement.ts';
 import type { Held } from './hand.ts';
 import type { createInput } from './input.ts';
@@ -14,7 +15,8 @@ export function StampLayer(props: {
   path: string;
   held: Held | null;
   isOwn: (s: PlacedStamp) => boolean;
-  avatarOf: (s: PlacedStamp) => string | undefined;
+  // Your own icon as changed on this visit, for your stickers.
+  own: OwnAvatar;
   isFresh: (key: string) => boolean;
   settlesFrom: (key: string) => { x: number; y: number; t?: number } | undefined;
   isLeaving: (key: string) => boolean;
@@ -109,14 +111,12 @@ export function StampLayer(props: {
               <span class="sticker" data-kind={s().kind}>
                 <StickerFace kind={s().kind} />
               </span>
-              <Show when={peek() === s().id && props.avatarOf(s())}>
-                <img
+              <Show when={peek() === s().id}>
+                <Avatar
                   class="sticker-avatar"
-                  src={gravatarUrl(props.avatarOf(s())!)}
-                  alt=""
-                  width="24"
-                  height="24"
-                  draggable={false}
+                  uid={s().owner}
+                  own={props.isOwn(s()) ? props.own : undefined}
+                  size={24}
                 />
               </Show>
               <Show when={props.isOwn(s()) && !props.isLeaving(s().key)}>

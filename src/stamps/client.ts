@@ -3,11 +3,12 @@ import { applyStreamEvent, coalesce, keepStream } from './stream.ts';
 import { moveIn, nextRecord, placeIn, recordStamps, removeFrom } from './record.ts';
 import { REQUEST_TIMEOUT_MS, SERVER_TIME, writeRecord } from './write.ts';
 import { pageKey } from '../site/pages.ts';
+import { avatarObjectUrl, avatarUpload } from './avatar.ts';
 import type { Auth, User } from 'firebase/auth';
 import type { Account, Operation, PlacedStamp, SavedRecord, Stamp } from './types.ts';
 // The sticker client, loaded once the page needs stickers: the public stream of a page's
 // stickers, Google sign-in, and saving your own stickers.
-type RecordData = { updatedAt: number; stamps: Record<string, Stamp>; avatar?: string };
+type RecordData = { updatedAt: number; stamps: Record<string, Stamp> };
 export function subscribe(path: string, receive: (stamps: PlacedStamp[]) => void, fail: () => void) {
   const url = new URL(`${config.databaseURL}/pages/${pageKey(path)}.json`);
   url.searchParams.set('orderBy', '"updatedAt"');
@@ -62,18 +63,10 @@ function loadAuth() {
 }
 const isGoogle = (user: User | null): user is User =>
   !!user && !user.isAnonymous && user.providerData.some((p) => p.providerId === 'google.com');
-// Gravatar's hash: SHA-256 of the trimmed, lower-cased email address.
-async function gravatarHash(email: string) {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(email.trim().toLowerCase()));
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-async function toAccount(user: User | null): Promise<Account | null> {
-  if (!isGoogle(user)) return null;
-  return { uid: user.uid, avatar: await gravatarHash(user.email || user.uid) };
-}
+const toAccount = (user: User | null): Account | null => (isGoogle(user) ? { uid: user.uid } : null);
 export async function watchAccount(receive: (account: Account | null) => void) {
   const { auth, sdk } = await loadAuth();
-  return sdk.onAuthStateChanged(auth, (user) => void toAccount(user).then(receive));
+  return sdk.onAuthStateChanged(auth, (user) => receive(toAccount(user)));
 }
 export async function signIn() {
   const { auth, sdk } = await loadAuth();
@@ -113,9 +106,32 @@ export async function save(
     (stored) => {
       const result = edit(stored as RecordData | null);
       slot = result.slot;
-      return nextRecord(result.stamps, account.avatar, SERVER_TIME);
+      return nextRecord(result.stamps, SERVER_TIME);
     },
   )) as RecordData | null;
   const stamps = recordStamps(account.uid, record);
   return { owner: account.uid, stamps, placed: stamps.find((s) => s.slot === slot) };
 }
+
+// ── Icon ──
+// Your picture is uploaded straight to Cloud Storage (storage.rules: only to your own path, only a
+// small WebP or JPEG).
+async function storageRequest(init: RequestInit & { query?: string }) {
+  const user = await currentUser();
+  const token = await user.getIdToken();
+  const response = await fetch(avatarObjectUrl(user.uid) + (init.query ?? ''), {
+    ...init,
+    headers: { ...init.headers, Authorization: `Firebase ${token}` },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok && response.status !== 404) throw Error(`${init.method} avatar: HTTP ${response.status}`);
+}
+/** Stores `picture` (already made small by compressAvatar) as your icon. */
+export async function uploadAvatar(picture: Blob) {
+  const user = await currentUser();
+  const { url, init } = avatarUpload(user.uid, picture, await user.getIdToken());
+  const response = await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  if (!response.ok) throw Error(`POST avatar: HTTP ${response.status}`);
+}
+/** Deletes your icon picture, so your stickers show your pattern again. */
+export const removeAvatar = () => storageRequest({ method: 'DELETE' });

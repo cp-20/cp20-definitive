@@ -41,9 +41,6 @@
               }
             }
           },
-          "avatar": {
-            ".validate": "newData.getPriority() == null && (newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/))"
-          },
           "$other": {
             ".validate": false
           }

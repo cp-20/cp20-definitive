@@ -13,6 +13,7 @@ import works from '../../src/data/works.json' with { type: 'json' };
 import manual from '../../src/data/manual.json' with { type: 'json' };
 import { mergeWorks } from '../../src/site/pages.ts';
 import { STICKER_KINDS } from '../../src/stamps/sticker-kinds.ts';
+import { AVATAR_MAX_BYTES, AVATAR_SIDE } from '../../src/stamps/avatar.ts';
 
 declare global {
   interface Window {
@@ -52,7 +53,11 @@ const errors: string[] = [],
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('request', (r) => {
   const url = new URL(r.url());
-  if (r.resourceType() === 'image' && url.origin !== origin && url.hostname !== 'www.gravatar.com')
+  if (
+    r.resourceType() === 'image' &&
+    url.origin !== origin &&
+    url.hostname !== 'firebasestorage.googleapis.com'
+  )
     externalImages.push(r.url());
   if (r.isNavigationRequest() && r.frame() === page.mainFrame()) documents.push(r.url());
 });
@@ -99,7 +104,6 @@ const openSheet = async (tab: Page) => {
 };
 // Another visitor's stickers on `page`, at fractions of the page anchor.
 const othersAt = (targets: { x: number; y: number }[]) => ({
-  avatar: 'b'.repeat(64),
   stamps: Object.fromEntries(
     targets.map((t, i) => [i, { anchor: 'page', ...t, kind: 1, angle: 0, createdAt: 1700000000000 + i }]),
   ),
@@ -544,10 +548,8 @@ try {
   await guest.getByRole('button', { name: /^クローバー/ }).click();
   await expect(guest.locator('.stamp-overlay')).toHaveCount(0);
   await page.locator('.sticker-tab').click();
-  await expect(page.locator('.account-avatar img')).toHaveAttribute(
-    'src',
-    /gravatar\.com\/avatar\/[0-9a-f]{64}/,
-  );
+  // Without a picture of their own, a visitor's icon is their account's pattern.
+  await expect(page.locator('.account-avatar img')).toHaveAttribute('src', /^data:image\/svg\+xml,/);
   await axe('/#sticker-sheet');
   await expect(page.locator('.sticker-hint')).toHaveCount(0);
   // The sticker shows before the save answers.
@@ -562,8 +564,12 @@ try {
   db.hold = undefined;
   const own = page.locator(`[data-stamp-id^="${user.uid}-"]`);
   await expect(own).toHaveCount(1);
-  if (!/^[0-9a-f]{64}$/.test(db.pages.get('home')?.[user.uid].avatar ?? ''))
-    throw Error('Gravatar hash not saved');
+  if (
+    Object.keys(db.pages.get('home')?.[user.uid] ?? {})
+      .sort()
+      .join() !== 'stamps,updatedAt'
+  )
+    throw Error('A sticker record holds more than the stickers and their time');
   await expect(visitor.locator(`[data-stamp-id="${await own.getAttribute('data-stamp-id')}"]`)).toBeVisible();
   // It stays on the same spot of its anchor at any width.
   for (const width of [390, 1440]) {
@@ -584,13 +590,67 @@ try {
   const menu = page.locator('.stamp-menu');
   await page.mouse.move(spot.x + 120, spot.y + 120);
   await page.mouse.move(spot.x, spot.y, { steps: 4 });
-  await expect(page.locator('.sticker-avatar')).toHaveAttribute('src', /gravatar\.com\/avatar\/[0-9a-f]{64}/);
+  await expect(page.locator('.sticker-avatar')).toHaveAttribute('src', /^data:image\/svg\+xml,/);
   await page.mouse.click(spot.x, spot.y);
   await expect(menu).toBeVisible();
   await expect(own.locator('.stamp-open')).toHaveAttribute('aria-expanded', 'true');
   // A second click on the sticker closes it again.
   await page.mouse.click(spot.x, spot.y);
   await expect(menu).toHaveCount(0);
+  // Your icon: a picture you choose is cut square, shrunk to twice its largest size on the page
+  // and uploaded; your stickers show it; going back to the pattern deletes it.
+  {
+    const editor = page.locator('#avatar-editor');
+    const sheetBox = async () => (await page.locator('.sticker-sheet').boundingBox())!;
+    await page.locator('.account-avatar').click();
+    await expect(editor).toBeVisible();
+    await page.screenshot({ path: `${outputDir}/avatar-editor.png`, clip: await sheetBox() });
+    const photo = await sharp({ create: { width: 1600, height: 900, channels: 3, background: '#4a90d9' } })
+      .composite([
+        {
+          input: Buffer.from(
+            '<svg width="1600" height="900"><circle cx="800" cy="450" r="400" fill="#f5c542"/></svg>',
+          ),
+        },
+      ])
+      .jpeg({ quality: 95 })
+      .toBuffer();
+    await editor
+      .locator('input[type=file]')
+      .setInputFiles({ name: 'me.jpg', mimeType: 'image/jpeg', buffer: photo });
+    await expect(editor.locator('[role=status]')).toHaveText('アイコンを変えました');
+    const stored = db.avatars.get(user.uid);
+    if (!stored) throw Error('The icon was not uploaded');
+    const meta = await sharp(stored.body).metadata();
+    if (meta.width !== AVATAR_SIDE || meta.height !== AVATAR_SIDE || stored.body.length > AVATAR_MAX_BYTES)
+      throw Error(`The icon was not shrunk: ${meta.width}×${meta.height}, ${stored.body.length} bytes`);
+    await expect(page.locator('.account-avatar img')).toHaveAttribute('src', /^blob:/);
+    await page.screenshot({ path: `${outputDir}/avatar-editor-picture.png`, clip: await sheetBox() });
+    // Another visitor sees it beside your sticker.
+    const theirs = visitor.locator(`[data-stamp-id="${await own.getAttribute('data-stamp-id')}"]`);
+    const box = (await theirs.boundingBox())!;
+    await visitor.mouse.move(box.x + box.width / 2 + 150, box.y + box.height / 2 + 150);
+    await visitor.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 });
+    await expect(visitor.locator('.sticker-avatar')).toHaveAttribute(
+      'src',
+      /firebasestorage\.googleapis\.com.*avatars%2F/,
+    );
+    await expect
+      .poll(() => visitor.locator('.sticker-avatar').evaluate((img: HTMLImageElement) => img.naturalWidth))
+      .toBe(AVATAR_SIDE);
+    // Not an image: said in the editor, nothing uploaded.
+    await editor
+      .locator('input[type=file]')
+      .setInputFiles({ name: 'a.txt', mimeType: 'text/plain', buffer: Buffer.from('hi') });
+    await expect(editor.locator('[role=status]')).toHaveText('画像ファイルを選んでください');
+    await editor.getByRole('button', { name: '模様に戻す' }).click();
+    await expect(editor.locator('[role=status]')).toHaveText('模様に戻しました');
+    if (db.avatars.has(user.uid)) throw Error('The icon picture was not deleted');
+    await expect(page.locator('.account-avatar img')).toHaveAttribute('src', /^data:image\/svg\+xml,/);
+    await expect(editor.getByRole('button', { name: '模様に戻す' })).toHaveCount(0);
+    await page.locator('.account-avatar').click();
+    await expect(editor).toHaveCount(0);
+  }
   await page.mouse.click(spot.x, spot.y);
   await menu.getByRole('button', { name: '動かす' }).click();
   await expect(menu).toHaveCount(0);
@@ -624,7 +684,7 @@ try {
   await expect(own).toHaveCount(0);
   await saved(page);
   passed(
-    'signed-out visitors cannot place; placing shows at once, saves the Gravatar hash, syncs live and keeps its anchor; hover shows the avatar; the menu moves and peels; reload and undo',
+    'signed-out visitors cannot place; placing shows at once, saves only the stickers, syncs live and keeps its anchor; hover shows the icon; a chosen icon picture is shrunk, shown to others and deleted; the menu moves and peels; reload and undo',
   );
 
   // ── Stickers by touch ──
@@ -1025,7 +1085,6 @@ try {
     .getAttribute('data-stamp-anchor'))!;
   db.pages.set('articles', {
     'other-visitor': {
-      avatar: 'b'.repeat(64),
       stamps: { 0: { anchor: first, x: 0.3, y: 0.3, kind: 1, angle: 0, createdAt: 1700000000000 } },
     },
   });

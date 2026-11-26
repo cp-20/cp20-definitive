@@ -1,8 +1,6 @@
 import { SHEET_KINDS, STICKER_KINDS } from './sticker-kinds.ts';
 export { SHEET_KINDS, STICKER_KINDS };
 export const stickerName = (kind: number) => STICKER_KINDS[kind]?.name || 'しーぴー';
-export const gravatarUrl = (hash: string, size = 64) =>
-  `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
 export function StickerFace(props: { kind: number }) {
   return (
     <img

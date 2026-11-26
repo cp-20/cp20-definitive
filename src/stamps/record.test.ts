@@ -59,14 +59,9 @@ describe('recordStamps', () => {
     assert.deepEqual([stamp.id, stamp.owner, stamp.slot], ['alice-3', 'alice', '3']);
   });
 
-  test('Gravatar のハッシュのアバターを持たせる', () => {
-    const hash = 'ab'.repeat(32);
-    assert.equal(recordStamps('a', { avatar: hash, stamps: { 0: sticker() } })[0].avatar, hash);
-  });
-
-  test('Gravatar のハッシュでないアバター（URL など）は持たせない', () => {
-    const avatar = 'https://evil.example/x.png';
-    assert.equal(recordStamps('a', { avatar, stamps: { 0: sticker() } })[0].avatar, undefined);
+  test('古いレコードに残るアバター (Gravatar のハッシュ) は読まない', () => {
+    const [stamp] = recordStamps('a', { avatar: 'ab'.repeat(32), stamps: { 0: sticker() } } as never);
+    assert.equal('avatar' in stamp, false);
   });
 });
 
@@ -115,12 +110,12 @@ describe('moveIn', () => {
 
 describe('nextRecord', () => {
   test('最後の1枚をはがしたらレコードごと消す（null）', () => {
-    assert.equal(nextRecord({}, 'hash', TS), null);
+    assert.equal(nextRecord({}, TS), null);
   });
 
-  test('シールがあれば、アバターと更新時刻を添える', () => {
+  test('シールがあれば更新時刻を添え、アカウントのほかの情報は入れない', () => {
     const stamps = { 0: sticker() };
-    assert.deepEqual(nextRecord(stamps, 'hash', TS), { stamps, updatedAt: TS, avatar: 'hash' });
+    assert.deepEqual(nextRecord(stamps, TS), { stamps, updatedAt: TS });
   });
 });
 
