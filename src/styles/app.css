@@ -2881,66 +2881,6 @@
     color: var(--muted);
     word-break: auto-phrase;
   }
-  .sticker-hint p {
-    margin: 0;
-  }
-  /* What signing in makes public: folded under the hint, opened by a small chevron link. */
-  .sticker-privacy summary {
-    display: inline-flex;
-    gap: 2px;
-    align-items: center;
-    margin: 2px 0 0 -3px;
-    padding: 2px 4px 2px 1px;
-    border-radius: 6px;
-    list-style: none;
-    color: var(--ink);
-    text-decoration: underline dotted;
-    text-underline-offset: 3px;
-    cursor: pointer;
-    transition: background-color var(--t-hover) var(--ease);
-  }
-  .sticker-privacy summary::-webkit-details-marker {
-    display: none;
-  }
-  .sticker-privacy summary svg {
-    transition: rotate var(--t-hover) var(--ease);
-  }
-  .sticker-privacy[open] summary svg {
-    rotate: 90deg;
-  }
-  @media (hover: hover) {
-    .sticker-privacy summary:hover {
-      background: #fff;
-    }
-  }
-  /* A small ink dot before each item, as a pen would mark a list on the sheet. */
-  .sticker-privacy ul {
-    display: grid;
-    gap: 2px;
-    margin: 4px 0 6px;
-    padding: 0;
-    list-style: none;
-  }
-  .sticker-privacy li {
-    position: relative;
-    padding-left: 14px;
-  }
-  .sticker-privacy li::before {
-    content: '';
-    position: absolute;
-    top: 0.68em;
-    left: 3px;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--edge);
-    opacity: 0.55;
-  }
-  .sticker-privacy a {
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
   .stamp-status {
     display: flex;
     gap: 8px;

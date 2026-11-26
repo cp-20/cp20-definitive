@@ -203,26 +203,9 @@ export function StickerSheet(props: {
           </p>
         </div>
       </Show>
-      {/* Before signing in, one line says what signing in is for and who sees what you place, and
-          a fold under it lists everything that becomes public, so it can be read before the
-          Google sign-in rather than found out after. */}
+      {/* Before signing in, one line says what signing in is for and who sees what you place. */}
       <Show when={!props.account}>
-        <div class="sticker-hint">
-          <p>ログインすると貼れます。貼ったシールはみんなに見えます。</p>
-          <details class="sticker-privacy">
-            <summary>
-              <Icon name="ChevronRight" size={13} />
-              公開されるもの
-            </summary>
-            <ul>
-              <li>貼ったシールの種類と位置</li>
-              <li>シールに添えるアイコン (自分で選んだ画像か、アカウントごとの模様)</li>
-            </ul>
-            <p>
-              メールアドレスや名前は公開しません。シールをすべてはがすと、そのページの記録は消えます。アイコン画像は別で残りますが、いつでも変えたり消したりできます。
-            </p>
-          </details>
-        </div>
+        <p class="sticker-hint">ログインすると貼れます。貼ったシールはみんなに見えます。</p>
       </Show>
       <div class="stamp-choices" role="group" aria-label="シールの種類">
         <For each={SHEET_KINDS}>
