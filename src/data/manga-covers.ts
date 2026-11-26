@@ -1,5 +1,5 @@
 // Volume 1 covers of the featured manga, saved under public/images/covers.
-// The series list itself comes from the 2026 edition; titles without a cover fall back to its thumbnail.
+// The series list itself is series.json; a title without a cover falls back to its thumbnail.
 // spine / ink: the colours of each book's spine on the shelf, picked from its cover.
 // face: the middle of the little picture at the head of the spine, on the cover (0-1 across,
 // 0-1 down), and how far to zoom in (the picture is 1/zoom of the cover's width square), as real
@@ -48,15 +48,6 @@ export const mangaCovers: Record<
     source: 'BOOK☆WALKER',
     url: 'https://bookwalker.jp/series/513981/list/',
   },
-  没落令嬢の悪党賛歌: {
-    image: '/images/covers/botsuraku-reijou.jpg',
-    spine: '#3b1f2b',
-    ink: '#e8c66a',
-    face: [0.66, 0.24],
-    zoom: 3,
-    source: 'BOOK☆WALKER',
-    url: 'https://bookwalker.jp/de6a461693-6f23-466a-8db4-99ade8de468f/',
-  },
   寿司ガキ: {
     image: '/images/covers/sushi-gaki.jpg',
     spine: '#d63e31',
@@ -66,14 +57,50 @@ export const mangaCovers: Record<
     source: 'カドコミ (KADOKAWA)',
     url: 'https://comic-walker.com/detail/KC_000933_S',
   },
-  ざこのみなさんお大事に: {
-    image: '/images/covers/zako-no-minasan.jpg',
-    spine: '#5fc9cf',
-    ink: '#2d2a33',
-    face: [0.53, 0.35],
-    zoom: 2.2,
+  今朝も揺られてます: {
+    image: '/images/covers/kesamo-yuraretemasu.jpg',
+    spine: '#5a3d8c',
+    ink: '#ffffff',
+    face: [0.31, 0.285],
+    zoom: 3,
     source: 'BOOK☆WALKER',
-    url: 'https://bookwalker.jp/de29709146-f9fd-4e74-979a-8c178c167f77/',
+    url: 'https://bookwalker.jp/de1843e290-4140-4fec-8556-1ef81fe81308/',
+  },
+  'ドリーム☆ジャンボ☆ガール': {
+    image: '/images/covers/dream-jumbo-girl.jpg',
+    spine: '#bfe3c8',
+    ink: '#2d2a33',
+    face: [0.42, 0.36],
+    zoom: 3.2,
+    source: '講談社',
+    url: 'https://www.kodansha.co.jp/comic/products/0000417019',
+  },
+  'なーんもうまくいかん！': {
+    image: '/images/covers/naanmo-umaku-ikan.jpg',
+    spine: '#a8c4e8',
+    ink: '#2d2a33',
+    face: [0.46, 0.33],
+    zoom: 4.4,
+    source: 'BOOK☆WALKER',
+    url: 'https://bookwalker.jp/de8c4d0ecd-f357-438c-8d72-d4917d9974f4/',
+  },
+  '#ギャルとギャルの百合': {
+    image: '/images/covers/gal-to-gal-no-yuri.jpg',
+    spine: '#f7c6dc',
+    ink: '#2d2a33',
+    face: [0.48, 0.37],
+    zoom: 2.2,
+    source: '小学館',
+    url: 'https://www.shogakukan.co.jp/books/09854389',
+  },
+  極悪令嬢の勘違い救国記: {
+    image: '/images/covers/gokuaku-reijou.jpg',
+    spine: '#4a3566',
+    ink: '#ffffff',
+    face: [0.61, 0.31],
+    zoom: 3.2,
+    source: '主婦と生活社',
+    url: 'https://www.shufu.co.jp/bookmook/detail/9784391165210/',
   },
 };
 

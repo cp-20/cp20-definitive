@@ -25,6 +25,7 @@ import {
   shownItems,
   thumbnailSources,
 } from '../../scripts/sync/images.ts';
+import { mangaSites } from '../../scripts/sync/picks.ts';
 import cacheJson from './image-cache.json' with { type: 'json' };
 import previewsJson from './previews.json' with { type: 'json' };
 import tracks from './tracks.json' with { type: 'json' };
@@ -153,6 +154,18 @@ describe('リンク先のプレビュー', () => {
   test('曲のリンクは、どれも素の https://youtu.be/<id>', () => {
     assert.deepEqual(
       tracks.map((t) => t.link).filter((link) => !/^https:\/\/youtu\.be\/[-_A-Za-z0-9]{11}$/.test(link)),
+      [],
+    );
+  });
+
+  test('漫画は掲載先の https のページへリンクし、どれも第1巻の表紙がある', () => {
+    assert.deepEqual(
+      brokenRules(series, (s) => s.title, {
+        'https の掲載先': (s) =>
+          new URL(s.link).protocol === 'https:' && mangaSites.has(new URL(s.link).hostname),
+        表紙がある: (s) => mangaCovers[s.title]?.image,
+        題名が重ならない: (s) => series.filter((t) => t.title === s.title).length === 1,
+      }),
       [],
     );
   });

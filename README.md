@@ -15,7 +15,7 @@ npm run dev:worker
 `http://localhost:8787` はCloudflare Static Assetsの本番相当プレビュー。`npm run dev` で `http://localhost:4321` の編集用サーバーを起動できます。シールは開発中も専用Firebase DBへ接続し、閲覧者間で共有されます。テスト用に貼ったシールははがしてください。
 
 ```sh
-npm run sync   # 記事・GitHub・おすすめ曲/漫画・サムネイルを取得
+npm run sync   # 記事・GitHub・サムネイルを取得
 npm test       # 振る舞いのテスト（収集・OG解析・画像・シールの楽観的更新と保存・配置計算など）とビルド結果の検査
 npm run cache:images # 画像キャッシュだけ更新（通常はsyncが実行）
 npm run check  # 型検査（TypeScript 7 のネイティブ版 tsc）
@@ -62,14 +62,13 @@ traPの記事は公開の著者ページ `https://trap.jp/author/cp20/` から�
 | note・sizu.me・blog.cp20.dev     | RSS。配信範囲から外れた過去記事を保持                                                                                  |
 | traP                             | 公開の著者ページを全ページ取得（公開時刻は著者RSSで補完）                                                              |
 | 公開コード                       | GitHub API。fork・archived以外の最近更新したリポジトリ                                                                 |
-| 好きな曲・漫画                   | 2026版の公開 `featured-tracks` / `featured-series` データ                                                              |
 | 漫画のサムネイル                 | 公式掲載ページの `og:image`。失敗時は前回URLを保持                                                                     |
 | 作品・記事のOG画像と作品アイコン | 元の公開ページから取得し、画像本体をダウンロード。実画像の寸法を記録。正常取得は週1回、新規・失敗分は6時間ごとに再取得 |
 | YouTubeのサムネイル              | おすすめ曲の動画IDに対応したYouTube画像                                                                                |
 
 ネットワークの部分障害では前回データを保持し、全記事ソース失敗時は処理を失敗させます。公開データに差分がある場合は型検査とビルドで確認してから `main` にコミットし、そのpushでCloudflareが再デプロイします。チェック日時だけの更新は `[skip ci]` を付けてコミットし、長期無活動でのActionsスケジュール停止を避けます。収集・テスト・ビルドは読み取り専用のジョブで行い（`npm ci --ignore-scripts`、認証情報を `.git/config` に残さない）、検証済みの生成物だけを書き込み権限のある別ジョブがコミットします。actions はコミットSHAで固定しています。traPの記事が前回の半分未満に減った取得は失敗扱いにして前回データを保持します。意図した削除なら手動実行で `allow_trap_shrink` を有効にしてください。RSSの不正な記事は1件だけ除外し、XMLで使えない制御文字はタイトルから除去します。OG解析は `<head>` 内を先頭1MBまでしか読みません。スケジュールの遅延・外部サービス障害まで保証するものではありません。
 
-自動取得できない経歴や説明を推測して更新することはしません。学年は各経歴の発生時点の値を保存しています。曲・漫画の「好き」は2026版に本人が選定したものです。視聴履歴を推測しません。
+自動取得できない経歴や説明を推測して更新することはしません。学年は各経歴の発生時点の値を保存しています。曲・漫画の「好き」は本人が選んで `tracks.json` / `series.json` に書いたもので、定期処理はサムネイルだけを更新し、選定は変えません。視聴履歴を推測しません。
 
 ## フォルダ構成
 
@@ -100,7 +99,7 @@ scripts はNodeの型除去でTypeScriptをそのまま実行します（tsx等�
 - 手動追加・除外・上書き：`src/data/manual.json`。
 - スナップショット：`src/data/generated.json`。
 - OG画像・アイコン・寸法：`src/data/previews.json`。OGがない作品にはテキストの代替を表示し、別の画像を捏造しません。ログインが必要で読めないページ（traP 部員向けのサービス）は、`works.json` に書いた画像（`image`）とアイコン（`icon`）を使います。`icon` と `image` はサイト内のパス（`/images/icons/…`・`/images/works/…`、`public/` にコミット）でもよく、そのまま表示します（anke-to v3 は traPtitech/logo のロゴの「a」の部分、NEON OVERDRIVE はサイトの favicon）。自作Cコンパイラは OG 画像が白地に題名だけなので、カードの絵 `public/images/works/c-compiler.png`（1200×630。大きな C、名前、clang → 1cc → 2cc → 3cc の世代、`int main() { return 42; }` とその LLVM IR、C で 4,842行・テスト165件、セルフホストの印。数字はリポジトリの `src/` と `test.sh` から）を一度描いてコミットし、`works.json` の `image` で指しています。HEAD を断るサーバーのアイコンは GET で確かめます。
-- 音楽・漫画：`tracks.json` / `series.json`（定期処理が更新）。選定は2026版の元データで変更できます。
+- 音楽・漫画：`tracks.json` / `series.json` を手で編集します（定期処理はサムネイルだけを更新）。漫画を足したら `manga-covers.ts` に第1巻の表紙と背表紙の色・絵の位置を書き、`node scripts/sync/images.ts --variants-only` でWebPを作ります。
 - 画像：`public/images/`、自動取得分は `public/media/`。92個の元URLを89ファイルに集約。`src/data/image-cache.json` が元URLとローカルファイルを対応付けます。漫画・YouTubeも事前保存し、ページに出典と著者・制作者を掲載。
 
 画像は収集時に形式と15MB上限を検査し、内容ハッシュをファイル名に使用。新規取得に失敗した場合（新しいOG画像がSVG・15MB超・一時的な取得失敗など）は、前回の画像URL・寸法・ファイルを維持します。画像を含めてActionsからコミットし、ブラウザは同一サイトのStatic Assetsを参照。`/media/*` は長期キャッシュし、画像が変わるとURLも変わります。OG画像と音楽・漫画のサムネイルには幅320/640/960pxのWebP（元より2割以上狭いもののみ。縮小と再エンコードだけ）を、作品アイコンには幅96pxのWebPを `<元ファイル名>-<幅>w.webp` で作ります（元ファイルより小さくならないものは捨てる）。`public/images/covers` の表紙には幅240pxと原寸のWebPを、`public/images/works` の作品の絵にはスクリーンショットと同じ幅のWebPを作ります。いずれも `srcset`/`sizes`（アイコンは小さいWebPを直接）で配信します（`node scripts/sync/images.ts --variants-only` で取得なしに再生成。表紙や作品の絵を追加したら実行）。クライアントには `virtual:cp20-media`（`vite.config.ts`）としてローカルパスと寸法だけを渡します。SVGやHTMLを外部画像として保存しません。
