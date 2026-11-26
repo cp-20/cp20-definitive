@@ -163,43 +163,52 @@ export function StickerSheet(props: {
           <Icon name="ChevronDown" size={16} />
         </button>
       </header>
-      {/* Your icon, shown beside your stickers: a picture you choose (shrunk before it is stored),
-          or the pattern every account has. */}
+      {/* Your icon, shown as it peeks out from behind your stickers, with what you can do to it.
+          Only a problem is put in words. */}
       <Show when={props.account && editing()}>
-        <div id="avatar-editor" class="avatar-editor">
-          <Avatar
-            class="avatar-editor-icon"
-            uid={props.account!.uid}
-            own={props.own}
-            size={AVATAR_SHOWN_MAX}
-          />
-          <div class="avatar-editor-body">
-            <p>シールに添えるアイコン</p>
-            <div class="avatar-editor-actions">
-              <label class="sheet-button" data-disabled={props.avatarBusy || undefined}>
-                <Icon name="ImageUp" size={14} />
-                画像を選ぶ
-                <input
-                  class="visually-hidden"
-                  type="file"
-                  accept="image/*"
-                  disabled={props.avatarBusy}
-                  onChange={(e) => {
-                    const file = e.currentTarget.files?.[0];
-                    e.currentTarget.value = '';
-                    if (file) props.uploadAvatar(file);
-                  }}
-                />
-              </label>
-              <Show when={picture()}>
-                <button class="sheet-button" disabled={props.avatarBusy} onClick={props.resetAvatar}>
-                  模様に戻す
-                </button>
-              </Show>
-            </div>
+        <div
+          id="avatar-editor"
+          class="avatar-editor"
+          role="group"
+          aria-label="シールに添えるアイコン"
+          aria-busy={props.avatarBusy ? 'true' : undefined}
+        >
+          <span class="avatar-editor-preview" aria-hidden="true">
+            <span class="sticker" data-kind={0}>
+              <StickerFace kind={0} />
+            </span>
+            <Avatar
+              class="avatar-editor-icon"
+              uid={props.account!.uid}
+              own={props.own}
+              size={AVATAR_SHOWN_MAX}
+            />
+          </span>
+          <div class="avatar-editor-actions">
+            <label class="sheet-button" data-disabled={props.avatarBusy || undefined}>
+              <Icon name="ImageUp" size={14} />
+              画像を選ぶ
+              <input
+                class="visually-hidden"
+                type="file"
+                accept="image/*"
+                disabled={props.avatarBusy}
+                onChange={(e) => {
+                  const file = e.currentTarget.files?.[0];
+                  e.currentTarget.value = '';
+                  if (file) props.uploadAvatar(file);
+                }}
+              />
+            </label>
+            <Show when={picture()}>
+              <button class="sheet-button" disabled={props.avatarBusy} onClick={props.resetAvatar}>
+                <Icon name="RotateCcw" size={14} />
+                模様に戻す
+              </button>
+            </Show>
           </div>
-          <p class="avatar-editor-status" role="status" data-error={props.avatarStatus.error || undefined}>
-            {props.avatarStatus.text || '真ん中を正方形に切り抜いて保存します。画像はみんなに見えます。'}
+          <p class="avatar-editor-status" role="status">
+            {props.avatarStatus.text}
           </p>
         </div>
       </Show>

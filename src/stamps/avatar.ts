@@ -5,7 +5,7 @@
 import config from '../data/firebase.json' with { type: 'json' };
 
 /** The largest an icon is shown, in CSS pixels (the icon editor's; app.css .avatar-editor-icon). */
-export const AVATAR_SHOWN_MAX = 56;
+export const AVATAR_SHOWN_MAX = 40;
 /** The stored picture's side in pixels: twice the largest icon shown, sharp on a 2x screen. */
 export const AVATAR_SIDE = AVATAR_SHOWN_MAX * 2;
 /** The most bytes a stored picture may have (storage.rules allows a little more). */

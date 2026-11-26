@@ -618,7 +618,8 @@ try {
     await editor
       .locator('input[type=file]')
       .setInputFiles({ name: 'me.jpg', mimeType: 'image/jpeg', buffer: photo });
-    await expect(editor.locator('[role=status]')).toHaveText('アイコンを変えました');
+    await expect(page.locator('.account-avatar img')).toHaveAttribute('src', /^blob:/);
+    await expect(editor.locator('[role=status]')).toBeEmpty();
     const stored = db.avatars.get(user.uid);
     if (!stored) throw Error('The icon was not uploaded');
     const meta = await sharp(stored.body).metadata();
@@ -644,7 +645,7 @@ try {
       .setInputFiles({ name: 'a.txt', mimeType: 'text/plain', buffer: Buffer.from('hi') });
     await expect(editor.locator('[role=status]')).toHaveText('画像ファイルを選んでください');
     await editor.getByRole('button', { name: '模様に戻す' }).click();
-    await expect(editor.locator('[role=status]')).toHaveText('模様に戻しました');
+    await expect(page.locator('.account-avatar img')).toHaveAttribute('src', /^data:image\/svg\+xml,/);
     if (db.avatars.has(user.uid)) throw Error('The icon picture was not deleted');
     await expect(page.locator('.account-avatar img')).toHaveAttribute('src', /^data:image\/svg\+xml,/);
     await expect(editor.getByRole('button', { name: '模様に戻す' })).toHaveCount(0);

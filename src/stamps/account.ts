@@ -27,13 +27,13 @@ export function createStampAccount(options: {
     if (before) URL.revokeObjectURL(before);
     setOwn(next);
   };
-  async function changeAvatar(work: () => Promise<OwnAvatar>, busyText: string, doneText: string) {
+  // The new icon shows for itself; only a failure is put in words.
+  async function changeAvatar(work: () => Promise<OwnAvatar>) {
     if (avatarBusy()) return;
     setAvatarBusy(true);
-    setAvatarStatus({ text: busyText });
+    setAvatarStatus({ text: '' });
     try {
       showOwn(await work());
-      setAvatarStatus({ text: doneText });
     } catch (e) {
       setAvatarStatus({
         text: e instanceof AvatarError ? e.message : 'アイコンを保存できませんでした',
@@ -45,25 +45,17 @@ export function createStampAccount(options: {
   }
   /** Shrinks `file` and stores it as your icon. */
   const uploadAvatar = (file: File) =>
-    changeAvatar(
-      async () => {
-        const picture = await compressAvatar(file);
-        await (await client()).uploadAvatar(picture);
-        return { version: Date.now(), override: URL.createObjectURL(picture) };
-      },
-      '保存しています…',
-      'アイコンを変えました',
-    );
+    changeAvatar(async () => {
+      const picture = await compressAvatar(file);
+      await (await client()).uploadAvatar(picture);
+      return { version: Date.now(), override: URL.createObjectURL(picture) };
+    });
   /** Deletes your icon picture: your stickers show your pattern again. */
   const resetAvatar = () =>
-    changeAvatar(
-      async () => {
-        await (await client()).removeAvatar();
-        return { version: Date.now(), override: null };
-      },
-      '戻しています…',
-      '模様に戻しました',
-    );
+    changeAvatar(async () => {
+      await (await client()).removeAvatar();
+      return { version: Date.now(), override: null };
+    });
   let watching: Promise<void> | undefined;
   function connect() {
     if (!watching && readPref(ACCOUNT_KEY)) setRestoring(true);
