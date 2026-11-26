@@ -40,9 +40,14 @@ npm run build
    - Deploy command：`npx wrangler deploy`
    - Node.js：`.node-version` の 24（Workers Buildsの既定も24）
    - 任意：Non-production branch builds を有効にすると、ブランチごとのプレビューURLで確認できます。
-4. workers.devで確認後、CloudflareのCustom Domainsで `cp20.dev` を接続。
+4. `cp20.dev` はCustom Domainとして `wrangler.jsonc` の `routes` に書いてあり、デプロイのたびにこのWorkerへ付きます（2026-11-26に2026版のWorker `2026-portfolio` から付け替え済み）。canonical / sitemap / robots / RSSは `https://cp20.dev` を指します。
 
-ドメイン・既存本番サイト・みんなのものさしリポジトリの公開設定は変更していません。canonical / sitemap / robots / RSSは本番予定の `https://cp20.dev` を指します。
+### 2026版との互換
+
+2026版は `2026.cp20.dev` で動き続けています。2026版がcp20.devで答えていたもののうち、次のものはWorker（`worker/index.ts`）が引き継ぎます。Workerが動くのは `run_worker_first` に書いたパスだけで、ほかは静的ファイルを直接返します。
+
+- `curl cp20.dev` などコマンドラインからの `/`・`/articles`・`/works`・`/works/<id>`・`/featured-tracks`・`/featured-series`、およびどの道具からでも `?raw=true`・`?no-image=true`：サービスバインディング `LEGACY` で2026版のWorkerにそのまま渡す（ターミナル表示とJSON）。
+- ブラウザで開いた `/featured-tracks`・`/featured-series`：`/about#music`・`/about#manga` へ301。
 
 ### traPブログ
 
