@@ -1,5 +1,83 @@
 [
   {
+    "id": "slack-block-kit-preview",
+    "title": "Block Kit Preview for Slack",
+    "description": "Slack の Block Kit の JSON を、Slack そっくりの見た目でその場でプレビューできるエディタ。",
+    "summary": "メッセージ・旧形式の attachments・モーダル・App Home の JSON を書くと、Slack のクライアントに似せた表示ですぐに確認できる。Slack API の制限に沿った警告を出し、書いた内容はサーバーに送らずに URL だけで共有できる。",
+    "role": "1人で企画・デザイン・実装",
+    "url": "https://slack.cp20.dev/",
+    "repositories": ["https://github.com/cp-20/slack-block-kit-preview"],
+    "productionTime": "2026/11/26",
+    "techStack": [
+      {
+        "label": "TypeScript",
+        "type": "language"
+      },
+      {
+        "label": "Preact",
+        "type": "framework"
+      },
+      {
+        "label": "Vite",
+        "type": "tool"
+      },
+      {
+        "label": "CodeMirror",
+        "type": "library"
+      },
+      {
+        "label": "Cloudflare Workers",
+        "type": "deploy"
+      }
+    ],
+    "tags": ["個人開発"],
+    "comments": [
+      "Slack に投稿するメッセージやモーダルの JSON を、送る前に手元で確かめるためのツールです。Block Kit Builder からコピーした blocks の配列や、chat.postMessage・views.open などに渡す本体をそのまま貼り付けられます。",
+      "プレビューは入力に合わせて即座に更新され、ブロック数・文字数の上限や block_id の重複、モーダルの submit 忘れといった Slack API の決まりを警告として表示します。プレビュー上のボタンやメニューを押すと、アプリに届く action_id と value も確認できます。",
+      "書いた JSON は圧縮して URL のフラグメントに入れるので、サーバーに送らずにリンクだけで共有できます。AI エージェント向けの llms.txt も用意しています。"
+    ],
+    "relatedArticles": []
+  },
+  {
+    "id": "discord-components-preview",
+    "title": "Message Preview for Discord",
+    "description": "Discord のメッセージの JSON を、Discord そっくりの見た目でその場でプレビューできるエディタ。",
+    "summary": "本文・埋め込み (embeds)・Action Row・Components V2 を含むメッセージの JSON を書くと、Discord のクライアントに似せた表示ですぐに確認できる。Discord API の制限に沿った警告を出し、書いた内容はサーバーに送らずに URL だけで共有できる。",
+    "role": "1人で企画・デザイン・実装",
+    "url": "https://discord.cp20.dev/",
+    "repositories": ["https://github.com/cp-20/discord-components-preview"],
+    "productionTime": "2026/11/26",
+    "techStack": [
+      {
+        "label": "TypeScript",
+        "type": "language"
+      },
+      {
+        "label": "Preact",
+        "type": "framework"
+      },
+      {
+        "label": "Vite",
+        "type": "tool"
+      },
+      {
+        "label": "CodeMirror",
+        "type": "library"
+      },
+      {
+        "label": "Cloudflare Workers",
+        "type": "deploy"
+      }
+    ],
+    "tags": ["個人開発"],
+    "comments": [
+      "Discord の Bot や Webhook で送るメッセージの JSON を、送る前に手元で確かめるためのツールです。新しい Components V2 にも対応していて、Container や Section などを組み合わせたメッセージも表示できます。",
+      "プレビューは入力に合わせて即座に更新され、Components V2 のフラグ忘れや埋め込みの文字数・ボタン数の上限といった Discord API の決まりを警告として表示します。プレビュー上の要素をクリックすると、対応する JSON の場所に飛べます。",
+      "書いた JSON は圧縮して URL のフラグメントに入れるので、サーバーに送らずにリンクだけで共有できます。AI エージェント向けの llms.txt も用意しています。"
+    ],
+    "relatedArticles": []
+  },
+  {
     "id": "faster-malloc",
     "title": "faster-malloc",
     "description": "LD_PRELOAD で差し替えられる、C 言語製の高速メモリアロケータ。",

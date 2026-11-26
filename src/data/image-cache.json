@@ -583,6 +583,44 @@
       }
     ]
   },
+  "https://discord.cp20.dev/apple-touch-icon.png": {
+    "file": "/media/2323472cddeb4d485f3c541c.png",
+    "checkedAt": "2026-11-26T10:29:33.786Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/2323472cddeb4d485f3c541c-96w.webp",
+        "width": 96
+      }
+    ]
+  },
+  "https://discord.cp20.dev/og.png": {
+    "file": "/media/acce848b0ccc40879f65ddcb.png",
+    "checkedAt": "2026-11-26T10:29:33.823Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/acce848b0ccc40879f65ddcb-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/acce848b0ccc40879f65ddcb-480w.webp",
+        "width": 480
+      },
+      {
+        "file": "/media/acce848b0ccc40879f65ddcb-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/acce848b0ccc40879f65ddcb-960w.webp",
+        "width": 960
+      },
+      {
+        "file": "/media/acce848b0ccc40879f65ddcb-1200w.webp",
+        "width": 1200
+      }
+    ]
+  },
   "https://i.ytimg.com/vi/ATBCJbb1RT0/sddefault.jpg": {
     "file": "/media/df34a13ce2802b91fc4d3f4d.jpg",
     "checkedAt": "2026-11-21T01:22:34.159Z",
@@ -1614,6 +1652,44 @@
       {
         "file": "/media/5cf97450d3c7d8441df6094e-500w.webp",
         "width": 500
+      }
+    ]
+  },
+  "https://slack.cp20.dev/apple-touch-icon.png": {
+    "file": "/media/7a6ef7d651f86ac15666edaa.png",
+    "checkedAt": "2026-11-26T10:29:33.768Z",
+    "width": 180,
+    "variants": [
+      {
+        "file": "/media/7a6ef7d651f86ac15666edaa-96w.webp",
+        "width": 96
+      }
+    ]
+  },
+  "https://slack.cp20.dev/og.png": {
+    "file": "/media/5451d13eec37c1728fe4a20d.png",
+    "checkedAt": "2026-11-26T10:29:33.814Z",
+    "width": 1200,
+    "variants": [
+      {
+        "file": "/media/5451d13eec37c1728fe4a20d-320w.webp",
+        "width": 320
+      },
+      {
+        "file": "/media/5451d13eec37c1728fe4a20d-480w.webp",
+        "width": 480
+      },
+      {
+        "file": "/media/5451d13eec37c1728fe4a20d-640w.webp",
+        "width": 640
+      },
+      {
+        "file": "/media/5451d13eec37c1728fe4a20d-960w.webp",
+        "width": 960
+      },
+      {
+        "file": "/media/5451d13eec37c1728fe4a20d-1200w.webp",
+        "width": 1200
       }
     ]
   },

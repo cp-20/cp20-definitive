@@ -726,5 +726,19 @@
     "width": 1200,
     "height": 630,
     "checkedAt": "2026-11-23T23:57:41.496Z"
+  },
+  "https://discord.cp20.dev/": {
+    "image": "https://discord.cp20.dev/og.png",
+    "icon": "https://discord.cp20.dev/apple-touch-icon.png",
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-26T10:29:32.192Z"
+  },
+  "https://slack.cp20.dev/": {
+    "image": "https://slack.cp20.dev/og.png",
+    "icon": "https://slack.cp20.dev/apple-touch-icon.png",
+    "width": 1200,
+    "height": 630,
+    "checkedAt": "2026-11-26T10:29:32.288Z"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-26T08:26:45.588Z",
+  "updatedAt": "2026-11-26T10:29:29.410Z",
   "articles": [
     {
       "title": "社会性",
@@ -472,11 +472,21 @@
   ],
   "repos": [
     {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-11-26T08:27:14Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "slack-block-kit-preview",
       "url": "https://github.com/cp-20/slack-block-kit-preview",
       "description": "Edit Slack Block Kit payloads (messages, attachments, modals, App Home) with a live, client-like preview and shareable links",
       "language": "TypeScript",
-      "stars": 0,
+      "stars": 1,
       "updatedAt": "2026-11-26T06:18:07Z",
       "fork": false,
       "archived": false
@@ -486,7 +496,7 @@
       "url": "https://github.com/cp-20/discord-components-preview",
       "description": "Edit Discord Components V2 payloads with a live, client-like preview and shareable links",
       "language": "TypeScript",
-      "stars": 0,
+      "stars": 1,
       "updatedAt": "2026-11-26T05:14:43Z",
       "fork": false,
       "archived": false
@@ -498,16 +508,6 @@
       "language": "JavaScript",
       "stars": 2,
       "updatedAt": "2026-11-26T04:23:01Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-11-25T21:45:50Z",
       "fork": false,
       "archived": false
     },
@@ -1425,39 +1425,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-26T08:26:45.588Z",
+      "lastSuccess": "2026-11-26T10:29:29.410Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-26T08:26:45.588Z",
+      "lastSuccess": "2026-11-26T10:29:29.410Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-26T08:26:45.588Z",
+      "lastSuccess": "2026-11-26T10:29:29.410Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-26T08:26:45.588Z",
+      "lastSuccess": "2026-11-26T10:29:29.410Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-26T08:26:45.588Z",
+      "lastSuccess": "2026-11-26T10:29:29.410Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-26T08:26:45.588Z",
+      "lastSuccess": "2026-11-26T10:29:29.410Z",
       "count": 136
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-26T08:26:45.588Z",
+      "lastSuccess": "2026-11-26T10:29:29.410Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-26T08:26:45.588Z"
+  "checkedAt": "2026-11-26T10:29:29.410Z"
 }
