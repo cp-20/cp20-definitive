@@ -157,9 +157,34 @@ export function StickerSheet(props: {
           <Icon name="ChevronDown" size={16} />
         </button>
       </header>
-      {/* Before signing in, one line says what signing in is for and who sees what you place. */}
+      {/* Before signing in, one line says what signing in is for and who sees what you place, and
+          a fold under it lists everything that becomes public, so it can be read before the
+          Google sign-in rather than found out after. */}
       <Show when={!props.account}>
-        <p class="sticker-hint">Google でログインすると貼れます (みんなに見えます)</p>
+        <div class="sticker-hint">
+          <p>ログインすると貼れます。貼ったシールはみんなに見えます。</p>
+          <details class="sticker-privacy">
+            <summary>
+              <Icon name="ChevronRight" size={13} />
+              公開されるもの
+            </summary>
+            <ul>
+              <li>貼ったシールの種類と位置</li>
+              <li>
+                シールに添える{' '}
+                <a href="https://gravatar.com" target="_blank" rel="noreferrer">
+                  Gravatar
+                </a>{' '}
+                アイコン (未登録なら自動生成の模様)
+              </li>
+              <li>アイコン表示用の、メールアドレスのハッシュ値 (メールアドレスを知る人は照合できます)</li>
+            </ul>
+            <p>
+              メールアドレスそのものや名前は公開しません。シールをすべてはがすと、そのページの公開データ
+              (ハッシュ値を含む) は消えます。
+            </p>
+          </details>
+        </div>
       </Show>
       <div class="stamp-choices" role="group" aria-label="シールの種類">
         <For each={SHEET_KINDS}>
