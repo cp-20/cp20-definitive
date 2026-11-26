@@ -5,9 +5,28 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  // Only the paths the 2026 edition answered for terminals run the Worker (worker/index.ts);
+  // the rest are served from the assets without it.
+  "main": "worker/index.ts",
   "assets": {
     "directory": "./dist/client",
+    "binding": "ASSETS",
     "html_handling": "drop-trailing-slash",
-    "not_found_handling": "404-page"
-  }
+    "not_found_handling": "404-page",
+    "run_worker_first": [
+      "/",
+      "/articles",
+      "/works",
+      "/works/*",
+      "/featured-tracks",
+      "/featured-series"
+    ]
+  },
+  // The 2026 edition, still at 2026.cp20.dev, answers `curl cp20.dev` and `?raw=true`.
+  "services": [
+    {
+      "binding": "LEGACY",
+      "service": "2026-portfolio"
+    }
+  ]
 }
