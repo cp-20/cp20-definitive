@@ -816,13 +816,15 @@
   /* The 404 label takes the place of the space over a page's title, so the title is where the
      other pages have theirs. */
   .not-found {
+    container-type: inline-size;
     padding-block: 0 8px;
   }
-  /* One line at any width: the size follows the screen, and the only place it may still break
-     is the <wbr> after ページが. */
+  /* One line at any width: 「ページが見つかりません。」 is about 11em in the hand-written face, so
+     the size follows the width it has, up to a page title's. The <wbr> after ページが is the only
+     place it could still break. */
   .not-found h1 {
     margin-top: 14px;
-    font-size: var(--fs-h1);
+    font-size: min(var(--fs-h1), 100cqi / 11.5);
     word-break: keep-all;
   }
 }
@@ -3742,10 +3744,6 @@
       --fs-h1: 2.25rem;
       --sheet-radius: 20px;
     }
-    /* 「ページが見つかりません」 stays one line (10em in the hand-written face). */
-    .not-found h1 {
-      font-size: var(--fs-h2);
-    }
     .not-found {
       padding-top: 16px;
     }
@@ -4149,9 +4147,6 @@
     }
   }
   @media (max-width: 380px) {
-    .not-found h1 {
-      font-size: var(--fs-h3);
-    }
     .wrap {
       padding-inline: 14px;
     }
