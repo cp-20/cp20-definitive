@@ -2,7 +2,7 @@
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { AVATAR_SHOWN_MAX, AVATAR_SIDE, avatarUrl, patternIcon } from './avatar.ts';
+import { AVATAR_SHOWN_MAX, AVATAR_SIDE, avatarUrl, googlePhoto, patternIcon } from './avatar.ts';
 
 describe('patternIcon', () => {
   const cells = (uri: string) =>
@@ -42,4 +42,12 @@ test('保存する画像は、いちばん大きく見せるアイコンの2倍�
   ].map((m) => +m[1]);
   assert.equal(Math.max(...sizes), AVATAR_SHOWN_MAX);
   assert.equal(AVATAR_SIDE, AVATAR_SHOWN_MAX * 2);
+});
+
+test('Google のアイコンは、保存する大きさの2倍で取り寄せる', () => {
+  assert.equal(
+    googlePhoto('https://lh3.googleusercontent.com/a/ACg8ocK=s96-c'),
+    `https://lh3.googleusercontent.com/a/ACg8ocK=s${AVATAR_SIDE * 2}-c`,
+  );
+  assert.equal(googlePhoto('https://example.com/me.png'), 'https://example.com/me.png');
 });

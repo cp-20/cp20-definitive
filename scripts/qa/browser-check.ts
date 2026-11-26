@@ -520,7 +520,8 @@ try {
     hasTouch: true,
   });
   await mockFirebase(visitorContext, { db });
-  await signInAs(visitorContext, { uid: 'mock-visitor', email: 'visitor2@example.com' });
+  // A visitor whose Google account has no picture.
+  await signInAs(visitorContext, { uid: 'mock-visitor', email: 'visitor2@example.com', photoURL: null });
   const visitor = await visitorContext.newPage();
   await visitor.goto(origin + '/');
   // Without a Google sign-in, stickers can be seen but not placed.
@@ -548,8 +549,23 @@ try {
   await guest.getByRole('button', { name: /^クローバー/ }).click();
   await expect(guest.locator('.stamp-overlay')).toHaveCount(0);
   await page.locator('.sticker-tab').click();
-  // Without a picture of their own, a visitor's icon is their account's pattern.
-  await expect(page.locator('.account-avatar img')).toHaveAttribute('src', /^data:image\/svg\+xml,/);
+  // On the first sign-in, the Google account's picture becomes the icon, shrunk like any other
+  // (just stored, or after a reload, loaded from Cloud Storage).
+  await expect(page.locator('.account-avatar img')).toHaveAttribute(
+    'src',
+    /^blob:|avatars%2Fmock-google-user/,
+  );
+  await expect
+    .poll(() => page.locator('.account-avatar img').evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBe(AVATAR_SIDE);
+  {
+    const google = db.avatars.get(user.uid);
+    const size = google && (await sharp(google.body).metadata()).width;
+    if (google?.source !== 'google' || size !== AVATAR_SIDE)
+      throw Error(`The Google picture was not stored as the icon: ${google?.source}, ${size}px`);
+    // Without a Google picture, the icon stays the account's pattern and nothing is stored.
+    if (db.avatars.has('mock-visitor')) throw Error('An icon was stored for an account without a picture');
+  }
   await axe('/#sticker-sheet');
   await expect(page.locator('.sticker-hint')).toHaveCount(0);
   // The sticker shows before the save answers.
@@ -590,7 +606,7 @@ try {
   const menu = page.locator('.stamp-menu');
   await page.mouse.move(spot.x + 120, spot.y + 120);
   await page.mouse.move(spot.x, spot.y, { steps: 4 });
-  await expect(page.locator('.sticker-avatar')).toHaveAttribute('src', /^data:image\/svg\+xml,/);
+  await expect(page.locator('.sticker-avatar')).toHaveAttribute('src', /^blob:|avatars%2Fmock-google-user/);
   await page.mouse.click(spot.x, spot.y);
   await expect(menu).toBeVisible();
   await expect(own.locator('.stamp-open')).toHaveAttribute('aria-expanded', 'true');
@@ -598,7 +614,7 @@ try {
   await page.mouse.click(spot.x, spot.y);
   await expect(menu).toHaveCount(0);
   // Your icon: a picture you choose is cut square, shrunk to twice its largest size on the page
-  // and uploaded; your stickers show it; going back to the pattern deletes it.
+  // and uploaded; your stickers show it; you can go back to your Google picture.
   {
     const editor = page.locator('#avatar-editor');
     const sheetBox = async () => (await page.locator('.sticker-sheet').boundingBox())!;
@@ -621,7 +637,7 @@ try {
     await expect(page.locator('.account-avatar img')).toHaveAttribute('src', /^blob:/);
     await expect(editor.locator('[role=status]')).toBeEmpty();
     const stored = db.avatars.get(user.uid);
-    if (!stored) throw Error('The icon was not uploaded');
+    if (stored?.source !== 'upload') throw Error('The icon was not uploaded');
     const meta = await sharp(stored.body).metadata();
     if (meta.width !== AVATAR_SIDE || meta.height !== AVATAR_SIDE || stored.body.length > AVATAR_MAX_BYTES)
       throw Error(`The icon was not shrunk: ${meta.width}×${meta.height}, ${stored.body.length} bytes`);
@@ -644,11 +660,11 @@ try {
       .locator('input[type=file]')
       .setInputFiles({ name: 'a.txt', mimeType: 'text/plain', buffer: Buffer.from('hi') });
     await expect(editor.locator('[role=status]')).toHaveText('画像ファイルを選んでください');
-    await editor.getByRole('button', { name: '模様に戻す' }).click();
-    await expect(page.locator('.account-avatar img')).toHaveAttribute('src', /^data:image\/svg\+xml,/);
-    if (db.avatars.has(user.uid)) throw Error('The icon picture was not deleted');
-    await expect(page.locator('.account-avatar img')).toHaveAttribute('src', /^data:image\/svg\+xml,/);
-    await expect(editor.getByRole('button', { name: '模様に戻す' })).toHaveCount(0);
+    const chosen = db.avatars.get(user.uid);
+    await editor.getByRole('button', { name: 'Google のアイコンに戻す' }).click();
+    await expect(editor.getByRole('button', { name: 'Google のアイコンに戻す' })).toHaveCount(0);
+    if (db.avatars.get(user.uid)?.source !== 'google' || db.avatars.get(user.uid) === chosen)
+      throw Error('The Google picture was not put back');
     await page.locator('.account-avatar').click();
     await expect(editor).toHaveCount(0);
   }
@@ -685,7 +701,7 @@ try {
   await expect(own).toHaveCount(0);
   await saved(page);
   passed(
-    'signed-out visitors cannot place; placing shows at once, saves only the stickers, syncs live and keeps its anchor; hover shows the icon; a chosen icon picture is shrunk, shown to others and deleted; the menu moves and peels; reload and undo',
+    'signed-out visitors cannot place; placing shows at once, saves only the stickers, syncs live and keeps its anchor; the Google picture becomes the icon at the first sign-in; hover shows it; a chosen picture is shrunk, shown to others, and the Google one put back; the menu moves and peels; reload and undo',
   );
 
   // ── Stickers by touch ──

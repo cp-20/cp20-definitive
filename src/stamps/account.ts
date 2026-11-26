@@ -5,7 +5,7 @@ import { createSignal, onSettled } from 'solid-js';
 import type { Account } from './types.ts';
 import { signInMessage } from './a11y.ts';
 import { ACCOUNT_KEY, readPref, writePref } from './prefs.ts';
-import { AvatarError, compressAvatar } from './avatar.ts';
+import { AvatarError, compressAvatar, type AvatarSource } from './avatar.ts';
 import type { OwnAvatar } from './Avatar.tsx';
 type Client = typeof import('./client.ts');
 export function createStampAccount(options: {
@@ -21,48 +21,82 @@ export function createStampAccount(options: {
     // Your icon as last changed on this visit, and what changing it is doing.
     [own, setOwn] = createSignal<OwnAvatar>({ version: 0 }),
     [avatarBusy, setAvatarBusy] = createSignal(false),
-    [avatarStatus, setAvatarStatus] = createSignal<{ text: string; error?: boolean }>({ text: '' });
+    [avatarStatus, setAvatarStatus] = createSignal<{ text: string; error?: boolean }>({ text: '' }),
+    // Where your stored picture came from (null: none, so the pattern; undefined: not known yet).
+    [avatarSource, setAvatarSource] = createSignal<AvatarSource | null | undefined>(undefined);
   const showOwn = (next: OwnAvatar) => {
     const before = own().override;
     if (before) URL.revokeObjectURL(before);
     setOwn(next);
   };
-  // The new icon shows for itself; only a failure is put in words.
-  async function changeAvatar(work: () => Promise<OwnAvatar>) {
+  // The new icon shows for itself; only a failure is put in words, and only for a change you
+  // asked for (`quiet` is the first sign-in's own).
+  async function changeAvatar(work: () => Promise<OwnAvatar>, quiet = false) {
     if (avatarBusy()) return;
     setAvatarBusy(true);
     setAvatarStatus({ text: '' });
     try {
       showOwn(await work());
     } catch (e) {
-      setAvatarStatus({
-        text: e instanceof AvatarError ? e.message : 'アイコンを保存できませんでした',
-        error: true,
-      });
+      if (!quiet)
+        setAvatarStatus({
+          text: e instanceof AvatarError ? e.message : 'アイコンを保存できませんでした',
+          error: true,
+        });
     } finally {
       setAvatarBusy(false);
     }
   }
+  const store = async (picture: Blob, source: AvatarSource) => {
+    await (await client()).uploadAvatar(picture, source);
+    setAvatarSource(source);
+    return { version: Date.now(), override: URL.createObjectURL(picture) };
+  };
   /** Shrinks `file` and stores it as your icon. */
-  const uploadAvatar = (file: File) =>
-    changeAvatar(async () => {
-      const picture = await compressAvatar(file);
-      await (await client()).uploadAvatar(picture);
-      return { version: Date.now(), override: URL.createObjectURL(picture) };
-    });
-  /** Deletes your icon picture: your stickers show your pattern again. */
+  const uploadAvatar = (file: File) => changeAvatar(async () => store(await compressAvatar(file), 'upload'));
+  /** Stores your Google account's picture as your icon. */
+  const useGooglePhoto = (quiet = false) =>
+    changeAvatar(
+      async () => store(await compressAvatar(await (await client()).fetchGooglePhoto()), 'google'),
+      quiet,
+    );
+  /**
+   * Goes back from a picture you chose: to your Google account's picture, or without one, to
+   * your pattern (the picture is deleted).
+   */
   const resetAvatar = () =>
-    changeAvatar(async () => {
-      await (await client()).removeAvatar();
-      return { version: Date.now(), override: null };
-    });
+    account()?.photo
+      ? useGooglePhoto()
+      : changeAvatar(async () => {
+          await (await client()).removeAvatar();
+          setAvatarSource(null);
+          return { version: Date.now(), override: null };
+        });
+  // On signing in, find where your picture came from; with none yet (the first sign-in), your
+  // Google account's picture becomes your icon.
+  let checked = '';
+  async function prepareAvatar(next: Account) {
+    if (checked === next.uid) return;
+    checked = next.uid;
+    try {
+      const source = await (await client()).avatarSource(next.uid);
+      setAvatarSource(source);
+      if (source === null && next.photo) await useGooglePhoto(true);
+    } catch {
+      checked = '';
+    }
+  }
+  const receive = (next: Account | null) => {
+    setAccount(next);
+    if (next) void prepareAvatar(next);
+  };
   let watching: Promise<void> | undefined;
   function connect() {
     if (!watching && readPref(ACCOUNT_KEY)) setRestoring(true);
     return (watching ||= client()
       .then((api) =>
         api.watchAccount((next) => {
-          setAccount(next);
+          receive(next);
           setRestoring(false);
           writePref(ACCOUNT_KEY, next ? '1' : null);
         }),
@@ -86,7 +120,7 @@ export function createStampAccount(options: {
       await connect();
       if (!account()) {
         const next = await api.signIn();
-        if (next) setAccount(next);
+        if (next) receive(next);
         else onMessage('Google アカウントでログインしてください');
       }
     } catch (e) {
@@ -99,6 +133,8 @@ export function createStampAccount(options: {
     beforeSignOut();
     showOwn({ version: 0 });
     setAvatarStatus({ text: '' });
+    setAvatarSource(undefined);
+    checked = '';
     try {
       await (await client()).signOut();
     } catch {
@@ -115,6 +151,7 @@ export function createStampAccount(options: {
     own,
     avatarBusy,
     avatarStatus,
+    avatarSource,
     uploadAvatar,
     resetAvatar,
   };

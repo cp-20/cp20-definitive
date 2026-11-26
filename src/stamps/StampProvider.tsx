@@ -182,6 +182,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
           own={account.own()}
           avatarBusy={account.avatarBusy()}
           avatarStatus={account.avatarStatus()}
+          avatarSource={account.avatarSource()}
           uploadAvatar={account.uploadAvatar}
           resetAvatar={account.resetAvatar}
           undo={edits.undo}

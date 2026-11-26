@@ -37,18 +37,19 @@ const expect = async (response: Promise<Response>, ok: boolean, label: string) =
 const alice = token('alice'),
   bob = token('bob');
 {
-  // The way the site uploads: multipart, with the picture's type and cache time as metadata.
+  // The way the site uploads: multipart, with the picture's type, cache time and source as metadata.
   const { url, init } = avatarUpload(
     'alice',
     new Blob([new Uint8Array(3000)], { type: 'image/webp' }),
     alice,
+    'google',
     `http://${emulator}`,
   );
   await expect(fetch(url, init), true, 'owner uploads a WebP the way the site does');
   const meta = await (await fetch(object('avatars/alice'))).json();
   assert.deepEqual(
-    [meta.contentType, meta.cacheControl, Number(meta.size)],
-    ['image/webp', 'public, max-age=300', 3000],
+    [meta.contentType, meta.cacheControl, Number(meta.size), meta.metadata?.source],
+    ['image/webp', 'public, max-age=300', 3000, 'google'],
   );
   checks++;
 }

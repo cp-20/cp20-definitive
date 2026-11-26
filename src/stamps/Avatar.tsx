@@ -9,15 +9,7 @@ const missing = new Set<string>();
  * after going back to the pattern; `version` makes a changed picture load afresh.
  */
 export type OwnAvatar = { version: number; override?: string | null };
-export function Avatar(props: {
-  uid: string;
-  own?: OwnAvatar;
-  class?: string;
-  size: number;
-  alt?: string;
-  // Told whether a picture (true) or the pattern (false) is shown.
-  onShown?: (picture: boolean) => void;
-}) {
+export function Avatar(props: { uid: string; own?: OwnAvatar; class?: string; size: number; alt?: string }) {
   const key = () => `${props.uid}:${props.own?.version ?? 0}`;
   const [failed, setFailed] = createSignal('');
   const pattern = () => patternIcon(props.uid);
@@ -35,7 +27,6 @@ export function Avatar(props: {
       height={props.size}
       draggable={false}
       style={{ 'background-image': `url("${pattern()}")` }}
-      onLoad={() => props.onShown?.(!src().startsWith('data:'))}
       onError={() => {
         missing.add(key());
         setFailed(key());

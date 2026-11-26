@@ -4,6 +4,7 @@
 // ownership and throttle rules (writes need a Google token for the record's own uid).
 import { readFile } from 'node:fs/promises';
 import type { BrowserContext, Route } from '@playwright/test';
+import sharp from 'sharp';
 import config from '../../src/data/firebase.json' with { type: 'json' };
 // Page keys are checked against database.rules.json itself (the file that gets deployed), so a
 // client page key the rules do not allow fails the browser checks too.
@@ -16,8 +17,15 @@ const cors = {
   'access-control-allow-headers': '*',
   'access-control-allow-methods': '*',
 };
+/** The Google account picture of the seeded user (served by the route below). */
+export const mockPhoto = 'https://lh3.googleusercontent.com/a/mock-photo=s96-c';
 const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
-type Claims = { user_id?: string; email?: string; firebase?: { sign_in_provider?: string } };
+type Claims = {
+  user_id?: string;
+  email?: string;
+  picture?: string;
+  firebase?: { sign_in_provider?: string };
+};
 const claims = (token: string): Claims => {
   try {
     return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
@@ -25,12 +33,13 @@ const claims = (token: string): Claims => {
     return {};
   }
 };
-export function googleToken(uid: string, email: string) {
+export function googleToken(uid: string, email: string, picture?: string | null) {
   const now = Math.floor(Date.now() / 1000);
   return `${b64({ alg: 'none' })}.${b64({
     sub: uid,
     user_id: uid,
     email,
+    ...(picture ? { picture } : {}),
     iat: now,
     exp: now + 3600,
     auth_time: now,
@@ -42,7 +51,7 @@ export type MockDatabase = {
   pages: Map<string, Record<string, Record_>>;
   throttle: Map<string, { at: number; prev: number }>;
   /** Icon pictures in Cloud Storage by uid, as uploaded (checked like storage.rules). */
-  avatars: Map<string, { type: string; body: Buffer }>;
+  avatars: Map<string, { type: string; body: Buffer; source?: string }>;
   latency: number;
   writes: number;
   // A check's switches for writes, kept here instead of in a page route of its own: removing a
@@ -104,6 +113,17 @@ export async function mockFirebase(
     const deny = () => route.fulfill({ status: 403, headers: cors, json: { error: { code: 403 } } });
     if (request.method() === 'GET') {
       const picture = uid && db.avatars.get(uid);
+      // Without ?alt=media, the object's metadata.
+      if (picture && url.searchParams.get('alt') !== 'media')
+        return route.fulfill({
+          headers: cors,
+          json: {
+            name,
+            contentType: picture.type,
+            size: String(picture.body.length),
+            metadata: { source: picture.source },
+          },
+        });
       return picture
         ? route.fulfill({
             headers: { ...cors, 'cache-control': 'public, max-age=300' },
@@ -128,12 +148,29 @@ export async function mockFirebase(
     );
     if (!owner || !/^image\/(webp|jpeg)$/.test(meta.contentType) || body.length > 64 * 1024) return deny();
     await new Promise((resolve) => setTimeout(resolve, db.latency));
-    db.avatars.set(uid!, { type: meta.contentType, body });
+    db.avatars.set(uid!, { type: meta.contentType, body, source: meta.metadata?.source });
     return route.fulfill({
       headers: cors,
       json: { name, contentType: meta.contentType, size: String(body.length) },
     });
   });
+  // The Google account pictures: a 200px square, yellow on blue.
+  await context.route(/googleusercontent\.com/, async (route) =>
+    route.fulfill({
+      headers: cors,
+      contentType: 'image/png',
+      body: await sharp({ create: { width: 200, height: 200, channels: 3, background: '#2d6fd6' } })
+        .composite([
+          {
+            input: Buffer.from(
+              '<svg width="200" height="200"><circle cx="100" cy="100" r="60" fill="#ffd23f"/></svg>',
+            ),
+          },
+        ])
+        .png()
+        .toBuffer(),
+    }),
+  );
   await context.route(
     /identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com/,
     async (route: Route) => {
@@ -141,7 +178,7 @@ export async function mockFirebase(
       if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
       const body = request.postDataJSON?.() || {};
       if (request.url().includes('accounts:lookup')) {
-        const { user_id: uid, email } = claims(body.idToken || '');
+        const { user_id: uid, email, picture } = claims(body.idToken || '');
         return route.fulfill({
           headers: cors,
           json: {
@@ -150,7 +187,10 @@ export async function mockFirebase(
                 localId: uid,
                 email,
                 emailVerified: true,
-                providerUserInfo: [{ providerId: 'google.com', rawId: uid, federatedId: uid, email }],
+                photoUrl: picture,
+                providerUserInfo: [
+                  { providerId: 'google.com', rawId: uid, federatedId: uid, email, photoUrl: picture },
+                ],
                 createdAt: '0',
                 lastLoginAt: String(Date.now()),
               },
@@ -244,7 +284,7 @@ export async function mockFirebase(
 // Seeds a Google-signed-in Firebase user for every page of the context.
 export async function signInAs(
   context: BrowserContext,
-  { uid = 'mock-google-user', email = 'visitor@example.com' } = {},
+  { uid = 'mock-google-user', email = 'visitor@example.com', photoURL = mockPhoto as string | null } = {},
 ) {
   const now = Date.now();
   const user = {
@@ -252,12 +292,11 @@ export async function signInAs(
     email,
     emailVerified: true,
     isAnonymous: false,
-    providerData: [
-      { providerId: 'google.com', uid, displayName: null, email, phoneNumber: null, photoURL: null },
-    ],
+    photoURL,
+    providerData: [{ providerId: 'google.com', uid, displayName: null, email, phoneNumber: null, photoURL }],
     stsTokenManager: {
       refreshToken: 'mock',
-      accessToken: googleToken(uid, email),
+      accessToken: googleToken(uid, email, photoURL),
       expirationTime: now + 3600e3,
     },
     createdAt: String(now),

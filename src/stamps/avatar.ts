@@ -1,7 +1,7 @@
-// The icon beside a visitor's stickers. A visitor may upload a picture of their own: it is cut
-// to a square, shrunk and stored at avatars/<uid> in Cloud Storage, where anyone can read it.
-// Without one, the icon is a pattern drawn from the account's ID, so nothing derived from the
-// visitor's email address or Google profile is ever shown.
+// The icon beside a visitor's stickers: a picture stored at avatars/<uid> in Cloud Storage, where
+// anyone can read it. On a visitor's first sign-in it is their Google account's picture; they can
+// replace it with one of their own and go back. Either is cut to a square and shrunk first.
+// An account with neither shows a pattern drawn from its ID.
 import config from '../data/firebase.json' with { type: 'json' };
 
 /** The largest an icon is shown, in CSS pixels (the icon editor's; app.css .avatar-editor-icon). */
@@ -18,8 +18,20 @@ const objectUrl = (uid: string) =>
 /** The public URL of `uid`'s picture; `version` makes a just-changed picture load afresh. */
 export const avatarUrl = (uid: string, version = 0) =>
   `${objectUrl(uid)}?alt=media${version ? `&v=${version}` : ''}`;
-/** The Storage API URL of `uid`'s picture, for deleting it. */
+/** The Storage API URL of `uid`'s picture: its metadata, or deleting it. */
 export const avatarObjectUrl = objectUrl;
+/** Where a stored picture came from: the Google account's picture, or one the visitor chose. */
+export type AvatarSource = 'google' | 'upload';
+
+/**
+ * The Google account picture at `photoURL`, asked for at twice the stored size so it shrinks
+ * cleanly (Google's picture URLs end in their size, e.g. `=s96-c`).
+ */
+export function googlePhoto(photoURL: string) {
+  const url = new URL(photoURL);
+  if (!url.hostname.endsWith('.googleusercontent.com')) return url.href;
+  return url.href.replace(/=s\d+(-c)?$/, '') + `=s${AVATAR_SIDE * 2}-c`;
+}
 
 /**
  * The request that stores `picture` as `uid`'s icon: a multipart upload, so the picture goes up
@@ -30,10 +42,16 @@ export function avatarUpload(
   uid: string,
   picture: Blob,
   token: string,
+  source: AvatarSource,
   base = 'https://firebasestorage.googleapis.com',
 ) {
   const boundary = `cp20-${crypto.randomUUID()}`;
-  const metadata = { name: avatarPath(uid), contentType: picture.type, cacheControl: 'public, max-age=300' };
+  const metadata = {
+    name: avatarPath(uid),
+    contentType: picture.type,
+    cacheControl: 'public, max-age=300',
+    metadata: { source },
+  };
   return {
     url: `${base}/v0/b/${config.storageBucket}/o?name=${encodeURIComponent(metadata.name)}`,
     init: {

@@ -6,7 +6,7 @@ import { STAMPS_PER_PAGE as LIMIT } from './limits.ts';
 import Icon from '../components/Icon.tsx';
 import { SHEET_KINDS, STICKER_KINDS, StickerFace } from './kinds.tsx';
 import { Avatar, type OwnAvatar } from './Avatar.tsx';
-import { AVATAR_SHOWN_MAX } from './avatar.ts';
+import { AVATAR_SHOWN_MAX, type AvatarSource } from './avatar.ts';
 import type { createInput } from './input.ts';
 export function StickerTab(props: {
   ref: (el: HTMLButtonElement) => void;
@@ -62,6 +62,7 @@ export function StickerSheet(props: {
   own: OwnAvatar;
   avatarBusy: boolean;
   avatarStatus: { text: string; error?: boolean };
+  avatarSource: AvatarSource | null | undefined;
   uploadAvatar: (file: File) => void;
   resetAvatar: () => void;
   undo: () => void;
@@ -70,9 +71,8 @@ export function StickerSheet(props: {
   onClick: (e: MouseEvent) => void;
 }) {
   const { input } = props;
-  // The icon editor under the header, opened from your icon; and whether a picture is shown.
-  const [editing, setEditing] = createSignal(false),
-    [picture, setPicture] = createSignal(false);
+  // The icon editor under the header, opened from your icon.
+  const [editing, setEditing] = createSignal(false);
   return (
     <section
       ref={props.ref}
@@ -111,7 +111,7 @@ export function StickerSheet(props: {
             title="アイコンを変える"
             onClick={() => setEditing(!editing())}
           >
-            <Avatar uid={props.account!.uid} own={props.own} size={28} onShown={setPicture} />
+            <Avatar uid={props.account!.uid} own={props.own} size={28} />
           </button>
           {/* One pip per sticker you can place on this page. */}
           <span
@@ -200,10 +200,12 @@ export function StickerSheet(props: {
                 }}
               />
             </label>
-            <Show when={picture()}>
+            {/* From a picture you chose, back to your Google account's picture (or, without one,
+                to your pattern). */}
+            <Show when={props.avatarSource === 'upload'}>
               <button class="sheet-button" disabled={props.avatarBusy} onClick={props.resetAvatar}>
                 <Icon name="RotateCcw" size={14} />
-                模様に戻す
+                {props.account?.photo ? 'Google のアイコンに戻す' : '模様に戻す'}
               </button>
             </Show>
           </div>

@@ -3,7 +3,7 @@ import { applyStreamEvent, coalesce, keepStream } from './stream.ts';
 import { moveIn, nextRecord, placeIn, recordStamps, removeFrom } from './record.ts';
 import { REQUEST_TIMEOUT_MS, SERVER_TIME, writeRecord } from './write.ts';
 import { pageKey } from '../site/pages.ts';
-import { avatarObjectUrl, avatarUpload } from './avatar.ts';
+import { avatarObjectUrl, avatarUpload, googlePhoto, type AvatarSource } from './avatar.ts';
 import type { Auth, User } from 'firebase/auth';
 import type { Account, Operation, PlacedStamp, SavedRecord, Stamp } from './types.ts';
 // The sticker client, loaded once the page needs stickers: the public stream of a page's
@@ -63,7 +63,11 @@ function loadAuth() {
 }
 const isGoogle = (user: User | null): user is User =>
   !!user && !user.isAnonymous && user.providerData.some((p) => p.providerId === 'google.com');
-const toAccount = (user: User | null): Account | null => (isGoogle(user) ? { uid: user.uid } : null);
+const toAccount = (user: User | null): Account | null => {
+  if (!isGoogle(user)) return null;
+  const photo = user.photoURL || user.providerData.find((p) => p.providerId === 'google.com')?.photoURL;
+  return photo ? { uid: user.uid, photo } : { uid: user.uid };
+};
 export async function watchAccount(receive: (account: Account | null) => void) {
   const { auth, sdk } = await loadAuth();
   return sdk.onAuthStateChanged(auth, (user) => receive(toAccount(user)));
@@ -115,23 +119,37 @@ export async function save(
 
 // ── Icon ──
 // Your picture is uploaded straight to Cloud Storage (storage.rules: only to your own path, only a
-// small WebP or JPEG).
-async function storageRequest(init: RequestInit & { query?: string }) {
+// small WebP or JPEG), with where it came from in its metadata.
+/** Where `uid`'s stored picture came from, or null without one. Anyone can read this. */
+export async function avatarSource(uid: string): Promise<AvatarSource | null> {
+  const response = await fetch(avatarObjectUrl(uid), { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  if (response.status === 404) return null;
+  if (!response.ok) throw Error(`GET avatar: HTTP ${response.status}`);
+  return (await response.json())?.metadata?.source === 'google' ? 'google' : 'upload';
+}
+/** Your Google account's picture, as it is to be shrunk. */
+export async function fetchGooglePhoto() {
   const user = await currentUser();
-  const token = await user.getIdToken();
-  const response = await fetch(avatarObjectUrl(user.uid) + (init.query ?? ''), {
-    ...init,
-    headers: { ...init.headers, Authorization: `Firebase ${token}` },
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
-  if (!response.ok && response.status !== 404) throw Error(`${init.method} avatar: HTTP ${response.status}`);
+  const photo = toAccount(user)?.photo;
+  if (!photo) throw Error('No Google picture');
+  const response = await fetch(googlePhoto(photo), { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  if (!response.ok) throw Error(`GET Google picture: HTTP ${response.status}`);
+  return response.blob();
 }
 /** Stores `picture` (already made small by compressAvatar) as your icon. */
-export async function uploadAvatar(picture: Blob) {
+export async function uploadAvatar(picture: Blob, source: AvatarSource) {
   const user = await currentUser();
-  const { url, init } = avatarUpload(user.uid, picture, await user.getIdToken());
+  const { url, init } = avatarUpload(user.uid, picture, await user.getIdToken(), source);
   const response = await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   if (!response.ok) throw Error(`POST avatar: HTTP ${response.status}`);
 }
-/** Deletes your icon picture, so your stickers show your pattern again. */
-export const removeAvatar = () => storageRequest({ method: 'DELETE' });
+/** Deletes your icon picture, so your stickers show your pattern. */
+export async function removeAvatar() {
+  const user = await currentUser();
+  const response = await fetch(avatarObjectUrl(user.uid), {
+    method: 'DELETE',
+    headers: { Authorization: `Firebase ${await user.getIdToken()}` },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok && response.status !== 404) throw Error(`DELETE avatar: HTTP ${response.status}`);
+}
