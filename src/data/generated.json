@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-25T21:45:16.225Z",
+  "updatedAt": "2026-11-26T08:26:45.588Z",
   "articles": [
     {
       "title": "社会性",
@@ -472,12 +472,42 @@
   ],
   "repos": [
     {
+      "name": "slack-block-kit-preview",
+      "url": "https://github.com/cp-20/slack-block-kit-preview",
+      "description": "Edit Slack Block Kit payloads (messages, attachments, modals, App Home) with a live, client-like preview and shareable links",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-11-26T06:18:07Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "discord-components-preview",
+      "url": "https://github.com/cp-20/discord-components-preview",
+      "description": "Edit Discord Components V2 payloads with a live, client-like preview and shareable links",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-11-26T05:14:43Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "asterion-manifest",
+      "url": "https://github.com/cp-20/asterion-manifest",
+      "description": "",
+      "language": "JavaScript",
+      "stars": 2,
+      "updatedAt": "2026-11-26T04:23:01Z",
+      "fork": false,
+      "archived": false
+    },
+    {
       "name": "cp20-definitive",
       "url": "https://github.com/cp-20/cp20-definitive",
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-25T08:42:22Z",
+      "updatedAt": "2026-11-25T21:45:50Z",
       "fork": false,
       "archived": false
     },
@@ -498,16 +528,6 @@
       "language": "TypeScript",
       "stars": 0,
       "updatedAt": "2026-11-25T01:29:40Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "asterion-manifest",
-      "url": "https://github.com/cp-20/asterion-manifest",
-      "description": "",
-      "language": "JavaScript",
-      "stars": 2,
-      "updatedAt": "2026-11-24T23:58:06Z",
       "fork": false,
       "archived": false
     },
@@ -1405,39 +1425,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-25T21:45:16.225Z",
+      "lastSuccess": "2026-11-26T08:26:45.588Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-25T21:45:16.225Z",
+      "lastSuccess": "2026-11-26T08:26:45.588Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-25T21:45:16.225Z",
+      "lastSuccess": "2026-11-26T08:26:45.588Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-25T21:45:16.225Z",
+      "lastSuccess": "2026-11-26T08:26:45.588Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-25T21:45:16.225Z",
+      "lastSuccess": "2026-11-26T08:26:45.588Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-25T21:45:16.225Z",
-      "count": 134
+      "lastSuccess": "2026-11-26T08:26:45.588Z",
+      "count": 136
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-25T21:45:16.225Z",
+      "lastSuccess": "2026-11-26T08:26:45.588Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-25T21:45:16.225Z"
+  "checkedAt": "2026-11-26T08:26:45.588Z"
 }
