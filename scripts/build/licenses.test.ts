@@ -47,9 +47,11 @@ describe('packageLicense', () => {
   });
 
   test('solid-js には MIT の本文と作者の著作権表示をつける', () => {
+    // 2.0 ships its LICENSE file, which carries the notice itself.
     const solid = packageLicense(join(root, 'node_modules/solid-js'));
+    const notices = [solid.text, ...solid.copyright].join('\n');
     assert.deepEqual(
-      [/Permission is hereby granted/.test(solid.text), solid.copyright.some((l) => /Ryan Carniato/.test(l))],
+      [/Permission is hereby granted/.test(solid.text), /Copyright \(c\) .*Ryan Carniato/.test(notices)],
       [true, true],
     );
   });

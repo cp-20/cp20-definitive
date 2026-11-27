@@ -1,6 +1,6 @@
 # cp20.dev — definitive edition
 
-「しーぴーのスタンプ帳」（クローバー色の机に置いたルーズリーフ）をモチーフにした、Cloudflare Workers向けのポートフォリオ。SolidJS 2.0.0-rc.10 のコンポーネントから全ページを静的HTMLに生成し、訪問者がページにシールを貼れるFirebase Realtime Databaseを組み合わせています。
+「しーぴーのスタンプ帳」（クローバー色の机に置いたルーズリーフ）をモチーフにした、Cloudflare Workers向けのポートフォリオ。SolidJS 2.0 のコンポーネントから全ページを静的HTMLに生成し、訪問者がページにシールを貼れるFirebase Realtime Databaseを組み合わせています。
 
 ## 開発
 

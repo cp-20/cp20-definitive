@@ -15,6 +15,7 @@ import {
 } from '../../src/site/pages.ts';
 import { subsetSiteFonts } from './fonts.ts';
 import { writeOgImage } from './og.ts';
+import { decodeNonAsciiReferences } from './html.ts';
 
 const escapeXml = (s: string) =>
   stripInvalidText(String(s)).replace(
@@ -59,7 +60,7 @@ async function prerender() {
           ? 'dist/client/404.html'
           : `dist/client${path}/index.html`;
     await mkdir(output.slice(0, output.lastIndexOf('/')), { recursive: true });
-    await writeFile(output, await response.text());
+    await writeFile(output, decodeNonAsciiReferences(await response.text()));
   }
   await writeFile(
     'dist/client/sitemap.xml',
