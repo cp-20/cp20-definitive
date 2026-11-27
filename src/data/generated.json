@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-27T08:40:41.534Z",
+  "updatedAt": "2026-11-27T21:21:54.613Z",
   "articles": [
     {
       "title": "社会性",
@@ -472,22 +472,32 @@
   ],
   "repos": [
     {
-      "name": "cp20-definitive",
-      "url": "https://github.com/cp-20/cp20-definitive",
-      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
-      "language": "TypeScript",
-      "stars": 0,
-      "updatedAt": "2026-11-27T08:35:36Z",
-      "fork": false,
-      "archived": false
-    },
-    {
       "name": "dice-spec-v2",
       "url": "https://github.com/cp-20/dice-spec-v2",
       "description": "",
       "language": "TypeScript",
       "stars": 2,
-      "updatedAt": "2026-11-27T08:12:57Z",
+      "updatedAt": "2026-11-27T14:13:03Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "regex-calc",
+      "url": "https://github.com/cp-20/regex-calc",
+      "description": "正規表現 (s///) だけで計算する電卓 — YAPC::Tokyo 2026 LT「正規表現で電卓を作る」",
+      "language": "HTML",
+      "stars": 0,
+      "updatedAt": "2026-11-27T12:16:21Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "cp20-definitive",
+      "url": "https://github.com/cp-20/cp20-definitive",
+      "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
+      "language": "TypeScript",
+      "stars": 0,
+      "updatedAt": "2026-11-27T08:41:20Z",
       "fork": false,
       "archived": false
     },
@@ -558,16 +568,6 @@
       "language": "TypeScript",
       "stars": 4,
       "updatedAt": "2026-11-24T23:45:03Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "regex-calc",
-      "url": "https://github.com/cp-20/regex-calc",
-      "description": "正規表現 (s///) だけで計算する電卓 — YAPC::Tokyo 2026 LT「正規表現で電卓を作る」",
-      "language": "HTML",
-      "stars": 0,
-      "updatedAt": "2026-11-24T07:04:22Z",
       "fork": false,
       "archived": false
     },
@@ -1425,39 +1425,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T08:40:41.534Z",
+      "lastSuccess": "2026-11-27T21:21:54.613Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T08:40:41.534Z",
+      "lastSuccess": "2026-11-27T21:21:54.613Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T08:40:41.534Z",
+      "lastSuccess": "2026-11-27T21:21:54.613Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T08:40:41.534Z",
+      "lastSuccess": "2026-11-27T21:21:54.613Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T08:40:41.534Z",
+      "lastSuccess": "2026-11-27T21:21:54.613Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T08:40:41.534Z",
+      "lastSuccess": "2026-11-27T21:21:54.613Z",
       "count": 136
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T08:40:41.534Z",
+      "lastSuccess": "2026-11-27T21:21:54.613Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-27T08:40:41.534Z"
+  "checkedAt": "2026-11-27T21:21:54.613Z"
 }
