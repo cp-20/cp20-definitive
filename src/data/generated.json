@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-27T05:37:04.171Z",
+  "updatedAt": "2026-11-27T08:02:46.922Z",
   "articles": [
     {
       "title": "社会性",
@@ -477,7 +477,7 @@
       "description": "cp20.dev definitive edition — SolidJS 2 portfolio with automatic content updates and shared stamps",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-27T05:36:24Z",
+      "updatedAt": "2026-11-27T08:02:11Z",
       "fork": false,
       "archived": false
     },
@@ -487,7 +487,17 @@
       "description": "",
       "language": "TypeScript",
       "stars": 0,
-      "updatedAt": "2026-11-27T05:27:43Z",
+      "updatedAt": "2026-11-27T07:54:15Z",
+      "fork": false,
+      "archived": false
+    },
+    {
+      "name": "dice-spec-v2",
+      "url": "https://github.com/cp-20/dice-spec-v2",
+      "description": "",
+      "language": "TypeScript",
+      "stars": 2,
+      "updatedAt": "2026-11-27T07:33:11Z",
       "fork": false,
       "archived": false
     },
@@ -497,7 +507,7 @@
       "description": "",
       "language": "JavaScript",
       "stars": 2,
-      "updatedAt": "2026-11-27T02:17:11Z",
+      "updatedAt": "2026-11-27T05:48:30Z",
       "fork": false,
       "archived": false
     },
@@ -568,16 +578,6 @@
       "language": "Jinja",
       "stars": 1,
       "updatedAt": "2026-11-19T04:44:18Z",
-      "fork": false,
-      "archived": false
-    },
-    {
-      "name": "dice-spec-v2",
-      "url": "https://github.com/cp-20/dice-spec-v2",
-      "description": "",
-      "language": "TypeScript",
-      "stars": 2,
-      "updatedAt": "2026-11-15T09:17:45Z",
       "fork": false,
       "archived": false
     },
@@ -1425,39 +1425,39 @@
   "sources": {
     "zenn.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T05:37:04.171Z",
+      "lastSuccess": "2026-11-27T08:02:46.922Z",
       "count": 11
     },
     "qiita.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T05:37:04.171Z",
+      "lastSuccess": "2026-11-27T08:02:46.922Z",
       "count": 9
     },
     "note.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T05:37:04.171Z",
+      "lastSuccess": "2026-11-27T08:02:46.922Z",
       "count": 7
     },
     "trap.jp": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T05:37:04.171Z",
+      "lastSuccess": "2026-11-27T08:02:46.922Z",
       "count": 34
     },
     "sizu.me": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T05:37:04.171Z",
+      "lastSuccess": "2026-11-27T08:02:46.922Z",
       "count": 12
     },
     "github.com": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T05:37:04.171Z",
+      "lastSuccess": "2026-11-27T08:02:46.922Z",
       "count": 136
     },
     "blog.cp20.dev": {
       "status": "ok",
-      "lastSuccess": "2026-11-27T05:37:04.171Z",
+      "lastSuccess": "2026-11-27T08:02:46.922Z",
       "count": 5
     }
   },
-  "checkedAt": "2026-11-27T05:37:04.171Z"
+  "checkedAt": "2026-11-27T08:02:46.922Z"
 }
