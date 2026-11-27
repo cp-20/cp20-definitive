@@ -1,6 +1,7 @@
 // Runs after `vite build`: renders every page of the SSR build to static HTML in dist/client,
 // writes the RSS feed, the sitemap, the picture of a shared link and the drawn pictures of works,
 // and subsets the web font to the characters the site uses.
+import { readFileSync } from 'node:fs';
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { mergeArticles, stripInvalidText, type Article } from '../../src/content/normalize.ts';
@@ -15,7 +16,8 @@ import {
 } from '../../src/site/pages.ts';
 import { subsetSiteFonts } from './fonts.ts';
 import { writeOgImage } from './og.ts';
-import { decodeNonAsciiReferences } from './html.ts';
+import { decodeNonAsciiReferences, inlineStylesheets } from './html.ts';
+import { addPlaceholders } from './placeholders.ts';
 
 const escapeXml = (s: string) =>
   stripInvalidText(String(s)).replace(
@@ -33,6 +35,13 @@ export function buildFeed(articles: Article[]) {
     )
     .join('')}</channel></rss>`;
 }
+
+const htmlFile = (path: string) =>
+  path === '/'
+    ? 'dist/client/index.html'
+    : path === '/404'
+      ? 'dist/client/404.html'
+      : `dist/client${path}/index.html`;
 
 async function prerender() {
   // The SSR build only exists once `vite build` has run.
@@ -53,12 +62,7 @@ async function prerender() {
     const response = await handleRequest(new Request(canonicalUrl(path)));
     if (response.status !== (path === '/404' ? 404 : 200))
       throw Error(`Prerender ${path}: ${response.status}`);
-    const output =
-      path === '/'
-        ? 'dist/client/index.html'
-        : path === '/404'
-          ? 'dist/client/404.html'
-          : `dist/client${path}/index.html`;
+    const output = htmlFile(path);
     await mkdir(output.slice(0, output.lastIndexOf('/')), { recursive: true });
     await writeFile(output, decodeNonAsciiReferences(await response.text()));
   }
@@ -75,7 +79,20 @@ async function prerender() {
   // The Vite manifest is only for the build; dist/client is published as-is.
   await rm('dist/client/.vite', { recursive: true, force: true });
   const fonts = await subsetSiteFonts('dist/client');
+  const pages = paths.map((p) => htmlFile(p));
+  const placeholders = await addPlaceholders(
+    'dist/client',
+    pages,
+    'node_modules/.cache/cp20/placeholders.json',
+  );
+  // Last, once the fonts have read the stylesheets from their files.
+  const stylesheet = (href: string) => readFileSync(`dist/client${href}`, 'utf8');
+  for (const page of pages)
+    await writeFile(page, inlineStylesheets(await readFile(page, 'utf8'), stylesheet));
   console.log(`Prerendered ${paths.length} pages, RSS and sitemap → dist/client`);
+  console.log(
+    `Placeholders: ${placeholders.pictures} pictures, site sheet ${(placeholders.sheet / 1024).toFixed(0)} kB`,
+  );
   console.log(
     `Fonts: ${fonts.files.map((f) => `${f.family} ${f.weight} ${f.characters} chars ${(f.size / 1024).toFixed(0)} kB`).join(', ')}`,
   );

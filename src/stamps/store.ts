@@ -53,7 +53,9 @@ export function createStampStore(options: {
       let stop: (() => void) | undefined,
         disposed = false;
       const lost = () => setConnection('シールの読み込みに失敗しました');
-      // Navigating quickly through pages opens no stream for the ones passed through.
+      // The client starts loading at once; navigating quickly through pages opens no stream for
+      // the ones passed through.
+      if (enabled) client().catch(() => {});
       const timer = setTimeout(async () => {
         if (!enabled) return;
         try {

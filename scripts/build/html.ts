@@ -34,3 +34,18 @@ export function decodeNonAsciiReferences(html: string) {
     )
     .join('');
 }
+
+/**
+ * Puts the app's stylesheets (/assets/*.css, the ones that block the first paint) into the page
+ * itself, in place of their <link>: the page paints without a second round trip for its styles.
+ * The other pages are opened by in-app navigation, which needs no stylesheet again, so the copy
+ * in each page costs only a visitor who opens several pages by their address.
+ * @param read the text of a stylesheet by its path under the site (/assets/…)
+ */
+export function inlineStylesheets(html: string, read: (href: string) => string) {
+  return html.replace(
+    /<link rel="stylesheet" href="(\/assets\/[^"]+\.css)">/g,
+    // A `</style` in the stylesheet would end the element early.
+    (_, href: string) => `<style>${read(href).replaceAll('</style', '<\\/style')}</style>`,
+  );
+}

@@ -21,6 +21,31 @@ const pageFile = (path: string) => (path === '/' ? 'index.html' : `${path.slice(
 const head = (file: string) => read(file).split('</head>')[0];
 
 describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
+  test('どのページもスタイルを本文に持ち、最初の描画を止める外部スタイルシートを読まない', () => {
+    const pages = [...sitePaths(mergeWorks(baseWorks, manual)).map(pageFile), '404.html'];
+    const blocking = pages.filter((file) =>
+      [...head(file).matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g)].some(
+        ([tag]) => !/media="print"/.test(tag),
+      ),
+    );
+    assert.deepEqual([blocking, /<style>[^<]*\.site-body/.test(head('index.html'))], [[], true]);
+  });
+
+  test('作品の画像はぼかした仮の絵を最初の描画から持ち、サイト全体の分は後から読む', () => {
+    const h = head('index.html');
+    const first = read('index.html').match(/<img\b[^>]*src="(\/media\/[^"]+)"[^>]*width="1200"/)?.[1];
+    const sheet = h.match(
+      /<link rel="stylesheet" href="(\/assets\/placeholders-[0-9a-f]+\.css)" media="print"/,
+    )?.[1];
+    assert.deepEqual(
+      [
+        !!first && h.includes(`img[src="${first}"]{background-image:url("data:image/svg+xml,`),
+        !!sheet && read(sheet.slice(1)).includes(`img[src="${first}"]`),
+      ],
+      [true, true],
+    );
+  });
+
   test('トップは正規 URL を名乗って検索エンジンに載せ、404 は載せないよう求めて正規 URL を名乗らない', () => {
     const indexing = (file: string) => {
       const h = head(file);

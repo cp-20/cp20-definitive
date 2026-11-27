@@ -2,6 +2,7 @@ import type { JSX } from '@solidjs/web';
 import { HydrationScript } from '@solidjs/web';
 import { pageInfo } from './site/route.ts';
 import { FEED, OG_IMAGE, canonicalUrl } from './site/pages.ts';
+import firebase from './data/firebase.json';
 export default function Document(props: { children: JSX.Element }) {
   const info = pageInfo();
   return (
@@ -12,6 +13,9 @@ export default function Document(props: { children: JSX.Element }) {
         <title>{info.title}</title>
         <meta name="description" content={info.description} />
         <meta name="theme-color" content="#cfe7c4" />
+        {/* The page's stickers stream from the database once the app runs: its connection is
+            opened meanwhile (anonymous, as the EventSource's request is). */}
+        <link rel="preconnect" href={firebase.databaseURL} crossorigin="" />
         {info.indexing.map(({ element, attributes }) =>
           element === 'link' ? (
             <link {...attributes} data-indexing="" />
