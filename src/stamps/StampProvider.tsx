@@ -135,6 +135,7 @@ export function StampProvider(props: { path: string; enabled: boolean; children:
         path={props.path}
         held={hand.held()}
         isOwn={store.isOwn}
+        placedBy={store.placedBy}
         own={account.own()}
         isFresh={edits.isFresh}
         settlesFrom={edits.settlesFrom}

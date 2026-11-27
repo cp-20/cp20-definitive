@@ -16,6 +16,8 @@ export function StampLayer(props: {
   path: string;
   held: Held | null;
   isOwn: (s: PlacedStamp) => boolean;
+  // The account whose icon shows beside `s` (yours for a sticker not saved yet).
+  placedBy: (s: PlacedStamp) => string;
   // Your own icon as changed on this visit, for your stickers.
   own: OwnAvatar;
   isFresh: (key: string) => boolean;
@@ -112,10 +114,10 @@ export function StampLayer(props: {
               <span class="sticker" data-kind={s().kind}>
                 <StickerFace kind={s().kind} />
               </span>
-              <Show when={peek() === s().id}>
+              <Show when={peek() === s().id && props.placedBy(s())}>
                 <Avatar
                   class="sticker-avatar"
-                  uid={s().owner}
+                  uid={props.placedBy(s())}
                   own={props.isOwn(s()) ? props.own : undefined}
                   size={24}
                 />

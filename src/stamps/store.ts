@@ -30,6 +30,8 @@ export function createStampStore(options: {
     ),
   );
   const isOwn = (s: PlacedStamp) => s.owner === 'local' || (!!owner() && s.owner === owner());
+  // Who placed `s`: a sticker not saved yet is yours, so it shows your icon, not one for 'local'.
+  const placedBy = (s: PlacedStamp) => (s.owner === 'local' ? owner() : s.owner);
   // Yours, newest first.
   const own = createMemo(() =>
     projected()
@@ -96,6 +98,7 @@ export function createStampStore(options: {
     projected,
     own,
     isOwn,
+    placedBy,
     connection,
     saving: () => operations().length > 0,
     apply,
