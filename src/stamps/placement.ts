@@ -4,7 +4,7 @@ import { createMemo, createSignal, onSettled } from 'solid-js';
 import type { PlacedStamp } from './types.ts';
 import { layoutStamps, spotIn, stampAt, type Box, type ShownStamp } from './layout.ts';
 import { stampPlace } from './a11y.ts';
-import { anchorSteps, joinAnchor, markedName, type Step } from './anchor-path.ts';
+import { anchorSteps, CHAR_STEP, joinAnchor, markedName, TEXT_STEP, type Step } from './anchor-path.ts';
 
 // The sticker UI itself, which a point on screen looks through to find the page below.
 const STAMP_UI_SELECTOR =
@@ -44,10 +44,14 @@ function holdsSticker(el: Element): el is HTMLElement {
 }
 // The children a step down counts: the sticker UI put into the page is not part of it.
 const stepChildren = (el: Element) => [...el.children].filter((c) => !c.matches(STAMP_UI_SELECTOR));
+// The runs of words lying straight in an element (its text nodes that are not blank).
+const wordsIn = (el: Element) =>
+  [...el.childNodes].filter((n): n is Text => n.nodeType === Node.TEXT_NODE && !!n.textContent?.trim());
 // The anchor naming an element: its own data-stamp-anchor name, or the way down to it from the
-// nearest marked element around it; null outside every marked element or when it cannot be stored.
-function anchorOf(el: HTMLElement): string | null {
-  const steps: Step[] = [];
+// nearest marked element around it, then `last` (to a character in it) when given; null outside
+// every marked element or when it cannot be stored.
+function anchorOf(el: HTMLElement, last: readonly Step[] = []): string | null {
+  const steps: Step[] = [...last].reverse();
   for (let node: HTMLElement = el; ; ) {
     if (node.dataset.stampAnchor) return joinAnchor(node.dataset.stampAnchor, steps.reverse());
     const parent = node.parentElement;
@@ -56,47 +60,104 @@ function anchorOf(el: HTMLElement): string | null {
     node = parent;
   }
 }
-// The element an anchor names, or its marked element when the way down no longer leads to one
-// alike (the page changed since). null when even the marked element is missing.
-function anchorElement(anchor: string) {
+// The range of one character of a run of words (both halves of a character past U+FFFF).
+function charRange(words: Text, at: number) {
+  const code = words.data.charCodeAt(at);
+  const range = document.createRange();
+  range.setStart(words, at);
+  range.setEnd(words, Math.min(words.length, at + (code >= 0xd800 && code < 0xdc00 ? 2 : 1)));
+  return range;
+}
+function wholeRange(node: Node) {
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  return range;
+}
+const covers = (range: Range, x: number, y: number) =>
+  [...range.getClientRects()].some((r) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom);
+// The character of a run of words drawn at a point on screen, if any.
+function charIn(words: Text, x: number, y: number, hint = -1) {
+  if (!words.data.trim() || !covers(wholeRange(words), x, y)) return -1;
+  for (const at of [hint, hint - 1])
+    if (at >= 0 && at < words.length && covers(charRange(words, at), x, y)) return at;
+  for (let at = 0; at < words.length; at++) if (covers(charRange(words, at), x, y)) return at;
+  return -1;
+}
+// Elements that draw over what lies under them even without a background.
+const DRAWS = new Set(['img', 'picture', 'video', 'canvas', 'iframe', 'svg', 'input', 'select', 'textarea']);
+// Whether what lies under an element shows through it where it has no words: a clear overlay (a
+// stretched link or button over a card) does, anything painted or a picture does not.
+function seeThrough(el: Element) {
+  if (DRAWS.has(el.localName)) return false;
+  const style = getComputedStyle(el);
+  return style.backgroundImage === 'none' && /^(transparent|rgba\(.*,\s*0\))$/.test(style.backgroundColor);
+}
+// The character drawn at a point on screen, in a run of words lying straight in its element, or
+// null off any words (a gap, a picture, the blank between two lines). `stack` is the page under the
+// point, topmost first; words under a clear overlay count.
+function characterAt(x: number, y: number, stack: readonly Element[]): { words: Text; at: number } | null {
+  const caret = document.caretPositionFromPoint?.(x, y);
+  const range = caret ? null : document.caretRangeFromPoint?.(x, y);
+  const node = caret ? caret.offsetNode : range?.startContainer;
+  const offset = caret ? caret.offset : (range?.startOffset ?? 0);
+  for (const el of stack) {
+    for (const words of wordsIn(el)) {
+      const at = charIn(words, x, y, words === node ? offset : -1);
+      if (at >= 0) return { words, at };
+    }
+    if (!seeThrough(el)) return null;
+  }
+  return null;
+}
+// The element whose box a part of the page is measured in: the nearest one around it that a
+// sticker can lie on (an inline link's box splits over lines).
+function holderOf(el: HTMLElement | null) {
+  for (let node: Element | null = el; node; node = node.parentElement) if (holdsSticker(node)) return node;
+  return null;
+}
+// What an anchor names: an element and, for words in it, the range of the character (or of the run
+// of words) the sticker is on. When the way down no longer leads to one alike (the page changed
+// since) it is the marked element, or just the element when its words changed. el is null when even
+// the marked element is missing.
+function anchorTarget(anchor: string): { el: HTMLElement | null; part?: Range } {
   let el = anchorNamed(markedName(anchor));
   const base = el;
-  for (const step of anchorSteps(anchor) ?? []) {
+  const steps = anchorSteps(anchor) ?? [];
+  for (const [i, step] of steps.entries()) {
+    if (step.tag === TEXT_STEP) {
+      const words = el && wordsIn(el)[step.index];
+      if (!words) return { el };
+      const at = steps[i + 1]?.index;
+      if (at === undefined) return { el, part: wholeRange(words) };
+      return at < words.length ? { el, part: charRange(words, at) } : { el };
+    }
     const next = el ? stepChildren(el)[step.index] : undefined;
-    if (!next || next.localName !== step.tag || !(next instanceof HTMLElement)) return base;
+    if (!next || next.localName !== step.tag || !(next instanceof HTMLElement)) return { el: base };
     el = next;
   }
-  return el;
+  return { el };
 }
-// Text in the element, not in a block inside it: a short heading or label is narrower than its
-// line, and a sticker beside its words should stay beside them on a wider screen.
-function holdsText(el: HTMLElement) {
-  let text = false;
-  for (const node of el.childNodes) {
-    if (node.nodeType === Node.TEXT_NODE) text ||= !!node.textContent?.trim();
-    else if (node instanceof Element && !getComputedStyle(node).display.startsWith('inline')) return false;
-  }
-  return text;
-}
-// The box a sticker on an element is placed against: the element's, or for an element of text
-// just the part its words cover.
-function stickBox(el: HTMLElement): Box {
+// The box a sticker is placed against, in the box of `el`: the part of the page `part` covers (a
+// character), or with no part the element's own box, or for an element with words in it just
+// what its content covers (a short heading or label is narrower than its line, and a sticker beside
+// its words should stay beside them on a wider screen). null when the part is not shown in it (cut
+// off with a clamped description, or of no size).
+function stickBox(el: HTMLElement, part?: Range): Box | null {
   const box = layoutBox(el);
-  if (!box.w || !box.h || !holdsText(el)) return box;
-  const range = document.createRange();
-  range.selectNodeContents(el);
-  const words = range.getBoundingClientRect(),
+  if (!box.w || !box.h) return part ? null : box;
+  if (!part && !wordsIn(el).length) return box;
+  const content = (part ?? wholeRange(el)).getBoundingClientRect(),
     whole = el.getBoundingClientRect();
-  if (!words.width || !words.height || !whole.width || !whole.height) return box;
+  if (!content.width || !content.height || !whole.width || !whole.height) return part ? null : box;
   // Measured on screen, so a transform (a card lifting) is taken back out. Words cut off (a
   // clamped description) are left out with the rest of the overflow.
   const sx = box.w / whole.width,
     sy = box.h / whole.height;
-  const left = Math.max(0, (words.left - whole.left) * sx),
-    top = Math.max(0, (words.top - whole.top) * sy),
-    right = Math.min(box.w, (words.right - whole.left) * sx),
-    bottom = Math.min(box.h, (words.bottom - whole.top) * sy);
-  if (right <= left || bottom <= top) return box;
+  const left = Math.max(0, (content.left - whole.left) * sx),
+    top = Math.max(0, (content.top - whole.top) * sy),
+    right = Math.min(box.w, (content.right - whole.left) * sx),
+    bottom = Math.min(box.h, (content.bottom - whole.top) * sy);
+  if (right <= left || bottom <= top) return part ? null : box;
   return { x: box.x + left, y: box.y + top, w: right - left, h: bottom - top };
 }
 // Page coordinates follow the document, so stickers scroll natively with the content.
@@ -116,11 +177,31 @@ export function locate(x: number, y: number) {
   if (below?.closest('.rail') || below?.closest('[inert]') || !page || page.closest('[inert]')) return null;
   const { px, py } = toPage(x, y);
   const within = below && page.contains(below) ? below : page;
+  // On words, the sticker goes with the character under it.
+  const stack = document.elementsFromPoint(x, y).filter((el) => !el.closest(STAMP_UI_SELECTOR));
+  const char = below && page.contains(below) ? characterAt(x, y, stack) : null;
+  if (char && page.contains(char.words) && !char.words.parentElement?.closest('[inert]')) {
+    const el = char.words.parentElement!;
+    const run = wordsIn(el).indexOf(char.words);
+    const holder = holderOf(el);
+    const anchor =
+      anchorOf(el, [
+        { index: run, tag: TEXT_STEP },
+        { index: char.at, tag: CHAR_STEP },
+      ]) ?? anchorOf(el, [{ index: run, tag: TEXT_STEP }]);
+    const box =
+      holder &&
+      anchor &&
+      stickBox(holder, anchor.endsWith(TEXT_STEP) ? wholeRange(char.words) : charRange(char.words, char.at));
+    const spot = box && spotIn(box, px, py);
+    if (anchor && spot) return { anchor, ...spot };
+  }
   for (let el: Element | null = within; el && page.contains(el); el = el.parentElement) {
     if (!holdsSticker(el)) continue;
     const anchor = anchorOf(el);
-    const spot = anchor && spotIn(stickBox(el), px, py);
-    if (spot) return { anchor, ...spot };
+    const box = anchor && stickBox(el);
+    const spot = box && spotIn(box, px, py);
+    if (anchor && spot) return { anchor, ...spot };
   }
   return null;
 }
@@ -164,16 +245,21 @@ function createAnchorMeasure() {
   const boxes = new Map<string, Box | null>();
   const shown = (el: HTMLElement | null) =>
     !!el && !el.closest('[inert]') && getComputedStyle(el).visibility !== 'hidden';
-  const measure = (el: HTMLElement | null) => {
-    const box = el && shown(el) ? stickBox(el) : null;
+  const measure = (el: HTMLElement | null, part?: Range) => {
+    const box = el && shown(el) ? stickBox(el, part) : null;
     return box?.w && box.h ? box : null;
   };
   return (anchor: string) => {
     if (!boxes.has(anchor)) {
-      const el = anchorElement(anchor);
+      const { el, part } = anchorTarget(anchor);
+      // Words are measured in the element around them that a sticker can lie on; words gone or not
+      // shown leave the sticker on that element.
+      const holder = part ? holderOf(el) : el;
       boxes.set(
         anchor,
-        measure(el) ?? (el?.dataset.stampAnchor ? null : measure(anchorNamed(markedName(anchor)))),
+        (part && measure(holder, part)) ||
+          measure(holder) ||
+          (holder?.dataset.stampAnchor ? null : measure(anchorNamed(markedName(anchor)))),
       );
     }
     return boxes.get(anchor)!;

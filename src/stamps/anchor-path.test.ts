@@ -35,6 +35,37 @@ describe('anchor-path', () => {
     assert.equal(joinAnchor('intro', [{ index: 1000, tag: 'div' }]), null);
   });
 
+  test('最後の手順は文字の並びと、その中の一文字を指せる', () => {
+    const steps = [
+      { index: 0, tag: 'div' },
+      { index: 1, tag: 'h1' },
+      { index: 0, tag: 't' },
+      { index: 2, tag: 'c' },
+    ];
+    const anchor = joinAnchor('intro', steps)!;
+    assert.equal(anchor, 'intro--0div-1h1-0t-2c');
+    assert.deepEqual(anchorSteps(anchor), steps);
+    assert.deepEqual(anchorSteps('intro--0div-1h1-0t'), steps.slice(0, 3));
+    // 文字の並びの中に要素はなく、一文字は文字の並びの中にしかない
+    assert.equal(
+      joinAnchor('intro', [
+        { index: 0, tag: 't' },
+        { index: 0, tag: 'span' },
+      ]),
+      null,
+    );
+    assert.equal(
+      joinAnchor('intro', [
+        { index: 0, tag: 'h1' },
+        { index: 0, tag: 'c' },
+      ]),
+      null,
+    );
+    assert.equal(anchorSteps('intro--0t-0span'), null);
+    assert.equal(anchorSteps('intro--0t-1c-2c'), null);
+    assert.equal(anchorSteps('intro--0t-0t'), null);
+  });
+
   test('壊れた道筋は読めない', () => {
     assert.equal(anchorSteps('intro--div'), null);
     assert.equal(anchorSteps('intro--1div-'), null);
