@@ -7,6 +7,7 @@ import { works } from '../content/content.ts';
 import { SCROLL_KEY, readPositions, writePositions } from './scroll-positions.ts';
 import { normalizePath, sitePaths, tabIndex } from './pages.ts';
 import { openFromHash, openerOf } from '../components/Modal.tsx';
+import { warmOnIntent } from './warm.ts';
 const paths = new Set(sitePaths(works));
 function flipDirection(from: string, to: string) {
   const a = tabIndex(from),
@@ -300,7 +301,13 @@ export function createNavigation() {
     window.addEventListener('hashchange', openHashDialog);
     // The page was opened at a dialog's URL.
     openHashDialog();
+    const stopWarming = warmOnIntent((a) => {
+      const url = new URL(a.href);
+      const to = normalizePath(url.pathname);
+      return url.origin === location.origin && paths.has(to) ? to : undefined;
+    });
     return () => {
+      stopWarming();
       transition?.skipTransition();
       document.removeEventListener('click', relay, true);
       document.removeEventListener('click', click);

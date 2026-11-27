@@ -3405,7 +3405,10 @@
     }
   }
   /* Only the page the visit starts on settles onto the paper, and its stamps are pressed on.
-     Every later page arrives with the turn itself (data-turned, navigation.ts), which is enough. */
+     Every later page arrives with the turn itself (data-turned, navigation.ts), which is enough.
+     The page's text is there from the first paint and only moves into place: fading it in from
+     nothing kept a work's page blank for up to a second on a slow phone (LCP 1.45 s → 0.52 s at
+     1.6 Mbps / CPU 4x without the fade). */
   :root:not([data-turned]) .route-frame > .wrap > :nth-child(-n + 2) {
     animation: rise var(--t-enter) var(--ease) both;
   }
@@ -3421,8 +3424,7 @@
 
   @keyframes rise {
     from {
-      opacity: 0;
-      transform: translateY(12px);
+      transform: translateY(8px);
     }
   }
   @keyframes sticker-on {

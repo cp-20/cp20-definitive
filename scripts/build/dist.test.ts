@@ -31,6 +31,22 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
     assert.deepEqual([blocking, /<style>[^<]*\.site-body/.test(head('index.html'))], [[], true]);
   });
 
+  test('各ページの最初の画像の一覧を全ページが名指しし、一覧はどのページの分も持つ', () => {
+    const paths = sitePaths(mergeWorks(baseWorks, manual));
+    const lists = new Set(
+      paths.map(
+        (p) =>
+          head(pageFile(p)).match(/<meta name="cp20-warm" content="\/(assets\/warm-[0-9a-f]+\.json)">/)?.[1],
+      ),
+    );
+    const [list] = lists;
+    const pages = list ? JSON.parse(read(list)) : {};
+    assert.deepEqual(
+      [lists.size, !!list, paths.filter((p) => !Array.isArray(pages[p])), pages['/works']?.length > 0],
+      [1, true, [], true],
+    );
+  });
+
   test('作品の画像はぼかした仮の絵を最初の描画から持ち、サイト全体の分は後から読む', () => {
     const h = head('index.html');
     const first = read('index.html').match(/<img\b[^>]*src="(\/media\/[^"]+)"[^>]*width="1200"/)?.[1];

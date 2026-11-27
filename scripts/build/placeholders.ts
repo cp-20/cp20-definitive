@@ -17,15 +17,26 @@ export const INLINE_PLACEHOLDERS = 16;
 // Icons and logos are drawn small (16-38px): no stand-in for them.
 const MIN_WIDTH = 64;
 
-export type ImageTag = { src: string; width?: number };
+export type ImageTag = { src: string; width?: number; srcset?: string; sizes?: string; lazy?: boolean };
 
-/** The <img> tags of a page: their src and stated width. */
+/** The <img> tags of a page: their src, stated width, srcset and sizes, and whether they load lazily. */
 export function imageTags(html: string): ImageTag[] {
   return [...html.matchAll(/<img\b[^>]*>/gi)].flatMap(([tag]) => {
-    const src = tag.match(/\ssrc="([^"]+)"/)?.[1];
+    const attribute = (name: string) => tag.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1];
+    const src = attribute('src');
     if (!src) return [];
     const width = tag.match(/\swidth="?(\d+)/)?.[1];
-    return [{ src, ...(width ? { width: Number(width) } : {}) }];
+    const srcset = attribute('srcset'),
+      sizes = attribute('sizes');
+    return [
+      {
+        src,
+        ...(width ? { width: Number(width) } : {}),
+        ...(srcset ? { srcset } : {}),
+        ...(sizes ? { sizes } : {}),
+        ...(/\sloading="lazy"/.test(tag) ? { lazy: true } : {}),
+      },
+    ];
   });
 }
 

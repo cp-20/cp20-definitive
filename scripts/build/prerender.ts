@@ -18,6 +18,7 @@ import { subsetSiteFonts } from './fonts.ts';
 import { writeOgImage } from './og.ts';
 import { decodeNonAsciiReferences, inlineStylesheets } from './html.ts';
 import { addPlaceholders } from './placeholders.ts';
+import { addWarmManifest } from './warm.ts';
 
 const escapeXml = (s: string) =>
   stripInvalidText(String(s)).replace(
@@ -85,13 +86,17 @@ async function prerender() {
     pages,
     'node_modules/.cache/cp20/placeholders.json',
   );
+  const warm = await addWarmManifest(
+    'dist/client',
+    Object.fromEntries(sitePaths(works).map((p) => [p, htmlFile(p)])),
+  );
   // Last, once the fonts have read the stylesheets from their files.
   const stylesheet = (href: string) => readFileSync(`dist/client${href}`, 'utf8');
   for (const page of pages)
     await writeFile(page, inlineStylesheets(await readFile(page, 'utf8'), stylesheet));
   console.log(`Prerendered ${paths.length} pages, RSS and sitemap → dist/client`);
   console.log(
-    `Placeholders: ${placeholders.pictures} pictures, site sheet ${(placeholders.sheet / 1024).toFixed(0)} kB`,
+    `Placeholders: ${placeholders.pictures} pictures, site sheet ${(placeholders.sheet / 1024).toFixed(0)} kB; first pictures of each page ${(warm.bytes / 1024).toFixed(0)} kB`,
   );
   console.log(
     `Fonts: ${fonts.files.map((f) => `${f.family} ${f.weight} ${f.characters} chars ${(f.size / 1024).toFixed(0)} kB`).join(', ')}`,
