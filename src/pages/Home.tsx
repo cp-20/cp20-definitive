@@ -3,7 +3,7 @@ import Icon, { KindMark } from '../components/Icon.tsx';
 import Brand from '../components/Brand.tsx';
 import WorkCard from '../components/WorkCard.tsx';
 import Title from '../components/Title.tsx';
-import { articleAnchor, responsive, sizes } from '../components/Preview.tsx';
+import { Avif, articleAnchor, responsive, sizes } from '../components/Preview.tsx';
 import { AttendanceCard, SourceIcon } from '../components/AttendanceCard.tsx';
 import { sourceLabel } from '../components/source-tiles.ts';
 import { yearOf } from '../components/attendance.ts';
@@ -29,13 +29,15 @@ export default function Home() {
       <section data-stamp-anchor="intro" class="home-intro" aria-labelledby="hero-title">
         <div class="home-hello">
           <span class="avatar-stamp">
-            <img
-              src="/images/avatar-384.webp"
-              alt="しーぴーのアイコン"
-              width="132"
-              height="132"
-              fetchpriority="high"
-            />
+            <Avif avif="/images/avatar-384.avif">
+              <img
+                src="/images/avatar-384.webp"
+                alt="しーぴーのアイコン"
+                width="132"
+                height="132"
+                fetchpriority="high"
+              />
+            </Avif>
           </span>
           <h1 id="hero-title">
             しーぴー<span>cp20</span>
@@ -152,14 +154,19 @@ export default function Home() {
           <div class="home-favorites">
             <a href="/about#music">
               <span class="favorite-stamp">
-                <img
-                  src={localImage(track.thumbnail)?.src}
-                  {...responsive(localImage(track.thumbnail)?.srcset, sizes.homeTrack)}
-                  alt=""
-                  width="120"
-                  height="90"
-                  loading="lazy"
-                />
+                <Avif srcset={localImage(track.thumbnail)?.srcset} sizes={sizes.homeTrack}>
+                  <img
+                    loading="lazy"
+                    {...responsive(
+                      localImage(track.thumbnail)?.src,
+                      localImage(track.thumbnail)?.srcset,
+                      sizes.homeTrack,
+                    )}
+                    alt=""
+                    width="120"
+                    height="90"
+                  />
+                </Avif>
                 <Icon name="Music" size={16} />
               </span>
               <span class="favorite-caption">
@@ -169,14 +176,15 @@ export default function Home() {
             </a>
             <a href="/about#manga">
               <span class="favorite-stamp">
-                <img
-                  src={seriesCover(book)?.src}
-                  {...responsive(seriesCover(book)?.srcset, sizes.homeCover)}
-                  alt=""
-                  width="96"
-                  height="136"
-                  loading="lazy"
-                />
+                <Avif srcset={seriesCover(book)?.srcset} sizes={sizes.homeCover}>
+                  <img
+                    loading="lazy"
+                    {...responsive(seriesCover(book)?.src, seriesCover(book)?.srcset, sizes.homeCover)}
+                    alt=""
+                    width="96"
+                    height="136"
+                  />
+                </Avif>
                 <Icon name="BookOpen" size={16} />
               </span>
               <span class="favorite-caption">

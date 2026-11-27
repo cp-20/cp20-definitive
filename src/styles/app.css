@@ -42,6 +42,11 @@
   img {
     height: auto;
   }
+  /* A <picture> only offers its <img> the AVIF copies (Preview.tsx Avif): it takes no box of
+     its own, so the image lays out as if it stood there alone. */
+  picture {
+    display: contents;
+  }
   button,
   input,
   select {

@@ -1,6 +1,6 @@
 import { createSignal, For } from 'solid-js';
 import Icon from './Icon.tsx';
-import { responsive, sizes } from './Preview.tsx';
+import { Avif, responsive, sizes } from './Preview.tsx';
 import { mangaCovers } from '../data/editorial.ts';
 import { seriesCover } from '../content/images.ts';
 import { spineAuthor } from '../content/series-credit.ts';
@@ -68,25 +68,27 @@ export default function Bookshelf() {
               }}
               onClick={() => setOpen(i())}
             >
-              <img
-                class="book-cover"
-                src={seriesCover(s)?.src}
-                {...responsive(seriesCover(s)?.srcset, sizes.bookCover)}
-                alt=""
-                width="480"
-                height="682"
-                loading="lazy"
-              />
+              <Avif srcset={seriesCover(s)?.srcset} sizes={sizes.bookCover}>
+                <img
+                  loading="lazy"
+                  class="book-cover"
+                  {...responsive(seriesCover(s)?.src, seriesCover(s)?.srcset, sizes.bookCover)}
+                  alt=""
+                  width="480"
+                  height="682"
+                />
+              </Avif>
               <span class="book-spine" aria-hidden="true">
                 {/* As on a real volume: a character at the head, the title set to fill the spine
                     with the author under it, and the band at the foot. */}
                 <span class="book-art">
-                  <img
-                    src={seriesCover(s)?.src}
-                    {...responsive(seriesCover(s)?.srcset, sizes.bookCover)}
-                    alt=""
-                    loading="lazy"
-                  />
+                  <Avif srcset={seriesCover(s)?.srcset} sizes={sizes.bookCover}>
+                    <img
+                      loading="lazy"
+                      {...responsive(seriesCover(s)?.src, seriesCover(s)?.srcset, sizes.bookCover)}
+                      alt=""
+                    />
+                  </Avif>
                 </span>
                 {/* A long title and its author would not both fit in one line down the spine;
                     as on such a volume, the author then stands beside the title at its foot. */}

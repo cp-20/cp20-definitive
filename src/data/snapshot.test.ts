@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { clientMedia, coverSrcsets, type CacheEntry, type Preview } from '../content/media.ts';
+import { avifFile, clientMedia, coverSrcsets, type CacheEntry, type Preview } from '../content/media.ts';
 import { splitLinks } from '../content/inline-links.ts';
 import { splitEmphasis } from '../content/emphasis.ts';
 import { SOLO_ROLE, openLink, type Work } from '../content/works.ts';
@@ -61,7 +61,14 @@ describe('画像キャッシュ', () => {
       ...thumbnailSources(previews, shownItems(tracks, series)),
       ...iconSources(previews, iconPages(baseWorks)),
     ]);
-    const listed = new Set(Object.values(cache).flatMap(files));
+    // A thumbnail's copies each have their AVIF copy beside them (media.ts avifSrcset).
+    const thumbnails = new Set(thumbnailSources(previews, shownItems(tracks, series)));
+    const listed = new Set(
+      Object.entries(cache).flatMap(([source, e]) => [
+        ...files(e),
+        ...(thumbnails.has(source) ? (e.variants ?? []).map((v) => avifFile(v.file)) : []),
+      ]),
+    );
     const media = (await readdir(`${publicDir}/media`)).map((name) => `/media/${name}`);
     assert.deepEqual(
       {

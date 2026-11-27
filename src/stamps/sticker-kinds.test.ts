@@ -43,6 +43,6 @@ describe('シールの種類', () => {
       (k) => k.symbol && !existsSync(new URL(`../../public/stamps/${k.symbol}.svg`, import.meta.url)),
     ).map((k) => k.symbol);
     assert.deepEqual(missing, []);
-    assert.ok(existsSync(new URL('../../public/images/avatar-384.webp', import.meta.url)));
+    assert.ok(existsSync(new URL('../../public/images/avatar-128.webp', import.meta.url)));
   });
 });

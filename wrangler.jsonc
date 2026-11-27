@@ -5,8 +5,9 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  // Only the paths the 2026 edition answered for terminals run the Worker (worker/index.ts);
-  // the rest are served from the assets without it.
+  // The Worker (worker/index.ts) answers the paths the 2026 edition answered for terminals, and
+  // serves the build's Brotli copies of the pages and text files. Pictures (already compressed)
+  // are served from the assets without it.
   "main": "worker/index.ts",
   // Only cp20.dev serves the site: no workers.dev address and no preview URLs to index.
   "workers_dev": false,
@@ -17,12 +18,9 @@
     "html_handling": "drop-trailing-slash",
     "not_found_handling": "404-page",
     "run_worker_first": [
-      "/",
-      "/articles",
-      "/works",
-      "/works/*",
-      "/featured-tracks",
-      "/featured-series"
+      "/*",
+      "!/media/*",
+      "!/images/*"
     ]
   },
   // cp20.dev was moved here from the 2026 edition (2026-portfolio) on 2026-11-26.

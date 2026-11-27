@@ -7,7 +7,7 @@ export function StickerFace(props: { kind: number }) {
       src={
         // The design without a symbol is the site owner's own icon rather than a Twemoji.
         STICKER_KINDS[props.kind]?.symbol === ''
-          ? '/images/avatar-384.webp'
+          ? '/images/avatar-128.webp'
           : `/stamps/${STICKER_KINDS[props.kind]?.symbol || 'clover'}.svg`
       }
       alt=""

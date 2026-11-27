@@ -1470,6 +1470,56 @@ try {
   }
   passed("swapped-out pages and other years' rows are released from memory");
 
+  // ── Each picture is fetched once, as the file its srcset picks ──
+  // The page as served offers AVIF in a <picture>; one built by in-app navigation the <img>'s WebP.
+  // The first page may not also fetch the WebP copy of a picture it takes as AVIF, and no page
+  // the <img>'s src when it has a srcset (an element given its src before its loading="lazy" or
+  // srcset, or one hydration builds and drops).
+  {
+    const tab = await context.newPage();
+    await tab.setViewportSize({ width: 412, height: 823 });
+    const fetched: string[] = [];
+    tab.on('request', (r) => {
+      if (r.resourceType() === 'image' && r.url().startsWith(origin)) fetched.push(new URL(r.url()).pathname);
+    });
+    // Hydration reports a page it cannot take over (the client built other elements than the
+    // server, so the keys after them no longer match) only in the console.
+    const scriptErrors: string[] = [];
+    tab.on('console', (m) => {
+      if (m.type() === 'error' && /Error/.test(m.text()) && !/Failed to load resource/.test(m.text()))
+        scriptErrors.push(m.text().split('\n')[0]);
+    });
+    tab.on('pageerror', (e) => scriptErrors.push(e.message));
+    const fallbacks = new Set<string>();
+    const noteFallbacks = async () => {
+      for (const src of await tab.evaluate(() =>
+        [...document.images].filter((i) => i.srcset).map((i) => new URL(i.src).pathname),
+      ))
+        fallbacks.add(src);
+    };
+    await tab.goto(origin + '/');
+    await tab.waitForTimeout(1500);
+    await noteFallbacks();
+    const stem = (f: string) => f.replace(/\.(webp|avif)$/, '');
+    const first = fetched;
+    const twice = first.filter((f, i) => first.findIndex((g) => stem(g) === stem(f)) !== i);
+    const avif = first.filter((f) => f.endsWith('.avif'));
+    for (const href of ['/about', '/works', '/articles', '/']) {
+      await tab.locator(`a[href="${href}"][data-tab]`).first().click();
+      await tab.waitForTimeout(1200);
+      await noteFallbacks();
+    }
+    const originals = fetched.filter((f) => fallbacks.has(f) && !/-\d+w\.(webp|avif)$/.test(f));
+    if (scriptErrors.length) throw Error(`Script errors while hydrating or navigating: ${scriptErrors}`);
+    if (!avif.length) throw Error('The first page fetched no AVIF picture');
+    if (twice.length || originals.length)
+      throw Error(`Pictures fetched twice: ${twice}; srcset fallbacks fetched: ${originals}`);
+    await tab.close();
+  }
+  passed(
+    'the first page hydrates without errors, takes AVIF, and every picture is fetched once, as its srcset picks',
+  );
+
   for (const [width, height, suffix] of [
     [390, 844, 'mobile'],
     [1440, 1000, 'desktop'],

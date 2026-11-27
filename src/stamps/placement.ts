@@ -50,13 +50,20 @@ const wordsIn = (el: Element) =>
 // The anchor naming an element: its own data-stamp-anchor name, or the way down to it from the
 // nearest marked element around it, then `last` (to a character in it) when given; null outside
 // every marked element or when it cannot be stored.
+// A <picture> only wraps its <img> to offer the AVIF copies (Preview.tsx): the way down steps over
+// it, so the anchors of stickers on pictures read as before it was there ("…-0img").
 function anchorOf(el: HTMLElement, last: readonly Step[] = []): string | null {
   const steps: Step[] = [...last].reverse();
   for (let node: HTMLElement = el; ; ) {
     if (node.dataset.stampAnchor) return joinAnchor(node.dataset.stampAnchor, steps.reverse());
-    const parent = node.parentElement;
+    let child: Element = node,
+      parent = node.parentElement;
+    if (parent?.localName === 'picture') {
+      child = parent;
+      parent = parent.parentElement;
+    }
     if (!parent) return null;
-    steps.push({ index: stepChildren(parent).indexOf(node), tag: node.localName });
+    steps.push({ index: stepChildren(parent).indexOf(child), tag: node.localName });
     node = parent;
   }
 }
@@ -131,7 +138,9 @@ function anchorTarget(anchor: string): { el: HTMLElement | null; part?: Range } 
       if (at === undefined) return { el, part: wholeRange(words) };
       return at < words.length ? { el, part: charRange(words, at) } : { el };
     }
-    const next = el ? stepChildren(el)[step.index] : undefined;
+    let next = el ? stepChildren(el)[step.index] : undefined;
+    if (next?.localName === 'picture' && step.tag !== 'picture')
+      next = next.querySelector(':scope > img') ?? undefined;
     if (!next || next.localName !== step.tag || !(next instanceof HTMLElement)) return { el: base };
     el = next;
   }

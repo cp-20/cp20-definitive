@@ -1,6 +1,6 @@
 import { For } from 'solid-js';
 import Icon, { KindMark } from '../components/Icon.tsx';
-import { responsive, sizes } from '../components/Preview.tsx';
+import { Avif, responsive, sizes } from '../components/Preview.tsx';
 import Bookshelf from '../components/Bookshelf.tsx';
 import Brand from '../components/Brand.tsx';
 import Modal, { openModal } from '../components/Modal.tsx';
@@ -22,13 +22,15 @@ export default function About() {
       <header class="profile-header" data-stamp-anchor="profile">
         <div class="profile-avatar">
           <span class="avatar-stamp">
-            <img
-              src="/images/avatar-384.webp"
-              width="208"
-              height="208"
-              alt="しーぴーのアイコン"
-              fetchpriority="high"
-            />
+            <Avif avif="/images/avatar-384.avif">
+              <img
+                src="/images/avatar-384.webp"
+                width="208"
+                height="208"
+                alt="しーぴーのアイコン"
+                fetchpriority="high"
+              />
+            </Avif>
           </span>
         </div>
         <div class="profile-intro">
@@ -211,15 +213,20 @@ export default function About() {
             {(t) => (
               <a class="music-item" href={t.link}>
                 <div class="music-image">
-                  <img
-                    src={localImage(t.thumbnail)?.src}
-                    {...responsive(localImage(t.thumbnail)?.srcset, sizes.track)}
-                    alt=""
-                    width="480"
-                    height="360"
-                    loading="lazy"
-                    referrerpolicy="no-referrer"
-                  />
+                  <Avif srcset={localImage(t.thumbnail)?.srcset} sizes={sizes.track}>
+                    <img
+                      loading="lazy"
+                      {...responsive(
+                        localImage(t.thumbnail)?.src,
+                        localImage(t.thumbnail)?.srcset,
+                        sizes.track,
+                      )}
+                      alt=""
+                      width="480"
+                      height="360"
+                      referrerpolicy="no-referrer"
+                    />
+                  </Avif>
                   <span class="play-symbol" aria-hidden="true">
                     <Icon name="Play" size={18} />
                   </span>

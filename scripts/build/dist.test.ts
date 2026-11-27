@@ -31,6 +31,34 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
     assert.deepEqual([blocking, /<style>[^<]*\.site-body/.test(head('index.html'))], [[], true]);
   });
 
+  test('画像の AVIF の候補はどれもファイルがあり、WebP の srcset を持つ画像はどれも AVIF の候補も持つ', () => {
+    const pages = [...sitePaths(mergeWorks(baseWorks, manual)).map(pageFile), '404.html'];
+    const missing = new Set<string>(),
+      withoutAvif = new Set<string>();
+    for (const file of pages)
+      for (const [, source, img] of read(file).matchAll(
+        /(<source\b[^>]*>)?(?:\s|<!--[^>]*-->)*(<img\b[^>]*>)/g,
+      )) {
+        const avif = source?.match(
+          /type="image\/avif"[^>]*srcset="([^"]+)"|srcset="([^"]+)"[^>]*type="image\/avif"/,
+        );
+        const candidates = (avif?.[1] ?? avif?.[2] ?? '').split(',').map((c) => c.trim().split(/\s+/)[0]);
+        for (const c of candidates) if (c && !existsSync(built(c.slice(1)))) missing.add(c);
+        if (/srcset="[^"]*\.webp /.test(img) && !avif)
+          withoutAvif.add(img.match(/src="([^"]+)"/)?.[1] ?? img);
+      }
+    assert.deepEqual([[...missing], [...withoutAvif]], [[], []]);
+  });
+
+  test('ページとスクリプトとスタイルシートには Brotli の複製がある', () => {
+    const script = read('index.html').match(/<script type="module" src="\/(assets\/[^"]+\.js)"/)?.[1];
+    const pages = [...sitePaths(mergeWorks(baseWorks, manual)).map(pageFile), '404.html'];
+    assert.deepEqual(
+      [pages.filter((p) => !existsSync(built(p + '.br'))), !!script && existsSync(built(script + '.br'))],
+      [[], true],
+    );
+  });
+
   test('各ページの最初の画像の一覧を全ページが名指しし、一覧はどのページの分も持つ', () => {
     const paths = sitePaths(mergeWorks(baseWorks, manual));
     const lists = new Set(

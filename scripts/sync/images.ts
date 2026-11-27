@@ -14,11 +14,13 @@
 // in public/images/works) without fetching anything.
 import { writeFile, mkdir, rename, readdir, unlink, rm, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { availableParallelism } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { imageSize } from 'image-size';
 import sharp from 'sharp';
 import {
   variantFile,
+  avifFile,
   iconWidth,
   isLocal,
   type CacheEntry,
@@ -179,7 +181,10 @@ async function keepPreviousImages(
 }
 
 /** The files of a cache entry: the original and its copies. */
-const entryFiles = (entry: CacheEntry) => [entry.file, ...(entry.variants ?? []).map((v) => v.file)];
+const entryFiles = (entry: CacheEntry) => [
+  entry.file,
+  ...(entry.variants ?? []).flatMap((v) => [v.file, avifFile(v.file)]),
+];
 
 /** Deletes the files in public/media that no entry of `cache` uses. @returns how many are used */
 async function removeUnusedFiles(cache: Cache, dirs: Dirs) {
@@ -278,7 +283,18 @@ export const plannedWidths = (naturalWidth: number) =>
   naturalWidth > 0 ? variantWidths.filter((w) => w <= naturalWidth * 0.8) : [];
 
 /**
- * Writes `width`-px WebP copy `file` of `original` (both `/…` public paths) unless it exists.
+ * AVIF at quality 50 is about 60% of the size of WebP at 80 and keeps more detail (fine grid lines
+ * and text in screenshots that the WebP copy smooths away). Effort 6 of 9: the higher efforts
+ * took about three times as long for 1-2% less.
+ */
+/** Pictures encoded at once. */
+const ENCODES = Math.max(1, availableParallelism() - 1);
+
+export const AVIF_OPTIONS = { quality: 50, effort: 6 } as const;
+
+/**
+ * Writes `width`-px copy `file` of `original` (both `/…` public paths) unless it exists: WebP, or
+ * AVIF when `file` ends in .avif. Each is encoded from the original, not from the other copy.
  * @returns whether a file was written
  */
 async function writeVariant(dirs: Dirs, original: string, file: string, width: number, crop?: Crop) {
@@ -288,9 +304,15 @@ async function writeVariant(dirs: Dirs, original: string, file: string, width: n
   try {
     const image = sharp(publicFile(dirs, original).pathname);
     if (crop) image.extract(crop);
+    const resized = image.resize({ width, withoutEnlargement: true });
     await writeFile(
       temporary,
-      await image.resize({ width, withoutEnlargement: true }).webp({ quality: 80 }).toBuffer(),
+      await (
+        /\.avif$/i.test(file)
+          ? // The tests check which files are written, not how small: the fastest effort keeps them quick.
+            resized.avif(process.env.VITEST ? { ...AVIF_OPTIONS, effort: 0 } : AVIF_OPTIONS)
+          : resized.webp({ quality: 80 })
+      ).toBuffer(),
     );
     await rename(temporary, target);
   } catch (error) {
@@ -370,18 +392,19 @@ export async function addVariants(
   dirs = repoDirs,
 ) {
   let written = 0;
-  for (const [source, entry] of Object.entries(cache)) {
+  // Several entries at once: each encode is one thread (AVIF takes seconds for a large picture).
+  await eachLimited(Object.entries(cache), ENCODES, async ([source, entry]) => {
     delete entry.width;
     delete entry.variants;
     delete entry.crop;
     const thumbnail = sources.has(source);
     const icon = icons.has(source);
-    if ((!thumbnail && !icon) || /\.(gif|ico|svg)$/i.test(entry.file)) continue;
+    if ((!thumbnail && !icon) || /\.(gif|ico|svg)$/i.test(entry.file)) return;
     let width;
     try {
       width = (await sharp(publicFile(dirs, entry.file).pathname).metadata()).width;
     } catch {
-      continue;
+      return;
     }
     let crop: Crop | undefined;
     if (thumbnail && framed.has(source)) {
@@ -392,7 +415,7 @@ export async function addVariants(
           .toBuffer({ resolveWithObject: true });
         crop = framedCrop(data, info.width, info.height);
       } catch {
-        continue;
+        return;
       }
     }
     const widths = new Set(thumbnail ? plannedWidths(crop?.width ?? width ?? 0) : []);
@@ -416,6 +439,8 @@ export async function addVariants(
           continue;
         }
         if (fresh) written++;
+        // A thumbnail's copies are listed in a srcset, each also as AVIF (media.ts avifSrcset).
+        if (thumbnail && (await writeVariant(dirs, entry.file, avifFile(file), w, crop))) written++;
       } catch {
         // A corrupt original (intact header, broken body) must not stop the whole run: the entry
         // keeps only its original file and, like one whose size cannot be read, no width: a page
@@ -431,7 +456,7 @@ export async function addVariants(
     if (width !== undefined) entry.width = width;
     if (variants.length) entry.variants = variants;
     if (crop) entry.crop = crop;
-  }
+  });
   return written;
 }
 
@@ -465,13 +490,31 @@ export const committedImages: Record<string, (naturalWidth: number) => number[]>
  */
 export async function addCommittedVariants(directory: string, dirs = repoDirs) {
   let written = 0;
-  for (const name of await readdir(publicFile(dirs, directory))) {
-    if (!/\.(jpe?g|png)$/i.test(name)) continue;
+  const names = (await readdir(publicFile(dirs, directory))).filter((n) => /\.(jpe?g|png)$/i.test(n));
+  await eachLimited(names, ENCODES, async (name) => {
     const original = directory + name;
     const { width } = await sharp(publicFile(dirs, original).pathname).metadata();
     for (const w of committedImages[directory](width ?? 0))
-      if (await writeVariant(dirs, original, variantFile(original, w), w)) written++;
-  }
+      for (const file of [variantFile(original, w), avifFile(variantFile(original, w))])
+        if (await writeVariant(dirs, original, file, w)) written++;
+  });
+  return written;
+}
+
+/**
+ * Single committed pictures and the copies made of them: the avatar shown as the profile's stamp
+ * (WebP, and AVIF for the page as served) and as the 40px sticker (128px covers a 3x screen; the
+ * 384px one took 17 kB on every page for it).
+ */
+export const committedCopies: Record<string, { from: string; width: number }> = {
+  '/images/avatar-384.avif': { from: '/images/avatar.png', width: 384 },
+  '/images/avatar-128.webp': { from: '/images/avatar.png', width: 128 },
+};
+
+async function addCommittedCopies(dirs = repoDirs) {
+  let written = 0;
+  for (const [file, { from, width }] of Object.entries(committedCopies))
+    if (await writeVariant(dirs, from, file, width)) written++;
   return written;
 }
 
@@ -488,6 +531,7 @@ async function variantsOnly(dirs = repoDirs) {
   );
   for (const directory of Object.keys(committedImages))
     written += await addCommittedVariants(directory, dirs);
+  written += await addCommittedCopies(dirs);
   await writeData(dirs, 'image-cache', cache);
   console.log(`Image variants: ${written} written`);
 }

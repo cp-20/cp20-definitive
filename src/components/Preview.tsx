@@ -1,6 +1,7 @@
-import { createSignal, onSettled, Show } from 'solid-js';
-import { isServer } from '@solidjs/web';
+import { createSignal, isHydrating, onSettled, Show } from 'solid-js';
+import { isServer, type JSX } from '@solidjs/web';
 import { pages } from 'virtual:cp20-media';
+import { avifSrcset } from '../content/media.ts';
 // Upper bounds of the laid-out image widths (measured at 320-1920px wide viewports, and checked
 // by scripts/qa/browser-check.ts; see the --thumb, grid, .bookshelf, .music-list and .home-favorites rules).
 export const sizes = {
@@ -23,25 +24,62 @@ export function previewFor(url: string) {
   return pages[url];
 }
 /**
- * `srcset` and `sizes` for an <img> (both or neither). The server-rendered HTML carries them, so
- * the first load picks a small variant; on the client they are applied by `ref` once the page
- * has settled, not while Solid is still building it. In Chromium an image given its srcset
- * during that build stayed registered for viewport changes after its page was swapped out, so
- * every page visited stayed in memory (the leak check in scripts/qa/browser-check.ts catches this).
+ * `src`, `srcset` and `sizes` for an <img> (srcset and sizes both or neither). The server-rendered
+ * HTML carries them, so the first load picks a small variant; on the client they are applied by
+ * `ref` once the page has settled, not while Solid is still building it. In Chromium an image
+ * given its srcset during that build stayed registered for viewport changes after its page was
+ * swapped out, so every page visited stayed in memory (the leak check in
+ * scripts/qa/browser-check.ts catches this). The src waits with them: given at once, an eager
+ * picture (a featured work's) fetched its full-size original before its srcset arrived.
  */
-export function responsive(srcset: string | undefined, sizes: string | undefined) {
+export function responsive(src: string | undefined, srcset: string | undefined, sizes: string | undefined) {
   const set = srcset && sizes ? { srcset, sizes } : undefined;
+  // Hydration keeps the server's elements with their attributes, and also builds elements it then
+  // drops: a detached image still loads, so while hydrating nothing is given at first, and only an
+  // element that is on the page once settled and lacks them gets them.
+  const hydrating = !isServer && isHydrating();
+  // Only a picture with a srcset waits for the page to settle (onSettled during hydration takes an
+  // owner the server does not: the hydration keys after it would no longer match).
+  if (!set) return { src, srcset: undefined, sizes: undefined, ref: undefined };
   return {
-    srcset: isServer ? set?.srcset : undefined,
-    sizes: isServer ? set?.sizes : undefined,
-    ref: (img: HTMLImageElement) => {
-      if (set)
-        onSettled(() => {
-          img.sizes = set.sizes;
-          img.srcset = set.srcset;
-        });
-    },
+    src: isServer ? src : undefined,
+    srcset: isServer ? set.srcset : undefined,
+    sizes: isServer ? set.sizes : undefined,
+    ref: (img: HTMLImageElement | HTMLSourceElement) =>
+      onSettled(() => {
+        if (hydrating && (!img.isConnected || img.hasAttribute('srcset'))) return;
+        img.sizes = set.sizes;
+        img.srcset = set.srcset;
+        if (src && img instanceof HTMLImageElement) img.src = src;
+      }),
   };
+}
+/**
+ * Offers the AVIF copies of a picture (about 60% of the WebP's bytes) in a <picture> around its
+ * <img>: `srcset` is the <img>'s WebP srcset, as AVIF copies by the same `sizes` (applied like
+ * `responsive`), or `avif` the AVIF copy of a picture shown without a srcset. A browser that cannot
+ * read AVIF keeps the <img>'s own.
+ * Only on the page as served (and hydrated): a page built later by in-app navigation shows the
+ * <img> alone, with its WebP copies (fetched ahead by src/site/warm.ts). Chromium kept every page
+ * swapped out that had a client-built <picture>, with or without sources or srcsets, as it did
+ * for client-built srcsets before (scripts/qa/browser-check.ts checks the memory).
+ */
+export function Avif(props: { srcset?: string; sizes?: string; avif?: string; children: JSX.Element }) {
+  if (!isServer && !isHydrating()) return props.children;
+  if (props.avif)
+    return (
+      <picture>
+        <source type="image/avif" srcset={props.avif} />
+        {props.children}
+      </picture>
+    );
+  const set = responsive(undefined, avifSrcset(props.srcset), props.sizes);
+  return (
+    <picture>
+      <source type="image/avif" srcset={set.srcset} sizes={set.sizes} ref={set.ref} />
+      {props.children}
+    </picture>
+  );
 }
 /** The site's own icon, when it has one. */
 export function OriginalIcon(props: { url: string; inset?: boolean }) {
@@ -78,7 +116,11 @@ export function OGImage(props: {
   sizes?: string;
 }) {
   const [failed, setFailed] = createSignal(false);
-  const image = responsive(props.sizes && previewFor(props.url)?.srcset, props.sizes);
+  const image = responsive(
+    previewFor(props.url)?.image,
+    props.sizes && previewFor(props.url)?.srcset,
+    props.sizes,
+  );
   return (
     <div
       class={['og-image', { unavailable: !previewFor(props.url)?.image || failed() }]}
@@ -90,19 +132,21 @@ export function OGImage(props: {
         when={previewFor(props.url)?.image && !failed()}
         fallback={<span class="og-unavailable">{new URL(props.url).hostname}</span>}
       >
-        <img
-          src={previewFor(props.url)?.image}
-          ref={image.ref}
-          srcset={image.srcset}
-          sizes={image.sizes}
-          alt={props.alt}
-          width={previewFor(props.url)?.width || 1200}
-          height={previewFor(props.url)?.height || 630}
-          loading={props.priority || props.eager ? 'eager' : 'lazy'}
-          fetchpriority={props.priority ? 'high' : 'auto'}
-          referrerpolicy="no-referrer"
-          onError={() => setFailed(true)}
-        />
+        <Avif srcset={props.sizes && previewFor(props.url)?.srcset} sizes={props.sizes}>
+          <img
+            loading={props.priority || props.eager ? 'eager' : 'lazy'}
+            src={image.src}
+            ref={image.ref}
+            srcset={image.srcset}
+            sizes={image.sizes}
+            alt={props.alt}
+            width={previewFor(props.url)?.width || 1200}
+            height={previewFor(props.url)?.height || 630}
+            fetchpriority={props.priority ? 'high' : 'auto'}
+            referrerpolicy="no-referrer"
+            onError={() => setFailed(true)}
+          />
+        </Avif>
       </Show>
     </div>
   );

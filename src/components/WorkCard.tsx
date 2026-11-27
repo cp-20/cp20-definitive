@@ -2,7 +2,7 @@ import { createSignal } from 'solid-js';
 import { shots } from 'virtual:cp20-media';
 import Icon from './Icon.tsx';
 import { brandIcon } from './Brand.tsx';
-import { OGImage, previewFor, responsive, sizes } from './Preview.tsx';
+import { Avif, OGImage, previewFor, responsive, sizes } from './Preview.tsx';
 import { SOLO_ROLE, kindLabel, longPeriod, openLink, statusTag, type Work } from '../content/works.ts';
 import { plain } from '../content/phrase-marks.ts';
 
@@ -31,20 +31,22 @@ export function WorkImage(props: {
         eager={props.eager}
       />
     );
-  const image = responsive(file.srcset, props.sizes);
+  const image = responsive(shot.src, file.srcset, props.sizes);
   return (
     <div class="og-image work-shot" style={{ '--image-ratio': `${file.width} / ${file.height}` }}>
-      <img
-        src={shot.src}
-        ref={image.ref}
-        srcset={image.srcset}
-        sizes={image.sizes}
-        alt={props.describe ? shot.alt : ''}
-        width={file.width}
-        height={file.height}
-        loading={props.priority || props.eager ? 'eager' : 'lazy'}
-        fetchpriority={props.priority ? 'high' : 'auto'}
-      />
+      <Avif srcset={file.srcset} sizes={props.sizes}>
+        <img
+          loading={props.priority || props.eager ? 'eager' : 'lazy'}
+          src={image.src}
+          ref={image.ref}
+          srcset={image.srcset}
+          sizes={image.sizes}
+          alt={props.describe ? shot.alt : ''}
+          width={file.width}
+          height={file.height}
+          fetchpriority={props.priority ? 'high' : 'auto'}
+        />
+      </Avif>
     </div>
   );
 }

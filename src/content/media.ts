@@ -24,6 +24,22 @@ export type Preview = {
 export const variantFile = (file: string, width: number) =>
   file.replace(/\.[a-z0-9]+$/i, '') + `-${width}w.webp`;
 
+/** `/media/abc-320w.webp` → `/media/abc-320w.avif`: the AVIF copy written beside every WebP copy shown in a srcset. */
+export const avifFile = (webp: string) => webp.replace(/\.webp$/i, '.avif');
+
+/**
+ * The srcset of the AVIF copies for a `<source type="image/avif">`: each WebP candidate as its AVIF
+ * copy (written beside it by scripts/sync/images.ts), any other candidate (a full-size original
+ * with no WebP copy) as it is. Undefined when the srcset has no WebP candidate.
+ */
+export function avifSrcset(srcset: string | undefined) {
+  if (!srcset || !/\.webp\s/i.test(srcset + ' ')) return undefined;
+  return srcset
+    .split(',')
+    .map((candidate) => candidate.trim().replace(/^(\S+)\.webp(\s|$)/i, '$1.avif$2'))
+    .join(', ');
+}
+
 /** Width of the single WebP copy of a site icon (shown at 26-38px, so this covers 2x screens). */
 export const iconWidth = 96;
 
