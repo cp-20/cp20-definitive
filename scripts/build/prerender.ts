@@ -19,7 +19,6 @@ import { writeOgImage } from './og.ts';
 import { decodeNonAsciiReferences, inlineStylesheets } from './html.ts';
 import { addPlaceholders } from './placeholders.ts';
 import { addWarmManifest } from './warm.ts';
-import { compressSite } from './compress.ts';
 
 const escapeXml = (s: string) =>
   stripInvalidText(String(s)).replace(
@@ -95,12 +94,7 @@ async function prerender() {
   const stylesheet = (href: string) => readFileSync(`dist/client${href}`, 'utf8');
   for (const page of pages)
     await writeFile(page, inlineStylesheets(await readFile(page, 'utf8'), stylesheet));
-  // Last of all, once every file is final.
-  const packed = await compressSite('dist/client');
   console.log(`Prerendered ${paths.length} pages, RSS and sitemap → dist/client`);
-  console.log(
-    `Brotli: ${packed.files} files, ${(packed.before / 1024).toFixed(0)} → ${(packed.after / 1024).toFixed(0)} kB`,
-  );
   console.log(
     `Placeholders: ${placeholders.pictures} pictures, site sheet ${(placeholders.sheet / 1024).toFixed(0)} kB; first pictures of each page ${(warm.bytes / 1024).toFixed(0)} kB`,
   );

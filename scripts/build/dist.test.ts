@@ -50,15 +50,6 @@ describe.skipIf(!existsSync(built('404.html')))('ビルド結果', () => {
     assert.deepEqual([[...missing], [...withoutAvif]], [[], []]);
   });
 
-  test('ページとスクリプトとスタイルシートには Brotli の複製がある', () => {
-    const script = read('index.html').match(/<script type="module" src="\/(assets\/[^"]+\.js)"/)?.[1];
-    const pages = [...sitePaths(mergeWorks(baseWorks, manual)).map(pageFile), '404.html'];
-    assert.deepEqual(
-      [pages.filter((p) => !existsSync(built(p + '.br'))), !!script && existsSync(built(script + '.br'))],
-      [[], true],
-    );
-  });
-
   test('各ページの最初の画像の一覧を全ページが名指しし、一覧はどのページの分も持つ', () => {
     const paths = sitePaths(mergeWorks(baseWorks, manual));
     const lists = new Set(

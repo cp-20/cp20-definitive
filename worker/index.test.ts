@@ -1,7 +1,7 @@
 // What the Worker does with the paths the 2026 edition used to answer on cp20.dev.
 import { describe, test } from 'vitest';
 import assert from 'node:assert/strict';
-import worker, { brotliCopy, route, serveAsset } from './index.ts';
+import worker, { route } from './index.ts';
 
 const curl = { 'user-agent': 'curl/8.5.0', accept: '*/*' };
 const browser = {
@@ -70,73 +70,4 @@ test('2026 版へは元のリクエストのヘッダーのまま渡し、それ
     `assets https://cp20.dev/works ${browser['user-agent']}`,
   ]);
   assert.deepEqual([moved.status, moved.headers.get('location')], [301, 'https://cp20.dev/about#manga']);
-});
-
-describe('Brotli の複製', () => {
-  test('ページは index.html.br、テキストのファイルはその .br、画像・フォント・HTML のファイル名・末尾スラッシュは対象外', () => {
-    assert.deepEqual(
-      [
-        '/',
-        '/about',
-        '/works/isuc',
-        '/assets/app-1.js',
-        '/feed.xml',
-        '/assets/f.woff2',
-        '/about/index.html',
-        '/about/',
-      ].map((p) => brotliCopy(p)?.path ?? null),
-      [
-        '/index.html.br',
-        '/about/index.html.br',
-        '/works/isuc/index.html.br',
-        '/assets/app-1.js.br',
-        '/feed.xml.br',
-        null,
-        null,
-        null,
-      ],
-    );
-  });
-
-  const assets = (files: Record<string, string>) => {
-    const asked: string[] = [];
-    return {
-      asked,
-      fetch: async (r: Request) => {
-        const path = new URL(r.url).pathname;
-        asked.push(path);
-        return path in files
-          ? new Response(files[path], {
-              headers: { 'content-type': 'application/octet-stream', etag: '"x"' },
-            })
-          : new Response('404 page', { status: 404 });
-      },
-    };
-  };
-  const get = (path: string, encoding = 'gzip, deflate, br, zstd') =>
-    new Request('https://cp20.dev' + path, { headers: { 'accept-encoding': encoding } });
-
-  test('Brotli を受け取るブラウザには複製を br として、元の種類で返す', async () => {
-    const response = await serveAsset(get('/about'), assets({ '/about/index.html.br': 'packed' }));
-    assert.deepEqual(
-      [
-        response.headers.get('content-encoding'),
-        response.headers.get('content-type'),
-        response.headers.get('vary'),
-        response.headers.get('etag'),
-        await response.text(),
-      ],
-      ['br', 'text/html; charset=utf-8', 'Accept-Encoding', '"x"', 'packed'],
-    );
-  });
-
-  test('Brotli を受け取らない相手と、複製のないパスには元の静的ファイル', async () => {
-    const files = assets({ '/about/index.html.br': 'packed', '/about': 'page' });
-    const plain = await serveAsset(get('/about', 'gzip'), files);
-    const missing = await serveAsset(get('/nope'), files);
-    assert.deepEqual(
-      [await plain.text(), plain.headers.get('content-encoding'), missing.status, files.asked],
-      ['page', null, 404, ['/about', '/nope/index.html.br', '/nope']],
-    );
-  });
 });
