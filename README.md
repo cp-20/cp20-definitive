@@ -25,6 +25,14 @@ npm run build
 
 初期データを同梱しているため、収集なしでもビルドできます。
 
+## 一時的な公開先：ロリポップ！デプロイナウ
+
+2026-11-27 から、`cp20.dev` はロリポップ！デプロイナウのプロジェクト `cp20`（`01M8E1135X6JQV83PQ395NTSN7`、フレームワーク `static`、`https://cp20.lolipop-now.app`）で配信しています（あとで Cloudflare に戻す予定）。`npm run deploy:lolipop` が `npm run verify` のあと `dist/client` を Git の外の一時ディレクトリにコピーして `lolipop deploy` します（`scripts/deploy/lolipop.ts`。`lolipop` CLI のログインが必要。push だけでは反映されない）。デプロイナウは HTML をブラウザに1日キャッシュさせるので、前のデプロイの HTML が古いスクリプトを読みに来ても困らないよう、これまでにデプロイした `/assets` のファイルを `node_modules/.cache/cp20/deployed-assets` に貯めて毎回一緒に上げます。
+
+- DNS（Cloudflare）：`cp20.dev` は CNAME（DNS only、Cloudflare が apex で平らにする）で `35e3189cdd027b77.lolipop-now-dns.com` へ。ほかに `_cf-challenge`（所有確認）と ACM の検証用 CNAME。状態は `lolipop domain show cp20.dev --project 01M8E1135X6JQV83PQ395NTSN7`。
+- 配信の違い：圧縮（Brotli）はデプロイナウが行います。`public/_headers`（CSP などのヘッダー）と Worker（`curl cp20.dev` の2026版、`/featured-*` のリダイレクト）は効きません。ページは `/about` → `/about/` へ 308 で移ります（ページ内の遷移には影響なし）。
+- Cloudflare に戻すとき：`wrangler.jsonc` のコメントにある `routes` を戻して push（Workers Builds がカスタムドメインを付け直す）。その前に `cp20.dev` の CNAME を消し、`lolipop domain delete cp20.dev --project 01M8E1135X6JQV83PQ395NTSN7` で外します。
+
 ## 本番公開の初期設定
 
 **公開はCloudflare Workers Builds（CloudflareのGit連携）で行います。`main` へのpushごとにCloudflare上でビルドしてデプロイします。GitHub Actionsは記事などの定期収集とスナップショットのコミット、PR・`main` の検証（`CI`）、Firebaseルールのデプロイ（専用DBのみ。下記「ルールの更新」）を担当します。Cloudflareの認証情報は持ちません。**

@@ -12,6 +12,7 @@
     "check": "tsc --noEmit",
     "verify": "npm run check && npm run build && npm test",
     "deploy": "npm run verify && wrangler deploy",
+    "deploy:lolipop": "npm run verify && node scripts/deploy/lolipop.ts",
     "dev:worker": "wrangler dev --ip 0.0.0.0 --port 8787",
     "rules": "node scripts/firebase/rules.ts",
     "firebase:rules": "node scripts/firebase/rules.ts --check && firebase deploy --only database:portfolio-stamps,storage --project cp20-platform",

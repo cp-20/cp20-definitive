@@ -25,13 +25,9 @@
       "/featured-series"
     ]
   },
-  // cp20.dev was moved here from the 2026 edition (2026-portfolio) on 2026-11-26.
-  "routes": [
-    {
-      "pattern": "cp20.dev",
-      "custom_domain": true
-    }
-  ],
+  // cp20.dev is served by LOLIPOP! Deploy Now for now (npm run deploy:lolipop); the Worker has no
+  // route until it is moved back. To move back: restore this, which re-attaches the custom domain:
+  //   "routes": [{ "pattern": "cp20.dev", "custom_domain": true }],
   // The 2026 edition, still at 2026.cp20.dev, answers `curl cp20.dev` and `?raw=true`.
   "services": [
     {
